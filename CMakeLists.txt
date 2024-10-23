@@ -159,12 +159,11 @@ message(STATUS "CMAKE_SOURCE_DIR: '${CMAKE_SOURCE_DIR}'")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LINUX_PKGS REQUIRED libpipewire-0.3)
-    pkg_check_modules(FFMPEG_PKGS REQUIRED libavformat libavcodec libavutil)
+    pkg_check_modules(LINUX_PKGS REQUIRED libpipewire-0.3 libavformat libavcodec libavutil)
     include_directories(BEFORE ${LINUX_PKGS_INCLUDE_DIRS})
     target_link_libraries(
         ${CMAKE_PROJECT_NAME} PRIVATE
-        ${LINUX_PKGS_LIBRARIES} ${FFMPEG_PKGS_LIBRARIES}
+        ${LINUX_PKGS_LIBRARIES}
     )
 endif()
 
