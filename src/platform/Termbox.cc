@@ -47,8 +47,8 @@ TermboxInit()
 
     tb_set_input_mode(TB_INPUT_ESC|TB_INPUT_MOUSE);
 
-    LOG_WARN("tb_has_truecolor: {}\n", (bool)tb_has_truecolor());
-    LOG_WARN("tb_has_egc: {}\n", (bool)tb_has_egc());
+    LOG_NOTIFY("tb_has_truecolor: {}\n", (bool)tb_has_truecolor());
+    LOG_NOTIFY("tb_has_egc: {}\n", (bool)tb_has_egc());
 }
 
 void
@@ -154,7 +154,7 @@ key(tb_event* pEv, Allocator* pAlloc)
     else if (key == TB_KEY_CTRL_U)
         PlayerFocus(&pl, pl.focused - 22);
     else if (key == TB_KEY_ENTER)
-        pl.selected = pl.aSongIdxs[pl.focused];
+        PlayerSelectFocused(&pl);
     else if (ch == L'/')
         subStringSearch(pAlloc);
     else if (ch == L'z' || ch == L'я')
@@ -323,7 +323,7 @@ drawSongList()
     for (u16 h = s_firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
     {
         const u16 songIdx = pl.aSongIdxs[h];
-        const String sSong = pl.aShortSongNames[songIdx];
+        const String sSong = pl.aShortArgvs[songIdx];
         const u32 maxLen = tb_width() - 2;
 
         bool bSelected = songIdx == pl.selected ? true : false;

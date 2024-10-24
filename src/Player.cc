@@ -2,10 +2,31 @@
 
 #include "adt/Arr.hh"
 #include "app.hh"
+#include "logs.hh"
 
 #include <cstdlib>
 #include <cwchar>
 #include <cwctype>
+
+constexpr String aAcceptedFileEndings[] {
+    ".mp3",
+    ".opus",
+    ".flac",
+    ".wav",
+    ".m4a",
+    ".ogg",
+    ".umx",
+};
+
+static bool
+acceptedFormat(String s)
+{
+    for (auto& ending : aAcceptedFileEndings)
+        if (StringEndsWith(s, ending))
+            return true;
+
+    return false;
+}
 
 void
 PlayerNext(Player* s)
@@ -75,9 +96,10 @@ PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pBuff, u32 size)
 
     VecSetSize(&s->aSongIdxs, s->pAlloc, 0);
     /* 0'th is the name of the program 'argv[0]' */
-    for (u32 i = 1; i < VecSize(&s->aShortSongNames); ++i)
+    for (u32 i = 1; i < VecSize(&s->aShortArgvs); ++i)
     {
-        const auto& song = s->aShortSongNames[i];
+        const auto& song = s->aShortArgvs[i];
+        if (!acceptedFormat(song)) continue;
 
         utils::fill(VecData(&aSongToUpper), L'\0', VecSize(&aSongToUpper));
         mbstowcs(VecData(&aSongToUpper), song.pData, song.size);
@@ -87,4 +109,13 @@ PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pBuff, u32 size)
         if (wcsstr(VecData(&aSongToUpper), aUpperRight.pData) != nullptr)
             VecPush(&s->aSongIdxs, s->pAlloc, u16(i));
     }
+}
+
+void
+PlayerSelectFocused(Player* s)
+{
+    s->selected = s->aSongIdxs[s->focused];
+    LOG_NOTIFY("selected: {}\n", app::g_aArgs[s->selected]);
+
+    audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
 }

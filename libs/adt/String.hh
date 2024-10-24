@@ -98,7 +98,7 @@ StringEndsWith(String l, String r)
     if (l.size < r.size)
         return false;
 
-    for (int i = r.size - 1, j = l.size - 1; i >= 0; i--, j--)
+    for (int i = r.size - 1, j = l.size - 1; i >= 0; --i, --j)
         if (r[i] != l[j])
             return false;
 

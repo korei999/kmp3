@@ -16,6 +16,7 @@ void PlayerSetDefaultIdxs(Player* s);
 void PlayerFocusLast(Player* s);
 void PlayerFocusSelected(Player* s);
 void PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pWBuff, u32 size);
+void PlayerSelectFocused(Player* s);
 
 struct Player
 {
@@ -35,7 +36,7 @@ struct Player
     } bottomBar {};
     u8 statusAndInfoHeight {};
     f64 statusToInfoWidthRatio {};
-    VecBase<String> aShortSongNames {};
+    VecBase<String> aShortArgvs {};
     VecBase<u16> aSongIdxs {};
     long focused {};
     long selected  {};
@@ -43,5 +44,5 @@ struct Player
 
     Player() = delete;
     Player(Allocator* p, int nArgs, [[maybe_unused]] char** ppArgs)
-        : pAlloc(p), aShortSongNames(p, nArgs), aSongIdxs(p, nArgs) {}
+        : pAlloc(p), aShortArgvs(p, nArgs), aSongIdxs(p, nArgs) {}
 };

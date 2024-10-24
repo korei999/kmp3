@@ -3,6 +3,7 @@
 #include "logs.hh"
 #include "adt/utils.hh"
 #include "app.hh"
+#include "adt/guard.hh"
 
 #include <cmath>
 
@@ -33,6 +34,45 @@ const pw_stream_events Mixer::s_streamEvents {
     .trigger_done {},
 };
 
+static f32 s_aPwBuff[audio::CHUNK_SIZE] {}; /* big */
+
+static u32
+formatByteSize(enum spa_audio_format eFormat)
+{
+    switch (eFormat)
+    {
+        default: return 1;
+
+        case SPA_AUDIO_FORMAT_S16_LE:
+        case SPA_AUDIO_FORMAT_S16_BE:
+        case SPA_AUDIO_FORMAT_U16_LE:
+        case SPA_AUDIO_FORMAT_U16_BE:
+                 return 2;
+
+        case SPA_AUDIO_FORMAT_S24_LE:
+        case SPA_AUDIO_FORMAT_S24_BE:
+        case SPA_AUDIO_FORMAT_U24_LE:
+        case SPA_AUDIO_FORMAT_U24_BE:
+                 return 3;
+
+        case SPA_AUDIO_FORMAT_S24_32_LE:
+        case SPA_AUDIO_FORMAT_S24_32_BE:
+        case SPA_AUDIO_FORMAT_U24_32_LE:
+        case SPA_AUDIO_FORMAT_U24_32_BE:
+        case SPA_AUDIO_FORMAT_S32_LE:
+        case SPA_AUDIO_FORMAT_S32_BE:
+        case SPA_AUDIO_FORMAT_U32_LE:
+        case SPA_AUDIO_FORMAT_U32_BE:
+        case SPA_AUDIO_FORMAT_F32_LE:
+        case SPA_AUDIO_FORMAT_F32_BE:
+                 return 4;
+
+        case SPA_AUDIO_FORMAT_F64_LE:
+        case SPA_AUDIO_FORMAT_F64_BE:
+                 return 8;
+    };
+}
+
 void
 MixerInit(Mixer* s)
 {
@@ -42,9 +82,10 @@ MixerInit(Mixer* s)
 
     s->sampleRate = 48000;
     s->channels = 2;
-    s->eformat = SPA_AUDIO_FORMAT_S16_LE;
+    s->eformat = SPA_AUDIO_FORMAT_F32;
 
     mtx_init(&s->mtxAdd, mtx_plain);
+    mtx_init(&s->mtxDecoder, mtx_plain);
 
     struct Args
     {
@@ -74,6 +115,7 @@ void
 MixerDestroy(Mixer* s)
 {
     mtx_destroy(&s->mtxAdd);
+    mtx_destroy(&s->mtxDecoder);
     VecDestroy(&s->aTracks);
     VecDestroy(&s->aBackgroundTracks);
 }
@@ -81,23 +123,49 @@ MixerDestroy(Mixer* s)
 void
 MixerAdd(Mixer* s, audio::Track t)
 {
-    mtx_lock(&s->mtxAdd);
+    guard::Mtx lock(&s->mtxAdd);
 
     if (VecSize(&s->aTracks) < audio::MAX_TRACK_COUNT) VecPush(&s->aTracks, t);
     else LOG_WARN("MAX_TRACK_COUNT({}) reached, ignoring track push\n", audio::MAX_TRACK_COUNT);
-
-    mtx_unlock(&s->mtxAdd);
 }
 
 void
 MixerAddBackground(Mixer* s, audio::Track t)
 {
-    mtx_lock(&s->mtxAdd);
+    guard::Mtx lock(&s->mtxAdd);
 
     if (VecSize(&s->aTracks) < audio::MAX_TRACK_COUNT) VecPush(&s->aBackgroundTracks, t);
     else LOG_WARN("MAX_TRACK_COUNT({}) reached, ignoring track push\n", audio::MAX_TRACK_COUNT);
+}
 
-    mtx_unlock(&s->mtxAdd);
+void
+MixerPlay(Mixer* s, String sPath)
+{
+    guard::Mtx lock(&s->mtxAdd);
+    guard::Mtx lockDec(&s->mtxDecoder);
+
+    if (!s->pDecoder)
+    {
+        s->pDecoder = ffmpeg::DecoderAlloc(app::g_pPlayer->pAlloc);
+        if (!s->pDecoder)
+            LOG_FATAL("DecoderAlloc\n");
+
+        s->bPlaying = false;
+    }
+
+    if (s->bPlaying)
+    {
+        LOG_NOTIFY("Closing Decoder\n");
+        s->bPlaying = false;
+        utils::fill(s_aPwBuff, 0.0f, utils::size(s_aPwBuff));
+        ffmpeg::DecoredClose(s->pDecoder);
+    }
+
+    ffmpeg::ERROR err {};
+    if ((err = ffmpeg::DecoderOpen(s->pDecoder, sPath)) != ffmpeg::ERROR::OK)
+        LOG_FATAL("DecoderOpen: '{}'\n", ffmpeg::mapERRORStrings[err]);
+
+    s->bPlaying = true;
 }
 
 static void
@@ -113,7 +181,7 @@ MixerRunThread(Mixer* s, int argc, char** argv)
 
     s->pStream = pw_stream_new_simple(
         pw_main_loop_get_loop(s->pLoop),
-        "BreakoutAudioSource",
+        "kmp3AudioSource",
         pw_properties_new(
             PW_KEY_MEDIA_TYPE, "Audio",
             PW_KEY_MEDIA_CATEGORY, "Playback",
@@ -152,6 +220,14 @@ MixerRunThread(Mixer* s, int argc, char** argv)
 }
 
 static void
+writeFrames2(Mixer* s, void* pBuff, u32 nFrames)
+{
+    for (u32 i = 0; i < nFrames; i++)
+    {
+    }
+}
+
+static void
 writeFrames(Mixer* s, void* pBuff, u32 nFrames)
 {
     __m128i_u* pSimdDest = (__m128i_u*)pBuff;
@@ -167,7 +243,7 @@ writeFrames(Mixer* s, void* pBuff, u32 nFrames)
 
             if (t.pcmPos + 8 <= t.pcmSize)
             {
-                auto what = _mm_set_epi16(
+                auto pack = _mm_set_epi16(
                     t.pData[t.pcmPos + 7] * vol,
                     t.pData[t.pcmPos + 6] * vol,
                     t.pData[t.pcmPos + 5] * vol,
@@ -178,7 +254,7 @@ writeFrames(Mixer* s, void* pBuff, u32 nFrames)
                     t.pData[t.pcmPos + 0] * vol
                 );
 
-                packed8Samples = _mm_add_epi16(packed8Samples, what);
+                packed8Samples = _mm_add_epi16(packed8Samples, pack);
 
                 t.pcmPos += 8;
             }
@@ -198,7 +274,7 @@ writeFrames(Mixer* s, void* pBuff, u32 nFrames)
 
             if (t.pcmPos + 8 <= t.pcmSize)
             {
-                auto what = _mm_set_epi16(
+                auto pack = _mm_set_epi16(
                     t.pData[t.pcmPos + 7] * vol,
                     t.pData[t.pcmPos + 6] * vol,
                     t.pData[t.pcmPos + 5] * vol,
@@ -209,7 +285,7 @@ writeFrames(Mixer* s, void* pBuff, u32 nFrames)
                     t.pData[t.pcmPos + 0] * vol
                 );
 
-                packed8Samples = _mm_add_epi16(packed8Samples, what);
+                packed8Samples = _mm_add_epi16(packed8Samples, pack);
 
                 t.pcmPos += 8;
             }
@@ -221,10 +297,9 @@ writeFrames(Mixer* s, void* pBuff, u32 nFrames)
                 }
                 else
                 {
-                    mtx_lock(&s->mtxAdd);
+                    guard::Mtx lock(&s->mtxAdd);
                     VecPopAsLast(&s->aTracks, i);
                     --i;
-                    mtx_unlock(&s->mtxAdd);
                 }
             }
         }
@@ -240,37 +315,61 @@ onProcess(void* data)
 {
     auto* s = (Mixer*)data;
 
-    pw_buffer* b = pw_stream_dequeue_buffer(s->pStream);
-    if (!b)
+    pw_buffer* pPwBuffer = pw_stream_dequeue_buffer(s->pStream);
+    if (!pPwBuffer)
     {
         pw_log_warn("out of buffers: %m");
         return;
     }
 
-    auto pBuffData = b->buffer->datas[0];
-    s16* pDest = (s16*)pBuffData.data;
+    auto pBuffData = pPwBuffer->buffer->datas[0];
+    auto* pDest = (f32*)pBuffData.data;
 
     if (!pDest)
     {
-        LOG_WARN("dst == nullptr\n");
+        LOG_WARN("pDest == nullptr\n");
         return;
     }
 
-    u32 stride = sizeof(s16) * s->channels;
+    u32 stride = formatByteSize(s->eformat) * s->channels;
     u32 nFrames = pBuffData.maxsize / stride;
-    if (b->requested) nFrames = SPA_MIN(b->requested, (u64)nFrames);
+    if (pPwBuffer->requested) nFrames = SPA_MIN(pPwBuffer->requested, (u64)nFrames);
 
     if (nFrames > 1024*4) nFrames = 1024*4; /* limit to arbitrary number */
 
     s->lastNFrames = nFrames;
 
-    writeFrames(s, pDest, nFrames);
+    {
+        guard::Mtx lock(&s->mtxDecoder);
+
+        if (s->bPlaying && s->pDecoder)
+            ffmpeg::DecoderReadFrames(s->pDecoder, s_aPwBuff, nFrames);
+    }
+
+    /*LOG("HELLO\n");*/
+
+    /*writeFrames(s, pDest, nFrames);*/
+
+    int chunkPos = 0;
+    static int kek = 0;
+    for (u32 i = 0; i < nFrames; i++)
+    {
+        for (u32 j = 0; j < 2; j++)
+        {
+            /* modify each sample here */
+            /*f32 val = (rand() % 100000) / 100000.0f;*/
+            f32 val = s_aPwBuff[chunkPos];
+
+            *pDest++ = val;
+            chunkPos++;
+        }
+    }
 
     pBuffData.chunk->offset = 0;
     pBuffData.chunk->stride = stride;
     pBuffData.chunk->size = nFrames * stride;
 
-    pw_stream_queue_buffer(s->pStream, b);
+    pw_stream_queue_buffer(s->pStream, pPwBuffer);
 
     if (!app::g_bRunning) pw_main_loop_quit(s->pLoop);
     /* set bRunning for the mixer outside */
@@ -279,9 +378,11 @@ onProcess(void* data)
 [[maybe_unused]] static bool
 MixerEmpty(Mixer* s)
 {
-    mtx_lock(&s->mtxAdd);
-    bool r = VecSize(&s->aTracks) > 0;
-    mtx_unlock(&s->mtxAdd);
+    bool r;
+    {
+        guard::Mtx lock(&s->mtxAdd);
+        r = VecSize(&s->aTracks) > 0;
+    }
 
     return r;
 }

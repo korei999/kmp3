@@ -2,7 +2,6 @@
 
 #include "adt/Arena.hh"
 #include "adt/defer.hh"
-#include "adt/guard.hh"
 #include "app.hh"
 #include "platform/Termbox.hh"
 

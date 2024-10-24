@@ -1,11 +1,10 @@
 #include "ffmpeg.hh"
 
 #include "adt/Arena.hh"
-#include "adt/String.hh"
 #include "adt/defer.hh"
 #include "adt/types.hh"
-
-using namespace adt;
+#include "adt/utils.hh"
+#include "logs.hh"
 
 extern "C"
 {
@@ -19,13 +18,78 @@ extern "C"
 namespace ffmpeg
 {
 
-static FILE* s_outFile;
+struct Decoder
+{
+    String path {};
+    AVFormatContext* pFormatCtx {};
+    AVCodecContext* pCodecCtx {};
+    AVFrame* pFrame {};
+    AVPacket* pPacket {};
+    int audioStreamIndex {};
+    u32 buffPos {};
+};
 
-/**
- * Print an error string describing the errorCode to stderr.
- */
+struct Buffer
+{
+    f32* pBuff {};
+    u32 buffSize {};
+    u32 idx {};
+};
+
+static inline bool
+BufferPush(Buffer* s, f32 x)
+{
+    if (s->idx < s->buffSize)
+    {
+        /*LOG_WARN("PUSH: {}\n", x);*/
+        s->pBuff[s->idx++] = x;
+        return true;
+    }
+
+    return false;
+}
+
+static inline bool
+BufferCopy(Buffer* s, void* pData, u32 memSize, u32 nMembers)
+{
+    /*LOG_WARN("COPY\n");*/
+    if ((s->buffSize - s->idx) * sizeof(*s->pBuff) < memSize*nMembers)
+    {
+        s->idx += (memSize*nMembers) / sizeof(*s->pBuff);
+        memcpy(s->pBuff, pData, memSize*nMembers);
+        return true;
+    }
+
+    return false;
+}
+
+Decoder*
+DecoderAlloc(Allocator* pAlloc)
+{
+    Decoder* s = (Decoder*)alloc(pAlloc, 1, sizeof(Decoder));
+    if (!s) return nullptr;
+
+    *s = {};
+    return s;
+}
+
+void
+DecoredClose(Decoder* s)
+{
+    /* TODO: cleanup... */
+
+    if (s->pFormatCtx) avformat_close_input(&s->pFormatCtx);
+    if (s->pCodecCtx) avcodec_free_context(&s->pCodecCtx);
+    if (s->pFrame) av_frame_free(&s->pFrame);
+    if (s->pPacket) av_packet_free(&s->pPacket);
+
+    *s = {};
+}
+
+/*static FILE* s_outFile;*/
+
 int
-printError(const char* prefix, int errorCode)
+printError(const char* pPrefix, int errorCode)
 {
     if (errorCode == 0)
     {
@@ -33,14 +97,12 @@ printError(const char* prefix, int errorCode)
     }
     else
     {
-        const size_t bufsize = 64;
-        char buf[bufsize];
+        char buf[64] {};
 
-        if (av_strerror(errorCode, buf, bufsize) != 0)
-        {
+        if (av_strerror(errorCode, buf, utils::size(buf)) != 0)
             strcpy(buf, "UNKNOWN_ERROR");
-        }
-        fprintf(stderr, "%s (%d: %s)\n", prefix, errorCode, buf);
+
+        CERR("{} ({}: {})\n", pPrefix, errorCode, buf);
 
         return errorCode;
     }
@@ -50,39 +112,39 @@ printError(const char* prefix, int errorCode)
  * Extract a single sample and convert to f32.
  */
 f32
-getSample(const AVCodecContext* codecCtx, u8* buffer, int sampleIndex)
+getSample(const AVCodecContext* pCodecCtx, u8* pBuff, int sampleIndex)
 {
     s64 val = 0;
     f32 ret = 0;
-    int sampleSize = av_get_bytes_per_sample(codecCtx->sample_fmt);
+    int sampleSize = av_get_bytes_per_sample(pCodecCtx->sample_fmt);
     switch (sampleSize)
     {
         case 1:
-            // 8bit samples are always unsigned
-            val = ((u8*)buffer)[sampleIndex];
-            // make signed
+            /* 8bit samples are always unsigned */
+            val = ((u8*)pBuff)[sampleIndex];
+            /* make signed */
             val -= 127;
             break;
 
         case 2:
-            val = ((s16*)buffer)[sampleIndex];
+            val = ((s16*)pBuff)[sampleIndex];
             break;
 
         case 4:
-            val = ((s32*)buffer)[sampleIndex];
+            val = ((s32*)pBuff)[sampleIndex];
             break;
 
         case 8:
-            val = ((s64*)buffer)[sampleIndex];
+            val = ((s64*)pBuff)[sampleIndex];
             break;
 
         default:
-            fprintf(stderr, "Invalid sample size %d.\n", sampleSize);
+            LOG_WARN("Invalid sample size {}.\n", sampleSize);
             return 0;
     }
 
     // Check which data type is in the sample.
-    switch (codecCtx->sample_fmt)
+    switch (pCodecCtx->sample_fmt)
     {
         case AV_SAMPLE_FMT_U8:
         case AV_SAMPLE_FMT_S16:
@@ -90,24 +152,24 @@ getSample(const AVCodecContext* codecCtx, u8* buffer, int sampleIndex)
         case AV_SAMPLE_FMT_U8P:
         case AV_SAMPLE_FMT_S16P:
         case AV_SAMPLE_FMT_S32P:
-            // integer => Scale to [-1, 1] and convert to f32.
+            /* integer => Scale to [-1, 1] and convert to f32. */
             ret = f32(val) / f32((1 << (sampleSize*8 - 1)) - 1);
             break;
 
         case AV_SAMPLE_FMT_FLT:
         case AV_SAMPLE_FMT_FLTP:
-            // f32 => reinterpret
+            /* f32 => reinterpret */
             ret = *(f32*)&val;
             break;
 
         case AV_SAMPLE_FMT_DBL:
         case AV_SAMPLE_FMT_DBLP:
-            // double => reinterpret and then static cast down
+            /* double => reinterpret and then static cast down */
             ret = *(f64*)&val;
             break;
 
         default:
-            fprintf(stderr, "Invalid sample format %s.\n", av_get_sample_fmt_name(codecCtx->sample_fmt));
+            LOG_WARN("Invalid sample format {}.\n", av_get_sample_fmt_name(pCodecCtx->sample_fmt));
             return 0;
     }
 
@@ -117,19 +179,19 @@ getSample(const AVCodecContext* codecCtx, u8* buffer, int sampleIndex)
 /**
  * Write the frame to an output file.
  */
-void
-handleFrame(const AVCodecContext* codecCtx, const AVFrame* frame)
+bool
+handleFrame(const AVCodecContext* pCodecCtx, const AVFrame* pFrame, Buffer* pBW)
 {
-    if (av_sample_fmt_is_planar(codecCtx->sample_fmt) == 1)
+    if (av_sample_fmt_is_planar(pCodecCtx->sample_fmt) == 1)
     {
         // This means that the data of each channel is in its own buffer.
         // => frame->extended_data[i] contains data for the i-th channel.
-        for (int s = 0; s < frame->nb_samples; ++s)
+        for (int s = 0; s < pFrame->nb_samples; ++s)
         {
-            for (int c = 0; c < codecCtx->ch_layout.nb_channels; ++c)
+            for (int c = 0; c < pCodecCtx->ch_layout.nb_channels; ++c)
             {
-                f32 sample = getSample(codecCtx, frame->extended_data[c], s);
-                fwrite(&sample, sizeof(f32), 1, s_outFile);
+                f32 sample = getSample(pCodecCtx, pFrame->extended_data[c], s);
+                if (!BufferPush(pBW, sample)) return false;
             }
         }
     }
@@ -139,35 +201,38 @@ handleFrame(const AVCodecContext* codecCtx, const AVFrame* frame)
         // => frame->extended_data[0] contains data of all channels.
         if (RAW_OUT_ON_PLANAR)
         {
-            fwrite(frame->extended_data[0], 1, frame->linesize[0], s_outFile);
+            /*fwrite(pFrame->extended_data[0], 1, pFrame->linesize[0], s_outFile);*/
+            if (!BufferCopy(pBW, pFrame->extended_data[0], 1, pFrame->linesize[0])) return false;
         }
         else
         {
-            for (int s = 0; s < frame->nb_samples; ++s)
+            for (int s = 0; s < pFrame->nb_samples; ++s)
             {
-                for (int c = 0; c < codecCtx->ch_layout.nb_channels; ++c)
+                for (int c = 0; c < pCodecCtx->ch_layout.nb_channels; ++c)
                 {
-                    f32 sample =
-                        getSample(codecCtx, frame->extended_data[0], s * codecCtx->ch_layout.nb_channels + c);
-                    fwrite(&sample, sizeof(f32), 1, s_outFile);
+                    f32 sample = getSample(pCodecCtx, pFrame->extended_data[0], s * pCodecCtx->ch_layout.nb_channels + c);
+                    /*fwrite(&sample, sizeof(f32), 1, s_outFile);*/
+                    if (!BufferPush(pBW, sample)) return false;
                 }
             }
         }
     }
+
+    return true;
 }
 
 /**
  * Find the first audio stream and returns its index. If there is no audio stream returns -1.
  */
 int
-findAudioStream(const AVFormatContext* formatCtx)
+findAudioStream(const AVFormatContext* pFormatCtx)
 {
     int audioStreamIndex = -1;
-    for (size_t i = 0; i < formatCtx->nb_streams; ++i)
+    for (size_t i = 0; i < pFormatCtx->nb_streams; ++i)
     {
         // Use the first audio stream we can find.
         // NOTE: There may be more than one, depending on the file.
-        if (formatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+        if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
         {
             audioStreamIndex = i;
             break;
@@ -180,92 +245,210 @@ findAudioStream(const AVFormatContext* formatCtx)
  * Print information about the input file and the used codec.
  */
 void
-printStreamInformation(const AVCodec* codec, const AVCodecContext* codecCtx, int audioStreamIndex)
+printStreamInformation(const AVCodec* pCodec, const AVCodecContext* pCodecCtx, int audioStreamIndex)
 {
-    fprintf(stderr, "Codec: %s\n", codec->long_name);
-    if (codec->sample_fmts != nullptr)
+#ifndef NDEBUG
+
+    LOG("Codec: {}\n", pCodec->long_name);
+    if (pCodec->sample_fmts != nullptr)
     {
-        fprintf(stderr, "Supported sample formats: ");
-        for (int i = 0; codec->sample_fmts[i] != -1; ++i)
+        LOG("Supported sample formats: ");
+        for (int i = 0; pCodec->sample_fmts[i] != -1; ++i)
         {
-            fprintf(stderr, "%s", av_get_sample_fmt_name(codec->sample_fmts[i]));
-            if (codec->sample_fmts[i + 1] != -1)
-            {
-                fprintf(stderr, ", ");
-            }
+            CERR("{}", av_get_sample_fmt_name(pCodec->sample_fmts[i]));
+            if (pCodec->sample_fmts[i + 1] != -1)
+                CERR(", ");
         }
-        fprintf(stderr, "\n");
+        CERR("\n");
     }
-    fprintf(stderr, "---------\n");
-    fprintf(stderr, "Stream:        %7d\n", audioStreamIndex);
-    fprintf(stderr, "Sample Format: %7s\n", av_get_sample_fmt_name(codecCtx->sample_fmt));
-    fprintf(stderr, "Sample Rate:   %7d\n", codecCtx->sample_rate);
-    fprintf(stderr, "Sample Size:   %7d\n", av_get_bytes_per_sample(codecCtx->sample_fmt));
-    fprintf(stderr, "Channels:      %7d\n", codecCtx->ch_layout.nb_channels);
-    fprintf(stderr, "Planar:        %7d\n", av_sample_fmt_is_planar(codecCtx->sample_fmt));
-    fprintf(
-        stderr, "Float Output:  %7s\n",
-        !RAW_OUT_ON_PLANAR || av_sample_fmt_is_planar(codecCtx->sample_fmt) ? "yes" : "no"
+    CERR("---------\n");
+    CERR("Stream:        {}\n", audioStreamIndex);
+    CERR("Sample Format: {}\n", av_get_sample_fmt_name(pCodecCtx->sample_fmt));
+    CERR("Sample Rate:   {}\n", pCodecCtx->sample_rate);
+    CERR("Sample Size:   {}\n", av_get_bytes_per_sample(pCodecCtx->sample_fmt));
+    CERR("Channels:      {}\n", pCodecCtx->ch_layout.nb_channels);
+    CERR("Planar:        {}\n", av_sample_fmt_is_planar(pCodecCtx->sample_fmt));
+    CERR(
+        "Float Output:  {}\n",
+        !RAW_OUT_ON_PLANAR || av_sample_fmt_is_planar(pCodecCtx->sample_fmt) ? "yes" : "no"
     );
+
+#endif
 }
 
 /**
  * Receive as many frames as available and handle them.
  */
 int
-receiveAndHandle(AVCodecContext* codecCtx, AVFrame* frame)
+receiveAndHandle(AVCodecContext* pCodecCtx, AVFrame* pFrame, Buffer* pBW)
 {
     int err = 0;
-    // Read the packets from the decoder.
-    // NOTE: Each packet may generate more than one frame, depending on the codec.
-    while ((err = avcodec_receive_frame(codecCtx, frame)) == 0)
+    /* Read the packets from the decoder. */
+    /* NOTE: Each packet may generate more than one frame, depending on the codec. */
+    while ((err = avcodec_receive_frame(pCodecCtx, pFrame)) == 0)
     {
-        // Let's handle the frame in a function.
-        handleFrame(codecCtx, frame);
-        // Free any buffers and reset the fields to default values.
-        av_frame_unref(frame);
+        /* Free any buffers and reset the fields to default values. */
+        defer( av_frame_unref(pFrame) );
+
+        if (!handleFrame(pCodecCtx, pFrame, pBW)) return ERROR::DONE;
     }
     return err;
 }
 
 void
-drainDecoder(AVCodecContext* codecCtx, AVFrame* frame)
+drainDecoder(AVCodecContext* pCodecCtx, AVFrame* pFrame, Buffer* pBW)
 {
     int err = 0;
-    // Some codecs may buffer frames. Sending nullptr activates drain-mode.
-    if ((err = avcodec_send_packet(codecCtx, nullptr)) == 0)
+    /* Some codecs may buffer frames. Sending nullptr activates drain-mode. */
+    if ((err = avcodec_send_packet(pCodecCtx, nullptr)) == 0)
     {
-        // Read the remaining packets from the decoder.
-        err = receiveAndHandle(codecCtx, frame);
+        /* Read the remaining packets from the decoder. */
+        err = receiveAndHandle(pCodecCtx, pFrame, pBW);
         if (err != AVERROR(EAGAIN) && err != AVERROR_EOF)
         {
-            // Neither EAGAIN nor EOF => Something went wrong.
+            /* Neither EAGAIN nor EOF => Something went wrong. */
             printError("Receive error.", err);
         }
     }
     else
     {
-        // Something went wrong.
+        /* Something went wrong. */
         printError("Send error.", err);
     }
 }
 
-bool
-openFile(String path)
+ERROR
+DecoderOpen(Decoder* s, String sPath)
 {
     Arena arena(SIZE_1K);
     defer( ArenaFreeAll(&arena) );
 
-    String sPath = StringAlloc(&arena.base, path); /* with null char */
+    String sPathNullTerm = StringAlloc(&arena.base, sPath); /* with null char */
 
     int err = 0;
-    /*AVFormatContext* formatCtx = avformat_open_input(&formatCtx, filename, nullptr, 0);*/
+    err = avformat_open_input(&s->pFormatCtx, sPathNullTerm.pData, {}, {});
+    if (err != 0) return ERROR::FILE_OPENING;
 
-    /*if ((err = avformat_open_input(&formatCtx, filename, nullptr, 0)) != 0)*/
-    /*    return printError("Error opening file.", err);*/
+    /* In case the file had no header, read some frames and find out which format and codecs are used. */
+    /* This does not consume any data. Any read packets are buffered for later use. */
+    avformat_find_stream_info(s->pFormatCtx, nullptr);
 
+    /* Try to find an audio stream. */
+    s->audioStreamIndex = findAudioStream(s->pFormatCtx);
+    if (s->audioStreamIndex == -1)
+    {
+        avformat_close_input(&s->pFormatCtx);
+        return ERROR::AUDIO_STREAM_NOT_FOUND;
+    }
 
-    return true;
+    /* Find the correct decoder for the codec. */
+    const AVCodec* pCodec = avcodec_find_decoder(s->pFormatCtx->streams[s->audioStreamIndex]->codecpar->codec_id);
+    if (!pCodec)
+    {
+        avformat_close_input(&s->pFormatCtx);
+        return ERROR::DECODER_NOT_FOUND;
+    }
+
+    /* Initialize codec context for the decoder. */
+    s->pCodecCtx = avcodec_alloc_context3(pCodec);
+    if (!s->pCodecCtx)
+    {
+        avformat_close_input(&s->pFormatCtx);
+        return ERROR::DECODING_CONTEXT_ALLOCATION;
+    }
+
+    /* Fill the codecCtx with the parameters of the codec used in the read file. */
+    if ((err = avcodec_parameters_to_context(s->pCodecCtx, s->pFormatCtx->streams[s->audioStreamIndex]->codecpar)) != 0)
+    {
+        avformat_close_input(&s->pFormatCtx);
+        avcodec_free_context(&s->pCodecCtx);
+        return ERROR::CODEC_CONTEXT_PARAMETERS;
+    }
+
+    /* Explicitly request non planar data. */
+    s->pCodecCtx->request_sample_fmt = av_get_alt_sample_fmt(s->pCodecCtx->sample_fmt, 0);
+
+    /* Initialize the decoder. */
+    if ((err = avcodec_open2(s->pCodecCtx, pCodec, nullptr)) != 0)
+    {
+        avformat_close_input(&s->pFormatCtx);
+        avcodec_free_context(&s->pCodecCtx);
+        return ERROR::INITIALIZING_DECODER;
+    }
+
+    printStreamInformation(pCodec, s->pCodecCtx, s->audioStreamIndex);
+
+    s->pFrame = av_frame_alloc();
+    if (!s->pFrame)
+    {
+        avformat_close_input(&s->pFormatCtx);
+        avcodec_free_context(&s->pCodecCtx);
+        return ERROR::AV_FRAME_ALLOC;
+    }
+
+    s->pPacket = av_packet_alloc();
+
+    return ERROR::OK;
+}
+
+void
+DecoderReadFrames(Decoder* s, f32* pBuff, u32 buffSize)
+{
+    Buffer bw {pBuff, buffSize, 0};
+
+    /*LOG_NOTIFY("Decoding...\n");*/
+
+    int err = 0;
+    while ((err = av_read_frame(s->pFormatCtx, s->pPacket)) != AVERROR_EOF)
+    {
+        if (err != 0)
+        {
+            /* Something went wrong. */ 
+            printError("Read error.", err);
+            break; /* Don't return, so we can clean up nicely. */
+        }
+        /* Does the packet belong to the correct stream? */
+        if (s->pPacket->stream_index != s->audioStreamIndex)
+        {
+            /* Free the buffers used by the frame and reset all fields. */
+            av_packet_unref(s->pPacket);
+            continue;
+        }
+        /* We have a valid packet => send it to the decoder. */
+        if ((err = avcodec_send_packet(s->pCodecCtx, s->pPacket)) == 0)
+        {
+            /* The packet was sent successfully. We don't need it anymore. */
+            /* => Free the buffers used by the frame and reset all fields. */
+            av_packet_unref(s->pPacket);
+        }
+        else
+        {
+            /* Something went wrong. */
+            /* EAGAIN is technically no error here but if it occurs we would need to buffer */
+            /* the packet and send it again after receiving more frames. Thus we handle it as an error here. */
+            printError("Send error.", err);
+            break; /* Don't return, so we can clean up nicely. */
+        }
+
+        /* Receive and handle frames. */
+        /* EAGAIN means we need to send before receiving again. So thats not an error. */
+        // if ((err = receiveAndHandle(s->pCodecCtx, s->pFrame, &bw)) != AVERROR(EAGAIN))
+        // {
+        //     /* Not EAGAIN => Something went wrong. */
+        //     printError("Receive error.", err);
+        //     break; /* Don't return, so we can clean up nicely. */
+        // }
+
+        /* Read the packets from the decoder. */
+        /* NOTE: Each packet may generate more than one frame, depending on the codec. */
+        while ((err = avcodec_receive_frame(s->pCodecCtx, s->pFrame)) == 0 && bw.idx < bw.buffSize)
+        {
+            /* Free any buffers and reset the fields to default values. */
+            defer( av_frame_unref(s->pFrame) );
+
+            if (!handleFrame(s->pCodecCtx, s->pFrame, &bw)) break;
+        }
+    }
 }
 
 int
@@ -285,40 +468,37 @@ test(int argc, char* argv[])
 
     strcpy(outFilename, filename);
     strcpy(outFilename + strlen(filename), ".raw");
-    s_outFile = fopen(outFilename, "w+");
+    /*s_outFile = fopen(outFilename, "w+");*/
 
-    if (s_outFile == nullptr)
-        fprintf(stderr, "Unable to open output file \"%s\".\n", outFilename);
+    /*if (s_outFile == nullptr)*/
+    /*    fprintf(stderr, "Unable to open output file \"%s\".\n", outFilename);*/
 
-    defer( fclose(s_outFile) );
-
-    // Initialize the libavformat. This registers all muxers, demuxers and protocols.
-    /*av_register_all();*/
+    /*defer( fclose(s_outFile) );*/
 
     int err = 0;
-    AVFormatContext* formatCtx = nullptr;
+    AVFormatContext* pFormatCtx = nullptr;
     // Open the file and read the header.
-    if ((err = avformat_open_input(&formatCtx, filename, nullptr, 0)) != 0)
+    if ((err = avformat_open_input(&pFormatCtx, filename, nullptr, 0)) != 0)
         return printError("Error opening file.", err);
 
-    defer( avformat_close_input(&formatCtx) );
+    defer( avformat_close_input(&pFormatCtx) );
 
     // In case the file had no header, read some frames and find out which format and codecs are used.
     // This does not consume any data. Any read packets are buffered for later use.
-    avformat_find_stream_info(formatCtx, nullptr);
+    avformat_find_stream_info(pFormatCtx, nullptr);
 
     // Try to find an audio stream.
-    int audioStreamIndex = findAudioStream(formatCtx);
+    int audioStreamIndex = findAudioStream(pFormatCtx);
     if (audioStreamIndex == -1)
     {
         // No audio stream was found.
-        fprintf(stderr, "None of the available %d streams are audio streams.\n", formatCtx->nb_streams);
+        fprintf(stderr, "None of the available %d streams are audio streams.\n", pFormatCtx->nb_streams);
         return -1;
     }
 
     // Find the correct decoder for the codec.
-    const AVCodec* codec = avcodec_find_decoder(formatCtx->streams[audioStreamIndex]->codecpar->codec_id);
-    if (codec == nullptr)
+    const AVCodec* pCodec = avcodec_find_decoder(pFormatCtx->streams[audioStreamIndex]->codecpar->codec_id);
+    if (pCodec == nullptr)
     {
         // Decoder not found.
         fprintf(stderr, "Decoder not found. The codec is not supported.\n");
@@ -326,40 +506,42 @@ test(int argc, char* argv[])
     }
 
     // Initialize codec context for the decoder.
-    AVCodecContext* codecCtx = avcodec_alloc_context3(codec);
-    if (codecCtx == nullptr)
+    AVCodecContext* pCodecCtx = avcodec_alloc_context3(pCodec);
+    if (pCodecCtx == nullptr)
     {
         // Something went wrong. Cleaning up...
         fprintf(stderr, "Could not allocate a decoding context.\n");
         return -1;
     }
-    defer( avcodec_free_context(&codecCtx) );
+    defer( avcodec_free_context(&pCodecCtx) );
 
     // Fill the codecCtx with the parameters of the codec used in the read file.
-    if ((err = avcodec_parameters_to_context(codecCtx, formatCtx->streams[audioStreamIndex]->codecpar)) != 0)
+    if ((err = avcodec_parameters_to_context(pCodecCtx, pFormatCtx->streams[audioStreamIndex]->codecpar)) != 0)
     {
         // Something went wrong. Cleaning up...
         return printError("Error setting codec context parameters.", err);
     }
 
     // Explicitly request non planar data.
-    codecCtx->request_sample_fmt = av_get_alt_sample_fmt(codecCtx->sample_fmt, 0);
+    pCodecCtx->request_sample_fmt = av_get_alt_sample_fmt(pCodecCtx->sample_fmt, 0);
 
     // Initialize the decoder.
-    if ((err = avcodec_open2(codecCtx, codec, nullptr)) != 0)
+    if ((err = avcodec_open2(pCodecCtx, pCodec, nullptr)) != 0)
         return -1;
 
     // Print some intersting file information.
-    printStreamInformation(codec, codecCtx, audioStreamIndex);
+    printStreamInformation(pCodec, pCodecCtx, audioStreamIndex);
 
-    AVFrame* frame = av_frame_alloc();
-    if (frame == nullptr)
+    AVFrame* pFrame = av_frame_alloc();
+    if (pFrame == nullptr)
         return -1;
-    defer( av_frame_free(&frame) );
+    defer( av_frame_free(&pFrame) );
 
     // Prepare the packet.
-    AVPacket packet {};
-    while ((err = av_read_frame(formatCtx, &packet)) != AVERROR_EOF)
+    AVPacket* pPacket = av_packet_alloc();
+    defer( av_packet_free(&pPacket) );
+
+    while ((err = av_read_frame(pFormatCtx, pPacket)) != AVERROR_EOF)
     {
         if (err != 0)
         {
@@ -368,18 +550,18 @@ test(int argc, char* argv[])
             break; // Don't return, so we can clean up nicely.
         }
         // Does the packet belong to the correct stream?
-        if (packet.stream_index != audioStreamIndex)
+        if (pPacket->stream_index != audioStreamIndex)
         {
             // Free the buffers used by the frame and reset all fields.
-            av_packet_unref(&packet);
+            av_packet_unref(pPacket);
             continue;
         }
         // We have a valid packet => send it to the decoder.
-        if ((err = avcodec_send_packet(codecCtx, &packet)) == 0)
+        if ((err = avcodec_send_packet(pCodecCtx, pPacket)) == 0)
         {
             // The packet was sent successfully. We don't need it anymore.
             // => Free the buffers used by the frame and reset all fields.
-            av_packet_unref(&packet);
+            av_packet_unref(pPacket);
         }
         else
         {
@@ -392,16 +574,16 @@ test(int argc, char* argv[])
 
         // Receive and handle frames.
         // EAGAIN means we need to send before receiving again. So thats not an error.
-        if ((err = receiveAndHandle(codecCtx, frame)) != AVERROR(EAGAIN))
-        {
-            // Not EAGAIN => Something went wrong.
-            printError("Receive error.", err);
-            break; // Don't return, so we can clean up nicely.
-        }
+        // if ((err = receiveAndHandle(pCodecCtx, pFrame)) != AVERROR(EAGAIN))
+        // {
+        //     // Not EAGAIN => Something went wrong.
+        //     printError("Receive error.", err);
+        //     break; // Don't return, so we can clean up nicely.
+        // }
     }
 
     // Drain the decoder.
-    drainDecoder(codecCtx, frame);
+    // drainDecoder(pCodecCtx, pFrame);
 
     return 0;
 }

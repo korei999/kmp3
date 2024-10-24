@@ -45,7 +45,7 @@ add_executable(
     src/platform/pipewire/Mixer.cc
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
 
 # add_definitions("-DADT_FMTLIB_INCLUDED")
 # add_definitions("-DFMT_HEADER_ONLY")

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/types.hh"
+#include "adt/String.hh"
 
 using namespace adt;
 
@@ -22,6 +22,7 @@ struct MixerInterface
     void (*destroy)(Mixer*);
     void (*add)(Mixer*, Track);
     void (*addBackground)(Mixer*, Track);
+    void (*play)(Mixer*, String);
 };
 
 struct Track
@@ -36,7 +37,7 @@ struct Track
 
 struct Mixer
 {
-    const MixerInterface* pVTable;
+    const MixerInterface* pVTable {};
     bool bPaused = false;
     bool bMuted = false;
     bool bRunning = true;
@@ -47,6 +48,7 @@ ADT_NO_UB constexpr void MixerInit(Mixer* s) { s->pVTable->init(s); }
 ADT_NO_UB constexpr void MixerDestroy(Mixer* s) { s->pVTable->destroy(s); }
 ADT_NO_UB constexpr void MixerAdd(Mixer* s, Track t) { s->pVTable->add(s, t); }
 ADT_NO_UB constexpr void MixerAddBackground(Mixer* s, Track t) { s->pVTable->addBackground(s, t); }
+ADT_NO_UB constexpr void MixerPlay(Mixer* s, String sPath) { s->pVTable->play(s, sPath); }
 
 struct DummyMixer
 {
@@ -79,15 +81,22 @@ DummyMixerAddBackground([[maybe_unused]] DummyMixer* s, [[maybe_unused]] Track t
     //
 }
 
-inline const MixerInterface __DummyMixerVTable {
+constexpr void
+DummyMixerPlay([[maybe_unused]] DummyMixer* s, [[maybe_unused]] String sPath)
+{
+    //
+}
+
+inline const MixerInterface inl_DummyMixerVTable {
     .init = decltype(MixerInterface::init)(DummyMixerInit),
     .destroy = decltype(MixerInterface::destroy)(DummyMixerDestroy),
     .add = decltype(MixerInterface::add)(DummyMixerAdd),
-    .addBackground = decltype(MixerInterface::addBackground)(DummyMixerAddBackground)
+    .addBackground = decltype(MixerInterface::addBackground)(DummyMixerAddBackground),
+    .play = decltype(MixerInterface::play)(DummyMixerPlay),
 };
 
 constexpr
 DummyMixer::DummyMixer()
-    : base {&__DummyMixerVTable} {}
+    : base {&inl_DummyMixerVTable} {}
 
 } /* namespace audio */

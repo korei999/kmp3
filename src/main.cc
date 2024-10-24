@@ -15,7 +15,7 @@ int
 main(int argc, char** argv)
 {
     setlocale(LC_ALL, "");
-    Arena arena(SIZE_1M);
+    Arena arena(SIZE_1K * 8);
     defer( ArenaFreeAll(&arena) );
 
     Vec<String> aInput(&arena.base, argc);
@@ -61,7 +61,7 @@ main(int argc, char** argv)
     for (int i = 0; i < argc; ++i)
     {
         VecPush(
-            &player.aShortSongNames,
+            &player.aShortArgvs,
             player.pAlloc,
             file::getPathEnding(app::g_aArgs[i])
         );
@@ -81,6 +81,11 @@ main(int argc, char** argv)
     if (argc > 1)
     {
         app::g_bRunning = true;
+
+        /* reopen stdin to if pipe was used */
+        if (!freopen("/dev/tty", "r", stdin))
+            LOG_FATAL("freopen(\"/dev/tty\", \"r\", stdin)\n");
+
         frame::run();
     }
 }

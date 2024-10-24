@@ -55,10 +55,9 @@ min(const auto& l, const auto& r)
     return l < r ? l : r;
 }
 
-template<typename T>
 [[nodiscard]]
 constexpr u64
-size(const T& a)
+size(const auto& a)
 {
     return sizeof(a) / sizeof(a[0]);
 }
@@ -71,10 +70,9 @@ odd(const T& a)
     return a & 1;
 }
 
-template<typename T>
 [[nodiscard]]
 constexpr bool
-even(const T& a)
+even(const auto& a)
 {
     return !odd(a);
 }
