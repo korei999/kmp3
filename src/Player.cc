@@ -120,7 +120,7 @@ PlayerSelectFocused(Player* s)
     LOG_NOTIFY("selected: {}\n", sPath);
 
     ffmpeg::Decoder* pDec = ffmpeg::DecoderAlloc(app::g_pPlayer->pAlloc);
-    if (ffmpeg::openTEST(pDec, sPath) != ffmpeg::ERROR::OK)
+    if (ffmpeg::DecoderOpen(pDec, sPath) != ffmpeg::ERROR::OK)
         LOG_FATAL("DecoderOpen\n");
 
     audio::Track t {
@@ -128,4 +128,16 @@ PlayerSelectFocused(Player* s)
     };
 
     audio::MixerAdd(app::g_pMixer, t);
+}
+
+void
+PlayerPause(Player* s, bool bPause)
+{
+    audio::MixerPause(app::g_pMixer, bPause);
+}
+
+void
+PlayerTogglePause(Player* s)
+{
+    audio::MixerTogglePause(app::g_pMixer);
 }

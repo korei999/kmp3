@@ -21,6 +21,8 @@ void MixerDestroy(Mixer* s);
 void MixerAdd(Mixer* s, audio::Track t);
 void MixerAddBackground(Mixer* s, audio::Track t);
 void MixerPlay(Mixer* s, String sPath);
+void MixerPause(Mixer* s, bool bPause);
+void MixerTogglePause(Mixer* s);
 
 inline const audio::MixerInterface inl_mixerVTable {
     .init = decltype(audio::MixerInterface::init)(MixerInit),
@@ -28,6 +30,8 @@ inline const audio::MixerInterface inl_mixerVTable {
     .add = decltype(audio::MixerInterface::add)(MixerAdd),
     .addBackground = decltype(audio::MixerInterface::addBackground)(MixerAddBackground),
     .play = decltype(audio::MixerInterface::play)(MixerPlay),
+    .pause = decltype(audio::MixerInterface::pause)(MixerPause),
+    .togglePause = decltype(audio::MixerInterface::togglePause)(MixerTogglePause),
 };
 
 struct Mixer
@@ -69,5 +73,7 @@ inline void MixerDestroy(platform::pipewire::Mixer* s) { platform::pipewire::Mix
 inline void MixerAdd(platform::pipewire::Mixer* s, Track t) { platform::pipewire::MixerAdd(s, t); }
 inline void MixerAddBackground(platform::pipewire::Mixer* s, Track t) { platform::pipewire::MixerAddBackground(s, t); }
 inline void MixerPlay(platform::pipewire::Mixer* s, String sPath) { platform::pipewire::MixerPlay(s, sPath); }
+inline void MixerPause(platform::pipewire::Mixer* s, bool bPause) { platform::pipewire::MixerPause(s, bPause); }
+inline void MixerTogglePause(platform::pipewire::Mixer* s) { platform::pipewire::MixerTogglePause(s); }
 
 } /* namespace audio */

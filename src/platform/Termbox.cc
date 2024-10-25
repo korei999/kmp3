@@ -133,7 +133,7 @@ key(tb_event* pEv, Allocator* pAlloc)
     const auto& key = pEv->key;
     const auto& ch = pEv->ch;
 
-    LOG("k: {}, ch: '{}'\n", key, (wchar_t)ch);
+    /*LOG("k: {}, ch: '{}'\n", key, (wchar_t)ch);*/
 
     if (ch == 'q' || ch == L'й')
     {
@@ -159,6 +159,8 @@ key(tb_event* pEv, Allocator* pAlloc)
         subStringSearch(pAlloc);
     else if (ch == L'z' || ch == L'я')
         PlayerFocusSelected(&pl);
+    else if (ch == L' ')
+        PlayerTogglePause(&pl);
 
     fixFirstIdx();
 }

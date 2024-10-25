@@ -17,6 +17,8 @@ void PlayerFocusLast(Player* s);
 void PlayerFocusSelected(Player* s);
 void PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pWBuff, u32 size);
 void PlayerSelectFocused(Player* s);
+void PlayerPause(Player* s, bool bPause);
+void PlayerTogglePause(Player* s);
 
 struct Player
 {

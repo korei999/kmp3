@@ -40,10 +40,7 @@ struct Decoder;
 
 [[nodiscard]] Decoder* DecoderAlloc(Allocator* pAlloc);
 void DecoderClose(Decoder* s);
-// [[nodiscard]] ERROR DecoderOpen(Decoder* s, String path);
-// void DecoderReadFrames(Decoder* s, f32* pBuff, u32 buffSize);
-
-[[nodiscard]] ERROR openTEST(Decoder* s, String sPath);
-[[nodiscard]] ERROR writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, long* pSamplesWritten);
+[[nodiscard]] ERROR DecoderOpen(Decoder* s, String sPath);
+[[nodiscard]] ERROR DecoderWriteToBuffer(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, long* pSamplesWritten);
 
 } /* namespace ffmpeg */

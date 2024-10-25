@@ -221,60 +221,17 @@ MixerRunThread(Mixer* s, int argc, char** argv)
 }
 
 static void
-writeFrames2(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
+writeFrames(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
 {
     for (auto& t : s->aTracks)
     {
-        if (ffmpeg::writeBufferTEST(t.pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, pSamplesWritten) != ffmpeg::ERROR::OK)
-            LOG_WARN("writeBufferTEST\n");
-
-        break;
-    }
-}
-
-static void
-writeFrames(Mixer* s, void* pBuff, u32 nFrames)
-{
-    __m128i_u* pSimdDest = (__m128i_u*)pBuff;
-
-    for (u32 i = 0; i < nFrames / 4; i++)
-    {
-        __m128i packed8Samples {};
-
-        if (VecSize(&s->aBackgroundTracks) > 0)
+        auto err = ffmpeg::DecoderWriteToBuffer(t.pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, pSamplesWritten);
+        if (err == ffmpeg::ERROR::EOF_)
         {
-            auto& t = s->aBackgroundTracks[s->currentBackgroundTrackIdx];
-            f32 vol = std::pow(t.volume * audio::g_globalVolume, 3.0f);
-
-            if (t.pcmPos + 8 <= t.pcmSize)
-            {
-                auto pack = _mm_set_epi16(
-                    t.pData[t.pcmPos + 7] * vol,
-                    t.pData[t.pcmPos + 6] * vol,
-                    t.pData[t.pcmPos + 5] * vol,
-                    t.pData[t.pcmPos + 4] * vol,
-                    t.pData[t.pcmPos + 3] * vol,
-                    t.pData[t.pcmPos + 2] * vol,
-                    t.pData[t.pcmPos + 1] * vol,
-                    t.pData[t.pcmPos + 0] * vol
-                );
-
-                packed8Samples = _mm_add_epi16(packed8Samples, pack);
-
-                t.pcmPos += 8;
-            }
-            else
-            {
-                t.pcmPos = 0;
-                auto current = s->currentBackgroundTrackIdx + 1;
-                if (current > VecSize(&s->aBackgroundTracks) - 1) current = 0;
-                s->currentBackgroundTrackIdx = current;
-            }
+            /* TODO: lock and pop or something */
         }
 
-        _mm_storeu_si128(pSimdDest, packed8Samples);
-
-        pSimdDest++;
+        break;
     }
 }
 
@@ -282,6 +239,8 @@ static void
 onProcess(void* data)
 {
     auto* s = (Mixer*)data;
+
+    guard::Mtx lock(&s->mtxAdd);
 
     pw_buffer* pPwBuffer = pw_stream_dequeue_buffer(s->pStream);
     if (!pPwBuffer)
@@ -303,31 +262,24 @@ onProcess(void* data)
     u32 nFrames = pBuffData.maxsize / stride;
     if (pPwBuffer->requested) nFrames = SPA_MIN(pPwBuffer->requested, (u64)nFrames);
 
-    if (nFrames > 1024*4) nFrames = 1024*4; /* limit to arbitrary number */
+    if (nFrames * s->channels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
 
     s->lastNFrames = nFrames;
 
-    /*writeFrames(s, pDest, nFrames);*/
-    /*writeFrames2(s, s_aPwBuff, nFrames);*/
-    // for (u32 i = 0; i < nFrames; ++i)
-    //     CERR("{}: {}\n", i, s_aPwBuff[i]);
-
-    static long nSamplesFromFFmpeg = 0;
-    static long times = 0;
-    for (u32 i = 0; i < nFrames; i++)
+    static long nDecodedSamples = 0;
+    static long nWrites = 0;
+    for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
-        for (u32 j = 0; j < s->channels; j++)
+        for (u32 chIdx = 0; chIdx < s->channels; chIdx++)
         {
-             /*modify each sample here */
-            f32 val = s_aPwBuff[times];
+            /*modify each sample here */
+            *pDest++ = s_aPwBuff[nWrites++];
 
-            *pDest++ = val;
-
-            /*LOG("times: {}, kek: {}\n", times, kek);*/
-            if (++times >= nSamplesFromFFmpeg)
+            if (nWrites >= nDecodedSamples)
             {
-                writeFrames2(s, s_aPwBuff, nFrames, &nSamplesFromFFmpeg);
-                times = 0;
+                /* ask to fill the buffer when it's empty */
+                writeFrames(s, s_aPwBuff, nFrames, &nDecodedSamples);
+                nWrites = 0;
             }
         }
     }
@@ -352,6 +304,21 @@ MixerEmpty(Mixer* s)
     }
 
     return r;
+}
+
+void
+MixerPause(Mixer* s, bool bPause)
+{
+    /* FIXME: complains about calling from different thread, still works tho */
+    pw_stream_set_active(s->pStream, !bPause);
+    s->base.bPaused = bPause;
+    LOG_NOTIFY("bPaused: {}\n", s->base.bPaused);
+}
+
+void
+MixerTogglePause(Mixer* s)
+{
+    MixerPause(s, !s->base.bPaused);
 }
 
 } /* namespace pipewire */
