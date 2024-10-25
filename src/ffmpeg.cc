@@ -514,6 +514,8 @@ writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, u32* pDataWri
 {
     int err = 0;
 
+    *pDataWritten = 0;
+
     SwrContext* pResampler = nullptr;
     err = swr_alloc_set_opts2(&pResampler,
         &s->pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, 48000,
@@ -530,12 +532,17 @@ writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, u32* pDataWri
         if (err != 0 && err != AVERROR(EAGAIN))
             LOG_WARN("!EAGAIN\n");
 
+        u32 maxSamples = 0;
         while ((err = avcodec_receive_frame(s->pCodecCtx, s->pFrame)) == 0)
         {
             // defer( av_frame_unref(s->pFrame) );
 
             const auto f = s->pFrame;
             const auto pRes = s->pFrame;
+
+            maxSamples = s->pFrame->nb_samples * s->pFrame->ch_layout.nb_channels * 4;
+            /*maxSamples = long(f32(maxSamples) / f32(nFrames)) * nFrames;*/
+            /*LOG("maxSamples: {}, nFrames: {}\n", maxSamples, nFrames);*/
 
             // AVFrame* pRes = av_frame_alloc();
             // defer( av_frame_free(&pRes) );
@@ -570,16 +577,16 @@ writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, u32* pDataWri
             {
                 for (int ch = 0; ch < pRes->ch_layout.nb_channels; ++ch)
                 {
+                    /*f32 s = *(f32*)(pRes->data[ch] + dataSize*i);*/
+                    f32 s = ((f32*)pRes->data[ch])[i];
+                    pBuff[nf++] = s;
+
                     if (nf >= buffSize)
                     {
                         /*LOG("LEAVE\n");*/
                         *pDataWritten += nf;
                         return ERROR::OK;
                     }
-
-                    /*f32 s = *(f32*)(pRes->data[ch] + dataSize*i);*/
-                    f32 s = ((f32*)pRes->data[ch])[i];
-                    pBuff[nf++] = s;
                 }
             }
 

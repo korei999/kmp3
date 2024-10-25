@@ -313,7 +313,7 @@ onProcess(void* data)
     //     CERR("{}: {}\n", i, s_aPwBuff[i]);
 
     int chunkPos = 0;
-    static int kek = utils::size(s_aPwBuff);;
+    static long kek = 1;
     for (u32 i = 0; i < nFrames; i++)
     {
         for (u32 j = 0; j < s->channels; j++)
@@ -337,7 +337,7 @@ onProcess(void* data)
             if (--kek <= 0)
             {
                 writeFrames2(s, s_aPwBuff, nFrames);
-                kek = utils::size(s_aPwBuff);;
+                kek = s_pwBuffSize;
             }
         }
     }

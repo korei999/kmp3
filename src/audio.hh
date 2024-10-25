@@ -8,7 +8,7 @@ using namespace adt;
 namespace audio
 {
 
-constexpr u64 CHUNK_SIZE = 0xFFFF; /* big enough */
+constexpr u64 CHUNK_SIZE = 0x2FFFF; /* big enough */
 constexpr u32 MAX_TRACK_COUNT = 8;
 
 extern f32 g_globalVolume;
