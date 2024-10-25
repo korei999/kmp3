@@ -133,7 +133,7 @@ key(tb_event* pEv, Allocator* pAlloc)
     const auto& key = pEv->key;
     const auto& ch = pEv->ch;
 
-    /*LOG("k: {}, ch: '{}'\n", key, (wchar_t)ch);*/
+    LOG("k: {}, ch: '{}'\n", key, (wchar_t)ch);
 
     if (ch == 'q' || ch == L'й')
     {
@@ -141,9 +141,9 @@ key(tb_event* pEv, Allocator* pAlloc)
         cnd_broadcast(&frame::g_cndUpdate);
         return;
     }
-    else if (ch == L'j' || ch == L'о')
+    else if (ch == L'j' || ch == L'о' || key == TB_KEY_ARROW_DOWN)
         PlayerNext(&pl);
-    else if (ch == L'k' || ch == L'л')
+    else if (ch == L'k' || ch == L'л' || key == TB_KEY_ARROW_UP)
         PlayerPrev(&pl);
     else if (ch == L'g' || ch == L'п')
         PlayerFocusFirst(&pl);

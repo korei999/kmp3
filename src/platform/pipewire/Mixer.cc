@@ -81,7 +81,7 @@ MixerInit(Mixer* s)
     s->base.bMuted = false;
     s->base.volume = 0.1f;
 
-    s->sampleRate = 44100;
+    s->sampleRate = 48000;
     s->channels = 2;
     s->eformat = SPA_AUDIO_FORMAT_F32;
 
@@ -221,11 +221,11 @@ MixerRunThread(Mixer* s, int argc, char** argv)
 }
 
 static void
-writeFrames2(Mixer* s, f32* pBuff, u32 nFrames)
+writeFrames2(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
 {
     for (auto& t : s->aTracks)
     {
-        if (ffmpeg::writeBufferTEST(t.pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, &s_pwBuffSize) != ffmpeg::ERROR::OK)
+        if (ffmpeg::writeBufferTEST(t.pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, pSamplesWritten) != ffmpeg::ERROR::OK)
             LOG_WARN("writeBufferTEST\n");
 
         break;
@@ -312,32 +312,22 @@ onProcess(void* data)
     // for (u32 i = 0; i < nFrames; ++i)
     //     CERR("{}: {}\n", i, s_aPwBuff[i]);
 
-    int chunkPos = 0;
-    static long kek = 1;
+    static long nSamplesFromFFmpeg = 0;
+    static long times = 0;
     for (u32 i = 0; i < nFrames; i++)
     {
         for (u32 j = 0; j < s->channels; j++)
         {
-            /*LOG("bufferSize: {}\n", s_pwBuffSize);*/
-            if (s_pwBuffSize == 0)
-            {
-                /*writeFrames2(s, s_aPwBuff, nFrames);*/
-                /*for (u32 i = 0; i < audio::CHUNK_SIZE && i < s_pwBuffSize; ++i)*/
-                /*    CERR("{}: {}\n", i, s_aPwBuff[i]);*/
-                /*CERR("\n");*/
-
-            }
-
              /*modify each sample here */
-            f32 val = s_aPwBuff[utils::size(s_aPwBuff) - kek];
+            f32 val = s_aPwBuff[times];
 
             *pDest++ = val;
-            ++chunkPos;
 
-            if (--kek <= 0)
+            /*LOG("times: {}, kek: {}\n", times, kek);*/
+            if (++times >= nSamplesFromFFmpeg)
             {
-                writeFrames2(s, s_aPwBuff, nFrames);
-                kek = s_pwBuffSize;
+                writeFrames2(s, s_aPwBuff, nFrames, &nSamplesFromFFmpeg);
+                times = 0;
             }
         }
     }

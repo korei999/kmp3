@@ -510,11 +510,11 @@ openTEST(Decoder* s, String sPath)
 }
 
 ERROR
-writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, u32* pDataWritten)
+writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, long* pSamplesWritten)
 {
     int err = 0;
 
-    *pDataWritten = 0;
+    *pSamplesWritten = 0;
 
     SwrContext* pResampler = nullptr;
     err = swr_alloc_set_opts2(&pResampler,
@@ -540,9 +540,7 @@ writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, u32* pDataWri
             const auto f = s->pFrame;
             const auto pRes = s->pFrame;
 
-            maxSamples = s->pFrame->nb_samples * s->pFrame->ch_layout.nb_channels * 4;
-            /*maxSamples = long(f32(maxSamples) / f32(nFrames)) * nFrames;*/
-            /*LOG("maxSamples: {}, nFrames: {}\n", maxSamples, nFrames);*/
+            maxSamples = s->pFrame->nb_samples * s->pFrame->ch_layout.nb_channels;
 
             // AVFrame* pRes = av_frame_alloc();
             // defer( av_frame_free(&pRes) );
@@ -567,11 +565,12 @@ writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, u32* pDataWri
             //     return ERROR::OK;
             // }
 
-            // auto dataSize = av_samples_get_buffer_size({}, pRes->ch_layout.nb_channels, pRes->nb_samples, (AVSampleFormat)pRes->format, 0);
+            auto dataSize = av_samples_get_buffer_size({}, pRes->ch_layout.nb_channels, pRes->nb_samples, (AVSampleFormat)pRes->format, 0);
+            // LOG("dataSize: {}\n", dataSize);
             // memcpy(pBuff + nf, pRes->data[0], dataSize);
             // nf += dataSize/4;
-
-            /*LOG("dataSize: {}, nb_samples: {}, nf: {}\n", dataSize, pRes->nb_samples*2, nf*4);*/
+            // *pDataWritten += nf;
+            // return ERROR::OK;
 
             for (int i = 0; i < pRes->nb_samples; ++i)
             {
@@ -580,32 +579,15 @@ writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, u32* pDataWri
                     /*f32 s = *(f32*)(pRes->data[ch] + dataSize*i);*/
                     f32 s = ((f32*)pRes->data[ch])[i];
                     pBuff[nf++] = s;
-
-                    if (nf >= buffSize)
-                    {
-                        /*LOG("LEAVE\n");*/
-                        *pDataWritten += nf;
-                        return ERROR::OK;
-                    }
                 }
             }
 
-            // for (int ch = 0; ch < pRes->ch_layout.nb_channels; ++ch)
-            // {
-            //     for (int i = 0; i < pRes->nb_samples; ++i)
-            //     {
-            //         if (nf >= buffSize)
-            //         {
-            //             LOG("LEAVE\n");
-            //             *pDataWritten += nf;
-            //             return ERROR::OK;
-            //         }
-
-            //         /*f32 s = *(f32*)(pRes->data[ch] + dataSize*i);*/
-            //         f32 s = ((f32*)pRes->data[ch])[i];
-            //         pBuff[nf++] = s;
-            //     }
-            // }
+            if (nf >= maxSamples)
+            {
+                /*LOG("leave: {}, nFrames: {}\n", nf, nFrames);*/
+                *pSamplesWritten += nf;
+                return ERROR::OK;
+            }
         }
     }
 

@@ -44,6 +44,6 @@ void DecoderClose(Decoder* s);
 // void DecoderReadFrames(Decoder* s, f32* pBuff, u32 buffSize);
 
 [[nodiscard]] ERROR openTEST(Decoder* s, String sPath);
-[[nodiscard]] ERROR writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, u32* dataWritten);
+[[nodiscard]] ERROR writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, long* pSamplesWritten);
 
 } /* namespace ffmpeg */
