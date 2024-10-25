@@ -295,6 +295,12 @@ StringAlloc(Allocator* p, const String s)
     return StringAlloc(p, s.pData, s.size);
 }
 
+constexpr void
+StringDestroy(Allocator* p, String* s)
+{
+    free(p, s->pData);
+}
+
 constexpr u64
 hashFNV(const String str)
 {

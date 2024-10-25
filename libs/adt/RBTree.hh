@@ -71,7 +71,7 @@ RBTraverse(
     RBNode<T>* p,
     bool (*pfn)(RBNode<T>*, RBNode<T>*, void*),
     void* pUserData,
-    enum RB_ORDER order
+    RB_ORDER order
 );
 
 template<typename T> inline RBNode<T>* RBSearch(RBNode<T>* p, const T& data);
@@ -453,6 +453,63 @@ RBInsert(RBTreeBase<T>* s, Allocator* pA, const T& data, bool bAllowDuplicates)
     return RBInsert(s, pNew, bAllowDuplicates);
 }
 
+template<typename T>
+inline Pair<RBNode<T>*, RBNode<T>*>
+RBTraversePRE(
+    RBNode<T>* parent,
+    RBNode<T>* p,
+    bool (*pfn)(RBNode<T>*, RBNode<T>*, void*),
+    void* pUserData
+)
+{
+    if (p)
+    {
+        if (pfn(parent, p, pUserData)) return {parent, p};
+        RBTraversePOST(p, p->left, pfn, pUserData);
+        RBTraversePOST(p, p->right, pfn, pUserData);
+    }
+
+    return {};
+}
+
+template<typename T>
+inline Pair<RBNode<T>*, RBNode<T>*>
+RBTraverseIN(
+    RBNode<T>* parent,
+    RBNode<T>* p,
+    bool (*pfn)(RBNode<T>*, RBNode<T>*, void*),
+    void* pUserData
+)
+{
+    if (p)
+    {
+        RBTraversePOST(p, p->left, pfn, pUserData);
+        if (pfn(parent, p, pUserData)) return {parent, p};
+        RBTraversePOST(p, p->right, pfn, pUserData);
+    }
+
+    return {};
+}
+
+template<typename T>
+inline Pair<RBNode<T>*, RBNode<T>*>
+RBTraversePOST(
+    RBNode<T>* parent,
+    RBNode<T>* p,
+    bool (*pfn)(RBNode<T>*, RBNode<T>*, void*),
+    void* pUserData
+)
+{
+    if (p)
+    {
+        RBTraversePOST(p, p->left, pfn, pUserData);
+        RBTraversePOST(p, p->right, pfn, pUserData);
+        if (pfn(parent, p, pUserData)) return {parent, p};
+    }
+
+    return {};
+}
+
 /* early return if pfn returns true */
 template<typename T>
 inline Pair<RBNode<T>*, RBNode<T>*>
@@ -461,34 +518,20 @@ RBTraverse(
     RBNode<T>* p,
     bool (*pfn)(RBNode<T>*, RBNode<T>*, void*),
     void* pUserData,
-    enum RB_ORDER order
+    RB_ORDER order
 )
 {
-    if (p)
+    switch (order)
     {
-        switch (order)
-        {
-            case RB_ORDER::PRE:
-                if (pfn(parent, p, pUserData)) return {parent, p};
-                RBTraverse(p, p->left, pfn, pUserData, order);
-                RBTraverse(p, p->right, pfn, pUserData, order);
-                break;
+        case RB_ORDER::PRE:
+        return RBTraversePRE(parent, p, pfn, pUserData);
 
-            case RB_ORDER::IN:
-                RBTraverse(p, p->left, pfn, pUserData, order);
-                if (pfn(parent, p, pUserData)) return {parent, p};
-                RBTraverse(p, p->right, pfn, pUserData, order);
-                break;
+        case RB_ORDER::IN:
+        return RBTraverseIN(parent, p, pfn, pUserData);
 
-            case RB_ORDER::POST:
-                RBTraverse(p, p->left, pfn, pUserData, order);
-                RBTraverse(p, p->right, pfn, pUserData, order);
-                if (pfn(parent, p, pUserData)) return {parent, p};
-                break;
-        }
+        case RB_ORDER::POST:
+        return RBTraverseIN(parent, p, pfn, pUserData);
     }
-
-    return {};
 }
 
 template<typename T>

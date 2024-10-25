@@ -35,6 +35,7 @@ const pw_stream_events Mixer::s_streamEvents {
 };
 
 static f32 s_aPwBuff[audio::CHUNK_SIZE] {}; /* big */
+static u32 s_pwBuffSize = 0;
 
 static u32
 formatByteSize(enum spa_audio_format eFormat)
@@ -80,7 +81,7 @@ MixerInit(Mixer* s)
     s->base.bMuted = false;
     s->base.volume = 0.1f;
 
-    s->sampleRate = 48000;
+    s->sampleRate = 44100;
     s->channels = 2;
     s->eformat = SPA_AUDIO_FORMAT_F32;
 
@@ -158,12 +159,12 @@ MixerPlay(Mixer* s, String sPath)
         LOG_NOTIFY("Closing Decoder\n");
         s->bPlaying = false;
         utils::fill(s_aPwBuff, 0.0f, utils::size(s_aPwBuff));
-        ffmpeg::DecoredClose(s->pDecoder);
+        ffmpeg::DecoderClose(s->pDecoder);
     }
 
     ffmpeg::ERROR err {};
-    if ((err = ffmpeg::DecoderOpen(s->pDecoder, sPath)) != ffmpeg::ERROR::OK)
-        LOG_FATAL("DecoderOpen: '{}'\n", ffmpeg::mapERRORStrings[err]);
+    /*if ((err = ffmpeg::DecoderOpen(s->pDecoder, sPath)) != ffmpeg::ERROR::OK)*/
+    /*    LOG_FATAL("DecoderOpen: '{}'\n", ffmpeg::mapERRORToString[err]);*/
 
     s->bPlaying = true;
 }
@@ -220,10 +221,14 @@ MixerRunThread(Mixer* s, int argc, char** argv)
 }
 
 static void
-writeFrames2(Mixer* s, void* pBuff, u32 nFrames)
+writeFrames2(Mixer* s, f32* pBuff, u32 nFrames)
 {
-    for (u32 i = 0; i < nFrames; i++)
+    for (auto& t : s->aTracks)
     {
+        if (ffmpeg::writeBufferTEST(t.pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, &s_pwBuffSize) != ffmpeg::ERROR::OK)
+            LOG_WARN("writeBufferTEST\n");
+
+        break;
     }
 }
 
@@ -267,43 +272,6 @@ writeFrames(Mixer* s, void* pBuff, u32 nFrames)
             }
         }
 
-        for (u32 i = 0; i < VecSize(&s->aTracks); i++)
-        {
-            auto& t = s->aTracks[i];
-            f32 vol = std::pow(t.volume, 3.0f);
-
-            if (t.pcmPos + 8 <= t.pcmSize)
-            {
-                auto pack = _mm_set_epi16(
-                    t.pData[t.pcmPos + 7] * vol,
-                    t.pData[t.pcmPos + 6] * vol,
-                    t.pData[t.pcmPos + 5] * vol,
-                    t.pData[t.pcmPos + 4] * vol,
-                    t.pData[t.pcmPos + 3] * vol,
-                    t.pData[t.pcmPos + 2] * vol,
-                    t.pData[t.pcmPos + 1] * vol,
-                    t.pData[t.pcmPos + 0] * vol
-                );
-
-                packed8Samples = _mm_add_epi16(packed8Samples, pack);
-
-                t.pcmPos += 8;
-            }
-            else
-            {
-                if (t.bRepeat)
-                {
-                    t.pcmPos = 0;
-                }
-                else
-                {
-                    guard::Mtx lock(&s->mtxAdd);
-                    VecPopAsLast(&s->aTracks, i);
-                    --i;
-                }
-            }
-        }
-
         _mm_storeu_si128(pSimdDest, packed8Samples);
 
         pSimdDest++;
@@ -339,29 +307,38 @@ onProcess(void* data)
 
     s->lastNFrames = nFrames;
 
-    {
-        guard::Mtx lock(&s->mtxDecoder);
-
-        if (s->bPlaying && s->pDecoder)
-            ffmpeg::DecoderReadFrames(s->pDecoder, s_aPwBuff, nFrames);
-    }
-
-    /*LOG("HELLO\n");*/
-
     /*writeFrames(s, pDest, nFrames);*/
+    /*writeFrames2(s, s_aPwBuff, nFrames);*/
+    // for (u32 i = 0; i < nFrames; ++i)
+    //     CERR("{}: {}\n", i, s_aPwBuff[i]);
 
     int chunkPos = 0;
-    static int kek = 0;
+    static int kek = utils::size(s_aPwBuff);;
     for (u32 i = 0; i < nFrames; i++)
     {
-        for (u32 j = 0; j < 2; j++)
+        for (u32 j = 0; j < s->channels; j++)
         {
-            /* modify each sample here */
-            /*f32 val = (rand() % 100000) / 100000.0f;*/
-            f32 val = s_aPwBuff[chunkPos];
+            /*LOG("bufferSize: {}\n", s_pwBuffSize);*/
+            if (s_pwBuffSize == 0)
+            {
+                /*writeFrames2(s, s_aPwBuff, nFrames);*/
+                /*for (u32 i = 0; i < audio::CHUNK_SIZE && i < s_pwBuffSize; ++i)*/
+                /*    CERR("{}: {}\n", i, s_aPwBuff[i]);*/
+                /*CERR("\n");*/
+
+            }
+
+             /*modify each sample here */
+            f32 val = s_aPwBuff[utils::size(s_aPwBuff) - kek];
 
             *pDest++ = val;
-            chunkPos++;
+            ++chunkPos;
+
+            if (--kek <= 0)
+            {
+                writeFrames2(s, s_aPwBuff, nFrames);
+                kek = utils::size(s_aPwBuff);;
+            }
         }
     }
 

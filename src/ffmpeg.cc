@@ -4,12 +4,18 @@
 #include "adt/defer.hh"
 #include "adt/types.hh"
 #include "adt/utils.hh"
+#include "adt/OsAllocator.hh"
 #include "logs.hh"
 
 extern "C"
 {
-#include <libavformat/avformat.h>
+
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libswresample/swresample.h>
+#include <libavutil/audio_fifo.h>
+
 }
 
 /* https://gist.github.com/jcelerier/c28310e34c189d37e99609be8cd74bdcG*/
@@ -21,11 +27,13 @@ namespace ffmpeg
 struct Decoder
 {
     String path {};
+    AVStream* pStream {};
     AVFormatContext* pFormatCtx {};
     AVCodecContext* pCodecCtx {};
     AVFrame* pFrame {};
     AVPacket* pPacket {};
-    int audioStreamIndex {};
+    AVAudioFifo* pFifo {};
+    int audioStreamIdx {};
     u32 buffPos {};
 };
 
@@ -74,7 +82,7 @@ DecoderAlloc(Allocator* pAlloc)
 }
 
 void
-DecoredClose(Decoder* s)
+DecoderClose(Decoder* s)
 {
     /* TODO: cleanup... */
 
@@ -334,15 +342,15 @@ DecoderOpen(Decoder* s, String sPath)
     avformat_find_stream_info(s->pFormatCtx, nullptr);
 
     /* Try to find an audio stream. */
-    s->audioStreamIndex = findAudioStream(s->pFormatCtx);
-    if (s->audioStreamIndex == -1)
+    s->audioStreamIdx = findAudioStream(s->pFormatCtx);
+    if (s->audioStreamIdx == -1)
     {
         avformat_close_input(&s->pFormatCtx);
         return ERROR::AUDIO_STREAM_NOT_FOUND;
     }
 
     /* Find the correct decoder for the codec. */
-    const AVCodec* pCodec = avcodec_find_decoder(s->pFormatCtx->streams[s->audioStreamIndex]->codecpar->codec_id);
+    const AVCodec* pCodec = avcodec_find_decoder(s->pFormatCtx->streams[s->audioStreamIdx]->codecpar->codec_id);
     if (!pCodec)
     {
         avformat_close_input(&s->pFormatCtx);
@@ -358,7 +366,7 @@ DecoderOpen(Decoder* s, String sPath)
     }
 
     /* Fill the codecCtx with the parameters of the codec used in the read file. */
-    if ((err = avcodec_parameters_to_context(s->pCodecCtx, s->pFormatCtx->streams[s->audioStreamIndex]->codecpar)) != 0)
+    if ((err = avcodec_parameters_to_context(s->pCodecCtx, s->pFormatCtx->streams[s->audioStreamIdx]->codecpar)) != 0)
     {
         avformat_close_input(&s->pFormatCtx);
         avcodec_free_context(&s->pCodecCtx);
@@ -376,7 +384,7 @@ DecoderOpen(Decoder* s, String sPath)
         return ERROR::INITIALIZING_DECODER;
     }
 
-    printStreamInformation(pCodec, s->pCodecCtx, s->audioStreamIndex);
+    printStreamInformation(pCodec, s->pCodecCtx, s->audioStreamIdx);
 
     s->pFrame = av_frame_alloc();
     if (!s->pFrame)
@@ -408,7 +416,7 @@ DecoderReadFrames(Decoder* s, f32* pBuff, u32 buffSize)
             break; /* Don't return, so we can clean up nicely. */
         }
         /* Does the packet belong to the correct stream? */
-        if (s->pPacket->stream_index != s->audioStreamIndex)
+        if (s->pPacket->stream_index != s->audioStreamIdx)
         {
             /* Free the buffers used by the frame and reset all fields. */
             av_packet_unref(s->pPacket);
@@ -449,6 +457,152 @@ DecoderReadFrames(Decoder* s, f32* pBuff, u32 buffSize)
             if (!handleFrame(s->pCodecCtx, s->pFrame, &bw)) break;
         }
     }
+}
+
+ERROR
+openTEST(Decoder* s, String sPath)
+{
+    String sPathNullTerm = StringAlloc(&inl_OsAllocator.base, sPath); /* with null char */
+    defer( StringDestroy(&inl_OsAllocator.base, &sPathNullTerm) );
+
+    int err = 0;
+    defer( if (err < 0) DecoderClose(s) );
+
+    err = avformat_open_input(&s->pFormatCtx, sPathNullTerm.pData, {}, {});
+    if (err != 0) return ERROR::FILE_OPENING;
+
+    err = avformat_find_stream_info(s->pFormatCtx, {});
+    if (err != 0) return ERROR::AUDIO_STREAM_NOT_FOUND;
+
+    LOG("nb_streams: {}\n", s->pFormatCtx->nb_streams);
+
+    int idx = av_find_best_stream(s->pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
+    if (idx < 0) return ERROR::AUDIO_STREAM_NOT_FOUND;
+
+    s->audioStreamIdx = idx;
+    s->pStream = s->pFormatCtx->streams[idx];
+
+    const AVCodec* pCodec = avcodec_find_decoder(s->pStream->codecpar->codec_id);
+
+    if (!pCodec) return ERROR::DECODER_NOT_FOUND;
+
+    LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
+
+    s->pCodecCtx = avcodec_alloc_context3(pCodec);
+    if (!s->pCodecCtx) return ERROR::DECODING_CONTEXT_ALLOCATION;
+
+    avcodec_parameters_to_context(s->pCodecCtx, s->pStream->codecpar);
+
+    err = avcodec_open2(s->pCodecCtx, pCodec, {});
+    if (err < 0)
+    {
+        LOG("avcodec_open2\n");
+        return ERROR::UNKNOWN;
+    }
+
+    s->pPacket = av_packet_alloc();
+    s->pFrame = av_frame_alloc();
+
+    /*s->pFifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_FLT, s->pStream->codecpar->ch_layout.nb_channels, 1);*/
+    /*defer( av_audio_fifo_free(s->pFifo) );*/
+
+    return ERROR::OK;
+}
+
+ERROR
+writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSize, u32 nFrames, u32* pDataWritten)
+{
+    int err = 0;
+
+    SwrContext* pResampler = nullptr;
+    err = swr_alloc_set_opts2(&pResampler,
+        &s->pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, 48000,
+        &s->pStream->codecpar->ch_layout, (AVSampleFormat)s->pStream->codecpar->format, s->pStream->codecpar->sample_rate,
+        0, {}
+    );
+    defer( swr_free(&pResampler) );
+
+    u32 nf = 0;
+    while (av_read_frame(s->pFormatCtx, s->pPacket) == 0)
+    {
+        if (s->pPacket->stream_index != s->pStream->index) continue;
+        err = avcodec_send_packet(s->pCodecCtx, s->pPacket);
+        if (err != 0 && err != AVERROR(EAGAIN))
+            LOG_WARN("!EAGAIN\n");
+
+        while ((err = avcodec_receive_frame(s->pCodecCtx, s->pFrame)) == 0)
+        {
+            // defer( av_frame_unref(s->pFrame) );
+
+            const auto f = s->pFrame;
+            const auto pRes = s->pFrame;
+
+            // AVFrame* pRes = av_frame_alloc();
+            // defer( av_frame_free(&pRes) );
+
+            // pRes->sample_rate = f->sample_rate;
+            // pRes->ch_layout = f->ch_layout;
+            // /*pRes->format = f->format;*/
+            // pRes->format = AV_SAMPLE_FMT_FLT;
+            // /*LOG("AV_SAMPLE_FMT_FLT: {}, f.format: {}\n", (int)AV_SAMPLE_FMT_FLT, f->format);*/
+
+            // err = swr_convert_frame(pResampler, pRes, s->pFrame);
+            // if (err != 0)
+            // {
+            //     LOG_WARN("swr_convert_frame\n");
+            //     return ERROR::UNKNOWN;
+            // }
+
+            // if (nf >= buffSize)
+            // {
+            //     /*LOG("LEAVE\n");*/
+            //     *pDataWritten += nf;
+            //     return ERROR::OK;
+            // }
+
+            // auto dataSize = av_samples_get_buffer_size({}, pRes->ch_layout.nb_channels, pRes->nb_samples, (AVSampleFormat)pRes->format, 0);
+            // memcpy(pBuff + nf, pRes->data[0], dataSize);
+            // nf += dataSize/4;
+
+            /*LOG("dataSize: {}, nb_samples: {}, nf: {}\n", dataSize, pRes->nb_samples*2, nf*4);*/
+
+            for (int i = 0; i < pRes->nb_samples; ++i)
+            {
+                for (int ch = 0; ch < pRes->ch_layout.nb_channels; ++ch)
+                {
+                    if (nf >= buffSize)
+                    {
+                        /*LOG("LEAVE\n");*/
+                        *pDataWritten += nf;
+                        return ERROR::OK;
+                    }
+
+                    /*f32 s = *(f32*)(pRes->data[ch] + dataSize*i);*/
+                    f32 s = ((f32*)pRes->data[ch])[i];
+                    pBuff[nf++] = s;
+                }
+            }
+
+            // for (int ch = 0; ch < pRes->ch_layout.nb_channels; ++ch)
+            // {
+            //     for (int i = 0; i < pRes->nb_samples; ++i)
+            //     {
+            //         if (nf >= buffSize)
+            //         {
+            //             LOG("LEAVE\n");
+            //             *pDataWritten += nf;
+            //             return ERROR::OK;
+            //         }
+
+            //         /*f32 s = *(f32*)(pRes->data[ch] + dataSize*i);*/
+            //         f32 s = ((f32*)pRes->data[ch])[i];
+            //         pBuff[nf++] = s;
+            //     }
+            // }
+        }
+    }
+
+    return ERROR::OK;
 }
 
 int

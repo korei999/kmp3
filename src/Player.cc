@@ -16,6 +16,7 @@ constexpr String aAcceptedFileEndings[] {
     ".m4a",
     ".ogg",
     ".umx",
+    ".s3m",
 };
 
 static bool
@@ -115,7 +116,16 @@ void
 PlayerSelectFocused(Player* s)
 {
     s->selected = s->aSongIdxs[s->focused];
-    LOG_NOTIFY("selected: {}\n", app::g_aArgs[s->selected]);
+    const String& sPath = app::g_aArgs[s->selected];
+    LOG_NOTIFY("selected: {}\n", sPath);
 
-    audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
+    ffmpeg::Decoder* pDec = ffmpeg::DecoderAlloc(app::g_pPlayer->pAlloc);
+    if (ffmpeg::openTEST(pDec, sPath) != ffmpeg::ERROR::OK)
+        LOG_FATAL("DecoderOpen\n");
+
+    audio::Track t {
+        .pDecoder = pDec,
+    };
+
+    audio::MixerAdd(app::g_pMixer, t);
 }

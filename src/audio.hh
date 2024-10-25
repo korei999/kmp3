@@ -1,13 +1,14 @@
 #pragma once
 
 #include "adt/String.hh"
+#include "ffmpeg.hh"
 
 using namespace adt;
 
 namespace audio
 {
 
-constexpr u64 CHUNK_SIZE = 0x4000; /* big enough */
+constexpr u64 CHUNK_SIZE = 0xFFFF; /* big enough */
 constexpr u32 MAX_TRACK_COUNT = 8;
 
 extern f32 g_globalVolume;
@@ -27,7 +28,8 @@ struct MixerInterface
 
 struct Track
 {
-    s16* pData = nullptr;
+    ffmpeg::Decoder* pDecoder {};
+    f32* pData = nullptr;
     u32 pcmPos = 0;
     u32 pcmSize = 0;
     u8 nChannels = 0;

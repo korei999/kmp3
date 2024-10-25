@@ -10,6 +10,7 @@ namespace ffmpeg
 enum ERROR : u8
 {
     OK = 0,
+    UNKNOWN,
     EOF_,
     DONE,
     FILE_OPENING,
@@ -21,8 +22,9 @@ enum ERROR : u8
     AV_FRAME_ALLOC,
 };
 
-constexpr String mapERRORStrings[] {
+constexpr String mapERRORToString[] {
     "OK",
+    "UNKNOWN",
     "EOF_",
     "DONE",
     "FILE_OPENING",
@@ -37,8 +39,11 @@ constexpr String mapERRORStrings[] {
 struct Decoder;
 
 [[nodiscard]] Decoder* DecoderAlloc(Allocator* pAlloc);
-void DecoredClose(Decoder* s);
-[[nodiscard]] ERROR DecoderOpen(Decoder* s, String path);
-void DecoderReadFrames(Decoder* s, f32* pBuff, u32 buffSize);
+void DecoderClose(Decoder* s);
+// [[nodiscard]] ERROR DecoderOpen(Decoder* s, String path);
+// void DecoderReadFrames(Decoder* s, f32* pBuff, u32 buffSize);
+
+[[nodiscard]] ERROR openTEST(Decoder* s, String sPath);
+[[nodiscard]] ERROR writeBufferTEST(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, u32* dataWritten);
 
 } /* namespace ffmpeg */
