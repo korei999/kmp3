@@ -55,6 +55,7 @@ void
 TermboxStop()
 {
     tb_shutdown();
+    LOG_NOTIFY("tb_shutdown()\n");
 }
 
 enum READ_STATUS : u8 { OK, BREAK };
@@ -107,7 +108,7 @@ subStringSearch(Allocator* pAlloc)
 
     while (true)
     {
-        PlayerSubStringSearch(&pl, pAlloc, s_aSearchBuff, 64);
+        PlayerSubStringSearch(&pl, pAlloc, s_aSearchBuff, utils::size(s_aSearchBuff));
         TermboxRender(pAlloc);
 
         if (bReset)
@@ -161,6 +162,19 @@ key(tb_event* pEv, Allocator* pAlloc)
         PlayerFocusSelected(&pl);
     else if (ch == L' ')
         PlayerTogglePause(&pl);
+    else if (ch == L'9')
+    {
+        audio::g_globalVolume = utils::clamp(audio::g_globalVolume - 0.1f, 0.0f, 1.0f);
+        LOG_NOTIFY("g_globalVolume: {:.3}\n", audio::g_globalVolume);
+    }
+    else if (ch == L'0')
+    {
+        audio::g_globalVolume = utils::clamp(audio::g_globalVolume + 0.1f, 0.0f, 1.0f);
+        LOG_NOTIFY("g_globalVolume: {:.3}\n", audio::g_globalVolume);
+    }
+    else if (ch == L'B')
+        app::TEST_g_bExitThreadloop = !app::TEST_g_bExitThreadloop;
+
 
     fixFirstIdx();
 }
@@ -185,16 +199,17 @@ mouse(tb_event* pEv)
 
     defer( fixFirstIdx() );
 
-    if (pEv->key == TB_KEY_MOUSE_LEFT)
+    const auto& e = *pEv;
+    if (e.key == TB_KEY_MOUSE_LEFT)
     {
         if (pl.focused == target)
-            pl.selected = pl.focused;
+            PlayerSelectFocused(&pl);
         else PlayerFocus(&pl, target);
     }
-    else if (pEv->key == TB_KEY_MOUSE_WHEEL_UP)
-        PlayerPrev(&pl);
-    else if (pEv->key == TB_KEY_MOUSE_WHEEL_DOWN)
-        PlayerNext(&pl);
+    else if (e.key == TB_KEY_MOUSE_WHEEL_UP)
+        PlayerFocus(&pl, pl.focused - 22);
+    else if (e.key == TB_KEY_MOUSE_WHEEL_DOWN)
+        PlayerFocus(&pl, pl.focused + 22);
 }
 
 void
@@ -354,12 +369,27 @@ drawSongList()
 }
 
 static void
-drawStatus()
+drawStatus(Allocator* p)
 {
+    const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
-    const u16 split = std::round(f64(tb_width()) * 0.4);
+    const u16 split = std::round(f64(width) * 0.4);
+
+    f32 vol = audio::g_globalVolume * 100.0f;
+    /*f32 maxLine = (vol * (f32)width) * (1.0f - (100.0f));*/
+    /*CERR("maxLine: {}\n", maxLine);*/
 
     drawBox(0, 0, split, pl.statusAndInfoHeight + 1, TB_WHITE, TB_DEFAULT);
+
+    char* pBuff = (char*)alloc(p, 1, width);
+    /*utils::fill(pBuff, '\0', width);*/
+    int n = snprintf(pBuff, width, "volume: %3d", int(std::round(audio::g_globalVolume * 100.0f)));
+
+    drawUtf8String(0, 2, pBuff, split + 1);
+    /*for (int i = n + 2, nTimes = 0; i < split && nTimes < maxLine; ++i, ++nTimes)*/
+    /*{*/
+    /*    tb_set_cell(i, 2, L'▮', TB_GREEN, TB_DEFAULT);*/
+    /*}*/
 }
 
 static void
@@ -405,7 +435,7 @@ TermboxRender([[maybe_unused]] Allocator* pAlloc)
 
     tb_clear();
 
-    drawStatus();
+    drawStatus(pAlloc);
     drawInfo();
 
     if (tb_height() > 9 && tb_width() > 9)

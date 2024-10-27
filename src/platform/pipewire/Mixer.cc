@@ -15,11 +15,20 @@ namespace platform
 namespace pipewire
 {
 
+struct ThrdLoopLockGuard
+{
+    pw_thread_loop* p;
+
+    ThrdLoopLockGuard() = delete;
+    ThrdLoopLockGuard(pw_thread_loop* _p) : p(_p) { pw_thread_loop_lock(_p); }
+    ~ThrdLoopLockGuard() { pw_thread_loop_unlock(p); }
+};
+
 static void MixerRunThread(Mixer* s, int argc, char** argv);
 static void onProcess(void* data);
 static bool MixerEmpty(Mixer* s);
 
-const pw_stream_events Mixer::s_streamEvents {
+static const pw_stream_events s_streamEvents {
     .version = PW_VERSION_STREAM_EVENTS,
     .destroy {},
     .state_changed {},
@@ -87,86 +96,58 @@ MixerInit(Mixer* s)
 
     mtx_init(&s->mtxAdd, mtx_plain);
     mtx_init(&s->mtxDecoder, mtx_plain);
+    mtx_init(&s->mtxThrdLoop, mtx_plain);
+    cnd_init(&s->cndThrdLoop);
 
-    struct Args
-    {
-        Mixer* s;
-        int argc;
-        char** argv;
-    };
-
-    static Args a {
-        .s = s,
-        .argc = app::g_argc,
-        .argv = app::g_argv
-    };
-
-    auto fnp = +[](void* arg) -> int {
-        auto a = *(Args*)arg;
-        MixerRunThread(a.s, a.argc, a.argv);
-
-        return thrd_success;
-    };
-
-    thrd_create(&s->threadLoop, fnp, &a);
-    thrd_detach(s->threadLoop);
+    MixerRunThread(s, app::g_argc, app::g_argv);
 }
 
 void
 MixerDestroy(Mixer* s)
 {
+    {
+        ThrdLoopLockGuard tLock(s->pThrdLoop);
+        pw_stream_set_active(s->pStream, true);
+    }
+
+    pw_thread_loop_stop(s->pThrdLoop);
+    LOG_NOTIFY("pw_thread_loop_stop()\n");
+
+    s->base.bRunning = false;
+
+    if (s->bDecodes) ffmpeg::DecoderClose(s->pDecoder);
+
+    pw_stream_destroy(s->pStream);
+    pw_thread_loop_destroy(s->pThrdLoop);
+    pw_deinit();
+
     mtx_destroy(&s->mtxAdd);
     mtx_destroy(&s->mtxDecoder);
-    VecDestroy(&s->aTracks);
-    VecDestroy(&s->aBackgroundTracks);
-}
-
-void
-MixerAdd(Mixer* s, audio::Track t)
-{
-    guard::Mtx lock(&s->mtxAdd);
-
-    if (VecSize(&s->aTracks) < audio::MAX_TRACK_COUNT) VecPush(&s->aTracks, t);
-    else LOG_WARN("MAX_TRACK_COUNT({}) reached, ignoring track push\n", audio::MAX_TRACK_COUNT);
-}
-
-void
-MixerAddBackground(Mixer* s, audio::Track t)
-{
-    guard::Mtx lock(&s->mtxAdd);
-
-    if (VecSize(&s->aTracks) < audio::MAX_TRACK_COUNT) VecPush(&s->aBackgroundTracks, t);
-    else LOG_WARN("MAX_TRACK_COUNT({}) reached, ignoring track push\n", audio::MAX_TRACK_COUNT);
+    mtx_destroy(&s->mtxThrdLoop);
+    cnd_destroy(&s->cndThrdLoop);
+    LOG_NOTIFY("MixerDestroy()\n");
 }
 
 void
 MixerPlay(Mixer* s, String sPath)
 {
+    MixerPause(s, false);
+
     guard::Mtx lock(&s->mtxAdd);
     guard::Mtx lockDec(&s->mtxDecoder);
 
-    if (!s->pDecoder)
+    s->sPath = sPath;
+
+    if (s->bDecodes) ffmpeg::DecoderClose(s->pDecoder);
+
+    auto err = ffmpeg::DecoderOpen(s->pDecoder, sPath);
+    if (err != ffmpeg::ERROR::OK)
     {
-        s->pDecoder = ffmpeg::DecoderAlloc(app::g_pPlayer->pAlloc);
-        if (!s->pDecoder)
-            LOG_FATAL("DecoderAlloc\n");
-
-        s->bPlaying = false;
+        LOG_WARN("DecoderOpen\n");
+        return;
     }
+    s->bDecodes = true;
 
-    if (s->bPlaying)
-    {
-        LOG_NOTIFY("Closing Decoder\n");
-        s->bPlaying = false;
-        utils::fill(s_aPwBuff, 0.0f, utils::size(s_aPwBuff));
-        ffmpeg::DecoderClose(s->pDecoder);
-    }
-
-    ffmpeg::ERROR err {};
-    /*if ((err = ffmpeg::DecoderOpen(s->pDecoder, sPath)) != ffmpeg::ERROR::OK)*/
-    /*    LOG_FATAL("DecoderOpen: '{}'\n", ffmpeg::mapERRORToString[err]);*/
-
-    s->bPlaying = true;
 }
 
 static void
@@ -178,10 +159,10 @@ MixerRunThread(Mixer* s, int argc, char** argv)
     const spa_pod* aParams[1] {};
     spa_pod_builder b = SPA_POD_BUILDER_INIT(setupBuffer, sizeof(setupBuffer));
 
-    s->pLoop = pw_main_loop_new(nullptr);
+    s->pThrdLoop = pw_thread_loop_new("runThread2", {});
 
     s->pStream = pw_stream_new_simple(
-        pw_main_loop_get_loop(s->pLoop),
+        pw_thread_loop_get_loop(s->pThrdLoop),
         "kmp3AudioSource",
         pw_properties_new(
             PW_KEY_MEDIA_TYPE, "Audio",
@@ -189,7 +170,7 @@ MixerRunThread(Mixer* s, int argc, char** argv)
             PW_KEY_MEDIA_ROLE, "Music",
             nullptr
         ),
-        &s->s_streamEvents,
+        &s_streamEvents,
         s
     );
 
@@ -212,35 +193,29 @@ MixerRunThread(Mixer* s, int argc, char** argv)
         utils::size(aParams)
     );
 
-    pw_main_loop_run(s->pLoop);
-
-    pw_stream_destroy(s->pStream);
-    pw_main_loop_destroy(s->pLoop);
-    pw_deinit();
-    s->base.bRunning = false;
+    pw_stream_set_active(s->pStream, false);
+    pw_thread_loop_start(s->pThrdLoop);
 }
 
 static void
-writeFrames(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
+writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
 {
-    for (auto& t : s->aTracks)
-    {
-        auto err = ffmpeg::DecoderWriteToBuffer(t.pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, pSamplesWritten);
-        if (err == ffmpeg::ERROR::EOF_)
-        {
-            /* TODO: lock and pop or something */
-        }
+    guard::Mtx lock(&s->mtxDecoder);
 
-        break;
+    if (!s->bDecodes) return;
+
+    auto err = ffmpeg::DecoderWriteToBuffer(s->pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, pSamplesWritten);
+    if (err == ffmpeg::ERROR::EOF_)
+    {
+        MixerPause(s, true);
+        s->bDecodes = false;
     }
 }
 
 static void
-onProcess(void* data)
+onProcess(void* pData)
 {
-    auto* s = (Mixer*)data;
-
-    guard::Mtx lock(&s->mtxAdd);
+    auto* s = (Mixer*)pData;
 
     pw_buffer* pPwBuffer = pw_stream_dequeue_buffer(s->pStream);
     if (!pPwBuffer)
@@ -264,21 +239,24 @@ onProcess(void* data)
 
     if (nFrames * s->channels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
 
-    s->lastNFrames = nFrames;
+    s->nLastFrames = nFrames;
 
     static long nDecodedSamples = 0;
     static long nWrites = 0;
+
+    f32 vol = std::pow(audio::g_globalVolume, 3);
+
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
         for (u32 chIdx = 0; chIdx < s->channels; chIdx++)
         {
-            /*modify each sample here */
-            *pDest++ = s_aPwBuff[nWrites++];
+            /* modify each sample here */
+            *pDest++ = s_aPwBuff[nWrites++] * vol;
 
             if (nWrites >= nDecodedSamples)
             {
                 /* ask to fill the buffer when it's empty */
-                writeFrames(s, s_aPwBuff, nFrames, &nDecodedSamples);
+                writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples);
                 nWrites = 0;
             }
         }
@@ -289,29 +267,21 @@ onProcess(void* data)
     pBuffData.chunk->size = nFrames * stride;
 
     pw_stream_queue_buffer(s->pStream, pPwBuffer);
-
-    if (!app::g_bRunning) pw_main_loop_quit(s->pLoop);
-    /* set bRunning for the mixer outside */
 }
 
 [[maybe_unused]] static bool
 MixerEmpty(Mixer* s)
 {
-    bool r;
-    {
-        guard::Mtx lock(&s->mtxAdd);
-        r = VecSize(&s->aTracks) > 0;
-    }
-
-    return r;
+    return true;
 }
 
 void
 MixerPause(Mixer* s, bool bPause)
 {
-    /* FIXME: complains about calling from different thread, still works tho */
+    ThrdLoopLockGuard lock(s->pThrdLoop);
     pw_stream_set_active(s->pStream, !bPause);
     s->base.bPaused = bPause;
+
     LOG_NOTIFY("bPaused: {}\n", s->base.bPaused);
 }
 

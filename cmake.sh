@@ -73,7 +73,7 @@ run()
         # ASAN_OPTIONS=halt_on_error=0 ./build/$BIN "$@" # 2> /tmp/$BIN-dbg.txt
         # gamemoderun ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
         # PIPEWIRE_DEBUG=3 ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
-        PIPEWIRE_DEBUG=2 ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
+        PIPEWIRE_DEBUG=1 ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
     fi
 }
 

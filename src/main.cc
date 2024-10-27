@@ -6,6 +6,7 @@
 #include "adt/file.hh"
 #include "frame.hh"
 #include "logs.hh"
+#include "platform/Termbox.hh"
 #include "platform/pipewire/Mixer.hh"
 
 #include <clocale>
@@ -15,6 +16,10 @@ int
 main(int argc, char** argv)
 {
     setlocale(LC_ALL, "");
+#ifdef NDEBUG
+    close(STDERR_FILENO); /* hide libmpg123 errors */
+#endif
+
     Arena arena(SIZE_1K * 8);
     defer( ArenaFreeAll(&arena) );
 
@@ -77,6 +82,9 @@ main(int argc, char** argv)
     platform::pipewire::MixerInit(&mixer);
     defer( platform::pipewire::MixerDestroy(&mixer) );
     app::g_pMixer = &mixer.base;
+
+    platform::TermboxInit();
+    defer( platform::TermboxStop() );
 
     if (argc > 1)
     {

@@ -21,9 +21,6 @@ run()
         cnd_destroy(&g_cndUpdate);
     );
 
-    platform::TermboxInit();
-    defer( platform::TermboxStop() );
-
     Arena arena(SIZE_1M);
     defer( ArenaFreeAll(&arena) );
 
@@ -34,7 +31,7 @@ run()
 
         ArenaReset(&arena);
     }
-    while (app::g_bRunning && app::g_pMixer->bRunning);
+    while (app::g_bRunning);
 }
 
 } /* namespace frame */

@@ -162,7 +162,7 @@ copy(T* pDest, T* pSrc, u64 size)
 }
 
 template<typename T>
-inline void
+constexpr void
 fill(T* pData, T x, u64 size)
 {
     for (u64 i = 0; i < size; ++i)
@@ -171,7 +171,7 @@ fill(T* pData, T x, u64 size)
 
 template<typename T>
 [[nodiscard]]
-constexpr T
+constexpr auto
 clamp(const T& x, const T& _min, const T& _max)
 {
     return max(_min, min(_max, x));

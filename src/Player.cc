@@ -67,7 +67,7 @@ void
 PlayerFocusSelected(Player* s)
 {
     PlayerSetDefaultIdxs(s);
-    s->focused = s->selected - 1;
+    s->focused = s->aSongIdxs[s->selected];
 }
 
 void
@@ -76,7 +76,8 @@ PlayerSetDefaultIdxs(Player* s)
     VecSetSize(&s->aSongIdxs, s->pAlloc, 0);
 
     for (int i = 1; i < app::g_argc; ++i)
-        VecPush(&s->aSongIdxs, s->pAlloc, u16(i));
+        if (acceptedFormat(app::g_aArgs[i]))
+            VecPush(&s->aSongIdxs, s->pAlloc, u16(i));
 }
 
 void
@@ -117,17 +118,9 @@ PlayerSelectFocused(Player* s)
 {
     s->selected = s->aSongIdxs[s->focused];
     const String& sPath = app::g_aArgs[s->selected];
-    LOG_NOTIFY("selected: {}\n", sPath);
+    LOG_NOTIFY("selected({}): {}\n", s->selected, sPath);
 
-    ffmpeg::Decoder* pDec = ffmpeg::DecoderAlloc(app::g_pPlayer->pAlloc);
-    if (ffmpeg::DecoderOpen(pDec, sPath) != ffmpeg::ERROR::OK)
-        LOG_FATAL("DecoderOpen\n");
-
-    audio::Track t {
-        .pDecoder = pDec,
-    };
-
-    audio::MixerAdd(app::g_pMixer, t);
+    audio::MixerPlay(app::g_pMixer, sPath);
 }
 
 void
