@@ -4,6 +4,7 @@
 #include "app.hh"
 #include "frame.hh"
 #include "logs.hh"
+#include "platform/pipewire/Mixer.hh"
 
 #define TB_IMPL
 #define TB_OPT_ATTR_W 32
@@ -174,7 +175,25 @@ key(tb_event* pEv, Allocator* pAlloc)
     }
     else if (ch == L'B')
         app::TEST_g_bExitThreadloop = !app::TEST_g_bExitThreadloop;
-
+    else if (ch == L'[')
+    {
+        namespace pp = platform::pipewire;
+        pp::Mixer* pMixer = (pp::Mixer*)app::g_pMixer;
+        pp::MixerUpdateSampleRate(pMixer, pMixer->changedSampleRate - 1000, false);
+        
+    }
+    else if (ch == L']')
+    {
+        namespace pp = platform::pipewire;
+        pp::Mixer* pMixer = (pp::Mixer*)app::g_pMixer;
+        pp::MixerUpdateSampleRate(pMixer, pMixer->changedSampleRate + 1000, false);
+    }
+    else if (ch == L'\\')
+    {
+        namespace pp = platform::pipewire;
+        pp::Mixer* pMixer = (pp::Mixer*)app::g_pMixer;
+        pp::MixerUpdateSampleRate(pMixer, pMixer->sampleRate, false);
+    }
 
     fixFirstIdx();
 }

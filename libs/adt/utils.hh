@@ -25,6 +25,7 @@
 #include "types.hh"
 
 #include <cstring>
+#include <cassert>
 
 namespace adt
 {
@@ -158,6 +159,8 @@ template<typename T>
 inline void
 copy(T* pDest, T* pSrc, u64 size)
 {
+    assert(pDest != nullptr);
+    assert(pSrc != nullptr);
     memcpy(pDest, pSrc, size * sizeof(T));
 }
 

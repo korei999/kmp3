@@ -28,6 +28,18 @@ static void MixerRunThread(Mixer* s, int argc, char** argv);
 static void onProcess(void* data);
 static bool MixerEmpty(Mixer* s);
 
+static void
+registryEventGlobal(
+    void* data,
+    u32 id,
+    u32 permissions,
+    const char* type,
+    u32 version,
+    const spa_dict* props)
+{
+    /*LOG_NOTIFY("object: id:{} type:{}/{}\n", id, type, version);*/
+}
+
 static const pw_stream_events s_streamEvents {
     .version = PW_VERSION_STREAM_EVENTS,
     .destroy {},
@@ -41,6 +53,12 @@ static const pw_stream_events s_streamEvents {
     .drained {},
     .command {},
     .trigger_done {},
+};
+
+static const struct pw_registry_events s_registryEvents {
+        PW_VERSION_REGISTRY_EVENTS,
+        .global = registryEventGlobal,
+        .global_remove {}
 };
 
 static f32 s_aPwBuff[audio::CHUNK_SIZE] {}; /* big */
@@ -91,10 +109,9 @@ MixerInit(Mixer* s)
     s->base.volume = 0.1f;
 
     s->sampleRate = 48000;
-    s->channels = 2;
+    s->nChannels = 2;
     s->eformat = SPA_AUDIO_FORMAT_F32;
 
-    mtx_init(&s->mtxAdd, mtx_plain);
     mtx_init(&s->mtxDecoder, mtx_plain);
     mtx_init(&s->mtxThrdLoop, mtx_plain);
     cnd_init(&s->cndThrdLoop);
@@ -118,10 +135,11 @@ MixerDestroy(Mixer* s)
     if (s->bDecodes) ffmpeg::DecoderClose(s->pDecoder);
 
     pw_stream_destroy(s->pStream);
+    pw_core_disconnect(s->pCore);
+    pw_context_destroy(s->pCtx);
     pw_thread_loop_destroy(s->pThrdLoop);
     pw_deinit();
 
-    mtx_destroy(&s->mtxAdd);
     mtx_destroy(&s->mtxDecoder);
     mtx_destroy(&s->mtxThrdLoop);
     cnd_destroy(&s->cndThrdLoop);
@@ -133,21 +151,23 @@ MixerPlay(Mixer* s, String sPath)
 {
     MixerPause(s, false);
 
-    guard::Mtx lock(&s->mtxAdd);
-    guard::Mtx lockDec(&s->mtxDecoder);
-
-    s->sPath = sPath;
-
-    if (s->bDecodes) ffmpeg::DecoderClose(s->pDecoder);
-
-    auto err = ffmpeg::DecoderOpen(s->pDecoder, sPath);
-    if (err != ffmpeg::ERROR::OK)
     {
-        LOG_WARN("DecoderOpen\n");
-        return;
-    }
-    s->bDecodes = true;
+        guard::Mtx lockDec(&s->mtxDecoder);
 
+        s->sPath = sPath;
+
+        if (s->bDecodes) ffmpeg::DecoderClose(s->pDecoder);
+
+        auto err = ffmpeg::DecoderOpen(s->pDecoder, sPath);
+        if (err != ffmpeg::ERROR::OK)
+        {
+            LOG_WARN("DecoderOpen\n");
+            return;
+        }
+        s->bDecodes = true;
+    }
+
+    MixerUpdateSampleRate(s, ffmpeg::DecoderGetSampleRate(s->pDecoder), true);
 }
 
 static void
@@ -157,7 +177,8 @@ MixerRunThread(Mixer* s, int argc, char** argv)
 
     u8 setupBuffer[1024] {};
     const spa_pod* aParams[1] {};
-    spa_pod_builder b = SPA_POD_BUILDER_INIT(setupBuffer, sizeof(setupBuffer));
+    spa_pod_builder b {};
+    spa_pod_builder_init(&b, setupBuffer, sizeof(setupBuffer));
 
     s->pThrdLoop = pw_thread_loop_new("runThread2", {});
 
@@ -174,11 +195,16 @@ MixerRunThread(Mixer* s, int argc, char** argv)
         s
     );
 
+    s->pCtx = pw_context_new(pw_thread_loop_get_loop(s->pThrdLoop), {}, 0);
+    s->pCore = pw_context_connect(s->pCtx, {}, 0);
+    s->pRegistry = pw_core_get_registry(s->pCore, PW_VERSION_REGISTRY, 0);
+    pw_registry_add_listener(s->pRegistry, &s->registryListener, &s_registryEvents, {});
+
     spa_audio_info_raw rawInfo {
         .format = s->eformat,
         .flags {},
         .rate = s->sampleRate,
-        .channels = s->channels,
+        .channels = s->nChannels,
         .position {}
     };
 
@@ -188,12 +214,11 @@ MixerRunThread(Mixer* s, int argc, char** argv)
         s->pStream,
         PW_DIRECTION_OUTPUT,
         PW_ID_ANY,
-        (pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT|PW_STREAM_FLAG_MAP_BUFFERS|PW_STREAM_FLAG_ASYNC),
+        (pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT|PW_STREAM_FLAG_INACTIVE|PW_STREAM_FLAG_MAP_BUFFERS),
         aParams,
         utils::size(aParams)
     );
 
-    pw_stream_set_active(s->pStream, false);
     pw_thread_loop_start(s->pThrdLoop);
 }
 
@@ -204,7 +229,7 @@ writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
 
     if (!s->bDecodes) return;
 
-    auto err = ffmpeg::DecoderWriteToBuffer(s->pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, pSamplesWritten);
+    auto err = ffmpeg::DecoderWriteToBuffer(s->pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, s->nChannels, pSamplesWritten);
     if (err == ffmpeg::ERROR::EOF_)
     {
         MixerPause(s, true);
@@ -233,11 +258,11 @@ onProcess(void* pData)
         return;
     }
 
-    u32 stride = formatByteSize(s->eformat) * s->channels;
+    u32 stride = formatByteSize(s->eformat) * s->nChannels;
     u32 nFrames = pBuffData.maxsize / stride;
     if (pPwBuffer->requested) nFrames = SPA_MIN(pPwBuffer->requested, (u64)nFrames);
 
-    if (nFrames * s->channels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
+    if (nFrames * s->nChannels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
 
     s->nLastFrames = nFrames;
 
@@ -248,7 +273,7 @@ onProcess(void* pData)
 
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
-        for (u32 chIdx = 0; chIdx < s->channels; chIdx++)
+        for (u32 chIdx = 0; chIdx < s->nChannels; chIdx++)
         {
             /* modify each sample here */
             *pDest++ = s_aPwBuff[nWrites++] * vol;
@@ -289,6 +314,36 @@ void
 MixerTogglePause(Mixer* s)
 {
     MixerPause(s, !s->base.bPaused);
+}
+
+void
+MixerUpdateSampleRate(Mixer* s, u32 sampleRate, bool bSave)
+{
+    u8 setupBuffer[512] {};
+
+    spa_audio_info_raw rawInfo {
+        .format = s->eformat,
+        .flags {},
+        .rate = sampleRate,
+        .channels = s->nChannels,
+        .position {}
+    };
+
+    spa_pod_builder b {};
+    spa_pod_builder_init(&b, setupBuffer, sizeof(setupBuffer));
+
+    const spa_pod* aParams[1] {};
+    aParams[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
+
+    ThrdLoopLockGuard lock(s->pThrdLoop);
+    pw_stream_update_params(s->pStream, aParams, 1);
+    pw_stream_set_active(s->pStream, s->base.bPaused);
+    pw_stream_set_active(s->pStream, !s->base.bPaused);
+
+    if (bSave) s->sampleRate = sampleRate;
+
+    s->changedSampleRate = sampleRate;
+    LOG("sampleRate: {}, changed: {}\n", s->sampleRate, s->changedSampleRate);
 }
 
 } /* namespace pipewire */

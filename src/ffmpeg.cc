@@ -24,7 +24,9 @@ struct Decoder
     AVStream* pStream {};
     AVFormatContext* pFormatCtx {};
     AVCodecContext* pCodecCtx {};
+    SwrContext* pSwr {};
     int audioStreamIdx {};
+    u32 lastFrameSampleRate {};
 };
 
 Decoder*
@@ -43,28 +45,9 @@ DecoderClose(Decoder* s)
     /*avformat_free_context(s->pFormatCtx);*/
     if (s->pFormatCtx) avformat_close_input(&s->pFormatCtx);
     if (s->pCodecCtx) avcodec_free_context(&s->pCodecCtx);
+    if (s->pSwr) swr_free(&s->pSwr);
     /*avcodec_close(s->pCodecCtx);*/
     LOG_NOTIFY("DecoderClose()\n");
-}
-
-int
-printError(const char* pPrefix, int errorCode)
-{
-    if (errorCode == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        char buf[64] {};
-
-        if (av_strerror(errorCode, buf, utils::size(buf)) != 0)
-            strcpy(buf, "UNKNOWN_ERROR");
-
-        CERR("{} ({}: {})\n", pPrefix, errorCode, buf);
-
-        return errorCode;
-    }
 }
 
 ERROR
@@ -94,8 +77,6 @@ DecoderOpen(Decoder* s, String sPath)
 
     if (!pCodec) return ERROR::DECODER_NOT_FOUND;
 
-    LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
-
     s->pCodecCtx = avcodec_alloc_context3(pCodec);
     if (!s->pCodecCtx) return ERROR::DECODING_CONTEXT_ALLOCATION;
 
@@ -108,26 +89,31 @@ DecoderOpen(Decoder* s, String sPath)
         return ERROR::UNKNOWN;
     }
 
-    return ERROR::OK;
-}
-
-ERROR
-DecoderWriteToBuffer(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, long* pSamplesWritten)
-{
-    int err = 0;
-    long nWrites = 0;
-
-    /* NOTE: not sure why these have to be allocated. */
-
-    *pSamplesWritten = 0;
-
-    SwrContext* pSwr {};
-    err = swr_alloc_set_opts2(&pSwr,
+    err = swr_alloc_set_opts2(&s->pSwr,
         &s->pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, 48000,
         &s->pStream->codecpar->ch_layout, (AVSampleFormat)s->pStream->codecpar->format, s->pStream->codecpar->sample_rate,
         0, {}
     );
-    defer( swr_free(&pSwr) );
+
+    LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
+
+    return ERROR::OK;
+}
+
+ERROR
+DecoderWriteToBuffer(
+    Decoder* s,
+    f32* pBuff,
+    const u32 buffSize,
+    const u32 nFrames,
+    const u32 nChannles,
+    long* pSamplesWritten
+)
+{
+    int err = 0;
+    long nWrites = 0;
+
+    *pSamplesWritten = 0;
 
     AVPacket packet {};
     while (av_read_frame(s->pFormatCtx, &packet) == 0)
@@ -145,14 +131,17 @@ DecoderWriteToBuffer(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, long* pSa
             defer( av_frame_unref(&frame) );
 
             AVFrame res {};
-            defer( av_frame_unref(&res) );
-
-            /* force these settings for pipewire */
-            res.sample_rate = 48000;
+            /* NOTE: not changing sample rate here, chaning pipewire's sample rate instead */
+            res.sample_rate = frame.sample_rate;
             res.ch_layout = frame.ch_layout;
             res.format = AV_SAMPLE_FMT_FLT;
+            defer( av_frame_unref(&res) );
 
-            err = swr_convert_frame(pSwr, &res, &frame);
+            s->lastFrameSampleRate = res.sample_rate;
+
+            swr_config_frame(s->pSwr, &res, &frame);
+            err = swr_convert_frame(s->pSwr, &res, &frame);
+
             if (err < 0)
             {
                 char buff[16] {};
@@ -161,16 +150,60 @@ DecoderWriteToBuffer(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, long* pSa
                 continue;
             }
 
+            auto delay = swr_get_delay(s->pSwr, frame.sample_rate);
             u32 maxSamples = res.nb_samples * res.ch_layout.nb_channels;
-            utils::copy(pBuff + nWrites, (f32*)(res.data[0]), maxSamples);
-            nWrites += maxSamples;
+
+            const auto& nFrameChannles = res.ch_layout.nb_channels;
+            assert(nFrameChannles > 0);
+            if (nFrameChannles == 2)
+            {
+                utils::copy(pBuff + nWrites, (f32*)(res.data[0]), maxSamples);
+                nWrites += maxSamples;
+            }
+            else if (nFrameChannles == 1)
+            {
+                auto* data = (f32*)(res.data[0]);
+                for (u32 i = 0; i < maxSamples; ++i)
+                {
+                    for (u32 j = 0; j < nChannles; ++j)
+                        pBuff[nWrites++] = data[i];
+                }
+            }
+            else
+            {
+                auto* data = (f32*)(res.data[0]);
+                for (u32 i = 0; i < maxSamples; i += nFrameChannles)
+                {
+                    for (u32 j = 0; j < nChannles; ++j)
+                        pBuff[nWrites++] = data[i + j];
+                }
+            }
+
+            /* when resampling diffirent sample rates there might be leftovers */
+            /*LOG("delay: {}\n", delay);*/
+
+            // if (delay > 0)
+            // {
+            //     AVFrame res2 {};
+            //     res2.sample_rate = 48000;
+            //     res2.ch_layout = frame.ch_layout;
+            //     res2.format = AV_SAMPLE_FMT_FLT;
+            //     err = swr_convert_frame(s->pSwr, &res2, {});
+
+            //     u32 maxSamples2 = res2.nb_samples * res2.ch_layout.nb_channels;
+            //     LOG("maxSamples2: {}\n", maxSamples2);
+
+            //     utils::copy(pBuff + nWrites, (f32*)(res2.data[0]), maxSamples2);
+            //     nWrites += maxSamples2;
+            //     av_frame_unref(&res2);
+            // }
 
 #if 0
             /* non-resampled frame handling */
             u32 maxSamples = frame.nb_samples * frame.ch_layout.nb_channels;
             for (int i = 0; i < frame.nb_samples; ++i)
             {
-                for (int ch = 0; ch < frame.ch_layout.nb_channels; ++ch)
+                for (int ch = 0; ch < frame.ch_layout.nb_channels && ch < 2; ++ch)
                 {
                     f32 s = ((f32*)frame.data[ch])[i];
                     pBuff[nWrites++] = s;
@@ -187,6 +220,13 @@ DecoderWriteToBuffer(Decoder* s, f32* pBuff, u32 buffSie, u32 nFrames, long* pSa
     }
 
     return ERROR::EOF_;
+}
+
+u32
+DecoderGetSampleRate(Decoder* s)
+{
+    LOG("sample_rate: {}\n", s->pStream->codecpar->sample_rate);
+    return s->pStream->codecpar->sample_rate;
 }
 
 } /* namespace ffmpeg */

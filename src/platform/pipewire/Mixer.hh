@@ -20,6 +20,7 @@ void MixerDestroy(Mixer* s);
 void MixerPlay(Mixer* s, String sPath);
 void MixerPause(Mixer* s, bool bPause);
 void MixerTogglePause(Mixer* s);
+void MixerUpdateSampleRate(Mixer* s, u32 sampleRate, bool bSave);
 
 inline const audio::MixerInterface inl_MixerVTable {
     .init = decltype(audio::MixerInterface::init)(MixerInit),
@@ -31,21 +32,23 @@ inline const audio::MixerInterface inl_MixerVTable {
 
 struct Mixer
 {
-    audio::Mixer base;
+    audio::Mixer base {};
     u32 sampleRate = 48000;
-    u8 channels = 2;
+    u32 changedSampleRate = 48000;
+    u8 nChannels = 2;
     enum spa_audio_format eformat {};
     std::atomic<bool> bDecodes = false;
     ffmpeg::Decoder* pDecoder {};
     String sPath {};
 
-    pw_core* pCore = nullptr;
-    pw_context* pCtx = nullptr;
+    pw_context* pCtx {};
+    pw_core* pCore {};
+    pw_registry* pRegistry {};
     pw_thread_loop* pThrdLoop {};
-    pw_stream* pStream = nullptr;
-    u32 nLastFrames = 0;
+    pw_stream* pStream {};
+    spa_hook registryListener {};
+    u32 nLastFrames {};
 
-    mtx_t mtxAdd {};
     mtx_t mtxDecoder {};
     mtx_t mtxThrdLoop {};
     cnd_t cndThrdLoop {};
