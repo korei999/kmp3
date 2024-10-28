@@ -340,7 +340,7 @@ MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave)
     if (bSave) s->base.sampleRate = sampleRate;
 
     s->base.changedSampleRate = sampleRate;
-    LOG("sampleRate: {}, changed: {}\n", s->base.sampleRate, s->base.changedSampleRate);
+    LOG_NOTIFY("sampleRate: {}, changed: {}\n", s->base.sampleRate, s->base.changedSampleRate);
 }
 
 void
@@ -353,7 +353,7 @@ MixerSeekMS(Mixer* s, long ms)
     ms = utils::clamp(ms, 0L, maxMs);
     ffmpeg::DecoderSeekMS(s->pDecoder, ms);
 
-    s->base.currentTimeStamp = ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder);
+    s->base.currentTimeStamp = f64(ms)/1000.0 * s->base.changedSampleRate * s->base.nChannels;
     s->base.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
 }
 

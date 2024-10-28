@@ -126,7 +126,7 @@ subStringSearch(Allocator* pAlloc)
 }
 
 static void
-key(tb_event* pEv, Allocator* pAlloc)
+procKey(tb_event* pEv, Allocator* pAlloc)
 {
     auto& pl = *app::g_pPlayer;
 
@@ -183,13 +183,13 @@ key(tb_event* pEv, Allocator* pAlloc)
 }
 
 static void
-resize([[maybe_unused]] tb_event* pEv)
+procResize([[maybe_unused]] tb_event* pEv)
 {
     //
 }
 
 static void
-mouse(tb_event* pEv)
+procMouse(tb_event* pEv)
 {
     auto& pl = *app::g_pPlayer;
     const long off = pl.statusAndInfoHeight + 3;
@@ -230,15 +230,15 @@ TermboxProcEvents(Allocator* pAlloc)
         case 0: break;
 
         case TB_EVENT_KEY:
-        key(&ev, pAlloc);
+        procKey(&ev, pAlloc);
         break;
 
         case TB_EVENT_RESIZE:
-        resize(&ev);
+        procResize(&ev);
         break;
 
         case TB_EVENT_MOUSE:
-        mouse(&ev);
+        procMouse(&ev);
         break;
     }
 }
@@ -395,8 +395,6 @@ drawTime(Allocator* pAlloc, const u16 split)
     char* pBuff = (char*)alloc(pAlloc, 1, width);
     utils::fill(pBuff, '\0', width);
 
-    long totalSec = mixer.totalSamplesCount / mixer.changedSampleRate / mixer.nChannels;
-
     u64 t = std::round(mixer.currentTimeStamp / f64(mixer.nChannels) / mixer.changedSampleRate);
     u64 maxT = std::round(mixer.totalSamplesCount / f64(mixer.nChannels) / mixer.changedSampleRate);
 
@@ -420,8 +418,6 @@ drawStatus(Allocator* pAlloc)
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
     const u16 split = std::round(f64(width) * 0.4);
-
-    char* pBuff = (char*)alloc(pAlloc, 1, width);
 
     drawBox(0, 0, split, pl.statusAndInfoHeight + 1, TB_WHITE, TB_DEFAULT);
 
