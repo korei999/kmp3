@@ -26,7 +26,6 @@ struct Decoder
     AVCodecContext* pCodecCtx {};
     SwrContext* pSwr {};
     int audioStreamIdx {};
-    u32 lastFrameSampleRate {};
 };
 
 Decoder*
@@ -131,13 +130,11 @@ DecoderWriteToBuffer(
             defer( av_frame_unref(&frame) );
 
             AVFrame res {};
-            /* NOTE: not changing sample rate here, chaning pipewire's sample rate instead */
+            /* NOTE: not changing sample rate here, changing pipewire's sample rate instead */
             res.sample_rate = frame.sample_rate;
             res.ch_layout = frame.ch_layout;
             res.format = AV_SAMPLE_FMT_FLT;
             defer( av_frame_unref(&res) );
-
-            s->lastFrameSampleRate = res.sample_rate;
 
             swr_config_frame(s->pSwr, &res, &frame);
             err = swr_convert_frame(s->pSwr, &res, &frame);
@@ -179,38 +176,6 @@ DecoderWriteToBuffer(
                 }
             }
 
-            /* when resampling diffirent sample rates there might be leftovers */
-            /*auto delay = swr_get_delay(s->pSwr, frame.sample_rate);*/
-
-            // if (delay > 0)
-            // {
-            //     AVFrame res2 {};
-            //     res2.sample_rate = 48000;
-            //     res2.ch_layout = frame.ch_layout;
-            //     res2.format = AV_SAMPLE_FMT_FLT;
-            //     err = swr_convert_frame(s->pSwr, &res2, {});
-
-            //     u32 maxSamples2 = res2.nb_samples * res2.ch_layout.nb_channels;
-            //     LOG("maxSamples2: {}\n", maxSamples2);
-
-            //     utils::copy(pBuff + nWrites, (f32*)(res2.data[0]), maxSamples2);
-            //     nWrites += maxSamples2;
-            //     av_frame_unref(&res2);
-            // }
-
-#if 0
-            /* non-resampled frame handling */
-            u32 maxSamples = frame.nb_samples * frame.ch_layout.nb_channels;
-            for (int i = 0; i < frame.nb_samples; ++i)
-            {
-                for (int ch = 0; ch < frame.ch_layout.nb_channels && ch < 2; ++ch)
-                {
-                    f32 s = ((f32*)frame.data[ch])[i];
-                    pBuff[nWrites++] = s;
-                }
-            }
-#endif
-
             if (nWrites >= maxSamples && nWrites >= nFrames*2) /* mul by nChannels */
             {
                 *pSamplesWritten += nWrites;
@@ -219,7 +184,7 @@ DecoderWriteToBuffer(
         }
     }
 
-    return ERROR::EOF_;
+    return ERROR::END_OF_FILE;
 }
 
 u32

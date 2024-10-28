@@ -19,6 +19,7 @@ void PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pWBuff, u32 si
 void PlayerSelectFocused(Player* s);
 void PlayerPause(Player* s, bool bPause);
 void PlayerTogglePause(Player* s);
+void PlayerOnSongEnd(Player* s);
 
 struct Player
 {
@@ -41,7 +42,7 @@ struct Player
     VecBase<String> aShortArgvs {};
     VecBase<u16> aSongIdxs {};
     long focused {};
-    long selected  {};
+    long selected {};
     u32 longestStringSize {};
 
     Player() = delete;

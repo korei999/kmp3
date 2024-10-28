@@ -4,7 +4,6 @@
 #include "app.hh"
 #include "frame.hh"
 #include "logs.hh"
-#include "platform/pipewire/Mixer.hh"
 
 #define TB_IMPL
 #define TB_OPT_ATTR_W 32
@@ -176,24 +175,11 @@ key(tb_event* pEv, Allocator* pAlloc)
     else if (ch == L'B')
         app::TEST_g_bExitThreadloop = !app::TEST_g_bExitThreadloop;
     else if (ch == L'[')
-    {
-        namespace pp = platform::pipewire;
-        pp::Mixer* pMixer = (pp::Mixer*)app::g_pMixer;
-        pp::MixerUpdateSampleRate(pMixer, pMixer->changedSampleRate - 1000, false);
-        
-    }
+        audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->changedSampleRate - 1000, false);
     else if (ch == L']')
-    {
-        namespace pp = platform::pipewire;
-        pp::Mixer* pMixer = (pp::Mixer*)app::g_pMixer;
-        pp::MixerUpdateSampleRate(pMixer, pMixer->changedSampleRate + 1000, false);
-    }
+        audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->changedSampleRate + 1000, false);
     else if (ch == L'\\')
-    {
-        namespace pp = platform::pipewire;
-        pp::Mixer* pMixer = (pp::Mixer*)app::g_pMixer;
-        pp::MixerUpdateSampleRate(pMixer, pMixer->sampleRate, false);
-    }
+        audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->sampleRate, false);
 
     fixFirstIdx();
 }
@@ -453,6 +439,8 @@ TermboxRender([[maybe_unused]] Allocator* pAlloc)
     if (tb_height() < 6 || tb_width() < 6) return;
 
     tb_clear();
+
+    /*LOG("focused: {}, selected: {}\n", app::g_pPlayer->focused, app::g_pPlayer->selected);*/
 
     drawStatus(pAlloc);
     drawInfo();

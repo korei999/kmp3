@@ -11,7 +11,7 @@ enum ERROR : u8
 {
     OK = 0,
     UNKNOWN,
-    EOF_,
+    END_OF_FILE,
     DONE,
     FILE_OPENING,
     AUDIO_STREAM_NOT_FOUND,

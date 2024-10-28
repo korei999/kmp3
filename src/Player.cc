@@ -32,15 +32,15 @@ acceptedFormat(String s)
 void
 PlayerNext(Player* s)
 {
-    auto ns = s->focused + 1;
-    if (ns >= s32(s->aSongIdxs.size)) ns = 0;
+    long ns = s->focused + 1;
+    if (ns >= long(s->aSongIdxs.size)) ns = 0;
     s->focused = ns;
 }
 
 void
 PlayerPrev(Player* s)
 {
-    auto ns = s->focused - 1;
+    long ns = s->focused - 1;
     if (ns < 0) ns = s->aSongIdxs.size - 1;
     s->focused = ns;
 }
@@ -133,4 +133,11 @@ void
 PlayerTogglePause(Player* s)
 {
     audio::MixerTogglePause(app::g_pMixer);
+}
+
+void
+PlayerOnSongEnd(Player* s)
+{
+    PlayerNext(s);
+    PlayerSelectFocused(s);
 }

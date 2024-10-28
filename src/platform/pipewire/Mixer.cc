@@ -28,18 +28,6 @@ static void MixerRunThread(Mixer* s, int argc, char** argv);
 static void onProcess(void* data);
 static bool MixerEmpty(Mixer* s);
 
-static void
-registryEventGlobal(
-    void* data,
-    u32 id,
-    u32 permissions,
-    const char* type,
-    u32 version,
-    const spa_dict* props)
-{
-    /*LOG_NOTIFY("object: id:{} type:{}/{}\n", id, type, version);*/
-}
-
 static const pw_stream_events s_streamEvents {
     .version = PW_VERSION_STREAM_EVENTS,
     .destroy {},
@@ -53,12 +41,6 @@ static const pw_stream_events s_streamEvents {
     .drained {},
     .command {},
     .trigger_done {},
-};
-
-static const struct pw_registry_events s_registryEvents {
-        PW_VERSION_REGISTRY_EVENTS,
-        .global = registryEventGlobal,
-        .global_remove {}
 };
 
 static f32 s_aPwBuff[audio::CHUNK_SIZE] {}; /* big */
@@ -108,7 +90,7 @@ MixerInit(Mixer* s)
     s->base.bMuted = false;
     s->base.volume = 0.1f;
 
-    s->sampleRate = 48000;
+    s->base.sampleRate = 48000;
     s->nChannels = 2;
     s->eformat = SPA_AUDIO_FORMAT_F32;
 
@@ -135,8 +117,6 @@ MixerDestroy(Mixer* s)
     if (s->bDecodes) ffmpeg::DecoderClose(s->pDecoder);
 
     pw_stream_destroy(s->pStream);
-    pw_core_disconnect(s->pCore);
-    pw_context_destroy(s->pCtx);
     pw_thread_loop_destroy(s->pThrdLoop);
     pw_deinit();
 
@@ -149,7 +129,7 @@ MixerDestroy(Mixer* s)
 void
 MixerPlay(Mixer* s, String sPath)
 {
-    MixerPause(s, false);
+    MixerPause(s, true);
 
     {
         guard::Mtx lockDec(&s->mtxDecoder);
@@ -167,7 +147,8 @@ MixerPlay(Mixer* s, String sPath)
         s->bDecodes = true;
     }
 
-    MixerUpdateSampleRate(s, ffmpeg::DecoderGetSampleRate(s->pDecoder), true);
+    MixerChangeSampleRate(s, ffmpeg::DecoderGetSampleRate(s->pDecoder), true);
+    MixerPause(s, false);
 }
 
 static void
@@ -180,7 +161,7 @@ MixerRunThread(Mixer* s, int argc, char** argv)
     spa_pod_builder b {};
     spa_pod_builder_init(&b, setupBuffer, sizeof(setupBuffer));
 
-    s->pThrdLoop = pw_thread_loop_new("runThread2", {});
+    s->pThrdLoop = pw_thread_loop_new("kmp3PwThreadLoop", {});
 
     s->pStream = pw_stream_new_simple(
         pw_thread_loop_get_loop(s->pThrdLoop),
@@ -195,15 +176,10 @@ MixerRunThread(Mixer* s, int argc, char** argv)
         s
     );
 
-    s->pCtx = pw_context_new(pw_thread_loop_get_loop(s->pThrdLoop), {}, 0);
-    s->pCore = pw_context_connect(s->pCtx, {}, 0);
-    s->pRegistry = pw_core_get_registry(s->pCore, PW_VERSION_REGISTRY, 0);
-    pw_registry_add_listener(s->pRegistry, &s->registryListener, &s_registryEvents, {});
-
     spa_audio_info_raw rawInfo {
         .format = s->eformat,
         .flags {},
-        .rate = s->sampleRate,
+        .rate = s->base.sampleRate,
         .channels = s->nChannels,
         .position {}
     };
@@ -225,17 +201,23 @@ MixerRunThread(Mixer* s, int argc, char** argv)
 static void
 writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
 {
-    guard::Mtx lock(&s->mtxDecoder);
-
-    if (!s->bDecodes) return;
-
-    auto err = ffmpeg::DecoderWriteToBuffer(s->pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, s->nChannels, pSamplesWritten);
-    if (err == ffmpeg::ERROR::EOF_)
+    ffmpeg::ERROR err {};
     {
-        MixerPause(s, true);
-        ffmpeg::DecoderClose(s->pDecoder);
-        s->bDecodes = false;
+        guard::Mtx lock(&s->mtxDecoder);
+
+        if (!s->bDecodes) return;
+
+        err = ffmpeg::DecoderWriteToBuffer(s->pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, s->nChannels, pSamplesWritten);
+        if (err == ffmpeg::ERROR::END_OF_FILE)
+        {
+            MixerPause(s, true);
+            ffmpeg::DecoderClose(s->pDecoder);
+            s->bDecodes = false;
+
+        }
     }
+
+    if (err == ffmpeg::ERROR::END_OF_FILE) PlayerOnSongEnd(app::g_pPlayer);
 }
 
 static void
@@ -318,10 +300,11 @@ MixerTogglePause(Mixer* s)
 }
 
 void
-MixerUpdateSampleRate(Mixer* s, u32 sampleRate, bool bSave)
+MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave)
 {
-    u8 setupBuffer[512] {};
+    sampleRate = utils::clamp(sampleRate, 0, std::numeric_limits<int>::max());
 
+    u8 setupBuffer[512] {};
     spa_audio_info_raw rawInfo {
         .format = s->eformat,
         .flags {},
@@ -337,14 +320,15 @@ MixerUpdateSampleRate(Mixer* s, u32 sampleRate, bool bSave)
     aParams[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
 
     ThrdLoopLockGuard lock(s->pThrdLoop);
-    pw_stream_update_params(s->pStream, aParams, 1);
+    pw_stream_update_params(s->pStream, aParams, utils::size(aParams));
+    /* update won't apply without this */
     pw_stream_set_active(s->pStream, s->base.bPaused);
     pw_stream_set_active(s->pStream, !s->base.bPaused);
 
-    if (bSave) s->sampleRate = sampleRate;
+    if (bSave) s->base.sampleRate = sampleRate;
 
-    s->changedSampleRate = sampleRate;
-    LOG("sampleRate: {}, changed: {}\n", s->sampleRate, s->changedSampleRate);
+    s->base.changedSampleRate = sampleRate;
+    LOG("sampleRate: {}, changed: {}\n", s->base.sampleRate, s->base.changedSampleRate);
 }
 
 } /* namespace pipewire */
