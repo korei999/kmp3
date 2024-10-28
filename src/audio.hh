@@ -39,6 +39,7 @@ struct Mixer
     bool bRunning = true;
     u32 sampleRate = 48000;
     u32 changedSampleRate = 48000;
+    u8 nChannels = 2;
     f32 volume = 0.5f;
     u64 currentTimeStamp {};
     u64 totalSamplesCount {};

@@ -147,6 +147,7 @@ MixerPlay(Mixer* s, String sPath)
         s->bDecodes = true;
     }
 
+    s->base.nChannels = ffmpeg::DecoderGetChannelsCount(s->pDecoder);
     MixerChangeSampleRate(s, ffmpeg::DecoderGetSampleRate(s->pDecoder), true);
     MixerPause(s, false);
 }
@@ -199,7 +200,7 @@ MixerRunThread(Mixer* s, int argc, char** argv)
 }
 
 static void
-writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
+writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten, u64* pPcmPos)
 {
     ffmpeg::ERROR err {};
     {
@@ -207,7 +208,7 @@ writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
 
         if (!s->bDecodes) return;
 
-        err = ffmpeg::DecoderWriteToBuffer(s->pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, s->nChannels, pSamplesWritten);
+        err = ffmpeg::DecoderWriteToBuffer(s->pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, s->nChannels, pSamplesWritten, pPcmPos);
         if (err == ffmpeg::ERROR::END_OF_FILE)
         {
             MixerPause(s, true);
@@ -264,7 +265,7 @@ onProcess(void* pData)
             if (nWrites >= nDecodedSamples)
             {
                 /* ask to fill the buffer when it's empty */
-                writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples);
+                writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples, &s->base.currentTimeStamp);
                 nWrites = 0;
             }
         }
@@ -277,7 +278,7 @@ onProcess(void* pData)
     }
     else
     {
-        s->base.currentTimeStamp = ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder);
+        /*s->base.currentTimeStamp = ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder);*/
         s->base.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
     }
 
@@ -348,7 +349,7 @@ MixerSeekMS(Mixer* s, long ms)
     guard::Mtx lock(&s->mtxDecoder);
     if (!s->bDecodes) return;
 
-    long maxMs = (ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder) / s->base.changedSampleRate / s->nChannels) * 1000;
+    long maxMs = (ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder) / s->base.changedSampleRate / s->base.nChannels) * 1000;
     ms = utils::clamp(ms, 0L, maxMs);
     ffmpeg::DecoderSeekMS(s->pDecoder, ms);
 
@@ -359,14 +360,14 @@ MixerSeekMS(Mixer* s, long ms)
 void
 MixerSeekLeftMS(Mixer* s, long ms)
 {
-    long currMs = (ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder) / s->base.changedSampleRate / s->nChannels) * 1000;
+    long currMs = (ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder) / s->base.changedSampleRate / s->base.nChannels) * 1000;
     MixerSeekMS(s, currMs - ms);
 }
 
 void
 MixerSeekRightMS(Mixer* s, long ms)
 {
-    long currMs = (ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder) / s->base.changedSampleRate / s->nChannels) * 1000;
+    long currMs = (ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder) / s->base.changedSampleRate / s->base.nChannels) * 1000;
     MixerSeekMS(s, currMs + ms);
 }
 

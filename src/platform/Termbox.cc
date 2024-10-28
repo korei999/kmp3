@@ -395,10 +395,10 @@ drawTime(Allocator* pAlloc, const u16 split)
     char* pBuff = (char*)alloc(pAlloc, 1, width);
     utils::fill(pBuff, '\0', width);
 
-    long totalSec = mixer.totalSamplesCount / mixer.changedSampleRate / 2;
+    long totalSec = mixer.totalSamplesCount / mixer.changedSampleRate / mixer.nChannels;
 
-    u64 t = (mixer.currentTimeStamp / 2) / mixer.changedSampleRate;
-    u64 maxT = (mixer.totalSamplesCount / 2) / mixer.changedSampleRate;
+    u64 t = std::round(mixer.currentTimeStamp / f64(mixer.nChannels) / mixer.changedSampleRate);
+    u64 maxT = std::round(mixer.totalSamplesCount / f64(mixer.nChannels) / mixer.changedSampleRate);
 
     f64 mF = t / 60.0;
     u64 m = u64(mF);

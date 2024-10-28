@@ -109,7 +109,8 @@ DecoderWriteToBuffer(
     const u32 buffSize,
     const u32 nFrames,
     const u32 nChannles,
-    long* pSamplesWritten
+    long* pSamplesWritten,
+    u64* pPcmPos
 )
 {
     int err = 0;
@@ -135,6 +136,7 @@ DecoderWriteToBuffer(
             f64 currentTimeInSeconds = av_q2d(s->pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
             long pcmPos = currentTimeInSeconds * frame.ch_layout.nb_channels * frame.sample_rate;
             s->currentSamplePos = pcmPos;
+            *pPcmPos = pcmPos;
 
             AVFrame res {};
             /* NOTE: not changing sample rate here, changing pipewire's sample rate instead */
@@ -232,6 +234,12 @@ DecoderGetTotalSamplesCount(Decoder* s)
     /*LOG("sample_rate: {}, nb_channels: {}\n", s->pStream->codecpar->sample_rate, s->pStream->codecpar->ch_layout.nb_channels);*/
     long res = (s->pFormatCtx->duration / (f32)AV_TIME_BASE) * s->pStream->codecpar->sample_rate * s->pStream->codecpar->ch_layout.nb_channels;
     return res;
+}
+
+int
+DecoderGetChannelsCount(Decoder* s)
+{
+    return s->pStream->codecpar->ch_layout.nb_channels;
 }
 
 } /* namespace ffmpeg */
