@@ -120,7 +120,6 @@ PlayerSelectFocused(Player* s)
     const String& sPath = app::g_aArgs[s->selected];
     LOG_NOTIFY("selected({}): {}\n", s->selected, sPath);
 
-    /*audio::MixerInit(app::g_pMixer);*/
     audio::MixerPlay(app::g_pMixer, sPath);
 }
 

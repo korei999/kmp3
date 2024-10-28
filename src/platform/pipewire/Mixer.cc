@@ -233,6 +233,7 @@ writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten)
     if (err == ffmpeg::ERROR::EOF_)
     {
         MixerPause(s, true);
+        ffmpeg::DecoderClose(s->pDecoder);
         s->bDecodes = false;
     }
 }

@@ -150,8 +150,8 @@ DecoderWriteToBuffer(
                 continue;
             }
 
-            auto delay = swr_get_delay(s->pSwr, frame.sample_rate);
             u32 maxSamples = res.nb_samples * res.ch_layout.nb_channels;
+            if (maxSamples >= buffSize) maxSamples = buffSize - 1;
 
             const auto& nFrameChannles = res.ch_layout.nb_channels;
             assert(nFrameChannles > 0);
@@ -180,7 +180,7 @@ DecoderWriteToBuffer(
             }
 
             /* when resampling diffirent sample rates there might be leftovers */
-            /*LOG("delay: {}\n", delay);*/
+            /*auto delay = swr_get_delay(s->pSwr, frame.sample_rate);*/
 
             // if (delay > 0)
             // {
