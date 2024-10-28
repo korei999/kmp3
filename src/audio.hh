@@ -26,6 +26,9 @@ struct MixerInterface
     void (*pause)(Mixer* s, bool bPause);
     void (*togglePause)(Mixer* s);
     void (*changeSampleRate)(Mixer* s, int sampleRate, bool bSave);
+    void (*seekMS)(Mixer* s, u64 ms);
+    void (*seekLeftMS)(Mixer* s, u64 ms);
+    void (*seekRightMS)(Mixer* s, u64 ms);
 };
 
 struct Mixer
@@ -37,6 +40,8 @@ struct Mixer
     u32 sampleRate = 48000;
     u32 changedSampleRate = 48000;
     f32 volume = 0.5f;
+    u64 currentTimeStamp {};
+    u64 totalSamplesCount {};
 };
 
 ADT_NO_UB constexpr void MixerInit(Mixer* s) { s->pVTable->init(s); }
@@ -45,6 +50,9 @@ ADT_NO_UB constexpr void MixerPlay(Mixer* s, String sPath) { s->pVTable->play(s,
 ADT_NO_UB constexpr void MixerPause(Mixer* s, bool bPause) { s->pVTable->pause(s, bPause); }
 ADT_NO_UB constexpr void MixerTogglePause(Mixer* s) { s->pVTable->togglePause(s); }
 ADT_NO_UB constexpr void MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave) { s->pVTable->changeSampleRate(s, sampleRate, bSave); }
+ADT_NO_UB constexpr void MixerSeekMS(Mixer* s, u64 ms) { s->pVTable->seekMS(s, ms); }
+ADT_NO_UB constexpr void MixerSeekLeftMS(Mixer* s, u64 ms) { s->pVTable->seekLeftMS(s, ms); }
+ADT_NO_UB constexpr void MixerSeekRightMS(Mixer* s, u64 ms) { s->pVTable->seekRightMS(s, ms); }
 
 struct DummyMixer
 {
@@ -89,6 +97,24 @@ DummyMixerChangeSampleRate([[maybe_unused]] DummyMixer* s, [[maybe_unused]] int 
     //
 }
 
+constexpr void
+DummyMixerSeekMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms)
+{
+    //
+}
+
+constexpr void
+DummyMixerSeekLeftMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms)
+{
+    //
+}
+
+constexpr void
+DummyMixerSeekRightMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms)
+{
+    //
+}
+
 inline const MixerInterface inl_DummyMixerVTable {
     .init = decltype(MixerInterface::init)(DummyMixerInit),
     .destroy = decltype(MixerInterface::destroy)(DummyMixerDestroy),
@@ -96,6 +122,9 @@ inline const MixerInterface inl_DummyMixerVTable {
     .pause = decltype(MixerInterface::pause)(DummyMixerPause),
     .togglePause = decltype(MixerInterface::togglePause)(DummyMixerTogglePause),
     .changeSampleRate = decltype(MixerInterface::changeSampleRate)(DummyMixerChangeSampleRate),
+    .seekMS = decltype(MixerInterface::seekMS)(DummyMixerSeekMS),
+    .seekLeftMS = decltype(MixerInterface::seekMS)(DummyMixerSeekLeftMS),
+    .seekRightMS = decltype(MixerInterface::seekMS)(DummyMixerSeekRightMS),
 };
 
 constexpr

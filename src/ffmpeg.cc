@@ -20,12 +20,13 @@ namespace ffmpeg
 
 struct Decoder
 {
-    String path {};
     AVStream* pStream {};
     AVFormatContext* pFormatCtx {};
     AVCodecContext* pCodecCtx {};
     SwrContext* pSwr {};
     int audioStreamIdx {};
+    u64 currentSamplePos {};
+    u64 nextTimestamp {};
 };
 
 Decoder*
@@ -47,6 +48,8 @@ DecoderClose(Decoder* s)
     if (s->pSwr) swr_free(&s->pSwr);
     /*avcodec_close(s->pCodecCtx);*/
     LOG_NOTIFY("DecoderClose()\n");
+
+    *s = {};
 }
 
 ERROR
@@ -89,7 +92,7 @@ DecoderOpen(Decoder* s, String sPath)
     }
 
     err = swr_alloc_set_opts2(&s->pSwr,
-        &s->pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, 48000,
+        &s->pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, s->pStream->codecpar->sample_rate,
         &s->pStream->codecpar->ch_layout, (AVSampleFormat)s->pStream->codecpar->format, s->pStream->codecpar->sample_rate,
         0, {}
     );
@@ -129,6 +132,15 @@ DecoderWriteToBuffer(
         {
             defer( av_frame_unref(&frame) );
 
+            /* save pcm position */
+            s->currentSamplePos = (frame.best_effort_timestamp + frame.nb_samples) * frame.ch_layout.nb_channels;
+            /*s->currentSamplePos = frame.best_effort_timestamp + frame.nb_samples;*/
+            /*LOG("curr: {}, dur: {}, curr2: {}, total: {}\n", frame.best_effort_timestamp, s->pStream->duration, s->currentSamplePos, DecoderGetTotalSamplesCount(s));*/
+
+            /*LOG("curr: {}, dut: {}\n", DecoderGetCurrentSamplePos(s), DecoderGetTotalSamplesCount(s));*/
+            LOG("curr: {}, dut: {}\n", DecoderGetCurrentSamplePos(s), s->pFormatCtx->duration);
+            /*LOG("curr: {}, dut: {}\n", s->currentSamplePos, s->pFormatCtx->duration);*/
+
             AVFrame res {};
             /* NOTE: not changing sample rate here, changing pipewire's sample rate instead */
             res.sample_rate = frame.sample_rate;
@@ -138,6 +150,9 @@ DecoderWriteToBuffer(
 
             swr_config_frame(s->pSwr, &res, &frame);
             err = swr_convert_frame(s->pSwr, &res, &frame);
+
+            /*auto rescaled = av_rescale(s->currentTimestamp, s->pStream->time_base.den, s->pStream->time_base.num) / 1000;*/
+            /*LOG("duration: {}, current(): {}, den: {}, num: {}\n", s->pFormatCtx->duration, s->currentTimestamp, res.time_base.den, res.time_base.num);*/
 
             if (err < 0)
             {
@@ -192,6 +207,36 @@ DecoderGetSampleRate(Decoder* s)
 {
     LOG("sample_rate: {}\n", s->pStream->codecpar->sample_rate);
     return s->pStream->codecpar->sample_rate;
+}
+
+static void
+DecoderSeekFrame(Decoder* s, u64 frame)
+{
+    avformat_seek_file(s->pFormatCtx, s->pStream->index, 0, frame, frame, AVSEEK_FLAG_BACKWARD);
+}
+
+void
+DecoderSeekMS(Decoder* s, long ms)
+{
+    auto frameNumber = av_rescale(ms, s->pStream->time_base.den, s->pStream->time_base.num);
+    frameNumber /= 1000;
+    DecoderSeekFrame(s, frameNumber);
+}
+
+long
+DecoderGetCurrentSamplePos(Decoder* s)
+{
+    return s->currentSamplePos;
+    /*long res = (s->currentSamplePos / (f32)AV_TIME_BASE) * s->pStream->codecpar->sample_rate * s->pStream->codecpar->ch_layout.nb_channels;*/
+    /*return res;*/
+}
+
+long
+DecoderGetTotalSamplesCount(Decoder* s)
+{
+    /*LOG("sample_rate: {}, nb_channels: {}\n", s->pStream->codecpar->sample_rate, s->pStream->codecpar->ch_layout.nb_channels);*/
+    long res = (s->pFormatCtx->duration / (f32)AV_TIME_BASE) * s->pStream->codecpar->sample_rate * s->pStream->codecpar->ch_layout.nb_channels;
+    return res;
 }
 
 } /* namespace ffmpeg */

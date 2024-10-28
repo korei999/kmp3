@@ -11,6 +11,4 @@ VecBase<String> g_aArgs {};
 Player* g_pPlayer {};
 audio::Mixer* g_pMixer {};
 
-bool TEST_g_bExitThreadloop {};
-
 } /* namespace app */

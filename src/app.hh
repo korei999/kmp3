@@ -16,6 +16,4 @@ extern VecBase<String> g_aArgs;
 extern Player* g_pPlayer;
 extern audio::Mixer* g_pMixer;
 
-extern bool TEST_g_bExitThreadloop;
-
 } /* namespace app */

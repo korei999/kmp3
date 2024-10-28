@@ -8,19 +8,9 @@
 namespace frame
 {
 
-static mtx_t s_mtxUpdate {};
-cnd_t g_cndUpdate {};
-
 void
 run()
 {
-    mtx_init(&s_mtxUpdate, mtx_plain);
-    cnd_init(&g_cndUpdate);
-    defer(
-        mtx_destroy(&s_mtxUpdate);
-        cnd_destroy(&g_cndUpdate);
-    );
-
     Arena arena(SIZE_1M);
     defer( ArenaFreeAll(&arena) );
 

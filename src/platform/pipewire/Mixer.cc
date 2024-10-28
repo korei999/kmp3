@@ -270,6 +270,17 @@ onProcess(void* pData)
         }
     }
 
+    if (nDecodedSamples == 0)
+    {
+        s->base.currentTimeStamp = 0;
+        s->base.totalSamplesCount = 0;
+    }
+    else
+    {
+        s->base.currentTimeStamp = ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder);
+        s->base.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
+    }
+
     pBuffData.chunk->offset = 0;
     pBuffData.chunk->stride = stride;
     pBuffData.chunk->size = nFrames * stride;
@@ -329,6 +340,34 @@ MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave)
 
     s->base.changedSampleRate = sampleRate;
     LOG("sampleRate: {}, changed: {}\n", s->base.sampleRate, s->base.changedSampleRate);
+}
+
+void
+MixerSeekMS(Mixer* s, long ms)
+{
+    guard::Mtx lock(&s->mtxDecoder);
+    if (!s->bDecodes) return;
+
+    long maxMs = (ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder) / s->base.changedSampleRate / s->nChannels) * 1000;
+    ms = utils::clamp(ms, 0L, maxMs);
+    ffmpeg::DecoderSeekMS(s->pDecoder, ms);
+
+    s->base.currentTimeStamp = ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder);
+    s->base.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
+}
+
+void
+MixerSeekLeftMS(Mixer* s, long ms)
+{
+    long currMs = (ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder) / s->base.changedSampleRate / s->nChannels) * 1000;
+    MixerSeekMS(s, currMs - ms);
+}
+
+void
+MixerSeekRightMS(Mixer* s, long ms)
+{
+    long currMs = (ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder) / s->base.changedSampleRate / s->nChannels) * 1000;
+    MixerSeekMS(s, currMs + ms);
 }
 
 } /* namespace pipewire */

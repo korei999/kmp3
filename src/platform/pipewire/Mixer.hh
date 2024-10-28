@@ -21,6 +21,9 @@ void MixerPlay(Mixer* s, String sPath);
 void MixerPause(Mixer* s, bool bPause);
 void MixerTogglePause(Mixer* s);
 void MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave);
+void MixerSeekMS(Mixer* s, long ms);
+void MixerSeekLeftMS(Mixer* s, long ms);
+void MixerSeekRightMS(Mixer* s, long ms);
 
 inline const audio::MixerInterface inl_MixerVTable {
     .init = decltype(audio::MixerInterface::init)(MixerInit),
@@ -29,6 +32,9 @@ inline const audio::MixerInterface inl_MixerVTable {
     .pause = decltype(audio::MixerInterface::pause)(MixerPause),
     .togglePause = decltype(audio::MixerInterface::togglePause)(MixerTogglePause),
     .changeSampleRate = decltype(audio::MixerInterface::changeSampleRate)(MixerChangeSampleRate),
+    .seekMS = decltype(audio::MixerInterface::seekMS)(MixerSeekMS),
+    .seekLeftMS = decltype(audio::MixerInterface::seekLeftMS)(MixerSeekLeftMS),
+    .seekRightMS = decltype(audio::MixerInterface::seekRightMS)(MixerSeekRightMS),
 };
 
 struct Mixer
@@ -40,10 +46,6 @@ struct Mixer
     ffmpeg::Decoder* pDecoder {};
     String sPath {};
 
-    // pw_context* pCtx {};
-    // pw_core* pCore {};
-    // pw_registry* pRegistry {};
-    // spa_hook registryListener {};
     pw_thread_loop* pThrdLoop {};
     pw_stream* pStream {};
     u32 nLastFrames {};
@@ -70,5 +72,8 @@ inline void MixerPlay(platform::pipewire::Mixer* s, String sPath) { platform::pi
 inline void MixerPause(platform::pipewire::Mixer* s, bool bPause) { platform::pipewire::MixerPause(s, bPause); }
 inline void MixerTogglePause(platform::pipewire::Mixer* s) { platform::pipewire::MixerTogglePause(s); }
 inline void MixerChangeSampleRate(platform::pipewire::Mixer* s, int sampleRate, bool bSave) { platform::pipewire::MixerChangeSampleRate(s, sampleRate, bSave); }
+inline void MixerSeekMS(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekMS(s, ms); }
+inline void MixerSeekMSLeft(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekLeftMS(s, ms); }
+inline void MixerSeekMSRight(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekRightMS(s, ms); }
 
 } /* namespace audio */

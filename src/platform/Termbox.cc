@@ -2,7 +2,6 @@
 
 #include "adt/defer.hh"
 #include "app.hh"
-#include "frame.hh"
 #include "logs.hh"
 
 #define TB_IMPL
@@ -139,7 +138,6 @@ key(tb_event* pEv, Allocator* pAlloc)
     if (ch == 'q' || ch == L'й')
     {
         app::g_bRunning = false;
-        cnd_broadcast(&frame::g_cndUpdate);
         return;
     }
     else if (ch == L'j' || ch == L'о' || key == TB_KEY_ARROW_DOWN)
@@ -163,23 +161,23 @@ key(tb_event* pEv, Allocator* pAlloc)
     else if (ch == L' ')
         PlayerTogglePause(&pl);
     else if (ch == L'9')
-    {
         audio::g_globalVolume = utils::clamp(audio::g_globalVolume - 0.1f, 0.0f, 1.0f);
-        LOG_NOTIFY("g_globalVolume: {:.3}\n", audio::g_globalVolume);
-    }
+    else if (ch == L'(')
+        audio::g_globalVolume = utils::clamp(audio::g_globalVolume - 0.01f, 0.0f, 1.0f);
     else if (ch == L'0')
-    {
         audio::g_globalVolume = utils::clamp(audio::g_globalVolume + 0.1f, 0.0f, 1.0f);
-        LOG_NOTIFY("g_globalVolume: {:.3}\n", audio::g_globalVolume);
-    }
-    else if (ch == L'B')
-        app::TEST_g_bExitThreadloop = !app::TEST_g_bExitThreadloop;
+    else if (ch == L')')
+        audio::g_globalVolume = utils::clamp(audio::g_globalVolume + 0.01f, 0.0f, 1.0f);
     else if (ch == L'[')
         audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->changedSampleRate - 1000, false);
     else if (ch == L']')
         audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->changedSampleRate + 1000, false);
     else if (ch == L'\\')
         audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->sampleRate, false);
+    else if (ch == L'h' || ch == L'р')
+        audio::MixerSeekLeftMS(app::g_pMixer, 5000);
+    else if (ch == L'l' || ch == L'д')
+        audio::MixerSeekRightMS(app::g_pMixer, 5000);
 
     fixFirstIdx();
 }
@@ -374,27 +372,61 @@ drawSongList()
 }
 
 static void
-drawStatus(Allocator* p)
+drawVolume(Allocator* pAlloc, const u16 split)
 {
     const auto width = tb_width();
-    const auto& pl = *app::g_pPlayer;
-    const u16 split = std::round(f64(width) * 0.4);
 
-    f32 vol = audio::g_globalVolume * 100.0f;
-    /*f32 maxLine = (vol * (f32)width) * (1.0f - (100.0f));*/
-    /*CERR("maxLine: {}\n", maxLine);*/
-
-    drawBox(0, 0, split, pl.statusAndInfoHeight + 1, TB_WHITE, TB_DEFAULT);
-
-    char* pBuff = (char*)alloc(p, 1, width);
-    /*utils::fill(pBuff, '\0', width);*/
+    char* pBuff = (char*)alloc(pAlloc, 1, width);
+    utils::fill(pBuff, '\0', width);
     int n = snprintf(pBuff, width, "volume: %3d", int(std::round(audio::g_globalVolume * 100.0f)));
-
     drawUtf8String(0, 2, pBuff, split + 1);
     /*for (int i = n + 2, nTimes = 0; i < split && nTimes < maxLine; ++i, ++nTimes)*/
     /*{*/
     /*    tb_set_cell(i, 2, L'▮', TB_GREEN, TB_DEFAULT);*/
     /*}*/
+}
+
+static void
+drawTime(Allocator* pAlloc, const u16 split)
+{
+    const auto width = tb_width();
+    const auto& mixer = *app::g_pMixer;
+
+    char* pBuff = (char*)alloc(pAlloc, 1, width);
+    utils::fill(pBuff, '\0', width);
+
+    long totalSec = mixer.totalSamplesCount / mixer.changedSampleRate / 2;
+
+    u64 t = (mixer.currentTimeStamp / 2) / mixer.changedSampleRate;
+    u64 maxT = (mixer.totalSamplesCount / 2) / mixer.changedSampleRate;
+
+    f64 mF = t / 60.0;
+    u64 m = u64(mF);
+    f64 frac = 60 * (mF - m);
+
+    f64 mFMax = maxT / 60.0;
+    u64 mMax = u64(mFMax);
+    u64 fracMax = 60 * (mFMax - mMax);
+
+    int n = snprintf(pBuff, width, "time: %lu:%02d / %lu:%02d", m, int(frac), mMax, int(fracMax));
+
+    /*int n = snprintf(pBuff, width, "time: %d:%02d / %d:%02d", currMin, int(currSec), totalMin, int(totalSec));*/
+    drawUtf8String(0, 1, pBuff, split + 1);
+}
+
+static void
+drawStatus(Allocator* pAlloc)
+{
+    const auto width = tb_width();
+    const auto& pl = *app::g_pPlayer;
+    const u16 split = std::round(f64(width) * 0.4);
+
+    char* pBuff = (char*)alloc(pAlloc, 1, width);
+
+    drawBox(0, 0, split, pl.statusAndInfoHeight + 1, TB_WHITE, TB_DEFAULT);
+
+    drawTime(pAlloc, split);
+    drawVolume(pAlloc, split);
 }
 
 static void

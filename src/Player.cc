@@ -63,11 +63,32 @@ PlayerFocusLast(Player* s)
     PlayerFocus(s, s->aSongIdxs.size - 1);
 }
 
+static inline u16
+selectedToSongIdx(Player* s)
+{
+    u16 res = NPOS16;
+
+    for (const auto& idx : s->aSongIdxs)
+    {
+        if (idx == s->selected)
+        {
+            res = VecIdx(&s->aSongIdxs, &idx);
+            break;
+        }
+    }
+
+    if (res == NPOS16)
+    {
+        PlayerSetDefaultIdxs(s);
+        return selectedToSongIdx(s);
+    }
+    else return res;
+}
+
 void
 PlayerFocusSelected(Player* s)
 {
-    PlayerSetDefaultIdxs(s);
-    s->focused = s->aSongIdxs[s->selected];
+    s->focused = selectedToSongIdx(s);
 }
 
 void
@@ -138,6 +159,15 @@ PlayerTogglePause(Player* s)
 void
 PlayerOnSongEnd(Player* s)
 {
-    PlayerNext(s);
-    PlayerSelectFocused(s);
+    long currIdx = selectedToSongIdx(s) + 1;
+    if (currIdx >= VecSize(&s->aSongIdxs))
+    {
+        /* TODO: if repeat method... */
+        app::g_bRunning = false;
+        return;
+    }
+
+    s->selected = s->aSongIdxs[currIdx];
+
+    audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
 }
