@@ -132,14 +132,9 @@ DecoderWriteToBuffer(
         {
             defer( av_frame_unref(&frame) );
 
-            /* save pcm position */
-            s->currentSamplePos = (frame.best_effort_timestamp + frame.nb_samples) * frame.ch_layout.nb_channels;
-            /*s->currentSamplePos = frame.best_effort_timestamp + frame.nb_samples;*/
-            /*LOG("curr: {}, dur: {}, curr2: {}, total: {}\n", frame.best_effort_timestamp, s->pStream->duration, s->currentSamplePos, DecoderGetTotalSamplesCount(s));*/
-
-            /*LOG("curr: {}, dut: {}\n", DecoderGetCurrentSamplePos(s), DecoderGetTotalSamplesCount(s));*/
-            LOG("curr: {}, dut: {}\n", DecoderGetCurrentSamplePos(s), s->pFormatCtx->duration);
-            /*LOG("curr: {}, dut: {}\n", s->currentSamplePos, s->pFormatCtx->duration);*/
+            f64 currentTimeInSeconds = av_q2d(s->pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
+            long pcmPos = currentTimeInSeconds * frame.ch_layout.nb_channels * frame.sample_rate;
+            s->currentSamplePos = pcmPos;
 
             AVFrame res {};
             /* NOTE: not changing sample rate here, changing pipewire's sample rate instead */

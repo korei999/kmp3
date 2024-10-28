@@ -64,7 +64,7 @@ PlayerFocusLast(Player* s)
 }
 
 static inline u16
-selectedToSongIdx(Player* s)
+findSongIdxFromSelected(Player* s)
 {
     u16 res = NPOS16;
 
@@ -80,7 +80,7 @@ selectedToSongIdx(Player* s)
     if (res == NPOS16)
     {
         PlayerSetDefaultIdxs(s);
-        return selectedToSongIdx(s);
+        return findSongIdxFromSelected(s);
     }
     else return res;
 }
@@ -88,7 +88,7 @@ selectedToSongIdx(Player* s)
 void
 PlayerFocusSelected(Player* s)
 {
-    s->focused = selectedToSongIdx(s);
+    s->focused = findSongIdxFromSelected(s);
 }
 
 void
@@ -159,7 +159,7 @@ PlayerTogglePause(Player* s)
 void
 PlayerOnSongEnd(Player* s)
 {
-    long currIdx = selectedToSongIdx(s) + 1;
+    long currIdx = findSongIdxFromSelected(s) + 1;
     if (currIdx >= VecSize(&s->aSongIdxs))
     {
         /* TODO: if repeat method... */
