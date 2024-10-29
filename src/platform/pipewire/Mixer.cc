@@ -253,7 +253,7 @@ onProcess(void* pData)
     static long nDecodedSamples = 0;
     static long nWrites = 0;
 
-    f32 vol = s->base.bMuted ? 0.0f : std::pow(audio::g_globalVolume, 3);
+    f32 vol = s->base.bMuted ? 0.0f : std::pow(s->base.volume, 3);
 
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {

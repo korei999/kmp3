@@ -2,6 +2,7 @@
 
 #include "adt/defer.hh"
 #include "app.hh"
+#include "defaults.hh"
 #include "logs.hh"
 
 #define TB_IMPL
@@ -63,7 +64,7 @@ static READ_STATUS
 readWChar(tb_event* pEv)
 {
     const auto& ev = *pEv;
-    tb_peek_event(pEv, 5000);
+    tb_peek_event(pEv, defaults::READ_TIMEOUT);
 
     if (ev.type == 0) return READ_STATUS::BREAK;
     else if (ev.key == TB_KEY_ESC) return READ_STATUS::BREAK;
@@ -133,8 +134,6 @@ procKey(tb_event* pEv, Allocator* pAlloc)
     const auto& ch = pEv->ch;
     const auto& mod = pEv->mod;
 
-    /*LOG("k: {}, ch: '{}', mod: '{}'\n", key, (wchar_t)ch, pEv->mod);*/
-
     if (ch == 'q' || ch == L'й')
     {
         app::g_bRunning = false;
@@ -161,28 +160,32 @@ procKey(tb_event* pEv, Allocator* pAlloc)
     else if (ch == L' ')
         PlayerTogglePause(&pl);
     else if (ch == L'9')
-        audio::g_globalVolume = utils::clamp(audio::g_globalVolume - 0.1f, 0.0f, audio::MAX_VOLUME);
+        mixer.volume = utils::clamp(mixer.volume - 0.1f, 0.0f, defaults::MAX_VOLUME);
     else if (ch == L'(')
-        audio::g_globalVolume = utils::clamp(audio::g_globalVolume - 0.01f, 0.0f, audio::MAX_VOLUME);
+        mixer.volume = utils::clamp(mixer.volume - 0.01f, 0.0f, defaults::MAX_VOLUME);
     else if (ch == L'0')
-        audio::g_globalVolume = utils::clamp(audio::g_globalVolume + 0.1f, 0.0f, audio::MAX_VOLUME);
+        mixer.volume = utils::clamp(mixer.volume + 0.1f, 0.0f, defaults::MAX_VOLUME);
     else if (ch == L')')
-        audio::g_globalVolume = utils::clamp(audio::g_globalVolume + 0.01f, 0.0f, audio::MAX_VOLUME);
+        mixer.volume = utils::clamp(mixer.volume + 0.01f, 0.0f, defaults::MAX_VOLUME);
     else if (ch == L'[')
-        audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->changedSampleRate - 1000, false);
+        audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate - 1000, false);
+    else if (ch == L'{')
+        audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate - 100, false);
     else if (ch == L']')
-        audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->changedSampleRate + 1000, false);
+        audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate + 1000, false);
+    else if (ch == L'}')
+        audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate + 100, false);
     else if (ch == L'\\')
-        audio::MixerChangeSampleRate(app::g_pMixer, app::g_pMixer->sampleRate, false);
+        audio::MixerChangeSampleRate(&mixer, mixer.sampleRate, false);
     else if (ch == L'h' || ch == L'р' || key == TB_KEY_ARROW_LEFT)
     {
-        if (mod == TB_MOD_SHIFT) audio::MixerSeekLeftMS(app::g_pMixer, 1000);
-        else audio::MixerSeekLeftMS(app::g_pMixer, 5000);
+        if (mod == TB_MOD_SHIFT) audio::MixerSeekLeftMS(&mixer, 1000);
+        else audio::MixerSeekLeftMS(&mixer, 5000);
     }
     else if (ch == L'l' || ch == L'д' || key == TB_KEY_ARROW_RIGHT)
     {
-        if (mod == TB_MOD_SHIFT) audio::MixerSeekRightMS(app::g_pMixer, 1000);
-        else audio::MixerSeekRightMS(app::g_pMixer, 5000);
+        if (mod == TB_MOD_SHIFT) audio::MixerSeekRightMS(&mixer, 1000);
+        else audio::MixerSeekRightMS(&mixer, 5000);
     }
     else if (ch == L'r' || ch == L'к')
         PlayerCycleRepeatMethods(&pl, true);
@@ -231,7 +234,7 @@ void
 TermboxProcEvents(Allocator* pAlloc)
 {
     tb_event ev;
-    tb_peek_event(&ev, 1000);
+    tb_peek_event(&ev, defaults::UPDATE_RATE);
 
     switch (ev.type)
     {
@@ -387,13 +390,13 @@ using VOLUME_COLOR = int;
 drawVolume(Allocator* pAlloc, const u16 split)
 {
     const auto width = tb_width();
-    const f32 vol = audio::g_globalVolume;
+    const f32 vol = app::g_pMixer->volume;
     const bool bMuted = app::g_pMixer->bMuted;
     constexpr String fmt = "volume: %3d";
-    const int maxVolumeBars = (split - fmt.size - 2) * vol * 1.0f/audio::MAX_VOLUME;
+    const int maxVolumeBars = (split - fmt.size - 2) * vol * 1.0f/defaults::MAX_VOLUME;
 
     auto volumeColor = [&](int i) -> VOLUME_COLOR {
-        f32 col = f32(i) / (f32(split - fmt.size - 2 - 1) * (1.0f/audio::MAX_VOLUME));
+        f32 col = f32(i) / (f32(split - fmt.size - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
 
         if (col <= 0.33f) return TB_GREEN;
         else if (col > 0.33f && col <= 0.66f) return TB_GREEN;
@@ -438,22 +441,20 @@ drawTime(Allocator* pAlloc, const u16 split)
     char* pBuff = (char*)alloc(pAlloc, 1, width);
     utils::fill(pBuff, '\0', width);
 
-    u64 t = f32(mixer.currentTimeStamp) / f32(mixer.nChannels) / f32(mixer.changedSampleRate);
-    u64 maxT = f32(mixer.totalSamplesCount) / f32(mixer.nChannels) / f32(mixer.changedSampleRate);
+    u64 t = std::round(f64(mixer.currentTimeStamp) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
+    u64 totalT = std::round(f64(mixer.totalSamplesCount) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
 
-    f64 mF = t / 60.0;
-    u64 m = u64(mF);
-    f64 frac = 60 * (mF - m);
+    u64 currMin = t / 60;
+    u64 currSec = t - (60 * currMin);
 
-    f64 mFMax = maxT / 60.0;
-    u64 mMax = u64(mFMax);
-    u64 fracMax = 60 * (mFMax - mMax);
+    u64 maxMin = totalT / 60;
+    u64 maxSec = totalT - (60 * maxMin);
 
-    int n = snprintf(pBuff, width, "time: %lu:%02d / %lu:%02d", m, int(frac), mMax, int(fracMax));
+    int n = snprintf(pBuff, width, "time: %lu:%02lu / %lu:%02lu", currMin, currSec, maxMin, maxSec);
     if (mixer.sampleRate != mixer.changedSampleRate)
-        snprintf(pBuff + n, width - n, " (%d%% speed)", int(f32(mixer.changedSampleRate) / f32(mixer.sampleRate) * 100.0f));
+        snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f64(mixer.changedSampleRate) / f64(mixer.sampleRate) * 100.0)));
 
-    drawUtf8String(0, 1, pBuff, split + 1);
+    drawUtf8String(0, 4, pBuff, split + 1);
 }
 
 static void
@@ -476,7 +477,7 @@ drawTotal(Allocator* pAlloc, const u16 split)
         snprintf(pBuff + n, width - n, " (repeat %s)", sArg);
     }
 
-    drawUtf8String(0, 4, pBuff, split + 1);
+    drawUtf8String(0, 1, pBuff, split + 1);
 }
 
 static void
@@ -486,19 +487,62 @@ drawStatus(Allocator* pAlloc)
     const auto& pl = *app::g_pPlayer;
     const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
 
-    drawTime(pAlloc, split);
-    VOLUME_COLOR volumeColor = drawVolume(pAlloc, split);
     drawTotal(pAlloc, split);
+    VOLUME_COLOR volumeColor = drawVolume(pAlloc, split);
+    drawTime(pAlloc, split);
     drawBox(0, 0, split, pl.statusAndInfoHeight + 1, volumeColor, TB_DEFAULT);
 }
 
 static void
-drawInfo()
+drawInfo(Allocator* pAlloc)
 {
+    const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
-    const u16 split = std::round(f64(tb_width()) * pl.statusToInfoWidthRatio);
+    const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
+    const auto maxStringWidth = width - split - 1;
+    int n = 0;
 
     drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);
+
+    char* pBuff = (char*)alloc(pAlloc, 1, width);
+    utils::fill(pBuff, '\0', width);
+
+    /* title */
+    {
+        n = print::toBuffer(pBuff, width, "title: ");
+        drawUtf8String(split + 1, 1, pBuff, maxStringWidth);
+        utils::fill(pBuff, '\0', width);
+        if (pl.info.title.size > 0)
+            print::toBuffer(pBuff, width, "{}", pl.info.title);
+        else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
+        drawUtf8String(split + 1 + n, 1, pBuff, maxStringWidth - n, TB_ITALIC|TB_BOLD|TB_YELLOW);
+    }
+
+    /* album */
+    {
+        utils::fill(pBuff, '\0', width);
+        n = print::toBuffer(pBuff, width, "album: ");
+        drawUtf8String(split + 1, 3, pBuff, maxStringWidth);
+        if (pl.info.album.size > 0)
+        {
+            utils::fill(pBuff, '\0', width);
+            print::toBuffer(pBuff, width, "{}", pl.info.album);
+            drawUtf8String(split + 1 + n, 3, pBuff, maxStringWidth - n, TB_BOLD);
+        }
+    }
+
+    /* artist */
+    {
+        utils::fill(pBuff, '\0', width);
+        n = print::toBuffer(pBuff, width, "artist: ");
+        drawUtf8String(split + 1, 4, pBuff, maxStringWidth);
+        if (pl.info.artist.size > 0)
+        {
+            utils::fill(pBuff, '\0', width);
+            print::toBuffer(pBuff, width, "{}", pl.info.artist);
+            drawUtf8String(split + 1 + n, 4, pBuff, maxStringWidth - n, TB_BOLD);
+        }
+    }
 }
 
 static void
@@ -528,6 +572,27 @@ drawBottomLine()
     }
 }
 
+static void
+drawTimeSlider()
+{
+    const auto xOff = 2;
+    const auto width = tb_width();
+    const auto off = app::g_pPlayer->statusAndInfoHeight + 2;
+    const auto& time = app::g_pMixer->currentTimeStamp;
+    const auto& maxTime = app::g_pMixer->totalSamplesCount;
+    const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - xOff);
+
+    if (app::g_pMixer->bPaused) tb_set_cell(1, off, '|', TB_WHITE|TB_BOLD, TB_DEFAULT);
+    else tb_set_cell(1, off, '>', TB_WHITE|TB_BOLD, TB_DEFAULT);
+
+    for (int i = xOff + 1; i < width - 1; ++i)
+    {
+        wchar_t wc = L'━';
+        if ((i - 1) == int(timePlace + xOff)) wc = L'╋';
+        tb_set_cell(i, off, wc, TB_WHITE, TB_DEFAULT);
+    }
+}
+
 void
 TermboxRender(Allocator* pAlloc)
 {
@@ -536,11 +601,11 @@ TermboxRender(Allocator* pAlloc)
     tb_clear();
 
     drawStatus(pAlloc);
-    drawInfo();
-    /* TODO: time slider */
+    drawInfo(pAlloc);
 
     if (tb_height() > 9 && tb_width() > 9)
     {
+        drawTimeSlider();
         drawSongList();
         drawBottomLine();
     }

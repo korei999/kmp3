@@ -11,10 +11,6 @@ namespace audio
 {
 
 constexpr u64 CHUNK_SIZE = (1 << 18); /* big enough */
-constexpr f32 MAX_VOLUME = 1.2f;
-
-extern f32 g_globalVolume;
-
 /* Platrform abstracted audio interface */
 struct Mixer;
 struct Track;

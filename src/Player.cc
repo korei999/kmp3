@@ -9,18 +9,11 @@
 #include <cwctype>
 
 constexpr String aAcceptedFileEndings[] {
-    ".mp3",
-    ".opus",
-    ".flac",
-    "alac",
-    ".wav",
-    ".m4a",
-    ".mp4",
-    ".ogg",
-    ".umx",
-    ".s3m",
-    ".caf",
-    ".aif",
+    ".mp2", ".mp3", ".mp4", ".m4a", ".m4b",
+    ".fla", ".flac",
+    ".ogg", ".opus",
+    ".umx", ".s3m",
+    ".wav", ".caf", ".aif",
     ".webm",
     ".mkv",
 };
@@ -189,6 +182,10 @@ PlayerOnSongEnd(Player* s)
 
     s->selected = s->aSongIdxs[currIdx];
     audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
+
+    s->info.title = audio::MixerGetMetadata(app::g_pMixer, "title").data;
+    s->info.album = audio::MixerGetMetadata(app::g_pMixer, "album").data;
+    s->info.artist = audio::MixerGetMetadata(app::g_pMixer, "artist").data;
 }
 
 PLAYER_REAPEAT_METHOD

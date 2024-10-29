@@ -8,6 +8,7 @@
 #include "logs.hh"
 #include "platform/Termbox.hh"
 #include "platform/pipewire/Mixer.hh"
+#include "defaults.hh"
 
 #include <clocale>
 #include <fcntl.h>
@@ -82,6 +83,7 @@ main(int argc, char** argv)
     platform::pipewire::Mixer mixer(&arena.base);
     platform::pipewire::MixerInit(&mixer);
     defer( platform::pipewire::MixerDestroy(&mixer) );
+    mixer.base.volume = defaults::VOLUME;
     app::g_pMixer = &mixer.base;
 
     platform::TermboxInit();
