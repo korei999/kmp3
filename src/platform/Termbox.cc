@@ -455,7 +455,7 @@ drawTime(Allocator* pAlloc, const u16 split)
 
     int n = snprintf(pBuff, width, "time: %lu:%02d / %lu:%02d", m, int(frac), mMax, int(fracMax));
     if (mixer.sampleRate != mixer.changedSampleRate)
-        snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f32(mixer.changedSampleRate)/f32(mixer.sampleRate) * 100.0f)));
+        snprintf(pBuff + n, width - n, " (%d%% speed)", int(f32(mixer.changedSampleRate) / f32(mixer.sampleRate) * 100.0f));
 
     drawUtf8String(0, 1, pBuff, split + 1);
 }
