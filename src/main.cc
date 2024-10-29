@@ -77,6 +77,7 @@ main(int argc, char** argv)
     player.longestStringSize = longsetSize;
     player.statusAndInfoHeight = 4;
     player.statusToInfoWidthRatio = 0.4;
+    player.eReapetMethod = PLAYER_REAPEAT_METHOD::PLAYLIST;
 
     platform::pipewire::Mixer mixer(&arena.base);
     platform::pipewire::MixerInit(&mixer);

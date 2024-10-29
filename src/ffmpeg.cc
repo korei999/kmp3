@@ -148,9 +148,6 @@ DecoderWriteToBuffer(
             swr_config_frame(s->pSwr, &res, &frame);
             err = swr_convert_frame(s->pSwr, &res, &frame);
 
-            /*auto rescaled = av_rescale(s->currentTimestamp, s->pStream->time_base.den, s->pStream->time_base.num) / 1000;*/
-            /*LOG("duration: {}, current(): {}, den: {}, num: {}\n", s->pFormatCtx->duration, s->currentTimestamp, res.time_base.den, res.time_base.num);*/
-
             if (err < 0)
             {
                 char buff[16] {};
@@ -202,7 +199,6 @@ DecoderWriteToBuffer(
 u32
 DecoderGetSampleRate(Decoder* s)
 {
-    LOG("sample_rate: {}\n", s->pStream->codecpar->sample_rate);
     return s->pStream->codecpar->sample_rate;
 }
 
@@ -224,14 +220,11 @@ long
 DecoderGetCurrentSamplePos(Decoder* s)
 {
     return s->currentSamplePos;
-    /*long res = (s->currentSamplePos / (f32)AV_TIME_BASE) * s->pStream->codecpar->sample_rate * s->pStream->codecpar->ch_layout.nb_channels;*/
-    /*return res;*/
 }
 
 long
 DecoderGetTotalSamplesCount(Decoder* s)
 {
-    /*LOG("sample_rate: {}, nb_channels: {}\n", s->pStream->codecpar->sample_rate, s->pStream->codecpar->ch_layout.nb_channels);*/
     long res = (s->pFormatCtx->duration / (f32)AV_TIME_BASE) * s->pStream->codecpar->sample_rate * s->pStream->codecpar->ch_layout.nb_channels;
     return res;
 }

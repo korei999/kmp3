@@ -10,7 +10,7 @@ namespace audio
 {
 
 constexpr u64 CHUNK_SIZE = (1 << 18); /* big enough */
-constexpr u32 MAX_TRACK_COUNT = 8;
+constexpr f32 MAX_VOLUME = 1.2f;
 
 extern f32 g_globalVolume;
 

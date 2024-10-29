@@ -253,7 +253,7 @@ onProcess(void* pData)
     static long nDecodedSamples = 0;
     static long nWrites = 0;
 
-    f32 vol = std::pow(audio::g_globalVolume, 3);
+    f32 vol = s->base.bMuted ? 0.0f : std::pow(audio::g_globalVolume, 3);
 
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
@@ -278,7 +278,6 @@ onProcess(void* pData)
     }
     else
     {
-        /*s->base.currentTimeStamp = ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder);*/
         s->base.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
     }
 
@@ -340,7 +339,6 @@ MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave)
     if (bSave) s->base.sampleRate = sampleRate;
 
     s->base.changedSampleRate = sampleRate;
-    LOG_NOTIFY("sampleRate: {}, changed: {}\n", s->base.sampleRate, s->base.changedSampleRate);
 }
 
 void

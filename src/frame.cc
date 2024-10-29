@@ -14,6 +14,8 @@ run()
     Arena arena(SIZE_1M);
     defer( ArenaFreeAll(&arena) );
 
+    app::g_pPlayer->focused = 0;
+    PlayerSelectFocused(app::g_pPlayer);
     do
     {
         platform::TermboxRender(&arena.base);

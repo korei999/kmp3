@@ -9,20 +9,13 @@
 #include <cwctype>
 
 constexpr String aAcceptedFileEndings[] {
-    ".mp3",
-    ".opus",
-    ".flac",
-    ".wav",
-    ".m4a",
-    ".ogg",
-    ".umx",
-    ".s3m",
+    ".mp3", ".opus", ".flac", "alac", ".wav", ".m4a", ".ogg", ".umx", ".s3m", ".caf", ".aif"
 };
 
-static bool
-acceptedFormat(String s)
+static inline bool
+acceptedFormat(const String s)
 {
-    for (auto& ending : aAcceptedFileEndings)
+    for (const auto ending : aAcceptedFileEndings)
         if (StringEndsWith(s, ending))
             return true;
 
@@ -63,8 +56,8 @@ PlayerFocusLast(Player* s)
     PlayerFocus(s, s->aSongIdxs.size - 1);
 }
 
-static inline u16
-findSongIdxFromSelected(Player* s)
+u16
+PlayerFindSongIdxFromSelected(Player* s)
 {
     u16 res = NPOS16;
 
@@ -80,7 +73,7 @@ findSongIdxFromSelected(Player* s)
     if (res == NPOS16)
     {
         PlayerSetDefaultIdxs(s);
-        return findSongIdxFromSelected(s);
+        return PlayerFindSongIdxFromSelected(s);
     }
     else return res;
 }
@@ -88,7 +81,7 @@ findSongIdxFromSelected(Player* s)
 void
 PlayerFocusSelected(Player* s)
 {
-    s->focused = findSongIdxFromSelected(s);
+    s->focused = PlayerFindSongIdxFromSelected(s);
 }
 
 void
@@ -159,15 +152,36 @@ PlayerTogglePause(Player* s)
 void
 PlayerOnSongEnd(Player* s)
 {
-    long currIdx = findSongIdxFromSelected(s) + 1;
-    if (currIdx >= VecSize(&s->aSongIdxs))
+    long currIdx = PlayerFindSongIdxFromSelected(s) + 1;
+    if (s->eReapetMethod == PLAYER_REAPEAT_METHOD::TRACK)
     {
-        /* TODO: if repeat method... */
-        app::g_bRunning = false;
-        return;
+        currIdx -= 1;
+    }
+    else if (currIdx >= VecSize(&s->aSongIdxs))
+    {
+        if (s->eReapetMethod == PLAYER_REAPEAT_METHOD::PLAYLIST)
+        {
+            currIdx = 0;
+        }
+        else
+        {
+            app::g_bRunning = false;
+            return;
+        }
     }
 
     s->selected = s->aSongIdxs[currIdx];
-
     audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
+}
+
+PLAYER_REAPEAT_METHOD
+PlayerCycleRepeatMethods(Player* s, bool bForward)
+{
+    PLAYER_REAPEAT_METHOD rm {};
+
+    if (bForward) rm = PLAYER_REAPEAT_METHOD((s->eReapetMethod + 1) % ESIZE);
+    else rm = PLAYER_REAPEAT_METHOD((s->eReapetMethod + (ESIZE - 1)) % ESIZE);
+
+    s->eReapetMethod = rm;
+    return rm;
 }
