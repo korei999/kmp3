@@ -26,7 +26,6 @@ struct Decoder
     SwrContext* pSwr {};
     int audioStreamIdx {};
     u64 currentSamplePos {};
-    u64 nextTimestamp {};
 };
 
 Decoder*
@@ -50,6 +49,24 @@ DecoderClose(Decoder* s)
     LOG_NOTIFY("DecoderClose()\n");
 
     *s = {};
+}
+
+Option<String>
+DecoderGetMetadataValue(Decoder* s, const String sKey)
+{
+    char aBuff[64] {};
+    strncpy(aBuff, sKey.pData, utils::min(u64(sKey.size), utils::size(aBuff) - 1));
+
+    AVDictionaryEntry* pTag {};
+    pTag = av_dict_get(s->pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
+
+    if (pTag) return {pTag->value};
+    else
+    {
+        pTag = av_dict_get(s->pFormatCtx->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
+        if (pTag) return {pTag->value};
+        else return {};
+    }
 }
 
 ERROR

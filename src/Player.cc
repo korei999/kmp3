@@ -9,7 +9,20 @@
 #include <cwctype>
 
 constexpr String aAcceptedFileEndings[] {
-    ".mp3", ".opus", ".flac", "alac", ".wav", ".m4a", ".ogg", ".umx", ".s3m", ".caf", ".aif"
+    ".mp3",
+    ".opus",
+    ".flac",
+    "alac",
+    ".wav",
+    ".m4a",
+    ".mp4",
+    ".ogg",
+    ".umx",
+    ".s3m",
+    ".caf",
+    ".aif",
+    ".webm",
+    ".mkv",
 };
 
 static inline bool
@@ -135,6 +148,10 @@ PlayerSelectFocused(Player* s)
     LOG_NOTIFY("selected({}): {}\n", s->selected, sPath);
 
     audio::MixerPlay(app::g_pMixer, sPath);
+
+    s->info.title = audio::MixerGetMetadata(app::g_pMixer, "title").data;
+    s->info.album = audio::MixerGetMetadata(app::g_pMixer, "album").data;
+    s->info.artist = audio::MixerGetMetadata(app::g_pMixer, "artist").data;
 }
 
 void

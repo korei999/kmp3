@@ -369,5 +369,11 @@ MixerSeekRightMS(Mixer* s, long ms)
     MixerSeekMS(s, currMs + ms);
 }
 
+Option<String>
+MixerGetMetadata(Mixer* s, const String sKey)
+{
+    return ffmpeg::DecoderGetMetadataValue(s->pDecoder, sKey);
+}
+
 } /* namespace pipewire */
 } /* namespace platform */

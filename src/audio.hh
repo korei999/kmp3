@@ -1,5 +1,6 @@
 #pragma once
 
+#include "adt/Option.hh"
 #include "adt/String.hh"
 
 #include <atomic>
@@ -29,6 +30,7 @@ struct MixerInterface
     void (*seekMS)(Mixer* s, u64 ms);
     void (*seekLeftMS)(Mixer* s, u64 ms);
     void (*seekRightMS)(Mixer* s, u64 ms);
+    Option<String> (*getMetadata)(Mixer* s, const String sKey);
 };
 
 struct Mixer
@@ -54,6 +56,7 @@ ADT_NO_UB constexpr void MixerChangeSampleRate(Mixer* s, int sampleRate, bool bS
 ADT_NO_UB constexpr void MixerSeekMS(Mixer* s, u64 ms) { s->pVTable->seekMS(s, ms); }
 ADT_NO_UB constexpr void MixerSeekLeftMS(Mixer* s, u64 ms) { s->pVTable->seekLeftMS(s, ms); }
 ADT_NO_UB constexpr void MixerSeekRightMS(Mixer* s, u64 ms) { s->pVTable->seekRightMS(s, ms); }
+[[nodiscard]] ADT_NO_UB constexpr Option<String> MixerGetMetadata(Mixer* s, const String sKey) { return s->pVTable->getMetadata(s, sKey); }
 
 struct DummyMixer
 {
@@ -63,58 +66,34 @@ struct DummyMixer
 };
 
 constexpr void
-DummyMixerInit([[maybe_unused]] DummyMixer* s, [[maybe_unused]] int argc, [[maybe_unused]] char** argv)
-{
-    //
-}
+DummyMixerInit([[maybe_unused]] DummyMixer* s, [[maybe_unused]] int argc, [[maybe_unused]] char** argv) {}
 
 constexpr void
-DummyMixerDestroy([[maybe_unused]] DummyMixer* s)
-{
-    //
-}
+DummyMixerDestroy([[maybe_unused]] DummyMixer* s) {}
 
 constexpr void
-DummyMixerPlay([[maybe_unused]] DummyMixer* s, [[maybe_unused]] String sPath)
-{
-    //
-}
+DummyMixerPlay([[maybe_unused]] DummyMixer* s, [[maybe_unused]] String sPath) {}
 
 constexpr void
-DummyMixerPause([[maybe_unused]] DummyMixer* s, [[maybe_unused]] bool bPause)
-{
-    //
-}
+DummyMixerPause([[maybe_unused]] DummyMixer* s, [[maybe_unused]] bool bPause) {}
 
 constexpr void
-DummyMixerTogglePause([[maybe_unused]] DummyMixer* s, [[maybe_unused]] bool bPause)
-{
-    //
-}
+DummyMixerTogglePause([[maybe_unused]] DummyMixer* s, [[maybe_unused]] bool bPause) {}
 
 constexpr void
-DummyMixerChangeSampleRate([[maybe_unused]] DummyMixer* s, [[maybe_unused]] int sampleRate, [[maybe_unused]] bool bSave)
-{
-    //
-}
+DummyMixerChangeSampleRate([[maybe_unused]] DummyMixer* s, [[maybe_unused]] int sampleRate, [[maybe_unused]] bool bSave) {}
 
 constexpr void
-DummyMixerSeekMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms)
-{
-    //
-}
+DummyMixerSeekMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms) {}
 
 constexpr void
-DummyMixerSeekLeftMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms)
-{
-    //
-}
+DummyMixerSeekLeftMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms) {}
 
 constexpr void
-DummyMixerSeekRightMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms)
-{
-    //
-}
+DummyMixerSeekRightMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms) {}
+
+constexpr Option<String>
+DummyMixerGetMetadata([[maybe_unused]] Mixer* s, [[maybe_unused]] const String sKey) { return {}; }
 
 inline const MixerInterface inl_DummyMixerVTable {
     .init = decltype(MixerInterface::init)(DummyMixerInit),
@@ -126,6 +105,7 @@ inline const MixerInterface inl_DummyMixerVTable {
     .seekMS = decltype(MixerInterface::seekMS)(DummyMixerSeekMS),
     .seekLeftMS = decltype(MixerInterface::seekMS)(DummyMixerSeekLeftMS),
     .seekRightMS = decltype(MixerInterface::seekMS)(DummyMixerSeekRightMS),
+    .getMetadata = decltype(MixerInterface::getMetadata)(DummyMixerGetMetadata),
 };
 
 constexpr

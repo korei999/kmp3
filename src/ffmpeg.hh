@@ -1,5 +1,6 @@
 #pragma once
 
+#include "adt/Option.hh"
 #include "adt/String.hh"
 
 using namespace adt;
@@ -40,6 +41,7 @@ struct Decoder;
 
 [[nodiscard]] Decoder* DecoderAlloc(Allocator* pAlloc);
 void DecoderClose(Decoder* s);
+[[nodiscard]] Option<String> DecoderGetMetadataValue(Decoder* s, const String sKey);
 [[nodiscard]] ERROR DecoderOpen(Decoder* s, String sPath);
 
 [[nodiscard]] ERROR

@@ -7,7 +7,7 @@ template<typename T>
 struct Option
 {
     bool bHasValue = false;
-    T data;
+    T data {};
 
     constexpr Option() = default;
 

@@ -62,13 +62,14 @@ enum READ_STATUS : u8 { OK, BREAK };
 static READ_STATUS
 readWChar(tb_event* pEv)
 {
+    const auto& ev = *pEv;
     tb_peek_event(pEv, 5000);
 
-    if (pEv->type == 0) return READ_STATUS::BREAK;
-    else if (pEv->key == TB_KEY_ESC) return READ_STATUS::BREAK;
-    else if (pEv->key == TB_KEY_CTRL_C) return READ_STATUS::BREAK;
-    else if (pEv->key == TB_KEY_ENTER) return READ_STATUS::BREAK;
-    else if (pEv->key == TB_KEY_CTRL_W)
+    if (ev.type == 0) return READ_STATUS::BREAK;
+    else if (ev.key == TB_KEY_ESC) return READ_STATUS::BREAK;
+    else if (ev.key == TB_KEY_CTRL_C) return READ_STATUS::BREAK;
+    else if (ev.key == TB_KEY_ENTER) return READ_STATUS::BREAK;
+    else if (ev.key == TB_KEY_CTRL_W)
     {
         if (s_searchBuffIdx > 0)
         {
@@ -76,15 +77,15 @@ readWChar(tb_event* pEv)
             utils::fill(s_aSearchBuff, L'\0', utils::size(s_aSearchBuff));
         }
     }
-    else if (pEv->key == TB_KEY_BACKSPACE || pEv->key == TB_KEY_BACKSPACE2 || pEv->key == TB_KEY_CTRL_H)
+    else if (ev.key == TB_KEY_BACKSPACE || ev.key == TB_KEY_BACKSPACE2 || ev.key == TB_KEY_CTRL_H)
     {
         if (s_searchBuffIdx > 0)
             s_aSearchBuff[--s_searchBuffIdx] = L'\0';
     }
-    else if (pEv->ch)
+    else if (ev.ch)
     {
         if (s_searchBuffIdx < utils::size(s_aSearchBuff) - 1)
-            s_aSearchBuff[s_searchBuffIdx++] = pEv->ch;
+            s_aSearchBuff[s_searchBuffIdx++] = ev.ch;
     }
 
     return READ_STATUS::OK;
@@ -93,10 +94,6 @@ readWChar(tb_event* pEv)
 static void
 subStringSearch(Allocator* pAlloc)
 {
-    LOG("subStringSearch\n");
-
-    defer( LOG("subStringSearch leave\n") );
-
     tb_event ev {};
     bool bReset = true;
 
@@ -115,6 +112,7 @@ subStringSearch(Allocator* pAlloc)
             bReset = false;
             utils::fill(s_aSearchBuff, L'\0', utils::size(s_aSearchBuff));
             s_searchBuffIdx = 0;
+            TermboxRender(pAlloc);
         }
 
         auto eRead = readWChar(&ev);
@@ -290,7 +288,7 @@ drawBox(
     /* top */
     for (int i = x + 1, times = 0; times < width - 1; ++i, ++times)
         tb_set_cell(i, y, t, fgColor, bgColor);
-    /* bop */
+    /* bot */
     for (int i = x + 1, times = 0; times < width - 1; ++i, ++times)
         tb_set_cell(i, y + height, b, fgColor, bgColor);
     /* left */
@@ -308,8 +306,7 @@ drawUtf8String(
     const String str,
     const long maxLen,
     const u32 fg = TB_WHITE,
-    const u32 bg = TB_DEFAULT,
-    bool bWrapLines = false /* TODO: implement this */
+    const u32 bg = TB_DEFAULT
 )
 {
     long it = 0;
@@ -335,8 +332,7 @@ drawWideString(
     const u32 buffSize,
     const long maxLen,
     const u32 fg = TB_WHITE,
-    const u32 bg = TB_DEFAULT,
-    bool bWrapLines = false /* TODO: implement this */
+    const u32 bg = TB_DEFAULT
 )
 {
     long i = 0;
@@ -470,7 +466,7 @@ drawTotal(Allocator* pAlloc, const u16 split)
     char* pBuff = (char*)alloc(pAlloc, 1, width);
     utils::fill(pBuff, '\0', width);
 
-    int n = snprintf(pBuff, width, "total: %ld / %u", pl.selected, pl.aShortArgvs.size);
+    int n = snprintf(pBuff, width, "total: %ld / %u", pl.selected, pl.aShortArgvs.size - 1);
     if (pl.eReapetMethod != PLAYER_REAPEAT_METHOD::NONE)
     {
         const char* sArg {};
@@ -533,7 +529,7 @@ drawBottomLine()
 }
 
 void
-TermboxRender([[maybe_unused]] Allocator* pAlloc)
+TermboxRender(Allocator* pAlloc)
 {
     if (tb_height() < 6 || tb_width() < 6) return;
 
