@@ -165,6 +165,8 @@ parseAndRunSeek()
         }
     }
 
+    if (aMinutesBuff.size == 0) return;
+
     if (bPercent)
     {
         long percentNum = atoll(aMinutesBuff.pData);
