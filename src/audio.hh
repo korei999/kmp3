@@ -2,6 +2,8 @@
 
 #include "adt/Option.hh"
 #include "adt/String.hh"
+#include "adt/utils.hh"
+#include "defaults.hh"
 
 #include <atomic>
 
@@ -57,6 +59,9 @@ ADT_NO_UB constexpr void MixerSeekMS(Mixer* s, u64 ms) { s->pVTable->seekMS(s, m
 ADT_NO_UB constexpr void MixerSeekLeftMS(Mixer* s, u64 ms) { s->pVTable->seekLeftMS(s, ms); }
 ADT_NO_UB constexpr void MixerSeekRightMS(Mixer* s, u64 ms) { s->pVTable->seekRightMS(s, ms); }
 [[nodiscard]] ADT_NO_UB constexpr Option<String> MixerGetMetadata(Mixer* s, const String sKey) { return s->pVTable->getMetadata(s, sKey); }
+inline void MixerSetVolume(Mixer* s, const f32 volume) { s->volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME); }
+inline void MixerVolumeDown(Mixer* s, const f32 step) { MixerSetVolume(s, s->volume - step); }
+inline void MixerVolumeUp(Mixer* s, const f32 step) { MixerSetVolume(s, s->volume + step); }
 
 struct DummyMixer
 {
@@ -65,11 +70,11 @@ struct DummyMixer
     constexpr DummyMixer();
 };
 
-constexpr void DummyMixerInit([[maybe_unused]] DummyMixer* s, [[maybe_unused]] int argc, [[maybe_unused]] char** argv) {}
+constexpr void DummyMixerInit([[maybe_unused]] DummyMixer* s) {}
 constexpr void DummyMixerDestroy([[maybe_unused]] DummyMixer* s) {}
 constexpr void DummyMixerPlay([[maybe_unused]] DummyMixer* s, [[maybe_unused]] String sPath) {}
 constexpr void DummyMixerPause([[maybe_unused]] DummyMixer* s, [[maybe_unused]] bool bPause) {}
-constexpr void DummyMixerTogglePause([[maybe_unused]] DummyMixer* s, [[maybe_unused]] bool bPause) {}
+constexpr void DummyMixerTogglePause([[maybe_unused]] DummyMixer* s) {}
 constexpr void DummyMixerChangeSampleRate([[maybe_unused]] DummyMixer* s, [[maybe_unused]] int sampleRate, [[maybe_unused]] bool bSave) {}
 constexpr long DummyMixerGetCurrentMS([[maybe_unused]] Mixer* s) { return {}; }
 constexpr long DummyMixerGetMaxMS([[maybe_unused]] Mixer* s) { return {}; }

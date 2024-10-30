@@ -32,8 +32,6 @@ Decoder*
 DecoderAlloc(Allocator* pAlloc)
 {
     Decoder* s = (Decoder*)alloc(pAlloc, 1, sizeof(Decoder));
-    if (!s) return nullptr;
-
     *s = {};
     return s;
 }
@@ -138,12 +136,12 @@ DecoderWriteToBuffer(
     AVPacket packet {};
     while (av_read_frame(s->pFormatCtx, &packet) == 0)
     {
+        defer( av_packet_unref(&packet) );
+
         if (packet.stream_index != s->pStream->index) continue;
         err = avcodec_send_packet(s->pCodecCtx, &packet);
         if (err != 0 && err != AVERROR(EAGAIN))
             LOG_WARN("!EAGAIN\n");
-
-        defer( av_packet_unref(&packet) );
 
         AVFrame frame {};
         while ((err = avcodec_receive_frame(s->pCodecCtx, &frame)) == 0)

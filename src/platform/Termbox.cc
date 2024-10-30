@@ -138,7 +138,7 @@ subStringSearch(Allocator* pAlloc)
 }
 
 static void
-parseAndRunSeek()
+parseSeekThenRun()
 {
     bool bPercent = false;
     bool bColon = false;
@@ -168,8 +168,8 @@ parseAndRunSeek()
 
     if (bPercent)
     {
-        long percentNum = atoll(aMinutesBuff.pData);
         long maxMS = audio::MixerGetMaxMS(app::g_pMixer);
+
         audio::MixerSeekMS(app::g_pMixer, maxMS * (f64(atoll(aMinutesBuff.pData)) / 100.0));
     }
     else
@@ -198,7 +198,7 @@ seekFromInput(Allocator* pAlloc)
         TermboxRender(pAlloc);
     } while (readWChar(&ev) != READ_STATUS::DONE);
 
-    parseAndRunSeek();
+    parseSeekThenRun();
 }
 
 static void
@@ -237,13 +237,13 @@ procKey(tb_event* pEv, Allocator* pAlloc)
     else if (ch == L' ')
         PlayerTogglePause(&pl);
     else if (ch == L'9')
-        mixer.volume = utils::clamp(mixer.volume - 0.1f, 0.0f, defaults::MAX_VOLUME);
+        audio::MixerVolumeDown(&mixer, 0.1f);
     else if (ch == L'(')
-        mixer.volume = utils::clamp(mixer.volume - 0.01f, 0.0f, defaults::MAX_VOLUME);
+        audio::MixerVolumeDown(&mixer, 0.01f);
     else if (ch == L'0')
-        mixer.volume = utils::clamp(mixer.volume + 0.1f, 0.0f, defaults::MAX_VOLUME);
+        audio::MixerVolumeUp(&mixer, 0.1f);
     else if (ch == L')')
-        mixer.volume = utils::clamp(mixer.volume + 0.01f, 0.0f, defaults::MAX_VOLUME);
+        audio::MixerVolumeUp(&mixer, 0.01f);
     else if (ch == L'[')
         audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate - 1000, false);
     else if (ch == L'{')
@@ -559,7 +559,6 @@ static void
 drawTotal(Allocator* pAlloc, const u16 split)
 {
     const auto width = tb_width();
-    const auto& mixer = *app::g_pMixer;
     auto& pl = *app::g_pPlayer;
 
     char* pBuff = (char*)alloc(pAlloc, 1, width);
@@ -598,7 +597,6 @@ drawInfo(Allocator* pAlloc)
     const auto& pl = *app::g_pPlayer;
     const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
     const auto maxStringWidth = width - split - 1;
-    int n = 0;
 
     drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);
 
@@ -607,7 +605,7 @@ drawInfo(Allocator* pAlloc)
 
     /* title */
     {
-        n = print::toBuffer(pBuff, width, "title: ");
+        int n = print::toBuffer(pBuff, width, "title: ");
         drawUtf8String(split + 1, 1, pBuff, maxStringWidth);
         utils::fill(pBuff, '\0', width);
         if (pl.info.title.size > 0)
@@ -619,7 +617,7 @@ drawInfo(Allocator* pAlloc)
     /* album */
     {
         utils::fill(pBuff, '\0', width);
-        n = print::toBuffer(pBuff, width, "album: ");
+        int n = print::toBuffer(pBuff, width, "album: ");
         drawUtf8String(split + 1, 3, pBuff, maxStringWidth);
         if (pl.info.album.size > 0)
         {
@@ -632,7 +630,7 @@ drawInfo(Allocator* pAlloc)
     /* artist */
     {
         utils::fill(pBuff, '\0', width);
-        n = print::toBuffer(pBuff, width, "artist: ");
+        int n = print::toBuffer(pBuff, width, "artist: ");
         drawUtf8String(split + 1, 4, pBuff, maxStringWidth);
         if (pl.info.artist.size > 0)
         {
