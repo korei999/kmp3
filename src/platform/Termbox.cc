@@ -1,5 +1,6 @@
 #include "Termbox.hh"
 
+#include "adt/Arr.hh"
 #include "adt/defer.hh"
 #include "app.hh"
 #include "defaults.hh"
@@ -13,10 +14,30 @@
 namespace platform
 {
 
+enum READ_MODE : u8
+{
+    NONE, SEARCH, SEEK
+};
+
 static u16 s_firstIdx = 0;
-static wchar_t s_aSearchBuff[64] {};
-static u32 s_searchBuffIdx = 0;
-static bool s_bSearching = false;
+
+static struct {
+    wchar_t aBuff[64] {};
+    u32 idx = 0;
+    READ_MODE eCurrMode {};
+    READ_MODE eLastUsedMode {};
+} s_input;
+
+constexpr String
+READ_MODEToString(READ_MODE e)
+{
+    switch (e)
+    {
+        case READ_MODE::NONE: return "";
+        case READ_MODE::SEARCH: return "searching: ";
+        case READ_MODE::SEEK: return "time: ";
+    }
+}
 
 /* fix song list range after focus change */
 static void
@@ -58,7 +79,7 @@ TermboxStop()
     LOG_NOTIFY("tb_shutdown()\n");
 }
 
-enum READ_STATUS : u8 { OK, BREAK };
+enum READ_STATUS : u8 { OK, DONE };
 
 static READ_STATUS
 readWChar(tb_event* pEv)
@@ -66,27 +87,27 @@ readWChar(tb_event* pEv)
     const auto& ev = *pEv;
     tb_peek_event(pEv, defaults::READ_TIMEOUT);
 
-    if (ev.type == 0) return READ_STATUS::BREAK;
-    else if (ev.key == TB_KEY_ESC) return READ_STATUS::BREAK;
-    else if (ev.key == TB_KEY_CTRL_C) return READ_STATUS::BREAK;
-    else if (ev.key == TB_KEY_ENTER) return READ_STATUS::BREAK;
+    if (ev.type == 0) return READ_STATUS::DONE;
+    else if (ev.key == TB_KEY_ESC) return READ_STATUS::DONE;
+    else if (ev.key == TB_KEY_CTRL_C) return READ_STATUS::DONE;
+    else if (ev.key == TB_KEY_ENTER) return READ_STATUS::DONE;
     else if (ev.key == TB_KEY_CTRL_W)
     {
-        if (s_searchBuffIdx > 0)
+        if (s_input.idx > 0)
         {
-            s_searchBuffIdx = 0;
-            utils::fill(s_aSearchBuff, L'\0', utils::size(s_aSearchBuff));
+            s_input.idx = 0;
+            utils::fill(s_input.aBuff, L'\0', utils::size(s_input.aBuff));
         }
     }
     else if (ev.key == TB_KEY_BACKSPACE || ev.key == TB_KEY_BACKSPACE2 || ev.key == TB_KEY_CTRL_H)
     {
-        if (s_searchBuffIdx > 0)
-            s_aSearchBuff[--s_searchBuffIdx] = L'\0';
+        if (s_input.idx > 0)
+            s_input.aBuff[--s_input.idx] = L'\0';
     }
     else if (ev.ch)
     {
-        if (s_searchBuffIdx < utils::size(s_aSearchBuff) - 1)
-            s_aSearchBuff[s_searchBuffIdx++] = ev.ch;
+        if (s_input.idx < utils::size(s_input.aBuff) - 1)
+            s_input.aBuff[s_input.idx++] = ev.ch;
     }
 
     return READ_STATUS::OK;
@@ -96,32 +117,87 @@ static void
 subStringSearch(Allocator* pAlloc)
 {
     tb_event ev {};
-    bool bReset = true;
-
-    s_bSearching = true;
-    defer( s_bSearching = false );
-
     auto& pl = *app::g_pPlayer;
 
-    while (true)
-    {
-        PlayerSubStringSearch(&pl, pAlloc, s_aSearchBuff, utils::size(s_aSearchBuff));
-        TermboxRender(pAlloc);
+    s_input.eLastUsedMode = s_input.eCurrMode = READ_MODE::SEARCH;
+    defer( s_input.eCurrMode = READ_MODE::NONE );
 
-        if (bReset)
+    utils::fill(s_input.aBuff, L'\0', utils::size(s_input.aBuff));
+    s_input.idx = 0;
+
+    do
+    {
+        PlayerSubStringSearch(&pl, pAlloc, s_input.aBuff, utils::size(s_input.aBuff));
+        s_firstIdx = 0;
+        TermboxRender(pAlloc);
+    } while (readWChar(&ev) != READ_STATUS::DONE);
+
+    /* fix focused if it ends up out of the list range */
+    if (pl.focused >= (VecSize(&pl.aSongIdxs)))
+        pl.focused = s_firstIdx;
+}
+
+static void
+parseAndRunSeek()
+{
+    bool bPercent = false;
+    bool bColon = false;
+
+    Arr<char, 32> aMinutesBuff {};
+    Arr<char, 32> aSecondsBuff {};
+
+    const auto& buff = s_input.aBuff;
+    for (long i = 0; buff[i] && i < long(utils::size(buff)); ++i)
+    {
+        if (buff[i] == L'%') bPercent = true;
+        else if (buff[i] == L':')
         {
-            bReset = false;
-            utils::fill(s_aSearchBuff, L'\0', utils::size(s_aSearchBuff));
-            s_searchBuffIdx = 0;
-            TermboxRender(pAlloc);
+            /* leave if there is one more colon or bPercent */
+            if (bColon || bPercent) break;
+            bColon = true;
         }
 
-        auto eRead = readWChar(&ev);
-        s_firstIdx = 0;
-        pl.focused = s_firstIdx;
-
-        if (eRead == READ_STATUS::BREAK) break;
+        if (iswdigit(buff[i]))
+        {
+            Arr<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
+            if (i < ArrCap(pTargetArray) - 1)
+                ArrPush(pTargetArray, char(buff[i]));
+        }
     }
+
+    if (bPercent)
+    {
+        long percentNum = atoll(aMinutesBuff.pData);
+        long maxMS = audio::MixerGetMaxMS(app::g_pMixer);
+        audio::MixerSeekMS(app::g_pMixer, maxMS * (f64(atoll(aMinutesBuff.pData)) / 100.0));
+    }
+    else
+    {
+        long sec;
+        if (aSecondsBuff.size == 0) sec = atoll(aMinutesBuff.pData);
+        else sec = atoll(aSecondsBuff.pData) + atoll(aMinutesBuff.pData)*60;
+
+        audio::MixerSeekMS(app::g_pMixer, sec * 1000);
+    }
+}
+
+static void
+seekFromInput(Allocator* pAlloc)
+{
+    tb_event ev {};
+
+    s_input.eLastUsedMode = s_input.eCurrMode = READ_MODE::SEEK;
+    defer( s_input.eCurrMode = READ_MODE::NONE );
+
+    utils::fill(s_input.aBuff, L'\0', utils::size(s_input.aBuff));
+    s_input.idx = 0;
+
+    do
+    {
+        TermboxRender(pAlloc);
+    } while (readWChar(&ev) != READ_STATUS::DONE);
+
+    parseAndRunSeek();
 }
 
 static void
@@ -193,6 +269,8 @@ procKey(tb_event* pEv, Allocator* pAlloc)
         PlayerCycleRepeatMethods(&pl, false);
     else if (ch == L'm' || ch == L'ь')
         mixer.bMuted = !mixer.bMuted;
+    else if (ch == L't' || ch == L'е')
+        seekFromInput(pAlloc);
 
     fixFirstIdx();
 }
@@ -309,21 +387,40 @@ drawUtf8String(
     const String str,
     const long maxLen,
     const u32 fg = TB_WHITE,
-    const u32 bg = TB_DEFAULT
+    const u32 bg = TB_DEFAULT,
+    const bool bWrap = false,
+    const int xWrapOrigin = 0,
+    const int nMaxWraps = 0
 )
 {
     long it = 0;
     long max = 0;
-    while (it < str.size && max < maxLen - 2)
+    int yOff = y;
+    int xOff = x;
+    int nWraps = 0;
+
+    for (; it < str.size; ++max)
     {
+        if (max >= maxLen - 2)
+        {
+            /* FIXME: breaks the whole termbox */
+            // if (bWrap)
+            // {
+            //     max = 0;
+            //     xOff = xWrapOrigin;
+            //     ++yOff;
+            //     if (++nWraps > nMaxWraps) break;
+            // }
+            // else break;
+            break;
+        }
+
         wchar_t wc {};
         int charLen = mbtowc(&wc, &str[it], str.size - it);
         if (charLen < 0) return;
 
         it += charLen;
-
-        tb_set_cell(x + 1 + max, y, wc, fg, bg);
-        ++max;
+        tb_set_cell(xOff + 1 + max, yOff, wc, fg, bg);
     }
 }
 
@@ -436,7 +533,7 @@ static void
 drawTime(Allocator* pAlloc, const u16 split)
 {
     const auto width = tb_width();
-    const auto& mixer = *app::g_pMixer;
+    auto& mixer = *app::g_pMixer;
 
     char* pBuff = (char*)alloc(pAlloc, 1, width);
     utils::fill(pBuff, '\0', width);
@@ -515,7 +612,7 @@ drawInfo(Allocator* pAlloc)
         if (pl.info.title.size > 0)
             print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
-        drawUtf8String(split + 1 + n, 1, pBuff, maxStringWidth - n, TB_ITALIC|TB_BOLD|TB_YELLOW);
+        drawUtf8String(split + 1 + n, 1, pBuff, maxStringWidth - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT, true, split + 1, 1);
     }
 
     /* album */
@@ -558,15 +655,15 @@ drawBottomLine()
 
     drawUtf8String(width - str.size - 2, height - 1, str, str.size + 2); /* yeah + 2 */
 
-    if (s_bSearching || (!s_bSearching && wcsnlen(s_aSearchBuff, utils::size(s_aSearchBuff)) > 0))
+    if (s_input.eCurrMode != READ_MODE::NONE || (s_input.eCurrMode == READ_MODE::NONE && wcsnlen(s_input.aBuff, utils::size(s_input.aBuff)) > 0))
     {
-        String sSearching = "searching: ";
+        const String sSearching = READ_MODEToString(s_input.eLastUsedMode);
         drawUtf8String(0, height - 1, sSearching, sSearching.size + 2);
-        drawWideString(sSearching.size, height - 1, s_aSearchBuff, utils::size(s_aSearchBuff), width - sSearching.size);
+        drawWideString(sSearching.size, height - 1, s_input.aBuff, utils::size(s_input.aBuff), width - sSearching.size);
 
-        if (s_bSearching)
+        if (s_input.eCurrMode != READ_MODE::NONE)
         {
-            u32 wlen = wcsnlen(s_aSearchBuff, utils::size(s_aSearchBuff));
+            u32 wlen = wcsnlen(s_input.aBuff, utils::size(s_input.aBuff));
             drawWideString(sSearching.size + wlen, height - 1, L"█", 1, 3);
         }
     }

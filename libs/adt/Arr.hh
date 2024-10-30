@@ -14,8 +14,8 @@ struct Arr
     T pData[CAP] {};
     u32 size {};
 
-    T& operator[](u32 i)             { assert(i < CAP && "[Arr]: out of range access"); return pData[i]; }
-    const T& operator[](u32 i) const { assert(i < CAP && "[Arr]: out of range access"); return pData[i]; }
+    T& operator[](u32 i)             { assert(i < size && "[Arr]: out of size access"); return pData[i]; }
+    const T& operator[](u32 i) const { assert(i < CAP && "[Arr]: out of capacity access"); return pData[i]; }
 
     struct It
     {
@@ -59,7 +59,7 @@ ArrPush(Arr<T, CAP>* s, const T& x)
 }
 
 template<typename T, u32 CAP>
-inline u64
+inline u32
 ArrCap(Arr<T, CAP>* s)
 {
     return utils::size(s->pData);

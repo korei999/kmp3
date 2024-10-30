@@ -347,7 +347,7 @@ MixerSeekMS(Mixer* s, long ms)
     guard::Mtx lock(&s->mtxDecoder);
     if (!s->bDecodes) return;
 
-    long maxMs = (ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder) / s->base.sampleRate / s->base.nChannels) * 1000;
+    long maxMs = MixerGetMaxMS(s);
     ms = utils::clamp(ms, 0L, maxMs);
     ffmpeg::DecoderSeekMS(s->pDecoder, ms);
 
@@ -358,14 +358,14 @@ MixerSeekMS(Mixer* s, long ms)
 void
 MixerSeekLeftMS(Mixer* s, long ms)
 {
-    long currMs = (ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder) / s->base.sampleRate / s->base.nChannels) * 1000;
+    long currMs = MixerGetCurrentMS(s);
     MixerSeekMS(s, currMs - ms);
 }
 
 void
 MixerSeekRightMS(Mixer* s, long ms)
 {
-    long currMs = (ffmpeg::DecoderGetCurrentSamplePos(s->pDecoder) / s->base.sampleRate / s->base.nChannels) * 1000;
+    long currMs = MixerGetCurrentMS(s);
     MixerSeekMS(s, currMs + ms);
 }
 

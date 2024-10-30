@@ -22,8 +22,7 @@ run()
         platform::TermboxProcEvents(&arena.base);
 
         ArenaReset(&arena);
-    }
-    while (app::g_bRunning);
+    } while (app::g_bRunning);
 }
 
 } /* namespace frame */

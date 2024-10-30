@@ -14,32 +14,6 @@ namespace platform
 namespace pipewire
 {
 
-struct Mixer;
-
-void MixerInit(Mixer* s);
-void MixerDestroy(Mixer* s);
-void MixerPlay(Mixer* s, String sPath);
-void MixerPause(Mixer* s, bool bPause);
-void MixerTogglePause(Mixer* s);
-void MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave);
-void MixerSeekMS(Mixer* s, long ms);
-void MixerSeekLeftMS(Mixer* s, long ms);
-void MixerSeekRightMS(Mixer* s, long ms);
-Option<String> MixerGetMetadata(Mixer* s, const String sKey);
-
-inline const audio::MixerInterface inl_MixerVTable {
-    .init = decltype(audio::MixerInterface::init)(MixerInit),
-    .destroy = decltype(audio::MixerInterface::destroy)(MixerDestroy),
-    .play = decltype(audio::MixerInterface::play)(MixerPlay),
-    .pause = decltype(audio::MixerInterface::pause)(MixerPause),
-    .togglePause = decltype(audio::MixerInterface::togglePause)(MixerTogglePause),
-    .changeSampleRate = decltype(audio::MixerInterface::changeSampleRate)(MixerChangeSampleRate),
-    .seekMS = decltype(audio::MixerInterface::seekMS)(MixerSeekMS),
-    .seekLeftMS = decltype(audio::MixerInterface::seekLeftMS)(MixerSeekLeftMS),
-    .seekRightMS = decltype(audio::MixerInterface::seekRightMS)(MixerSeekRightMS),
-    .getMetadata = decltype(audio::MixerInterface::getMetadata)(MixerGetMetadata),
-};
-
 struct Mixer
 {
     audio::Mixer base {};
@@ -60,8 +34,38 @@ struct Mixer
     thrd_t threadLoop {};
 
     Mixer() = default;
-    Mixer(Allocator* pA) : base(&inl_MixerVTable), pDecoder(ffmpeg::DecoderAlloc(pA)) {}
+    Mixer(Allocator* pA);
 };
+
+void MixerInit(Mixer* s);
+void MixerDestroy(Mixer* s);
+void MixerPlay(Mixer* s, String sPath);
+void MixerPause(Mixer* s, bool bPause);
+void MixerTogglePause(Mixer* s);
+void MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave);
+inline long MixerGetCurrentMS(Mixer* s) { return (s->base.currentTimeStamp / s->base.sampleRate / s->base.nChannels) * 1000; }
+inline long MixerGetMaxMS(Mixer* s) { return (s->base.totalSamplesCount / s->base.sampleRate / s->base.nChannels) * 1000; }
+void MixerSeekMS(Mixer* s, long ms);
+void MixerSeekLeftMS(Mixer* s, long ms);
+void MixerSeekRightMS(Mixer* s, long ms);
+Option<String> MixerGetMetadata(Mixer* s, const String sKey);
+
+inline const audio::MixerInterface inl_MixerVTable {
+    .init = decltype(audio::MixerInterface::init)(MixerInit),
+    .destroy = decltype(audio::MixerInterface::destroy)(MixerDestroy),
+    .play = decltype(audio::MixerInterface::play)(MixerPlay),
+    .pause = decltype(audio::MixerInterface::pause)(MixerPause),
+    .togglePause = decltype(audio::MixerInterface::togglePause)(MixerTogglePause),
+    .changeSampleRate = decltype(audio::MixerInterface::changeSampleRate)(MixerChangeSampleRate),
+    .getCurrentMS = decltype(audio::MixerInterface::getCurrentMS)(MixerGetCurrentMS),
+    .getMaxMS = decltype(audio::MixerInterface::getMaxMS)(MixerGetMaxMS),
+    .seekMS = decltype(audio::MixerInterface::seekMS)(MixerSeekMS),
+    .seekLeftMS = decltype(audio::MixerInterface::seekLeftMS)(MixerSeekLeftMS),
+    .seekRightMS = decltype(audio::MixerInterface::seekRightMS)(MixerSeekRightMS),
+    .getMetadata = decltype(audio::MixerInterface::getMetadata)(MixerGetMetadata),
+};
+
+inline Mixer::Mixer(Allocator* pA) : base(&inl_MixerVTable), pDecoder(ffmpeg::DecoderAlloc(pA)) {}
 
 } /* namespace pipewire */
 } /* namespace platform */
@@ -75,6 +79,8 @@ inline void MixerPlay(platform::pipewire::Mixer* s, String sPath) { platform::pi
 inline void MixerPause(platform::pipewire::Mixer* s, bool bPause) { platform::pipewire::MixerPause(s, bPause); }
 inline void MixerTogglePause(platform::pipewire::Mixer* s) { platform::pipewire::MixerTogglePause(s); }
 inline void MixerChangeSampleRate(platform::pipewire::Mixer* s, int sampleRate, bool bSave) { platform::pipewire::MixerChangeSampleRate(s, sampleRate, bSave); }
+inline long MixerGetCurrentMS(platform::pipewire::Mixer* s) { return platform::pipewire::MixerGetCurrentMS(s); }
+inline long MixerGetMaxMS(platform::pipewire::Mixer* s) { return platform::pipewire::MixerGetMaxMS(s); }
 inline void MixerSeekMS(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekMS(s, ms); }
 inline void MixerSeekMSLeft(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekLeftMS(s, ms); }
 inline void MixerSeekMSRight(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekRightMS(s, ms); }

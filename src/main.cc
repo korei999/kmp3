@@ -18,7 +18,7 @@ main(int argc, char** argv)
 {
     setlocale(LC_ALL, "");
 #ifdef NDEBUG
-    close(STDERR_FILENO); /* hide libmpg123 errors */
+    close(STDERR_FILENO); /* hide mpg123 and other errors */
 #endif
 
     Arena arena(SIZE_1K * 8);

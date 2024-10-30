@@ -222,6 +222,7 @@ DecoderGetSampleRate(Decoder* s)
 static void
 DecoderSeekFrame(Decoder* s, u64 frame)
 {
+    avcodec_flush_buffers(s->pCodecCtx);
     avformat_seek_file(s->pFormatCtx, s->pStream->index, 0, frame, frame, AVSEEK_FLAG_BACKWARD);
 }
 
