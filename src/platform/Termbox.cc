@@ -156,8 +156,7 @@ parseAndRunSeek()
             if (bColon || bPercent) break;
             bColon = true;
         }
-
-        if (iswdigit(buff[i]))
+        else if (iswdigit(buff[i]))
         {
             Arr<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
             if (i < ArrCap(pTargetArray) - 1)
