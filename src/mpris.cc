@@ -256,8 +256,8 @@ mimeTypes(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    static const char* const types[] {};
-    return sd_bus_message_append_strv(reply, (char**)types);
+	static const char * const types[] = {nullptr};
+	return sd_bus_message_append_strv(reply, (char **)types);
 }
 
 static int
@@ -463,7 +463,7 @@ static const sd_bus_vtable g_vtMediaPlayer2[] {
     MPRIS_PROP("HasTrackList", "b", readFalse),
     MPRIS_PROP("Identity", "s", identity),
     MPRIS_PROP("SupportedUriSchemes", "as", uriSchemes),
-    /* MPRIS_PROP("SupportedMimeTypes", "as", mimeTypes), BUG: crashes on debug build */
+     MPRIS_PROP("SupportedMimeTypes", "as", mimeTypes),
     SD_BUS_VTABLE_END,
 };
 

@@ -153,13 +153,13 @@ PlayerSelectFocused(Player* s)
 }
 
 void
-PlayerPause(Player* s, bool bPause)
+PlayerPause([[maybe_unused]] Player* s, bool bPause)
 {
     audio::MixerPause(app::g_pMixer, bPause);
 }
 
 void
-PlayerTogglePause(Player* s)
+PlayerTogglePause([[maybe_unused]] Player* s)
 {
     audio::MixerTogglePause(app::g_pMixer);
 }
