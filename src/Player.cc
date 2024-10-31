@@ -19,8 +19,8 @@ constexpr String aAcceptedFileEndings[] {
     ".mkv",
 };
 
-static inline bool
-acceptedFormat(const String s)
+bool
+PlayerAcceptedFormat(const String s)
 {
     for (const auto ending : aAcceptedFileEndings)
         if (StringEndsWith(s, ending))
@@ -97,7 +97,7 @@ PlayerSetDefaultIdxs(Player* s)
     VecSetSize(&s->aSongIdxs, s->pAlloc, 0);
 
     for (int i = 1; i < app::g_argc; ++i)
-        if (acceptedFormat(app::g_aArgs[i]))
+        if (PlayerAcceptedFormat(app::g_aArgs[i]))
             VecPush(&s->aSongIdxs, s->pAlloc, u16(i));
 }
 
@@ -122,7 +122,7 @@ PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pBuff, u32 size)
     for (u32 i = 1; i < VecSize(&s->aShortArgvs); ++i)
     {
         const auto& song = s->aShortArgvs[i];
-        if (!acceptedFormat(song)) continue;
+        if (!PlayerAcceptedFormat(song)) continue;
 
         utils::fill(VecData(&aSongToUpper), L'\0', VecSize(&aSongToUpper));
         mbstowcs(VecData(&aSongToUpper), song.pData, song.size);
@@ -145,6 +145,12 @@ updateInfo(Player* s)
 void
 PlayerSelectFocused(Player* s)
 {
+    if (VecSize(&s->aSongIdxs) <= s->focused)
+    {
+        LOG_WARN("PlayerSelectFocused(): out of range selection");
+        return;
+    }
+
     s->selected = s->aSongIdxs[s->focused];
     const String& sPath = app::g_aArgs[s->selected];
     LOG_NOTIFY("selected({}): {}\n", s->selected, sPath);

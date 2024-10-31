@@ -18,6 +18,7 @@ PlayerRepeatMethodToString(PLAYER_REPEAT_METHOD e)
 
 struct Player;
 
+bool PlayerAcceptedFormat(const String s);
 void PlayerNext(Player* s);
 void PlayerPrev(Player* s);
 void PlayerFocus(Player* s, long i);

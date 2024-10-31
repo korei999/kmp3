@@ -67,6 +67,7 @@ main(int argc, char** argv)
 
     PlayerSetDefaultIdxs(&player);
 
+    u32 nAccepted = 0;
     u32 longsetSize = 0;
     for (int i = 0; i < argc; ++i)
     {
@@ -75,6 +76,8 @@ main(int argc, char** argv)
             player.pAlloc,
             file::getPathEnding(app::g_aArgs[i])
         );
+        if (PlayerAcceptedFormat(VecLast(&player.aShortArgvs)))
+            ++nAccepted;
 
         if (app::g_aArgs[i].size > longsetSize)
             longsetSize = app::g_aArgs[i].size;
@@ -90,9 +93,6 @@ main(int argc, char** argv)
     mixer.base.volume = defaults::VOLUME;
     app::g_pMixer = &mixer.base;
 
-    platform::TermboxInit();
-    defer( platform::TermboxStop() );
-
 #ifdef MPRIS_LIB
     mpris::initMutexes();
     defer(
@@ -101,8 +101,11 @@ main(int argc, char** argv)
     );
 #endif
 
-    if (argc > 1)
+    if (nAccepted > 0)
     {
+        platform::TermboxInit();
+        defer( platform::TermboxStop() );
+
         app::g_bRunning = true;
 
         /* reopen stdin if pipe was used */
@@ -110,5 +113,9 @@ main(int argc, char** argv)
             LOG_FATAL("freopen(\"/dev/tty\", \"r\", stdin)\n");
 
         frame::run();
+    }
+    else
+    {
+        CERR("No accepted input provided\n");
     }
 }
