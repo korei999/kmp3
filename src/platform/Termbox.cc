@@ -302,7 +302,7 @@ procMouse(tb_event* pEv)
         constexpr long xOff = 2; /* offset from the icon */
         if (ev.x <= xOff) return;
 
-        f64 target = f64(ev.x - xOff) / f64(width - xOff);
+        f64 target = f64(ev.x - xOff) / f64(width - xOff - 1);
         target *= audio::MixerGetMaxMS(app::g_pMixer);
         audio::MixerSeekMS(app::g_pMixer, target);
 
