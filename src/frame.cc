@@ -25,6 +25,7 @@ mprisPollLoop([[maybe_unused]] void* pNull)
             mpris::destroy();
             mpris::init();
         }
+
         utils::sleepMS(defaults::MPRIS_UPDATE_RATE);
     }
 

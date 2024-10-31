@@ -4,6 +4,7 @@
 #include "adt/String.hh"
 #include "adt/utils.hh"
 #include "defaults.hh"
+#include "mpris.hh"
 
 #include <atomic>
 
@@ -58,7 +59,14 @@ ADT_NO_UB constexpr void MixerSeekMS(Mixer* s, u64 ms) { s->pVTable->seekMS(s, m
 ADT_NO_UB constexpr void MixerSeekLeftMS(Mixer* s, u64 ms) { s->pVTable->seekLeftMS(s, ms); }
 ADT_NO_UB constexpr void MixerSeekRightMS(Mixer* s, u64 ms) { s->pVTable->seekRightMS(s, ms); }
 [[nodiscard]] ADT_NO_UB constexpr Option<String> MixerGetMetadata(Mixer* s, const String sKey) { return s->pVTable->getMetadata(s, sKey); }
-inline void MixerSetVolume(Mixer* s, const f32 volume) { s->volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME); }
+
+inline void
+MixerSetVolume(Mixer* s, const f32 volume)
+{
+    s->volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
+    mpris::volumeChanged();
+}
+
 inline void MixerVolumeDown(Mixer* s, const f32 step) { MixerSetVolume(s, s->volume - step); }
 inline void MixerVolumeUp(Mixer* s, const f32 step) { MixerSetVolume(s, s->volume + step); }
 inline f64 MixerGetCurrentMS(Mixer* s) { return (f64(s->currentTimeStamp) / f64(s->sampleRate) / f64(s->nChannels)) * 1000.0; }

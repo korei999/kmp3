@@ -585,8 +585,6 @@ destroy()
 static void
 playerPropertyChanged(const char* name)
 {
-    guard::Mtx lock(&g_mtx);
-
     const char* const strv[] = {name, NULL};
     if (s_pBus)
     {
@@ -638,6 +636,8 @@ seeked()
 void
 metadataChanged()
 {
+    guard::Mtx lock(&g_mtx);
+
     playerPropertyChanged("Metadata");
     /* the following is not necessary according to the spec but some
      * applications seem to disregard the spec and expect this to happen */

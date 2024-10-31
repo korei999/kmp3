@@ -3,6 +3,7 @@
 #include "adt/Arr.hh"
 #include "app.hh"
 #include "logs.hh"
+#include "mpris.hh"
 
 #include <cstdlib>
 #include <cwchar>
@@ -199,6 +200,9 @@ PlayerCycleRepeatMethods(Player* s, bool bForward)
     else rm = PLAYER_REPEAT_METHOD((s->eReapetMethod + (ESIZE - 1)) % ESIZE);
 
     s->eReapetMethod = rm;
+
+    mpris::loopStatusChanged();
+
     return rm;
 }
 
