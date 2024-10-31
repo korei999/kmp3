@@ -281,7 +281,6 @@ playbackStatus(
 )
 {
     const char* s = app::g_pMixer->bPaused ? "Paused" : "Playing";
-    LOG("mpris::playbackStatus: '{}'({})\n", app::g_pMixer->bPaused, s);
     return sd_bus_message_append_basic(reply, 's', s);
 }
 
@@ -315,7 +314,7 @@ setLoopStatus(
 {
     const char* t = nullptr;
     CK(sd_bus_message_read_basic(value, 's', &t));
-    LOG_WARN("t: {}\n", t);
+    LOG("mpris::setLoopStatus(): {}\n", t);
 
     auto eMethod = app::g_pPlayer->eReapetMethod;
     for (u64 i = 0; i < utils::size(mapPlayerRepeatMethodStrings); ++i)

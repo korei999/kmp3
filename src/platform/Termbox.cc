@@ -290,26 +290,44 @@ static void
 procMouse(tb_event* pEv)
 {
     auto& pl = *app::g_pPlayer;
-    const long off = pl.statusAndInfoHeight + 4;
-    long target = s_firstIdx + pEv->y - off;
+    const long listOff = pl.statusAndInfoHeight + 4;
+    const long sliderOff = pl.statusAndInfoHeight + 2;
+    const auto& ev = *pEv;
+
+    /* click on slider */
+    if (ev.y == sliderOff)
+    {
+        constexpr long xOff = 2; /* offset from the icon */
+        const long width = tb_width();
+        if (ev.x <= xOff) return;
+
+        f64 target = f64(ev.x - xOff) / f64(width - xOff);
+        target *= audio::MixerGetMaxMS(app::g_pMixer);
+        audio::MixerSeekMS(app::g_pMixer, target);
+
+        return;
+    }
+
+    /* click on song list */
+    long target = s_firstIdx + ev.y - listOff;
     target = utils::clamp(
         target,
         long(s_firstIdx),
-        long(s_firstIdx + tb_height() - off - 3)
+        long(s_firstIdx + tb_height() - listOff - 3)
     );
 
     defer( fixFirstIdx() );
 
-    const auto& e = *pEv;
-    if (e.key == TB_KEY_MOUSE_LEFT)
+    if (ev.key == TB_KEY_MOUSE_LEFT)
+        PlayerFocus(&pl, target);
+    if (ev.key == TB_KEY_MOUSE_RIGHT)
     {
-        if (pl.focused == target)
-            PlayerSelectFocused(&pl);
-        else PlayerFocus(&pl, target);
+        PlayerFocus(&pl, target);
+        PlayerSelectFocused(&pl);
     }
-    else if (e.key == TB_KEY_MOUSE_WHEEL_UP)
+    else if (ev.key == TB_KEY_MOUSE_WHEEL_UP)
         PlayerFocus(&pl, pl.focused - 22);
-    else if (e.key == TB_KEY_MOUSE_WHEEL_DOWN)
+    else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN)
         PlayerFocus(&pl, pl.focused + 22);
 }
 
