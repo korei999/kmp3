@@ -293,12 +293,13 @@ procMouse(tb_event* pEv)
     const long listOff = pl.statusAndInfoHeight + 4;
     const long sliderOff = pl.statusAndInfoHeight + 2;
     const auto& ev = *pEv;
+    const long width = tb_width();
+    const long height = tb_height();
 
     /* click on slider */
     if (ev.y == sliderOff)
     {
         constexpr long xOff = 2; /* offset from the icon */
-        const long width = tb_width();
         if (ev.x <= xOff) return;
 
         f64 target = f64(ev.x - xOff) / f64(width - xOff);
@@ -309,6 +310,8 @@ procMouse(tb_event* pEv)
     }
 
     /* click on song list */
+    if (ev.y < listOff || ev.y >= height - 2) return;
+
     long target = s_firstIdx + ev.y - listOff;
     target = utils::clamp(
         target,
