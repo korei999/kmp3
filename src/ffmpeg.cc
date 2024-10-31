@@ -39,11 +39,9 @@ DecoderAlloc(Allocator* pAlloc)
 void
 DecoderClose(Decoder* s)
 {
-    /*avformat_free_context(s->pFormatCtx);*/
     if (s->pFormatCtx) avformat_close_input(&s->pFormatCtx);
     if (s->pCodecCtx) avcodec_free_context(&s->pCodecCtx);
     if (s->pSwr) swr_free(&s->pSwr);
-    /*avcodec_close(s->pCodecCtx);*/
     LOG_NOTIFY("DecoderClose()\n");
 
     *s = {};

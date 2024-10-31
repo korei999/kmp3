@@ -10,6 +10,10 @@
 #include "platform/pipewire/Mixer.hh"
 #include "defaults.hh"
 
+#ifdef MPRIS_LIB
+    #include "mpris.hh"
+#endif
+
 #include <clocale>
 #include <fcntl.h>
 
@@ -78,7 +82,7 @@ main(int argc, char** argv)
     player.longestStringSize = longsetSize;
     player.statusAndInfoHeight = 4;
     player.statusToInfoWidthRatio = 0.4;
-    player.eReapetMethod = PLAYER_REAPEAT_METHOD::PLAYLIST;
+    player.eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
 
     platform::pipewire::Mixer mixer(&arena.base);
     platform::pipewire::MixerInit(&mixer);
@@ -89,11 +93,19 @@ main(int argc, char** argv)
     platform::TermboxInit();
     defer( platform::TermboxStop() );
 
+#ifdef MPRIS_LIB
+    mpris::initMutexes();
+    defer(
+        if (mpris::g_bReady) mpris::destroy();
+        mpris::destroyMutexes();
+    );
+#endif
+
     if (argc > 1)
     {
         app::g_bRunning = true;
 
-        /* reopen stdin to if pipe was used */
+        /* reopen stdin if pipe was used */
         if (!freopen("/dev/tty", "r", stdin))
             LOG_FATAL("freopen(\"/dev/tty\", \"r\", stdin)\n");
 

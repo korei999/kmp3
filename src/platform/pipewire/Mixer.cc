@@ -26,7 +26,6 @@ struct ThrdLoopLockGuard
 
 static void MixerRunThread(Mixer* s, int argc, char** argv);
 static void onProcess(void* data);
-static bool MixerEmpty(Mixer* s);
 
 static const pw_stream_events s_streamEvents {
     .version = PW_VERSION_STREAM_EVENTS,
@@ -44,7 +43,6 @@ static const pw_stream_events s_streamEvents {
 };
 
 static f32 s_aPwBuff[audio::CHUNK_SIZE] {}; /* big */
-static u32 s_pwBuffSize = 0;
 
 static u32
 formatByteSize(enum spa_audio_format eFormat)
@@ -150,6 +148,8 @@ MixerPlay(Mixer* s, String sPath)
     s->base.nChannels = ffmpeg::DecoderGetChannelsCount(s->pDecoder);
     MixerChangeSampleRate(s, ffmpeg::DecoderGetSampleRate(s->pDecoder), true);
     MixerPause(s, false);
+
+    s->base.bPlaybackStarted = true;
 }
 
 static void
@@ -288,12 +288,6 @@ onProcess(void* pData)
     pw_stream_queue_buffer(s->pStream, pPwBuffer);
 }
 
-[[maybe_unused]] static bool
-MixerEmpty(Mixer* s)
-{
-    return true;
-}
-
 void
 MixerPause(Mixer* s, bool bPause)
 {
@@ -347,7 +341,7 @@ MixerSeekMS(Mixer* s, long ms)
     guard::Mtx lock(&s->mtxDecoder);
     if (!s->bDecodes) return;
 
-    long maxMs = MixerGetMaxMS(s);
+    long maxMs = audio::MixerGetMaxMS(s);
     ms = utils::clamp(ms, 0L, maxMs);
     ffmpeg::DecoderSeekMS(s->pDecoder, ms);
 
@@ -358,14 +352,14 @@ MixerSeekMS(Mixer* s, long ms)
 void
 MixerSeekLeftMS(Mixer* s, long ms)
 {
-    long currMs = MixerGetCurrentMS(s);
+    long currMs = audio::MixerGetCurrentMS(s);
     MixerSeekMS(s, currMs - ms);
 }
 
 void
 MixerSeekRightMS(Mixer* s, long ms)
 {
-    long currMs = MixerGetCurrentMS(s);
+    long currMs = audio::MixerGetCurrentMS(s);
     MixerSeekMS(s, currMs + ms);
 }
 

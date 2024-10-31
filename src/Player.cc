@@ -133,6 +133,14 @@ PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pBuff, u32 size)
     }
 }
 
+static void
+updateInfo(Player* s)
+{
+    s->info.title = audio::MixerGetMetadata(app::g_pMixer, "title").data;
+    s->info.album = audio::MixerGetMetadata(app::g_pMixer, "album").data;
+    s->info.artist = audio::MixerGetMetadata(app::g_pMixer, "artist").data;
+}
+
 void
 PlayerSelectFocused(Player* s)
 {
@@ -141,10 +149,7 @@ PlayerSelectFocused(Player* s)
     LOG_NOTIFY("selected({}): {}\n", s->selected, sPath);
 
     audio::MixerPlay(app::g_pMixer, sPath);
-
-    s->info.title = audio::MixerGetMetadata(app::g_pMixer, "title").data;
-    s->info.album = audio::MixerGetMetadata(app::g_pMixer, "album").data;
-    s->info.artist = audio::MixerGetMetadata(app::g_pMixer, "artist").data;
+    updateInfo(s);
 }
 
 void
@@ -163,13 +168,13 @@ void
 PlayerOnSongEnd(Player* s)
 {
     long currIdx = PlayerFindSongIdxFromSelected(s) + 1;
-    if (s->eReapetMethod == PLAYER_REAPEAT_METHOD::TRACK)
+    if (s->eReapetMethod == PLAYER_REPEAT_METHOD::TRACK)
     {
         currIdx -= 1;
     }
     else if (currIdx >= VecSize(&s->aSongIdxs))
     {
-        if (s->eReapetMethod == PLAYER_REAPEAT_METHOD::PLAYLIST)
+        if (s->eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST)
         {
             currIdx = 0;
         }
@@ -182,20 +187,35 @@ PlayerOnSongEnd(Player* s)
 
     s->selected = s->aSongIdxs[currIdx];
     audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
-
-    s->info.title = audio::MixerGetMetadata(app::g_pMixer, "title").data;
-    s->info.album = audio::MixerGetMetadata(app::g_pMixer, "album").data;
-    s->info.artist = audio::MixerGetMetadata(app::g_pMixer, "artist").data;
+    updateInfo(s);
 }
 
-PLAYER_REAPEAT_METHOD
+PLAYER_REPEAT_METHOD
 PlayerCycleRepeatMethods(Player* s, bool bForward)
 {
-    PLAYER_REAPEAT_METHOD rm {};
+    PLAYER_REPEAT_METHOD rm {};
 
-    if (bForward) rm = PLAYER_REAPEAT_METHOD((s->eReapetMethod + 1) % ESIZE);
-    else rm = PLAYER_REAPEAT_METHOD((s->eReapetMethod + (ESIZE - 1)) % ESIZE);
+    if (bForward) rm = PLAYER_REPEAT_METHOD((s->eReapetMethod + 1) % ESIZE);
+    else rm = PLAYER_REPEAT_METHOD((s->eReapetMethod + (ESIZE - 1)) % ESIZE);
 
     s->eReapetMethod = rm;
     return rm;
+}
+
+void
+PlayerSelectNext(Player* s)
+{
+    long currIdx = (PlayerFindSongIdxFromSelected(s) + 1) % VecSize(&s->aSongIdxs);
+    s->selected = s->aSongIdxs[currIdx];
+    audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
+    updateInfo(s);
+}
+
+void
+PlayerSelectPrev(Player* s)
+{
+    long currIdx = (PlayerFindSongIdxFromSelected(s) + (VecSize(&s->aSongIdxs) - 1)) % VecSize(&s->aSongIdxs);
+    s->selected = s->aSongIdxs[currIdx];
+    audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
+    updateInfo(s);
 }

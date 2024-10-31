@@ -6,7 +6,15 @@
 
 using namespace adt;
 
-enum PLAYER_REAPEAT_METHOD: u8 { NONE, TRACK, PLAYLIST, ESIZE };
+enum PLAYER_REPEAT_METHOD: u8 { NONE, TRACK, PLAYLIST, ESIZE };
+
+constexpr String mapPlayerRepeatMethodStrings[] {"None", "Track", "Playlist"};
+
+constexpr String
+PlayerRepeatMethodToString(PLAYER_REPEAT_METHOD e)
+{
+    return mapPlayerRepeatMethodStrings[e];
+}
 
 struct Player;
 
@@ -19,11 +27,13 @@ void PlayerFocusLast(Player* s);
 u16 PlayerFindSongIdxFromSelected(Player* s);
 void PlayerFocusSelected(Player* s);
 void PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pWBuff, u32 size);
-void PlayerSelectFocused(Player* s);
+void PlayerSelectFocused(Player* s); /* starts playing focused song */
 void PlayerPause(Player* s, bool bPause);
 void PlayerTogglePause(Player* s);
 void PlayerOnSongEnd(Player* s);
-PLAYER_REAPEAT_METHOD PlayerCycleRepeatMethods(Player* s, bool bForward);
+PLAYER_REPEAT_METHOD PlayerCycleRepeatMethods(Player* s, bool bForward);
+void PlayerSelectNext(Player* s);
+void PlayerSelectPrev(Player* s);
 
 struct Player
 {
@@ -48,7 +58,7 @@ struct Player
     long focused {};
     long selected {};
     u32 longestStringSize {};
-    PLAYER_REAPEAT_METHOD eReapetMethod {};
+    PLAYER_REPEAT_METHOD eReapetMethod {};
 
     Player() = delete;
     Player(Allocator* p, int nArgs, [[maybe_unused]] char** ppArgs)

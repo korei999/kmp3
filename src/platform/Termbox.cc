@@ -272,6 +272,10 @@ procKey(tb_event* pEv, Allocator* pAlloc)
         mixer.bMuted = !mixer.bMuted;
     else if (ch == L't' || ch == L'е')
         seekFromInput(pAlloc);
+    else if (ch == L'i' || ch == L'ш')
+        PlayerSelectPrev(&pl);
+    else if (ch == L'o' || ch == L'щ')
+        PlayerSelectNext(&pl);
 
     fixFirstIdx();
 }
@@ -565,11 +569,11 @@ drawTotal(Allocator* pAlloc, const u16 split)
     utils::fill(pBuff, '\0', width);
 
     int n = snprintf(pBuff, width, "total: %ld / %u", pl.selected, pl.aShortArgvs.size - 1);
-    if (pl.eReapetMethod != PLAYER_REAPEAT_METHOD::NONE)
+    if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
     {
         const char* sArg {};
-        if (pl.eReapetMethod == PLAYER_REAPEAT_METHOD::TRACK) sArg = "track";
-        else if (pl.eReapetMethod == PLAYER_REAPEAT_METHOD::PLAYLIST) sArg = "playlist";
+        if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
+        else if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
 
         snprintf(pBuff + n, width - n, " (repeat %s)", sArg);
     }

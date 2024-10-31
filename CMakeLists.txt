@@ -40,6 +40,7 @@ add_executable(
     src/frame.cc
     src/Player.cc
     src/ffmpeg.cc
+    src/mpris.cc
     src/platform/Termbox.cc
     src/platform/pipewire/Mixer.cc
 )
@@ -164,6 +165,22 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         ${CMAKE_PROJECT_NAME} PRIVATE
         ${LINUX_PKGS_LIBRARIES}
     )
+
+    pkg_check_modules(SYSTEMD libsystemd)
+    if (${SYSTEMD_FOUND})
+        include_directories(BEFORE ${CMAKE_PROJECT_NAME})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
+        target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
+        add_definitions("-DMPRIS_LIB")
+    else()
+        pkg_check_modules(BASU basu)
+        if (${BASU_FOUND})
+            include_directories(BEFORE ${BASU_INCLUDE_DIRS})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARIES})
+            target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
+            add_definitions("-DMPRIS_LIB -DBASU_LIB")
+        endif()
+    endif()
 endif()
 
 install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

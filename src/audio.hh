@@ -25,8 +25,6 @@ struct MixerInterface
     void (*pause)(Mixer* s, bool bPause);
     void (*togglePause)(Mixer* s);
     void (*changeSampleRate)(Mixer* s, int sampleRate, bool bSave);
-    long (*getCurrentMS)(Mixer* s);
-    long (*getMaxMS)(Mixer* s);
     void (*seekMS)(Mixer* s, u64 ms);
     void (*seekLeftMS)(Mixer* s, u64 ms);
     void (*seekRightMS)(Mixer* s, u64 ms);
@@ -37,6 +35,7 @@ struct Mixer
 {
     const MixerInterface* pVTable {};
     std::atomic<bool> bPaused = false;
+    std::atomic<bool> bPlaybackStarted {};
     bool bMuted = false;
     bool bRunning = true;
     u32 sampleRate = 48000;
@@ -53,8 +52,6 @@ ADT_NO_UB constexpr void MixerPlay(Mixer* s, String sPath) { s->pVTable->play(s,
 ADT_NO_UB constexpr void MixerPause(Mixer* s, bool bPause) { s->pVTable->pause(s, bPause); }
 ADT_NO_UB constexpr void MixerTogglePause(Mixer* s) { s->pVTable->togglePause(s); }
 ADT_NO_UB constexpr void MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave) { s->pVTable->changeSampleRate(s, sampleRate, bSave); }
-[[nodiscard]] ADT_NO_UB constexpr long MixerGetCurrentMS(Mixer* s) { return s->pVTable->getCurrentMS(s); } /* current time in ms */
-[[nodiscard]] ADT_NO_UB constexpr long MixerGetMaxMS(Mixer* s) { return s->pVTable->getMaxMS(s); } /* max time in ms */
 ADT_NO_UB constexpr void MixerSeekMS(Mixer* s, u64 ms) { s->pVTable->seekMS(s, ms); }
 ADT_NO_UB constexpr void MixerSeekLeftMS(Mixer* s, u64 ms) { s->pVTable->seekLeftMS(s, ms); }
 ADT_NO_UB constexpr void MixerSeekRightMS(Mixer* s, u64 ms) { s->pVTable->seekRightMS(s, ms); }
@@ -62,6 +59,8 @@ ADT_NO_UB constexpr void MixerSeekRightMS(Mixer* s, u64 ms) { s->pVTable->seekRi
 inline void MixerSetVolume(Mixer* s, const f32 volume) { s->volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME); }
 inline void MixerVolumeDown(Mixer* s, const f32 step) { MixerSetVolume(s, s->volume - step); }
 inline void MixerVolumeUp(Mixer* s, const f32 step) { MixerSetVolume(s, s->volume + step); }
+inline f64 MixerGetCurrentMS(Mixer* s) { return (f64(s->currentTimeStamp) / f64(s->sampleRate) / f64(s->nChannels)) * 1000.0; }
+inline f64 MixerGetMaxMS(Mixer* s) { return (f64(s->totalSamplesCount) / f64(s->sampleRate) / f64(s->nChannels)) * 1000.0; }
 
 struct DummyMixer
 {
@@ -90,8 +89,6 @@ inline const MixerInterface inl_DummyMixerVTable {
     .pause = decltype(MixerInterface::pause)(DummyMixerPause),
     .togglePause = decltype(MixerInterface::togglePause)(DummyMixerTogglePause),
     .changeSampleRate = decltype(MixerInterface::changeSampleRate)(DummyMixerChangeSampleRate),
-    .getCurrentMS = decltype(MixerInterface::getCurrentMS)(DummyMixerGetMaxMS),
-    .getMaxMS = decltype(MixerInterface::getMaxMS)(DummyMixerGetMaxMS),
     .seekMS = decltype(MixerInterface::seekMS)(DummyMixerSeekMS),
     .seekLeftMS = decltype(MixerInterface::seekMS)(DummyMixerSeekLeftMS),
     .seekRightMS = decltype(MixerInterface::seekMS)(DummyMixerSeekRightMS),
