@@ -152,7 +152,7 @@ pause(
     return sd_bus_reply_method_return(m, "");
 }
 
-/* NOTE: same as pause */
+/* same as pause */
 static int
 stop(
     [[maybe_unused]] sd_bus_message* m,
@@ -242,7 +242,7 @@ uriSchemes(
     [[maybe_unused]] sd_bus_error* _ret_error
 )
 {
-    static const char* const schemes[] {{}, {}}; /* NOTE: has to end with nullptr array */
+    static const char* const schemes[] {{}, {}}; /* has to end with nullptr array */
     return sd_bus_message_append_strv(reply, (char**)schemes);
 }
 static int
@@ -256,7 +256,7 @@ mimeTypes(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-	static const char * const types[] = {nullptr};
+	static const char* const types[] = {nullptr};
 	return sd_bus_message_append_strv(reply, (char **)types);
 }
 
