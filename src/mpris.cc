@@ -12,6 +12,8 @@
     #include <systemd/sd-bus.h>
 #endif
 
+#include <cinttypes>
+
 #define MPRIS_PROP(name, type, read) SD_BUS_PROPERTY(name, type, read, 0, SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE)
 
 #define MPRIS_WPROP(name, type, read, write)                                                                           \
@@ -73,6 +75,12 @@ static int
 msgAppendDictSX(sd_bus_message* m, const char* a, s64 i)
 {
     return msgAppendDictSimple(m, a, 'x', &i);
+}
+
+static int
+msgAppendDictSO(sd_bus_message* m, const char* a, const char* b)
+{
+    return msgAppendDictSimple(m, a, 'o', b);
 }
 
 static int
@@ -207,7 +215,18 @@ seekAbs(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    return sd_bus_reply_method_return(m, "");
+	char aBuff[] = "/1122334455667788";
+    sprintf(aBuff, "/%" PRIx64, app::g_pPlayer->selected);
+
+	const char *pPath = NULL;
+	s64 val = 0;
+	CK(sd_bus_message_read_basic(m, 'o', &pPath));
+	CK(sd_bus_message_read_basic(m, 'x', &val));
+
+	if (strncmp(aBuff, pPath, utils::size(aBuff)) == 0)
+        audio::MixerSeekMS(app::g_pMixer, val / 1000);
+
+	return sd_bus_reply_method_return(m, "");
 }
 
 static int
@@ -456,8 +475,17 @@ metadata(
     if (pl.info.artist.size > 0)
         CK(msgAppendDictSAS(reply, "xesam:artist", pl.info.artist.pData));
 
-    long duration = audio::MixerGetMaxMS(app::g_pMixer) * 1000;
-    CK(msgAppendDictSX(reply, "mpris:length", duration));
+    {
+        long duration = audio::MixerGetMaxMS(app::g_pMixer) * 1000;
+        CK(msgAppendDictSX(reply, "mpris:length", duration));
+    }
+
+    {
+        char aBuff[] = "/1122334455667788";
+        auto currIdx = pl.selected;
+        sprintf(aBuff, "/%" PRIx64, currIdx);
+        CK(msgAppendDictSO(reply, "mpris:trackid", aBuff));
+    }
 
     CK(sd_bus_message_close_container(reply));
 
