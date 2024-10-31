@@ -297,10 +297,14 @@ procMouse(tb_event* pEv)
     const long height = tb_height();
 
     /* click on slider */
-    if (ev.y == sliderOff)
+    if (ev.y == sliderOff && ev.key == TB_KEY_MOUSE_LEFT)
     {
         constexpr long xOff = 2; /* offset from the icon */
-        if (ev.x <= xOff) return;
+        if (ev.x <= xOff)
+        {
+            if (ev.key == TB_KEY_MOUSE_LEFT) audio::MixerTogglePause(app::g_pMixer);
+            return;
+        }
 
         f64 target = f64(ev.x - xOff) / f64(width - xOff - 1);
         target *= audio::MixerGetMaxMS(app::g_pMixer);
