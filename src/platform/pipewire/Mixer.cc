@@ -149,7 +149,7 @@ MixerPlay(Mixer* s, String sPath)
     MixerChangeSampleRate(s, ffmpeg::DecoderGetSampleRate(s->pDecoder), true);
     MixerPause(s, false);
 
-    s->base.bPlaybackStarted = true;
+    s->base.bUpdateMpris = true; /* mark to update in frame::run() */ 
 }
 
 static void

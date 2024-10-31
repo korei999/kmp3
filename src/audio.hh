@@ -35,7 +35,9 @@ struct Mixer
 {
     const MixerInterface* pVTable {};
     std::atomic<bool> bPaused = false;
-    std::atomic<bool> bPlaybackStarted {};
+#ifdef MPRIS_LIB
+    std::atomic<bool> bUpdateMpris {};
+#endif
     bool bMuted = false;
     bool bRunning = true;
     u32 sampleRate = 48000;

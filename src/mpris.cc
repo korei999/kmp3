@@ -528,7 +528,7 @@ init()
     );
     if (res < 0) goto out;
 
-    res = sd_bus_request_name(s_pBus, "org.mpris.MediaPlayer2.kmp", 0);
+    res = sd_bus_request_name(s_pBus, "org.mpris.MediaPlayer2.kmp3", 0);
     s_fdMpris = sd_bus_get_fd(s_pBus);
 
 out:

@@ -12,6 +12,26 @@
 namespace frame
 {
 
+#ifdef MPRIS_LIB
+static int
+mprisPollLoop([[maybe_unused]] void* pNull)
+{
+    while (app::g_bRunning)
+    {
+        mpris::proc();
+        if (app::g_pMixer->bUpdateMpris)
+        {
+            app::g_pMixer->bUpdateMpris = false;
+            mpris::destroy();
+            mpris::init();
+        }
+        utils::sleepMS(defaults::MPRIS_UPDATE_RATE);
+    }
+
+    return thrd_success;
+}
+#endif
+
 void
 run()
 {
@@ -23,22 +43,15 @@ run()
 
 #ifdef MPRIS_LIB
     mpris::init();
+    thrd_t mprisThrd {};
+    thrd_create(&mprisThrd, mprisPollLoop, {});
+    defer( thrd_join(mprisThrd, {}) );
 #endif
 
     do
     {
         platform::TermboxRender(&arena.base);
         platform::TermboxProcEvents(&arena.base);
-
-#ifdef MPRIS_LIB
-        mpris::proc();
-        if (app::g_pMixer->bPlaybackStarted)
-        {
-            app::g_pMixer->bPlaybackStarted = false;
-            mpris::destroy();
-            mpris::init();
-        }
-#endif
 
         ArenaReset(&arena);
     } while (app::g_bRunning);

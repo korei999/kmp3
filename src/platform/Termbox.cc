@@ -29,7 +29,7 @@ static struct {
 } s_input;
 
 constexpr String
-READ_MODEToString(READ_MODE e)
+ReadModeToString(READ_MODE e)
 {
     switch (e)
     {
@@ -392,17 +392,17 @@ drawUtf8String(
     const String str,
     const long maxLen,
     const u32 fg = TB_WHITE,
-    const u32 bg = TB_DEFAULT,
-    const bool bWrap = false,
-    const int xWrapOrigin = 0,
-    const int nMaxWraps = 0
+    const u32 bg = TB_DEFAULT
+    // const bool bWrap = false,
+    // const int xWrapOrigin = 0,
+    // const int nMaxWraps = 0
 )
 {
     long it = 0;
     long max = 0;
     int yOff = y;
     int xOff = x;
-    int nWraps = 0;
+    // int nWraps = 0;
 
     for (; it < str.size; ++max)
     {
@@ -615,7 +615,7 @@ drawInfo(Allocator* pAlloc)
         if (pl.info.title.size > 0)
             print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
-        drawUtf8String(split + 1 + n, 1, pBuff, maxStringWidth - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT, true, split + 1, 1);
+        drawUtf8String(split + 1 + n, 1, pBuff, maxStringWidth - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
     }
 
     /* album */
@@ -660,7 +660,7 @@ drawBottomLine()
 
     if (s_input.eCurrMode != READ_MODE::NONE || (s_input.eCurrMode == READ_MODE::NONE && wcsnlen(s_input.aBuff, utils::size(s_input.aBuff)) > 0))
     {
-        const String sSearching = READ_MODEToString(s_input.eLastUsedMode);
+        const String sSearching = ReadModeToString(s_input.eLastUsedMode);
         drawUtf8String(0, height - 1, sSearching, sSearching.size + 2);
         drawWideString(sSearching.size, height - 1, s_input.aBuff, utils::size(s_input.aBuff), width - sSearching.size);
 
