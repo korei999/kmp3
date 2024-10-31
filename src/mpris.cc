@@ -1,4 +1,4 @@
-/* taken from cmus https://github.com/cmus/cmus/blob/master/mpris.c */
+/* https://github.com/cmus/cmus/blob/master/mpris.c */
 
 #include "mpris.hh"
 
@@ -32,7 +32,7 @@ bool g_bReady = false;
 mtx_t g_mtx;
 cnd_t g_cnd;
 
-static sd_bus *s_pBus {};
+static sd_bus* s_pBus {};
 static int s_fdMpris = -1;
 
 static int
@@ -67,6 +67,12 @@ static int
 msgAppendDictSS(sd_bus_message* m, const char* a, const char* b)
 {
     return msgAppendDictSimple(m, a, 's', b);
+}
+
+static int
+msgAppendDictSX(sd_bus_message* m, const char* a, s64 i)
+{
+    return msgAppendDictSimple(m, a, 'x', &i);
 }
 
 static int
@@ -115,6 +121,7 @@ togglePause(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
+    LOG("mpris::togglePause\n");
     audio::MixerTogglePause(app::g_pMixer);
     return sd_bus_reply_method_return(m, "");
 }
@@ -148,6 +155,7 @@ pause(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
+    LOG("mpris::pause\n");
     audio::MixerPause(app::g_pMixer, true);
     return sd_bus_reply_method_return(m, "");
 }
@@ -170,6 +178,7 @@ resume(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
+    LOG("mpris::resume\n");
     audio::MixerPause(app::g_pMixer, false);
     return sd_bus_reply_method_return(m, "");
 }
@@ -272,6 +281,7 @@ playbackStatus(
 )
 {
     const char* s = app::g_pMixer->bPaused ? "Paused" : "Playing";
+    LOG("mpris::playbackStatus: '{}'({})\n", app::g_pMixer->bPaused, s);
     return sd_bus_message_append_basic(reply, 's', s);
 }
 
@@ -447,12 +457,15 @@ metadata(
     if (pl.info.artist.size > 0)
         CK(msgAppendDictSAS(reply, "xesam:artist", pl.info.artist.pData));
 
+    long duration = audio::MixerGetMaxMS(app::g_pMixer) * 1000;
+    CK(msgAppendDictSX(reply, "mpris:length", duration));
+
     CK(sd_bus_message_close_container(reply));
 
     return 0;
 }
 
-static const sd_bus_vtable g_vtMediaPlayer2[] {
+static const sd_bus_vtable s_vtMediaPlayer2[] {
     SD_BUS_VTABLE_START(0),
     SD_BUS_METHOD("Raise", "", "", msgIgnore, 0),
     SD_BUS_METHOD("Quit", "", "", msgIgnore, 0),
@@ -463,11 +476,11 @@ static const sd_bus_vtable g_vtMediaPlayer2[] {
     MPRIS_PROP("HasTrackList", "b", readFalse),
     MPRIS_PROP("Identity", "s", identity),
     MPRIS_PROP("SupportedUriSchemes", "as", uriSchemes),
-     MPRIS_PROP("SupportedMimeTypes", "as", mimeTypes),
+    MPRIS_PROP("SupportedMimeTypes", "as", mimeTypes),
     SD_BUS_VTABLE_END,
 };
 
-static const sd_bus_vtable g_vtMediaPlayer2Player[] = {
+static const sd_bus_vtable s_vtMediaPlayer2Player[] = {
     SD_BUS_VTABLE_START(0),
     SD_BUS_METHOD("Next", "", "", next, 0),
     SD_BUS_METHOD("Previous", "", "", prev, 0),
@@ -513,7 +526,7 @@ init()
         nullptr,
         "/org/mpris/MediaPlayer2",
         "org.mpris.MediaPlayer2",
-        g_vtMediaPlayer2,
+        s_vtMediaPlayer2,
         nullptr
     );
     if (res < 0) goto out;
@@ -523,7 +536,7 @@ init()
         nullptr,
         "/org/mpris/MediaPlayer2",
         "org.mpris.MediaPlayer2.Player",
-        g_vtMediaPlayer2Player,
+        s_vtMediaPlayer2Player,
         nullptr
     );
     if (res < 0) goto out;
@@ -567,6 +580,68 @@ destroy()
     s_pBus = nullptr;
     s_fdMpris = -1;
     g_bReady = false;
+}
+
+static void
+playerPropertyChanged(const char* name)
+{
+    guard::Mtx lock(&g_mtx);
+
+    const char* const strv[] = {name, NULL};
+    if (s_pBus)
+    {
+        sd_bus_emit_properties_changed_strv(
+            s_pBus, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", (char**)strv
+        );
+        sd_bus_flush(s_pBus);
+    }
+}
+
+void
+playbackStatusChanged()
+{
+    guard::Mtx lock(&g_mtx);
+    playerPropertyChanged("PlaybackStatus");
+}
+
+void
+loopStatusChanged()
+{
+    guard::Mtx lock(&g_mtx);
+    playerPropertyChanged("LoopStatus");
+}
+
+void
+shuffleChanged()
+{
+    guard::Mtx lock(&g_mtx);
+    playerPropertyChanged("Shuffle");
+}
+
+void
+volumeChanged()
+{
+    guard::Mtx lock(&g_mtx);
+    playerPropertyChanged("Volume");
+}
+
+void
+seeked()
+{
+    guard::Mtx lock(&g_mtx);
+
+    if (!s_pBus) return;
+    s64 pos = audio::MixerGetCurrentMS(app::g_pMixer) * 1000;
+    sd_bus_emit_signal(s_pBus, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", "Seeked", "x", pos);
+}
+
+void
+metadataChanged()
+{
+    playerPropertyChanged("Metadata");
+    /* the following is not necessary according to the spec but some
+     * applications seem to disregard the spec and expect this to happen */
+    seeked();
 }
 
 } /* namespace mpris */

@@ -16,4 +16,11 @@ void destroy();
 inline void initMutexes() { mtx_init(&g_mtx, mtx_plain); cnd_init(&g_cnd); }
 inline void destroyMutexes() { mtx_destroy(&g_mtx); cnd_destroy(&g_cnd); }
 
+void playbackStatusChanged();
+void loopStatusChanged();
+void shuffleChanged();
+void volumeChanged();
+void seeked();
+void metadataChanged();
+
 } /* namespace mpris */

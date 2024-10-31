@@ -4,6 +4,7 @@
 #include "adt/utils.hh"
 #include "app.hh"
 #include "adt/guard.hh"
+#include "mpris.hh"
 
 #include <cmath>
 
@@ -296,6 +297,7 @@ MixerPause(Mixer* s, bool bPause)
     s->base.bPaused = bPause;
 
     LOG_NOTIFY("bPaused: {}\n", s->base.bPaused);
+    mpris::playbackStatusChanged();
 }
 
 void
@@ -347,6 +349,8 @@ MixerSeekMS(Mixer* s, long ms)
 
     s->base.currentTimeStamp = f64(ms)/1000.0 * s->base.sampleRate * s->base.nChannels;
     s->base.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
+
+    mpris::seeked();
 }
 
 void
