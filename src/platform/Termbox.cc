@@ -14,10 +14,7 @@
 namespace platform
 {
 
-enum READ_MODE : u8
-{
-    NONE, SEARCH, SEEK
-};
+enum READ_MODE : u8 {NONE, SEARCH, SEEK};
 
 static u16 s_firstIdx = 0;
 
@@ -290,6 +287,7 @@ static void
 procMouse(tb_event* pEv)
 {
     auto& pl = *app::g_pPlayer;
+    auto& mix = *app::g_pMixer;
     const long listOff = pl.statusAndInfoHeight + 4;
     const long sliderOff = pl.statusAndInfoHeight + 2;
     const auto& ev = *pEv;
@@ -297,18 +295,33 @@ procMouse(tb_event* pEv)
     const long height = tb_height();
 
     /* click on slider */
-    if (ev.y == sliderOff && ev.key == TB_KEY_MOUSE_LEFT)
+    if (ev.y == sliderOff)
     {
         constexpr long xOff = 2; /* offset from the icon */
-        if (ev.x <= xOff)
+        if (ev.key == TB_KEY_MOUSE_LEFT)
         {
-            if (ev.key == TB_KEY_MOUSE_LEFT) audio::MixerTogglePause(app::g_pMixer);
+            if (ev.x <= xOff)
+            {
+                if (ev.key == TB_KEY_MOUSE_LEFT) audio::MixerTogglePause(&mix);
+                return;
+            }
+
+            f64 target = f64(ev.x - xOff) / f64(width - xOff - 1);
+            target *= audio::MixerGetMaxMS(app::g_pMixer);
+            audio::MixerSeekMS(app::g_pMixer, target);
             return;
         }
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) audio::MixerSeekLeftMS(&mix, 5000);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) audio::MixerSeekRightMS(&mix, 5000);
 
-        f64 target = f64(ev.x - xOff) / f64(width - xOff - 1);
-        target *= audio::MixerGetMaxMS(app::g_pMixer);
-        audio::MixerSeekMS(app::g_pMixer, target);
+        return;
+    }
+
+    /* scroll ontop of volume */
+    if (ev.y <= pl.statusAndInfoHeight && ev.x < std::round(f64(width) * pl.statusToInfoWidthRatio))
+    {
+        if (ev.key == TB_KEY_MOUSE_WHEEL_UP) audio::MixerVolumeUp(app::g_pMixer, 0.1f);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) audio::MixerVolumeDown(app::g_pMixer, 0.1f);
 
         return;
     }
