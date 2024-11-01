@@ -726,7 +726,7 @@ drawTimeSlider()
     for (long i = xOff + 1; i < width - 1; ++i)
     {
         wchar_t wc = L'━';
-        if ((i - 1) == long(timePlace + xOff)) wc = L'╋';
+        if ((i - 1) == std::floor(timePlace + xOff)) wc = L'╋';
         tb_set_cell(i, off, wc, TB_WHITE, TB_DEFAULT);
     }
 }
