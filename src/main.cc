@@ -24,7 +24,7 @@ main(int argc, char** argv)
     close(STDERR_FILENO); /* hide mpg123 and other errors */
 #endif
 
-    Arena arena(SIZE_1K * 8);
+    Arena arena(SIZE_8K);
     defer( ArenaFreeAll(&arena) );
 
     Vec<String> aInput(&arena.base, argc);
@@ -39,7 +39,6 @@ main(int argc, char** argv)
 
         while ((nread = getline(&line, &len, stdin)) != -1)
         {
-            LOG("len: {}, nread: {}\n", len, nread);
             String s = StringAlloc(&arena.base, line, nread);
             StringRemoveNLEnd(&s);
             VecPush(&aInput, s);
@@ -49,7 +48,7 @@ main(int argc, char** argv)
 
         /* make fake `argv` so core code works as usual */
         argc = VecSize(&aInput) + 1;
-        argv = (char**)ArenaAlloc(&arena, argc, sizeof(char));
+        argv = (char**)ArenaAlloc(&arena, argc, sizeof(argv));
 
         for (int i = 1; i < argc; ++i)
             argv[i] = aInput[i - 1].pData;
