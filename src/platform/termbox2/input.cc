@@ -27,27 +27,27 @@ procKey(tb_event* pEv)
         {
             switch (k.arg.eType)
             {
-                case keybinds::NONE:
+                case keybinds::ARG_TYPE::NONE:
                 pfn.none();
                 break;
 
-                case keybinds::LONG:
+                case keybinds::ARG_TYPE::LONG:
                 pfn.long_(arg.uVal.l);
                 break;
 
-                case keybinds::F32:
+                case keybinds::ARG_TYPE::F32:
                 pfn.f32_(arg.uVal.f);
                 break;
 
-                case keybinds::U64:
+                case keybinds::ARG_TYPE::U64:
                 pfn.u64_(arg.uVal.u);
                 break;
 
-                case keybinds::U64_BOOL:
+                case keybinds::ARG_TYPE::U64_BOOL:
                 pfn.u64b(arg.uVal.ub.u, arg.uVal.ub.b);
                 break;
 
-                case keybinds::BOOL:
+                case keybinds::ARG_TYPE::BOOL:
                 pfn.bool_(arg.uVal.b);
                 break;
             }

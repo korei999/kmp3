@@ -7,10 +7,7 @@
 namespace keybinds
 {
 
-enum ARG_TYPE : u8
-{
-    NONE, LONG, F32, U64, U64_BOOL, BOOL
-};
+enum ARG_TYPE : u8 { NONE, LONG, F32, U64, U64_BOOL, BOOL };
 
 struct Arg
 {
@@ -20,10 +17,7 @@ struct Arg
         long l;
         f32 f;
         u64 u;
-        struct {
-            u64 u;
-            bool b;
-        } ub;
+        struct { u64 u; bool b; } ub;
         bool b;
     } uVal {};
 };
