@@ -1,7 +1,6 @@
 #include "input.hh"
 
 #include "app.hh"
-#include "logs.hh"
 #include "window.hh"
 #include "keybinds.hh"
 
@@ -15,15 +14,9 @@ namespace input
 void
 procKey(tb_event* pEv, Allocator* pAlloc)
 {
-    auto& pl = *app::g_pPlayer;
-    auto& mixer = *app::g_pMixer;
-
     const auto& key = pEv->key;
     const auto& ch = pEv->ch;
     const auto& mod = pEv->mod;
-
-
-    LOG_WARN("key: {}, ch: {}, mod: {}\n", key, (wchar_t)ch, mod);
 
     for (auto& k : keybinds::gc_aKeys)
     {
