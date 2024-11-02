@@ -21,6 +21,7 @@ namespace window
 
 enum READ_MODE : u8 {NONE, SEARCH, SEEK};
 
+Allocator* g_pFrameAlloc {};
 bool g_bDrawHelpMenu = false;
 u16 g_firstIdx = 0;
 
@@ -60,7 +61,7 @@ fixFirstIdx()
 }
 
 void
-init()
+init(Allocator* pAlloc)
 {
     [[maybe_unused]] int r = tb_init();
     assert(r == 0 && "'tb_init()' failed");
@@ -69,10 +70,12 @@ init()
 
     LOG_NOTIFY("tb_has_truecolor: {}\n", (bool)tb_has_truecolor());
     LOG_NOTIFY("tb_has_egc: {}\n", (bool)tb_has_egc());
+
+    g_pFrameAlloc = pAlloc;
 }
 
 void
-stop()
+destroy()
 {
     tb_shutdown();
     LOG_NOTIFY("tb_shutdown()\n");
@@ -113,7 +116,7 @@ readWChar(tb_event* pEv)
 }
 
 void
-subStringSearch(Allocator* pAlloc)
+subStringSearch()
 {
     tb_event ev {};
     auto& pl = *app::g_pPlayer;
@@ -126,9 +129,9 @@ subStringSearch(Allocator* pAlloc)
 
     do
     {
-        PlayerSubStringSearch(&pl, pAlloc, s_input.aBuff, utils::size(s_input.aBuff));
+        PlayerSubStringSearch(&pl, g_pFrameAlloc, s_input.aBuff, utils::size(s_input.aBuff));
         g_firstIdx = 0;
-        render(pAlloc);
+        render();
     } while (readWChar(&ev) != READ_STATUS::DONE);
 
     /* fix focused if it ends up out of the list range */
@@ -182,7 +185,7 @@ parseSeekThenRun()
 }
 
 void
-seekFromInput(Allocator* pAlloc)
+seekFromInput()
 {
     tb_event ev {};
 
@@ -194,7 +197,7 @@ seekFromInput(Allocator* pAlloc)
 
     do
     {
-        render(pAlloc);
+        render();
     } while (readWChar(&ev) != READ_STATUS::DONE);
 
     parseSeekThenRun();
@@ -207,7 +210,7 @@ procResize([[maybe_unused]] tb_event* pEv)
 }
 
 void
-procEvents(Allocator* pAlloc)
+procEvents()
 {
     tb_event ev;
     tb_peek_event(&ev, defaults::UPDATE_RATE);
@@ -221,7 +224,7 @@ procEvents(Allocator* pAlloc)
         case 0: break;
 
         case TB_EVENT_KEY:
-        input::procKey(&ev, pAlloc);
+        input::procKey(&ev);
         fixFirstIdx();
         break;
 
@@ -438,12 +441,12 @@ drawVolume(Allocator* pAlloc, const u16 split)
 }
 
 static void
-drawTime(Allocator* pAlloc, const u16 split)
+drawTime(const u16 split)
 {
     const auto width = tb_width();
     auto& mixer = *app::g_pMixer;
 
-    char* pBuff = (char*)alloc(pAlloc, 1, width);
+    char* pBuff = (char*)alloc(g_pFrameAlloc, 1, width);
     utils::fill(pBuff, '\0', width);
 
     u64 t = std::round(f64(mixer.currentTimeStamp) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
@@ -485,20 +488,20 @@ drawTotal(Allocator* pAlloc, const u16 split)
 }
 
 static void
-drawStatus(Allocator* pAlloc)
+drawStatus()
 {
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
     const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
 
-    drawTotal(pAlloc, split);
-    VOLUME_COLOR volumeColor = drawVolume(pAlloc, split);
-    drawTime(pAlloc, split);
+    drawTotal(g_pFrameAlloc, split);
+    VOLUME_COLOR volumeColor = drawVolume(g_pFrameAlloc, split);
+    drawTime(split);
     drawBox(0, 0, split, pl.statusAndInfoHeight + 1, volumeColor, TB_DEFAULT);
 }
 
 static void
-drawInfo(Allocator* pAlloc)
+drawInfo()
 {
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
@@ -507,7 +510,7 @@ drawInfo(Allocator* pAlloc)
 
     drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);
 
-    char* pBuff = (char*)alloc(pAlloc, 1, width);
+    char* pBuff = (char*)alloc(g_pFrameAlloc, 1, width);
     utils::fill(pBuff, '\0', width);
 
     /* title */
@@ -611,14 +614,14 @@ drawHelpMenu()
 }
 
 void
-render(Allocator* pAlloc)
+render()
 {
     if (tb_height() < 6 || tb_width() < 6) return;
 
     tb_clear();
 
-    drawStatus(pAlloc);
-    drawInfo(pAlloc);
+    drawStatus();
+    drawInfo();
 
     if (tb_height() > 9 && tb_width() > 9)
     {

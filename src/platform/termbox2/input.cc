@@ -12,7 +12,7 @@ namespace input
 {
 
 void
-procKey(tb_event* pEv, Allocator* pAlloc)
+procKey(tb_event* pEv)
 {
     const auto& key = pEv->key;
     const auto& ch = pEv->ch;
@@ -49,10 +49,6 @@ procKey(tb_event* pEv, Allocator* pAlloc)
 
                 case keybinds::BOOL:
                 pfn.bool_(arg.uVal.b);
-                break;
-
-                case keybinds::PASS_PALLOC:
-                pfn.pass(pAlloc);
                 break;
             }
         }

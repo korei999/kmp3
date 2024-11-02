@@ -9,7 +9,7 @@ namespace keybinds
 
 enum ARG_TYPE : u8
 {
-    NONE, LONG, F32, U64, U64_BOOL, BOOL, PASS_PALLOC
+    NONE, LONG, F32, U64, U64_BOOL, BOOL
 };
 
 struct Arg
@@ -37,7 +37,6 @@ union PFN
     void (*u64_)(u64);
     void (*u64b)(u64, bool);
     void (*bool_)(bool);
-    void (*pass)(Allocator*); /* used for subStringSearch/seekFromInput */
 };
 
 /* using termbox keys for now */
@@ -54,13 +53,17 @@ struct key
 constexpr key gc_aKeys[] {
     /*   key                char   function                                            arg */
     {{}, {},                L'q',  (void*)app::quit,                                   NONE                           },
-    {{}, {},                L'/',  (void*)platform::termbox2::window::subStringSearch, PASS_PALLOC                    },
+    {{}, {},                L'/',  (void*)platform::termbox2::window::subStringSearch, NONE                           },
     {{}, TB_KEY_ARROW_DOWN, L'j',  (void*)app::focusNext,                              NONE                           },
     {{}, TB_KEY_ARROW_UP,   L'k',  (void*)app::focusPrev,                              NONE                           },
     {{}, {},                L'g',  (void*)app::focusFirst,                             NONE                           },
+    {{}, TB_KEY_HOME,       {},    (void*)app::focusFirst,                             NONE                           },
     {{}, {},                L'G',  (void*)app::focusLast,                              NONE                           },
+    {{}, TB_KEY_END,        {},    (void*)app::focusLast,                              NONE                           },
     {{}, TB_KEY_CTRL_D,     {},    (void*)app::focusDown,                              {LONG, {.l = 22}}              },
+    {{}, TB_KEY_PGDN,       {},    (void*)app::focusDown,                              {LONG, {.l = 22}}              },
     {{}, TB_KEY_CTRL_U,     {},    (void*)app::focusUp,                                {LONG, {.l = 22}}              },
+    {{}, TB_KEY_PGUP,       {},    (void*)app::focusUp,                                {LONG, {.l = 22}}              },
     {{}, TB_KEY_ENTER,      {},    (void*)app::selectFocused,                          NONE                           },
     {{}, {},                L'z',  (void*)app::focusSelected,                          NONE                           },
     {{}, {},                L' ',  (void*)app::togglePause,                            NONE                           },
@@ -79,7 +82,7 @@ constexpr key gc_aKeys[] {
     {{}, {},                L'L',  (void*)app::seekRightMS,                            {U64, {.u = 1000}}             },
     {{}, {},                L'r',  (void*)app::cycleRepeatMethods,                     {BOOL, {.b = true}}            },
     {{}, {},                L'R',  (void*)app::toggleMute,                             NONE                           },
-    {{}, {},                L't',  (void*)platform::termbox2::window::seekFromInput,   PASS_PALLOC                    },
+    {{}, {},                L't',  (void*)platform::termbox2::window::seekFromInput,   NONE                           },
     {{}, {},                L'i',  (void*)app::selectPrev,                             NONE                           },
     {{}, {},                L'o',  (void*)app::selectNext,                             NONE                           },
 };

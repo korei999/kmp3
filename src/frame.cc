@@ -39,6 +39,9 @@ run()
     Arena arena(SIZE_1M);
     defer( ArenaFreeAll(&arena) );
 
+    platform::termbox2::window::init(&arena.base);
+    defer( platform::termbox2::window::destroy() );
+
     app::g_pPlayer->focused = 0;
     PlayerSelectFocused(app::g_pPlayer);
 
@@ -51,8 +54,8 @@ run()
 
     do
     {
-        platform::termbox2::window::render(&arena.base);
-        platform::termbox2::window::procEvents(&arena.base);
+        platform::termbox2::window::render();
+        platform::termbox2::window::procEvents();
 
         ArenaReset(&arena);
     } while (app::g_bRunning);

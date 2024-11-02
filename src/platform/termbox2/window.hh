@@ -11,15 +11,16 @@ namespace termbox2
 namespace window
 {
 
+extern Allocator* g_pFrameAlloc;
 extern bool g_bDrawHelpMenu;
 extern u16 g_firstIdx;
 
-void init();
-void stop();
-void procEvents(Allocator* pAlloc);
-void render(Allocator* pAlloc);
-void seekFromInput(Allocator* pAlloc);
-void subStringSearch(Allocator* pAlloc);
+void init(Allocator* pAlloc);
+void destroy();
+void procEvents();
+void render();
+void seekFromInput();
+void subStringSearch();
 
 } /* namespace window */
 } /* namespace termbox2 */

@@ -6,7 +6,6 @@
 #include "adt/file.hh"
 #include "frame.hh"
 #include "logs.hh"
-#include "platform/termbox2/window.hh"
 #include "platform/pipewire/Mixer.hh"
 #include "defaults.hh"
 
@@ -103,9 +102,6 @@ main(int argc, char** argv)
 
     if (nAccepted > 0)
     {
-        platform::termbox2::window::init();
-        defer( platform::termbox2::window::stop() );
-
         app::g_bRunning = true;
 
         /* reopen stdin if pipe was used */
