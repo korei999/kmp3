@@ -3,7 +3,7 @@
 #include "adt/Arena.hh"
 #include "adt/defer.hh"
 #include "app.hh"
-#include "platform/Termbox.hh"
+#include "platform/termbox2/window.hh"
 
 #ifdef MPRIS_LIB
     #include "mpris.hh"
@@ -51,8 +51,8 @@ run()
 
     do
     {
-        platform::TermboxRender(&arena.base);
-        platform::TermboxProcEvents(&arena.base);
+        platform::termbox2::window::render(&arena.base);
+        platform::termbox2::window::procEvents(&arena.base);
 
         ArenaReset(&arena);
     } while (app::g_bRunning);

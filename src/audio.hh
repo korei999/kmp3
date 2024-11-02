@@ -71,6 +71,9 @@ inline void MixerVolumeDown(Mixer* s, const f32 step) { MixerSetVolume(s, s->vol
 inline void MixerVolumeUp(Mixer* s, const f32 step) { MixerSetVolume(s, s->volume + step); }
 inline f64 MixerGetCurrentMS(Mixer* s) { return (f64(s->currentTimeStamp) / f64(s->sampleRate) / f64(s->nChannels)) * 1000.0; }
 inline f64 MixerGetMaxMS(Mixer* s) { return (f64(s->totalSamplesCount) / f64(s->sampleRate) / f64(s->nChannels)) * 1000.0; }
+inline void MixerChangeSampleRateDown(Mixer* s, u64 ms, bool bSave) { MixerChangeSampleRate(s, s->changedSampleRate - ms, bSave); }
+inline void MixerChangeSampleRateUp(Mixer* s, u64 ms, bool bSave) { MixerChangeSampleRate(s, s->changedSampleRate + ms, bSave); }
+inline void MixerRestoreSampleRate(Mixer* s) { MixerChangeSampleRate(s, s->sampleRate, false); }
 
 struct DummyMixer
 {

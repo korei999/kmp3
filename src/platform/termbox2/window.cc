@@ -1,5 +1,6 @@
-#include "Termbox.hh"
+#include "window.hh"
 
+#include "input.hh"
 #include "adt/Arr.hh"
 #include "adt/defer.hh"
 #include "app.hh"
@@ -13,27 +14,28 @@
 
 namespace platform
 {
+namespace termbox2
+{
+namespace window
+{
 
 enum READ_MODE : u8 {NONE, SEARCH, SEEK};
 
-static u16 s_firstIdx = 0;
+bool g_bDrawHelpMenu = false;
+u16 g_firstIdx = 0;
 
 static struct {
     wchar_t aBuff[64] {};
     u32 idx = 0;
     READ_MODE eCurrMode {};
     READ_MODE eLastUsedMode {};
-} s_input;
+} s_input {};
 
 constexpr String
 ReadModeToString(READ_MODE e)
 {
-    switch (e)
-    {
-        case READ_MODE::NONE: return "";
-        case READ_MODE::SEARCH: return "searching: ";
-        case READ_MODE::SEEK: return "time: ";
-    }
+    constexpr String map[] {"", "searching: ", "time: "};
+    return map[e];
 }
 
 /* fix song list range after focus change */
@@ -45,7 +47,7 @@ fixFirstIdx()
     const u16 listHeight = tb_height() - 7 - off;
 
     const u16 focused = pl.focused;
-    u16 first = s_firstIdx;
+    u16 first = g_firstIdx;
 
     if (focused > first + listHeight)
         first = focused - listHeight;
@@ -54,11 +56,11 @@ fixFirstIdx()
     else if (pl.aSongIdxs.size < listHeight)
         first = 0;
 
-    s_firstIdx = first;
+    g_firstIdx = first;
 }
 
 void
-TermboxInit()
+init()
 {
     [[maybe_unused]] int r = tb_init();
     assert(r == 0 && "'tb_init()' failed");
@@ -70,7 +72,7 @@ TermboxInit()
 }
 
 void
-TermboxStop()
+stop()
 {
     tb_shutdown();
     LOG_NOTIFY("tb_shutdown()\n");
@@ -110,7 +112,7 @@ readWChar(tb_event* pEv)
     return READ_STATUS::OK;
 }
 
-static void
+void
 subStringSearch(Allocator* pAlloc)
 {
     tb_event ev {};
@@ -125,13 +127,13 @@ subStringSearch(Allocator* pAlloc)
     do
     {
         PlayerSubStringSearch(&pl, pAlloc, s_input.aBuff, utils::size(s_input.aBuff));
-        s_firstIdx = 0;
-        TermboxRender(pAlloc);
+        g_firstIdx = 0;
+        render(pAlloc);
     } while (readWChar(&ev) != READ_STATUS::DONE);
 
     /* fix focused if it ends up out of the list range */
     if (pl.focused >= (VecSize(&pl.aSongIdxs)))
-        pl.focused = s_firstIdx;
+        pl.focused = g_firstIdx;
 }
 
 static void
@@ -179,7 +181,7 @@ parseSeekThenRun()
     }
 }
 
-static void
+void
 seekFromInput(Allocator* pAlloc)
 {
     tb_event ev {};
@@ -192,89 +194,10 @@ seekFromInput(Allocator* pAlloc)
 
     do
     {
-        TermboxRender(pAlloc);
+        render(pAlloc);
     } while (readWChar(&ev) != READ_STATUS::DONE);
 
     parseSeekThenRun();
-}
-
-static void
-procKey(tb_event* pEv, Allocator* pAlloc)
-{
-    auto& pl = *app::g_pPlayer;
-    auto& mixer = *app::g_pMixer;
-
-    const auto& key = pEv->key;
-    const auto& ch = pEv->ch;
-    const auto& mod = pEv->mod;
-
-    if (ch == 'q' || ch == L'й')
-    {
-        app::g_bRunning = false;
-        return;
-    }
-    else if (ch == L'j' || ch == L'о' || key == TB_KEY_ARROW_DOWN)
-        PlayerNext(&pl);
-    else if (ch == L'k' || ch == L'л' || key == TB_KEY_ARROW_UP)
-        PlayerPrev(&pl);
-    else if (ch == L'g' || ch == L'п')
-        PlayerFocusFirst(&pl);
-    else if (ch == L'G' || ch == L'П')
-        PlayerFocusLast(&pl);
-    else if (key == TB_KEY_CTRL_D)
-        PlayerFocus(&pl, pl.focused + 22);
-    else if (key == TB_KEY_CTRL_U)
-        PlayerFocus(&pl, pl.focused - 22);
-    else if (key == TB_KEY_ENTER)
-        PlayerSelectFocused(&pl);
-    else if (ch == L'/')
-        subStringSearch(pAlloc);
-    else if (ch == L'z' || ch == L'я')
-        PlayerFocusSelected(&pl);
-    else if (ch == L' ')
-        PlayerTogglePause(&pl);
-    else if (ch == L'9')
-        audio::MixerVolumeDown(&mixer, 0.1f);
-    else if (ch == L'(')
-        audio::MixerVolumeDown(&mixer, 0.01f);
-    else if (ch == L'0')
-        audio::MixerVolumeUp(&mixer, 0.1f);
-    else if (ch == L')')
-        audio::MixerVolumeUp(&mixer, 0.01f);
-    else if (ch == L'[')
-        audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate - 1000, false);
-    else if (ch == L'{')
-        audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate - 100, false);
-    else if (ch == L']')
-        audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate + 1000, false);
-    else if (ch == L'}')
-        audio::MixerChangeSampleRate(&mixer, mixer.changedSampleRate + 100, false);
-    else if (ch == L'\\')
-        audio::MixerChangeSampleRate(&mixer, mixer.sampleRate, false);
-    else if (ch == L'h' || ch == L'р' || key == TB_KEY_ARROW_LEFT)
-    {
-        if (mod == TB_MOD_SHIFT) audio::MixerSeekLeftMS(&mixer, 1000);
-        else audio::MixerSeekLeftMS(&mixer, 5000);
-    }
-    else if (ch == L'l' || ch == L'д' || key == TB_KEY_ARROW_RIGHT)
-    {
-        if (mod == TB_MOD_SHIFT) audio::MixerSeekRightMS(&mixer, 1000);
-        else audio::MixerSeekRightMS(&mixer, 5000);
-    }
-    else if (ch == L'r' || ch == L'к')
-        PlayerCycleRepeatMethods(&pl, true);
-    else if (ch == L'R' || ch == L'К')
-        PlayerCycleRepeatMethods(&pl, false);
-    else if (ch == L'm' || ch == L'ь')
-        mixer.bMuted = !mixer.bMuted;
-    else if (ch == L't' || ch == L'е')
-        seekFromInput(pAlloc);
-    else if (ch == L'i' || ch == L'ш')
-        PlayerSelectPrev(&pl);
-    else if (ch == L'o' || ch == L'щ')
-        PlayerSelectNext(&pl);
-
-    fixFirstIdx();
 }
 
 static void
@@ -283,76 +206,8 @@ procResize([[maybe_unused]] tb_event* pEv)
     //
 }
 
-static void
-procMouse(tb_event* pEv)
-{
-    auto& pl = *app::g_pPlayer;
-    auto& mix = *app::g_pMixer;
-    const long listOff = pl.statusAndInfoHeight + 4;
-    const long sliderOff = pl.statusAndInfoHeight + 2;
-    const auto& ev = *pEv;
-    const long width = tb_width();
-    const long height = tb_height();
-
-    /* click on slider */
-    if (ev.y == sliderOff)
-    {
-        constexpr long xOff = 2; /* offset from the icon */
-        if (ev.key == TB_KEY_MOUSE_LEFT)
-        {
-            if (ev.x <= xOff)
-            {
-                if (ev.key == TB_KEY_MOUSE_LEFT) audio::MixerTogglePause(&mix);
-                return;
-            }
-
-            f64 target = f64(ev.x - xOff) / f64(width - xOff - 1);
-            target *= audio::MixerGetMaxMS(app::g_pMixer);
-            audio::MixerSeekMS(app::g_pMixer, target);
-            return;
-        }
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) audio::MixerSeekLeftMS(&mix, 5000);
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) audio::MixerSeekRightMS(&mix, 5000);
-
-        return;
-    }
-
-    /* scroll ontop of volume */
-    if (ev.y <= pl.statusAndInfoHeight && ev.x < std::round(f64(width) * pl.statusToInfoWidthRatio))
-    {
-        if (ev.key == TB_KEY_MOUSE_WHEEL_UP) audio::MixerVolumeUp(app::g_pMixer, 0.1f);
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) audio::MixerVolumeDown(app::g_pMixer, 0.1f);
-
-        return;
-    }
-
-    /* click on song list */
-    if (ev.y < listOff || ev.y >= height - 2) return;
-
-    long target = s_firstIdx + ev.y - listOff;
-    target = utils::clamp(
-        target,
-        long(s_firstIdx),
-        long(s_firstIdx + tb_height() - listOff - 3)
-    );
-
-    defer( fixFirstIdx() );
-
-    if (ev.key == TB_KEY_MOUSE_LEFT)
-        PlayerFocus(&pl, target);
-    if (ev.key == TB_KEY_MOUSE_RIGHT)
-    {
-        PlayerFocus(&pl, target);
-        PlayerSelectFocused(&pl);
-    }
-    else if (ev.key == TB_KEY_MOUSE_WHEEL_UP)
-        PlayerFocus(&pl, pl.focused - 22);
-    else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN)
-        PlayerFocus(&pl, pl.focused + 22);
-}
-
 void
-TermboxProcEvents(Allocator* pAlloc)
+procEvents(Allocator* pAlloc)
 {
     tb_event ev;
     tb_peek_event(&ev, defaults::UPDATE_RATE);
@@ -366,7 +221,8 @@ TermboxProcEvents(Allocator* pAlloc)
         case 0: break;
 
         case TB_EVENT_KEY:
-        procKey(&ev, pAlloc);
+        input::procKey(&ev, pAlloc);
+        fixFirstIdx();
         break;
 
         case TB_EVENT_RESIZE:
@@ -374,7 +230,8 @@ TermboxProcEvents(Allocator* pAlloc)
         break;
 
         case TB_EVENT_MOUSE:
-        procMouse(&ev);
+        input::procMouse(&ev);
+        fixFirstIdx();
         break;
     }
 }
@@ -385,8 +242,9 @@ drawBox(
     const u16 y,
     const u16 width,
     const u16 height,
-    const u32 fgColor,
-    const u32 bgColor,
+    const u32 fgColor = TB_WHITE,
+    const u32 bgColor = TB_DEFAULT,
+    const bool bCleanInside = false,
     const u32 tl = L'┏',
     const u32 tr = L'┓',
     const u32 bl = L'┗',
@@ -399,6 +257,13 @@ drawBox(
 {
     const u16 termHeight = tb_height();
     const u16 termWidth = tb_width();
+
+    if (bCleanInside)
+    {
+        for (int j = y + 1; j < y + height && j < termWidth; ++j)
+            for (int i = x + 1; i < x + width; ++i)
+                tb_set_cell(i, j, L' ', TB_WHITE, TB_DEFAULT);
+    }
 
     if (x < termWidth && y < termHeight) /* top-left */
         tb_set_cell(x, y, tl, fgColor, bgColor);
@@ -493,7 +358,7 @@ drawSongList()
     const auto off = pl.statusAndInfoHeight;
     const u16 listHeight = tb_height() - 5 - off;
 
-    for (u16 h = s_firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
+    for (u16 h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
     {
         const u16 songIdx = pl.aSongIdxs[h];
         const String sSong = pl.aShortArgvs[songIdx];
@@ -731,8 +596,22 @@ drawTimeSlider()
     }
 }
 
+static void
+drawHelpMenu()
+{
+    const auto termWidth = tb_width();
+    const auto termHeight = tb_height();
+
+    const int x = termWidth/8;
+    const int y = termHeight/4;
+    const int xWidth = termWidth - (termWidth/4);
+    const int yHeight = termHeight/2;
+
+    drawBox(x, y, xWidth, yHeight, TB_YELLOW, TB_DEFAULT, true);
+}
+
 void
-TermboxRender(Allocator* pAlloc)
+render(Allocator* pAlloc)
 {
     if (tb_height() < 6 || tb_width() < 6) return;
 
@@ -746,9 +625,12 @@ TermboxRender(Allocator* pAlloc)
         drawTimeSlider();
         drawSongList();
         drawBottomLine();
+        if (g_bDrawHelpMenu) drawHelpMenu();
     }
 
     tb_present();
 }
 
+} /* namespace window */
+} /* namespace termbox2 */
 } /* namespace platform */

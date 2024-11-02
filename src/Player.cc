@@ -30,7 +30,7 @@ PlayerAcceptedFormat(const String s)
 }
 
 void
-PlayerNext(Player* s)
+PlayerFocusNext(Player* s)
 {
     long ns = s->focused + 1;
     if (ns >= long(s->aSongIdxs.size)) ns = 0;
@@ -38,7 +38,7 @@ PlayerNext(Player* s)
 }
 
 void
-PlayerPrev(Player* s)
+PlayerFocusPrev(Player* s)
 {
     long ns = s->focused - 1;
     if (ns < 0) ns = s->aSongIdxs.size - 1;
@@ -49,12 +49,6 @@ void
 PlayerFocus(Player* s, long i)
 {
     s->focused = utils::clamp(i, 0L, long(s->aSongIdxs.size - 1));
-}
-
-void
-PlayerFocusFirst(Player* s)
-{
-    PlayerFocus(s, 0);
 }
 
 void

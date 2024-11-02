@@ -42,6 +42,12 @@ swap(T* l, T* r)
     *r = t0;
 }
 
+constexpr void
+toggle(auto* x)
+{
+    *x = !*x;
+}
+
 [[nodiscard]]
 constexpr auto&
 max(const auto& l, const auto& r)

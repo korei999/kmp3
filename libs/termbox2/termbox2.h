@@ -2157,6 +2157,7 @@ int tb_printf_inner(int x, int y, uintattr_t fg, uintattr_t bg, size_t *out_w,
     const char *fmt, va_list vl) {
     int rv;
     char buf[TB_OPT_PRINTF_BUF];
+    memset(buf, 0, sizeof(buf));
     rv = vsnprintf(buf, sizeof(buf), fmt, vl);
     if (rv < 0 || rv >= (int)sizeof(buf)) {
         return TB_ERR;

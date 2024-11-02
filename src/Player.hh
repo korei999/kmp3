@@ -19,10 +19,10 @@ PlayerRepeatMethodToString(PLAYER_REPEAT_METHOD e)
 struct Player;
 
 bool PlayerAcceptedFormat(const String s);
-void PlayerNext(Player* s);
-void PlayerPrev(Player* s);
+void PlayerFocusNext(Player* s);
+void PlayerFocusPrev(Player* s);
 void PlayerFocus(Player* s, long i);
-void PlayerFocusFirst(Player* s);
+inline void PlayerFocusFirst(Player* s) { PlayerFocus(s, 0); }
 void PlayerSetDefaultIdxs(Player* s);
 void PlayerFocusLast(Player* s);
 u16 PlayerFindSongIdxFromSelected(Player* s);
