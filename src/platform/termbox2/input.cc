@@ -16,14 +16,14 @@ procKey(tb_event* pEv, Allocator* pAlloc)
 {
     const auto& key = pEv->key;
     const auto& ch = pEv->ch;
-    const auto& mod = pEv->mod;
+    [[maybe_unused]] const auto& mod = pEv->mod;
 
     for (auto& k : keybinds::gc_aKeys)
     {
         auto& pfn = k.pfn;
         auto& arg = k.arg;
 
-        if ((k.key > 0 && key == k.key) || (k.ch > 0 && ch == k.ch))
+        if ((k.key > 0 && k.key == key) || (k.ch > 0 && k.ch == ch))
         {
             switch (k.arg.eType)
             {
@@ -44,7 +44,7 @@ procKey(tb_event* pEv, Allocator* pAlloc)
                 break;
 
                 case keybinds::U64_BOOL:
-                pfn.u64Bool(arg.uVal.u64Bool.u, arg.uVal.u64Bool.b);
+                pfn.u64b(arg.uVal.ub.u, arg.uVal.ub.b);
                 break;
 
                 case keybinds::BOOL:

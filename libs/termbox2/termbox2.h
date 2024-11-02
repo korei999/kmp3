@@ -814,7 +814,7 @@ struct tb_global_t {
     char errbuf[1024];
 };
 
-static struct tb_global_t global;
+static struct tb_global_t global = {0};
 
 /* BEGIN codegen c */
 /* Produced by ./codegen.sh on Tue, 03 Sep 2024 04:17:48 +0000 */
@@ -2157,7 +2157,6 @@ int tb_printf_inner(int x, int y, uintattr_t fg, uintattr_t bg, size_t *out_w,
     const char *fmt, va_list vl) {
     int rv;
     char buf[TB_OPT_PRINTF_BUF];
-    memset(buf, 0, sizeof(buf));
     rv = vsnprintf(buf, sizeof(buf), fmt, vl);
     if (rv < 0 || rv >= (int)sizeof(buf)) {
         return TB_ERR;
@@ -3339,7 +3338,7 @@ static int cell_reserve_ech(struct tb_cell *cell, size_t n) {
     if (cell->cech >= n) {
         return TB_OK;
     }
-    if (!(cell->ech = (uint32_t*)tb_realloc(cell->ech, n * sizeof(cell->ch)))) {
+    if (!(cell->ech = tb_realloc(cell->ech, n * sizeof(cell->ch)))) {
         return TB_ERR_MEM;
     }
     cell->cech = n;
