@@ -1,9 +1,11 @@
-### Features:
+![kmp3_1](https://github.com/user-attachments/assets/4950e95a-7ea6-48bb-a8dd-804f507b7900)
+
+### Features
 - Plays most of the audio/video formats.
 - MPRIS D-Bus controls.
 - Any playback speed (no pitch correction).
 
-### Usage:
+### Usage
 - Play each song in the directory: `kmp3 *`, or recursively: `kmp3 **/*`.
 - With no arguments, stdin with pipe can be used: `find /path -iname '*.mp3' | kmp3` or whatever the shell can do.
 - Navigate with vim-like keybinds.
@@ -19,11 +21,11 @@
 - `q` quit.
 - `[` / `]` playback speed shifting fun. `\` Set original speed back.
 
-### Dependencies:
+### Dependencies
 `libpipewire-0.3 libavformat libavcodec libavutil libswresample`\
 To enable mpris support: `libsystemd` or `basu`
 
-### Install:
+### Install
 ```
 cmake -S . -B build/
 cmake --build build/ -j
