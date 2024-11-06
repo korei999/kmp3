@@ -3,6 +3,8 @@
 #include "String.hh"
 #include "utils.hh"
 
+#include <ctype.h> /* win32 */
+
 #include <climits>
 #include <cmath>
 #include <cstdio>
@@ -51,6 +53,15 @@ printArgs(Context ctx)
     return nRead;
 }
 
+constexpr bool
+oneOfChars(const char x, const String chars)
+{
+    for (auto ch : chars)
+        if (ch == x) return true;
+
+    return false;
+}
+
 inline u32
 parseFormatArg(FormatArgs* pArgs, const String fmt, u32 fmtIdx)
 {
@@ -63,8 +74,6 @@ parseFormatArg(FormatArgs* pArgs, const String fmt, u32 fmtIdx)
     bool bBinary = false;
     bool bAlwaysShowSign = false;
 
-    char buff[32] {};
-
     for (u32 i = fmtIdx + 1; i < fmt.size; ++i, ++nRead)
     {
         if (bDone) break;
@@ -72,10 +81,8 @@ parseFormatArg(FormatArgs* pArgs, const String fmt, u32 fmtIdx)
         if (bHash)
         {
             bHash =  false;
-            pArgs->eBase = BASE::SIXTEEN;
             pArgs->bHash = true;
         }
-
         else if (bHex)
         {
             bHex = false;
@@ -93,15 +100,16 @@ parseFormatArg(FormatArgs* pArgs, const String fmt, u32 fmtIdx)
         }
         else if (bFloatPresicion)
         {
-            bFloatPresicion = false;
+            char aBuff[64] {};
+
             u32 bIdx = 0;
-            while (bIdx < sizeof(buff) - 1 && i < fmt.size && fmt[i] != '}')
+            while (bIdx < utils::size(aBuff) - 1 && i < fmt.size && fmt[i] != '}')
             {
-                buff[bIdx++] = fmt[i++];
+                aBuff[bIdx++] = fmt[i++];
                 ++nRead;
             }
 
-            pArgs->maxFloatLen = atoi(buff);
+            pArgs->maxFloatLen = atoi(aBuff);
         }
 
         if (bColon)
@@ -110,6 +118,19 @@ parseFormatArg(FormatArgs* pArgs, const String fmt, u32 fmtIdx)
             {
                 bFloatPresicion = true;
                 continue;
+            }
+            else if (isdigit(fmt[i]))
+            {
+                char aBuff[64] {};
+
+                u32 bIdx = 0;
+                while (bIdx < utils::size(aBuff) - 1 && i < fmt.size && !oneOfChars(fmt[i], "}.#xb"))
+                {
+                    aBuff[bIdx++] = fmt[i++];
+                    ++nRead;
+                }
+
+                pArgs->maxLen = atoi(aBuff);
             }
             else if (fmt[i] == '#')
             {
@@ -220,14 +241,14 @@ copyBackToBuffer(Context ctx, char* pSrc, u32 srcSize)
 }
 
 constexpr u32
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const String& str)
+formatToContext(Context ctx, FormatArgs fmtArgs, const String& str)
 {
     auto& pBuff = ctx.pBuff;
     auto& buffSize = ctx.buffSize;
     auto& buffIdx = ctx.buffIdx;
 
     u32 nRead = 0;
-    for (u32 i = 0; i < str.size && buffIdx < buffSize; ++i, ++nRead)
+    for (u32 i = 0; i < str.size && buffIdx < buffSize && i < fmtArgs.maxLen; ++i, ++nRead)
         pBuff[buffIdx++] = str[i];
 
     return nRead;
@@ -255,37 +276,39 @@ template<typename INT_T> requires std::is_integral_v<INT_T>
 constexpr u32
 formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x)
 {
-    char buff[32] {};
-    char* p = intToBuffer(x, buff, sizeof(buff), fmtArgs);
+    char buff[64] {};
+    char* p = intToBuffer(x, buff, utils::size(buff), fmtArgs);
+    if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen < utils::size(buff) - 1)
+        buff[fmtArgs.maxLen] = '\0';
 
-    return copyBackToBuffer(ctx, p, sizeof(buff));
+    return copyBackToBuffer(ctx, p, utils::size(buff));
 }
 
 inline u32
 formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x)
 {
-    char nbuff[32] {};
-    snprintf(nbuff, sizeof(nbuff), "%.*f", fmtArgs.maxFloatLen, x);
+    char nbuff[64] {};
+    snprintf(nbuff, utils::size(nbuff), "%.*f", fmtArgs.maxFloatLen, x);
 
-    return copyBackToBuffer(ctx, nbuff, sizeof(nbuff));
+    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
 }
 
 inline u32
 formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x)
 {
-    char nbuff[32] {};
-    snprintf(nbuff, sizeof(nbuff), "%.*lf", fmtArgs.maxFloatLen, x);
+    char nbuff[64] {};
+    snprintf(nbuff, utils::size(nbuff), "%.*lf", fmtArgs.maxFloatLen, x);
 
-    return copyBackToBuffer(ctx, nbuff, sizeof(nbuff));
+    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
 }
 
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const wchar_t x)
 {
     char nbuff[4] {};
-    snprintf(nbuff, sizeof(nbuff), "%lc", x);
+    snprintf(nbuff, utils::size(nbuff), "%lc", x);
 
-    return copyBackToBuffer(ctx, nbuff, sizeof(nbuff));
+    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
 }
 
 inline u32
@@ -295,16 +318,16 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char32_t
     mbstate_t ps {};
     c32rtomb(nbuff, x, &ps);
 
-    return copyBackToBuffer(ctx, nbuff, sizeof(nbuff));
+    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
 }
 
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char x)
 {
     char nbuff[4] {};
-    snprintf(nbuff, sizeof(nbuff), "%c", x);
+    snprintf(nbuff, utils::size(nbuff), "%c", x);
 
-    return copyBackToBuffer(ctx, nbuff, sizeof(nbuff));
+    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
 }
 
 inline u32

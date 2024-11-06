@@ -1,8 +1,8 @@
 #include "Player.hh"
 
 #include "adt/Arr.hh"
+#include "adt/logs.hh"
 #include "app.hh"
-#include "logs.hh"
 #include "mpris.hh"
 
 #include <cstdlib>

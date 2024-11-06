@@ -53,6 +53,16 @@ struct ListBase
 };
 
 template<typename T>
+constexpr void
+ListDestroy(ListBase<T>* s, Allocator* pA)
+{
+    ADT_LIST_FOREACH_SAFE(s, it, tmp)
+        free(pA, it);
+
+    s->pFirst = s->pLast = nullptr;
+}
+
+template<typename T>
 constexpr ListNode<T>*
 ListNodeAlloc(Allocator* pA, const T& x)
 {
@@ -88,7 +98,7 @@ ListPushBack(ListBase<T>* s, ListNode<T>* pNew)
     s->pLast = pNew;
 
 done:
-    s->size++;
+    ++s->size;
     return pNew;
 }
 
@@ -118,17 +128,39 @@ ListRemove(ListBase<T>* s, ListNode<T>* p)
         p->pNext->pPrev = p->pPrev;
     }
 
-    s->size--;
+    --s->size;
 }
 
 template<typename T>
 constexpr void
-ListDestroy(ListBase<T>* s, Allocator* pA)
+ListInsertAfter(ListBase<T>* s, ListNode<T>* pAfter, ListNode<T>* p)
 {
-    ADT_LIST_FOREACH_SAFE(s, it, tmp)
-        free(pA, it);
+    p->pPrev = pAfter;
+    p->pNext = pAfter->pNext;
 
-    s->pFirst = s->pLast = nullptr;
+    if (p->pNext) p->pNext->pPrev = p;
+
+    pAfter->pNext = p;
+
+    if (pAfter == s->pLast) s->pLast = p;
+
+    ++s->size;
+}
+
+template<typename T>
+constexpr void
+ListInsertBefore(ListBase<T>* s, ListNode<T>* pBefore, ListNode<T>* p)
+{
+    p->pNext = pBefore;
+    p->pPrev = pBefore->pPrev;
+
+    if (p->pPrev) p->pPrev->pNext = p;
+
+    pBefore->pPrev = p;
+
+    if (pBefore == s->pFirst) s->pFirst = p;
+
+    ++s->size;
 }
 
 template<typename T>
@@ -143,12 +175,12 @@ struct List
     ListBase<T>::It begin() { return base.begin(); }
     ListBase<T>::It end() { return base.end(); }
     ListBase<T>::It rbegin() { return base.rbegin(); }
-    ListBase<T>::It rend() { return rend(); }
+    ListBase<T>::It rend() { return base.rend(); }
 
     const ListBase<T>::It begin() const { return base.begin(); }
     const ListBase<T>::It end() const { return base.end(); }
     const ListBase<T>::It rbegin() const { return base.rbegin(); }
-    const ListBase<T>::It rend() const { return rend(); }
+    const ListBase<T>::It rend() const { return base.rend(); }
 };
 
 template<typename T>

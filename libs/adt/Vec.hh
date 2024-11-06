@@ -4,6 +4,8 @@
 #include "utils.hh"
 #include "print.hh"
 
+#include "logs.hh"
+
 #include <cassert>
 
 namespace adt
@@ -18,16 +20,16 @@ struct VecBase
 {
     T* pData = nullptr;
     u32 size = 0;
-    u32 cap = 0;
+    u32 capacity = 0;
 
     VecBase() = default;
     VecBase(Allocator* p, u32 prealloc = 1)
         : pData {(T*)alloc(p, prealloc, sizeof(T))},
           size {0},
-          cap {prealloc} {}
+          capacity {prealloc} {}
 
-    T& operator[](u32 i)             { assert(i < cap && "out of range vec access"); return pData[i]; }
-    const T& operator[](u32 i) const { assert(i < cap && "out of range vec access"); return pData[i]; }
+    T& operator[](u32 i)             { assert(i < capacity && "out of range vec access"); return pData[i]; }
+    const T& operator[](u32 i) const { assert(i < capacity && "out of range vec access"); return pData[i]; }
 
     struct It
     {
@@ -63,19 +65,32 @@ template<typename T>
 inline void
 VecGrow(VecBase<T>* s, Allocator* p, u32 size)
 {
-    s->cap = size;
-    s->pData = (T*)realloc(p, s->pData, sizeof(T), size);
+    /*T* pNew = (T*)alloc(p, size, sizeof(T));*/
+    /*memcpy(pNew, s->pData, s->size * sizeof(T));*/
+    /*free(p, s->pData);*/
+    /*s->cap = size;*/
+    /*s->pData = pNew;*/
+
+    assert(s->size * sizeof(T) > 0);
+
+    /*LOG_NOTIFY(*/
+    /*    "VecGrow:                                  to copy: {}, newSize: {}, [{}, {}]\n",*/
+    /*    s->size * sizeof(T), size*sizeof(T), (u8*)s->pData, (u8*)s->pData + s->size*sizeof(T)*/
+    /*);*/
+
+    s->capacity = size;
+    s->pData = (T*)realloc(p, s->pData, size, sizeof(T));
 }
 
 template<typename T>
 inline u32
 VecPush(VecBase<T>* s, Allocator* p, const T& data)
 {
-    if (s->cap == 0) *s = {p, SIZE_MIN};
+    if (s->capacity == 0) *s = {p, SIZE_MIN};
 
-    assert(s->cap > 0 && "VecBase: uninitialized push");
+    assert(s->capacity > 0 && "VecBase: uninitialized push");
 
-    if (s->size >= s->cap) VecGrow(s, p, s->cap * 2);
+    if (s->size >= s->capacity) VecGrow(s, p, s->capacity * 2);
 
     s->pData[s->size++] = data;
     return s->size - 1;
@@ -121,7 +136,7 @@ template<typename T>
 inline void
 VecSetSize(VecBase<T>* s, Allocator* p, u32 size)
 {
-    if (s->size < size) VecGrow(s, p, size);
+    if (s->capacity < size) VecGrow(s, p, size);
 
     s->size = size;
 }
@@ -131,7 +146,7 @@ inline void
 VecSetCap(VecBase<T>* s, Allocator* p, u32 cap)
 {
     s->pData = (T*)realloc(p, s->pData, cap, sizeof(T));
-    s->cap = cap;
+    s->capacity = cap;
 
     if (s->size > cap) s->size = cap;
 }
@@ -155,7 +170,7 @@ inline u32
 VecIdx(const VecBase<T>* s, const T* x)
 {
     u32 r = u32(x - s->pData);
-    assert(r < s->cap);
+    assert(r < s->capacity);
     return r;
 }
 
@@ -200,7 +215,7 @@ template<typename T>
 inline u32
 VecCap(const VecBase<T>* s)
 {
-    return s->cap;
+    return s->capacity;
 }
 
 template<typename T>

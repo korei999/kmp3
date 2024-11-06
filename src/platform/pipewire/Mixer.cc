@@ -1,9 +1,9 @@
 #include "Mixer.hh"
 
-#include "logs.hh"
+#include "adt/guard.hh"
+#include "adt/logs.hh"
 #include "adt/utils.hh"
 #include "app.hh"
-#include "adt/guard.hh"
 #include "mpris.hh"
 
 #include <cmath>

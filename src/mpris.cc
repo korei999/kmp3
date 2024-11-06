@@ -4,7 +4,7 @@
 
 #include "adt/guard.hh"
 #include "app.hh"
-#include "logs.hh"
+#include "adt/logs.hh"
 
 #ifdef BASU_LIB
     #include <basu/sd-bus.h>

@@ -4,10 +4,10 @@
 #include "adt/Vec.hh"
 #include "adt/defer.hh"
 #include "adt/file.hh"
-#include "frame.hh"
-#include "logs.hh"
-#include "platform/pipewire/Mixer.hh"
+#include "adt/logs.hh"
 #include "defaults.hh"
+#include "frame.hh"
+#include "platform/pipewire/Mixer.hh"
 
 #ifdef MPRIS_LIB
     #include "mpris.hh"

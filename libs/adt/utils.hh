@@ -148,6 +148,7 @@ sleepMS(f64 ms)
 #endif
 }
 
+#ifdef __linux__
 constexpr void
 addNSToTimespec(timespec* const pTs, const long nsec)
 {
@@ -160,6 +161,9 @@ addNSToTimespec(timespec* const pTs, const long nsec)
     }
     else pTs->tv_nsec += nsec;
 }
+#else
+// TODO: ?
+#endif
 
 template<typename T>
 inline void

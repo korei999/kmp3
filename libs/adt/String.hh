@@ -3,6 +3,7 @@
 #include "Allocator.hh"
 #include "hash.hh"
 
+#include <cstring>
 #include <immintrin.h>
 
 namespace adt
@@ -116,7 +117,7 @@ StringCmpSlow(const String l, const String r)
     return true;
 }
 
-inline bool
+ADT_NO_UB inline bool
 StringCmpFast(const String& l, const String& r)
 {
     if (l.size != r.size) return false;
@@ -225,7 +226,8 @@ operator==(const String& l, const String& r)
 #endif
 
 #if !defined(ADT_SSE4_2) && !defined(ADT_AVX2)
-    return StringCmpFast(l, r);
+    if (l.size != r.size) return false;
+    return strncmp(l.pData, r.pData, l.size) == 0;
 #endif
 }
 

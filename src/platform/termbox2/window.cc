@@ -1,11 +1,11 @@
 #include "window.hh"
 
-#include "input.hh"
 #include "adt/Arr.hh"
 #include "adt/defer.hh"
+#include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
-#include "logs.hh"
+#include "input.hh"
 
 #define TB_IMPL
 #define TB_OPT_ATTR_W 32

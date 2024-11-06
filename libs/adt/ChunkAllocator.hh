@@ -10,12 +10,13 @@ namespace adt
 
 struct ChunkAllocator;
 
-inline void* ChunkAlloc(ChunkAllocator* s, u64 _ignored, u64 __ignored);
+inline void* ChunkAlloc(ChunkAllocator* s, u64 ignored0, u64 ignored1);
 inline void ChunkFree(ChunkAllocator* s, void* p);
 inline void ChunkFreeAll(ChunkAllocator* s);
 
 inline void* alloc(ChunkAllocator* s, u64 mCount, u64 mSize) { return ChunkAlloc(s, mCount, mSize); }
 inline void free(ChunkAllocator* s, void* p) { ChunkFree(s, p); }
+inline void freeAll(ChunkAllocator* s) { ChunkFreeAll(s); }
 
 struct ChunkAllocatorNode
 {
@@ -44,10 +45,11 @@ struct ChunkAllocator
 };
 
 inline ChunkAllocatorBlock*
-__ChunkAllocatorNewBlock(ChunkAllocator* s)
+_ChunkAllocatorNewBlock(ChunkAllocator* s)
 {
     u64 total = s->blockCap + sizeof(ChunkAllocatorBlock);
     auto* r = (ChunkAllocatorBlock*)::calloc(1, total);
+    assert(r != nullptr && "[ChunkAllocator]: calloc failed");
     r->head = (ChunkAllocatorNode*)r->pMem;
 
     u32 chunks = s->blockCap / s->chunkSize;
@@ -65,7 +67,7 @@ __ChunkAllocatorNewBlock(ChunkAllocator* s)
 }
 
 inline void*
-ChunkAlloc(ChunkAllocator* s, [[maybe_unused]] u64 _ignored, [[maybe_unused]] u64 __ignored)
+ChunkAlloc(ChunkAllocator* s, [[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignored1)
 {
     ChunkAllocatorBlock* pBlock = s->pBlocks;
     ChunkAllocatorBlock* pPrev = nullptr;
@@ -84,7 +86,7 @@ ChunkAlloc(ChunkAllocator* s, [[maybe_unused]] u64 _ignored, [[maybe_unused]] u6
 
     if (!pBlock)
     {
-        pPrev->next = __ChunkAllocatorNewBlock(s);
+        pPrev->next = _ChunkAllocatorNewBlock(s);
         pBlock = pPrev->next;
     }
 
@@ -93,10 +95,10 @@ ChunkAlloc(ChunkAllocator* s, [[maybe_unused]] u64 _ignored, [[maybe_unused]] u6
     pBlock->used += s->chunkSize;
 
     return head->pNodeMem;
-};
+}
 
 inline void*
-__ChunkRealloc(
+_ChunkRealloc(
     [[maybe_unused]] ChunkAllocator* s,
     [[maybe_unused]] void* ___ignored,
     [[maybe_unused]] u64 _ignored,
@@ -142,18 +144,18 @@ ChunkFreeAll(ChunkAllocator* s)
     }
 }
 
-inline const AllocatorInterface __CunkAllocatorVTable {
+inline const AllocatorInterface inl_ChunkAllocatorVTable {
     .alloc = decltype(AllocatorInterface::alloc)(ChunkAlloc),
-    .realloc = decltype(AllocatorInterface::realloc)(__ChunkRealloc),
+    .realloc = decltype(AllocatorInterface::realloc)(_ChunkRealloc),
     .free = decltype(AllocatorInterface::free)(ChunkFree),
     .freeAll = decltype(AllocatorInterface::freeAll)(ChunkFreeAll),
 };
 
 inline
 ChunkAllocator::ChunkAllocator(u64 chunkSize, u64 blockSize)
-    : base {&__CunkAllocatorVTable},
+    : base {&inl_ChunkAllocatorVTable},
       blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
       chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
-      pBlocks {__ChunkAllocatorNewBlock(this)} {}
+      pBlocks {_ChunkAllocatorNewBlock(this)} {}
 
 } /* namespace adt */

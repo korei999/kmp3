@@ -24,6 +24,6 @@ public:
 
 #define ADT_DEFER(code) auto ADT_DEFER_3(_lamDefer) = adt::Defer([&] { code; })
 
-#ifndef ADT_DEFER_ONLY
+#ifdef ADT_DEFER_LESS_TYPING
     #define defer(code) ADT_DEFER(code)
 #endif

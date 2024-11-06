@@ -48,7 +48,8 @@ add_executable(
 
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
 
-# add_definitions("-DADT_FMTLIB_INCLUDED")
+add_definitions("-DADT_DEFER_LESS_TYPING")
+add_definitions("-DADT_LOGS_LESS_TYPING")
 # add_definitions("-DFMT_HEADER_ONLY")
 # add_definitions("-DFMT_USE_EXCEPTIONS=0")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c99-designator")

@@ -68,6 +68,7 @@ _ArenaAllocatorNewBlock(Arena* s, u64 size)
 
     u64 addedSize = size + sizeof(ArenaBlock);
     *ppLastBlock = (ArenaBlock*)(calloc(1, addedSize));
+    assert(*ppLastBlock != nullptr && "[Arena]: calloc failed");
 
     auto* pBlock = (ArenaBlock*)*ppLastBlock;
     pBlock->size = size;
@@ -189,7 +190,7 @@ ArenaFreeAll(Arena* s)
         ::free(pB);
 }
 
-inline const AllocatorInterface _inl_ArenaAllocatorVTable {
+inline const AllocatorInterface inl_ArenaAllocatorVTable {
     .alloc = decltype(AllocatorInterface::alloc)(ArenaAlloc),
     .realloc = decltype(AllocatorInterface::realloc)(ArenaRealloc),
     .free = decltype(AllocatorInterface::free)(_ArenaFree),
@@ -198,7 +199,7 @@ inline const AllocatorInterface _inl_ArenaAllocatorVTable {
 
 inline 
 Arena::Arena(u32 blockCap)
-    : base {&_inl_ArenaAllocatorVTable}
+    : base {&inl_ArenaAllocatorVTable}
 {
     _ArenaAllocatorNewBlock(this, align8(blockCap + sizeof(ArenaNode)));
 }
