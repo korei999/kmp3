@@ -33,7 +33,7 @@ static struct {
 } s_input {};
 
 constexpr String
-ReadModeToString(READ_MODE e)
+readModeToString(READ_MODE e)
 {
     constexpr String map[] {"", "searching: ", "time: "};
     return map[e];
@@ -566,7 +566,7 @@ drawBottomLine()
 
     if (s_input.eCurrMode != READ_MODE::NONE || (s_input.eCurrMode == READ_MODE::NONE && wcsnlen(s_input.aBuff, utils::size(s_input.aBuff)) > 0))
     {
-        const String sSearching = ReadModeToString(s_input.eLastUsedMode);
+        const String sSearching = readModeToString(s_input.eLastUsedMode);
         drawUtf8String(0, height - 1, sSearching, sSearching.size + 2);
         drawWideString(sSearching.size, height - 1, s_input.aBuff, utils::size(s_input.aBuff), width - sSearching.size);
 

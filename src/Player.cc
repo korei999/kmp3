@@ -187,6 +187,7 @@ PlayerOnSongEnd(Player* s)
     }
 
     s->selected = s->aSongIdxs[currIdx];
+
     audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
     updateInfo(s);
 }

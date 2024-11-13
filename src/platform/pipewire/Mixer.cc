@@ -3,6 +3,7 @@
 #include "adt/guard.hh"
 #include "adt/logs.hh"
 #include "adt/utils.hh"
+#include "adt/math.hh"
 #include "app.hh"
 #include "mpris.hh"
 
@@ -128,6 +129,8 @@ MixerDestroy(Mixer* s)
 void
 MixerPlay(Mixer* s, String sPath)
 {
+    const f64 prevSpeed = f64(s->base.changedSampleRate) / f64(s->base.sampleRate);
+
     MixerPause(s, true);
 
     {
@@ -148,6 +151,10 @@ MixerPlay(Mixer* s, String sPath)
 
     s->base.nChannels = ffmpeg::DecoderGetChannelsCount(s->pDecoder);
     MixerChangeSampleRate(s, ffmpeg::DecoderGetSampleRate(s->pDecoder), true);
+
+    if (!math::eq(prevSpeed, 1.0))
+        audio::MixerChangeSampleRate(s, f64(s->base.sampleRate) * prevSpeed, false);
+
     MixerPause(s, false);
 
     s->base.bUpdateMpris = true; /* mark to update in frame::run() */ 
