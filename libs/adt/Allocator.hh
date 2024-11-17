@@ -29,6 +29,7 @@ constexpr u64 SIZE_8K = 8UL * SIZE_1K;
 constexpr u64 SIZE_1M = SIZE_1K * SIZE_1K; 
 constexpr u64 SIZE_8M = 8UL * SIZE_1M; 
 constexpr u64 SIZE_1G = SIZE_1M * SIZE_1K; 
+constexpr u64 SIZE_8G = SIZE_1G * SIZE_1K;
 
 struct Allocator;
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "utils.hh"
+#include "print.hh"
+#include "sort.hh"
 
 #include <cassert>
 
@@ -88,5 +89,70 @@ ArrIdx(Arr<T, CAP>* s, const T* p)
     assert(r < s->cap);
     return r;
 }
+
+namespace utils
+{
+
+template<typename T, u32 CAP>
+[[nodiscard]] constexpr bool
+empty(const Arr<T, CAP>* s)
+{
+    return s->size == 0;
+}
+
+} /* namespace utils */
+
+namespace sort
+{
+
+template<typename T, u32 CAP, auto FN_CMP = utils::compare<T>>
+constexpr void
+quick(Arr<T, CAP>* pArr)
+{
+    if (pArr->size <= 1) return;
+
+    quick<T, FN_CMP>(pArr->pData, 0, pArr->size - 1);
+}
+
+template<typename T, u32 CAP, auto FN_CMP = utils::compare<T>>
+constexpr void
+insertion(Arr<T, CAP>* pArr)
+{
+    if (pArr->size <= 1) return;
+
+    insertion<T, FN_CMP>(pArr->pData, 0, pArr->size - 1);
+}
+
+} /* namespace sort */
+
+namespace print
+{
+
+template<typename T, u32 CAP>
+inline u32
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Arr<T, CAP>& x)
+{
+    if (utils::empty(&x))
+    {
+        ctx.fmt = "{}";
+        ctx.fmtIdx = 0;
+        return printArgs(ctx, "(empty)");
+    }
+
+    char aBuff[1024] {};
+    u32 nRead = 0;
+    for (u32 i = 0; i < x.size; ++i)
+    {
+        const char* fmt;
+        if constexpr (std::is_floating_point_v<T>) fmt = i == x.size - 1 ? "{:.3}" : "{:.3}, ";
+        else fmt = i == x.size - 1 ? "{}" : "{}, ";
+
+        nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, x[i]);
+    }
+
+    return print::copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
+}
+
+} /* namespace print */
 
 } /* namespace adt */

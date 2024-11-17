@@ -77,22 +77,6 @@ struct String
     constexpr const It rend() const { return {this->pData - 1}; }
 };
 
-// constexpr bool StringEndsWith(String l, String r);
-// inline bool operator==(const String& l, const String& r);
-// inline bool operator==(const String& l, const char* r);
-// inline bool operator!=(const String& l, const String& r);
-// constexpr s64 operator-(const String& l, const String& r);
-// constexpr u32 StringLastOf(String sv, char c);
-// constexpr String StringAlloc(Allocator* p, const char* str, u32 size);
-// constexpr String StringAlloc(Allocator* p, u32 size);
-// constexpr String StringAlloc(Allocator* p, const char* str);
-// constexpr String StringAlloc(Allocator* p, String s);
-// constexpr u64 hashFNV(String str);
-// constexpr String StringCat(Allocator* p, String l, String r);
-// 
-// template<> constexpr u64 hash::func<String>(String& str);
-// template<> constexpr u64 hash::func<const String>(const String& str);
-
 constexpr bool
 StringEndsWith(String l, String r)
 {
@@ -393,5 +377,16 @@ hash::func<const String>(const String& str)
 {
     return fnv(str.pData, str.size);
 }
+
+namespace utils
+{
+
+[[nodiscard]] constexpr bool
+empty(const String* s)
+{
+    return s->size == 0;
+}
+
+} /* namespace utils */
 
 } /* namespace adt */

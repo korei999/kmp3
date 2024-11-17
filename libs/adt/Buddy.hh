@@ -20,7 +20,7 @@ struct BuddyBlock
 struct BuddyNode
 {
     /* NOTE: saving isFree boolean in the leftmost bit and the rest is the size */
-    u64 size_bFreeLeftMostBit {};
+    u64 sizeAndIsFree {};
     u8 pMem[];
 };
 
@@ -38,25 +38,25 @@ struct Buddy
 constexpr u64
 BuddyNodeSize(const BuddyNode* s)
 {
-    return s->size_bFreeLeftMostBit & ~(1UL << 63);
+    return s->sizeAndIsFree & ~(1UL << 63);
 }
 
 constexpr bool
 BuddyNodeIsFree(const BuddyNode* s)
 {
-    return s->size_bFreeLeftMostBit & (1UL << 63);
+    return s->sizeAndIsFree & (1UL << 63);
 }
 
 constexpr void
 BuddyNodeSetFree(BuddyNode* s, bool bFree)
 {
-    bFree ? s->size_bFreeLeftMostBit |= (1UL << 63) : s->size_bFreeLeftMostBit &= ~(1UL << 63);
+    bFree ? s->sizeAndIsFree |= (1UL << 63) : s->sizeAndIsFree &= ~(1UL << 63);
 }
 
 constexpr void
 BuddyNodeSetSizeSetFree(BuddyNode* s, u64 size, bool bFree)
 {
-    s->size_bFreeLeftMostBit = size;
+    s->sizeAndIsFree = size;
     BuddyNodeSetFree(s, bFree);
 }
 

@@ -6,12 +6,12 @@
 namespace adt
 {
 
-constexpr f32 MAP_DEFAULT_LOAD_FACTOR = 0.5;
-constexpr f32 MAP_DEFAULT_LOAD_FACTOR_INV = 1.0 / MAP_DEFAULT_LOAD_FACTOR;
+constexpr f32 MAP_DEFAULT_LOAD_FACTOR = 0.5f;
+constexpr f32 MAP_DEFAULT_LOAD_FACTOR_INV = 1.0f / MAP_DEFAULT_LOAD_FACTOR;
 
 template<typename T> struct MapBase;
 
-template<typename T> inline void __MapRehash(MapBase<T>* s, Allocator* p, u32 size);
+template<typename T> inline void _MapRehash(MapBase<T>* s, Allocator* p, u32 size);
 
 template<typename T>
 struct Bucket
@@ -27,7 +27,6 @@ struct MapResult
 {
     T* pData;
     u64 hash;
-    /*u32 idx;*/ /* can be calculated from pData */
     bool bInserted;
 
     constexpr explicit operator bool() const
@@ -47,9 +46,7 @@ struct MapBase
     u32 bucketCount = 0;
 
     MapBase() = default;
-    MapBase(Allocator* pAllocator, u32 prealloc = SIZE_MIN)
-        : aBuckets(pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV),
-          maxLoadFactor(MAP_DEFAULT_LOAD_FACTOR) {}
+    MapBase(Allocator* pAllocator, u32 prealloc = SIZE_MIN);
 
     struct It
     {
@@ -84,6 +81,13 @@ inline u32
 MapIdx(MapBase<T>* s, T* p)
 {
     return p - VecData(&s->aBuckets);
+}
+
+template<typename T>
+inline u32
+MapIdx(MapBase<T>* s, MapResult<T>* pRes)
+{
+    return pRes->pData - VecData(&s->aBuckets);
 }
 
 template<typename T>
@@ -126,7 +130,7 @@ MapInsert(MapBase<T>* s, Allocator* p, const T& value)
     if (VecCap(&s->aBuckets) == 0) *s = {p};
 
     if (MapLoadFactor(s) >= s->maxLoadFactor)
-        __MapRehash(s, p, VecCap(&s->aBuckets) * 2);
+        _MapRehash(s, p, VecCap(&s->aBuckets) * 2);
 
     u64 hash = hash::func(value);
     u32 idx = u32(hash % VecCap(&s->aBuckets));
@@ -146,7 +150,6 @@ MapInsert(MapBase<T>* s, Allocator* p, const T& value)
     return {
         .pData = &s->aBuckets[idx].data,
         .hash = hash,
-        /*.idx = idx,*/
         .bInserted = true
     };
 }
@@ -203,7 +206,7 @@ MapRemove(MapBase<T>*s, const T& x)
 
 template<typename T>
 inline void
-__MapRehash(MapBase<T>* s, Allocator* p, u32 size)
+_MapRehash(MapBase<T>* s, Allocator* p, u32 size)
 {
     auto mNew = MapBase<T>(p, size);
 
@@ -232,6 +235,14 @@ MapDestroy(MapBase<T>* s, Allocator* p)
 }
 
 template<typename T>
+MapBase<T>::MapBase(Allocator* pAllocator, u32 prealloc)
+    : aBuckets(pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV),
+      maxLoadFactor(MAP_DEFAULT_LOAD_FACTOR)
+{
+    VecSetSize(&aBuckets, pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV);
+}
+
+template<typename T>
 struct Map
 {
     MapBase<T> base {};
@@ -252,82 +263,17 @@ struct Map
     const MapBase<T>::It rend() const { return rend(); }
 };
 
-template<typename T>
-inline u32
-MapIdx(Map<T>* s, T* p)
-{
-    return MapIdx(&s->base, p);
-}
-
-template<typename T>
-inline u32
-MapFirstI(Map<T>* s)
-{
-    return MapFirstI(&s->base);
-}
-
-template<typename T>
-inline u32
-MapNextI(Map<T>* s, u32 i)
-{
-    return MapNextI(&s->base, i);
-}
-
-template<typename T>
-inline f32
-MapLoadFactor(Map<T>* s)
-{
-    return MapLoadFactor(&s->base);
-}
-
-template<typename T>
-inline MapResult<T>
-MapInsert(Map<T>* s, const T& value)
-{
-    return MapInsert(&s->base, s->pA, value);
-}
-
-template<typename T>
-inline MapResult<T>
-MapSearch(Map<T>* s, const T& value)
-{
-    return MapSearch(&s->base, value);
-}
-
-template<typename T>
-inline void
-MapRemove(Map<T>*s, u32 i)
-{
-    MapRemove(&s->base, i);
-}
-
-template<typename T>
-inline void
-MapRemove(Map<T>*s, const T& x)
-{
-    MapRemove(&s->base, x);
-}
-
-template<typename T>
-inline void
-__MapRehash(Map<T>* s, u32 size)
-{
-    __MapRehash(&s->base, s->pA, size);
-}
-
-template<typename T>
-inline MapResult<T>
-MapTryInsert(Map<T>* s, const T& value)
-{
-    return MapTryInsert(&s->base, s->pA, value);
-}
-
-template<typename T>
-inline void
-MapDestroy(Map<T>* s)
-{
-    MapDestroy(&s->base, s->pA);
-}
-
+template<typename T> inline u32 MapIdx(Map<T>* s, T* p) { return MapIdx(&s->base, p); }
+template<typename T> inline u32 MapIdx(Map<T>* s, MapResult<T>* pRes) { return MapIdx(s->base, pRes); }
+template<typename T> inline u32 MapFirstI(Map<T>* s) { return MapFirstI(&s->base); }
+template<typename T> inline u32 MapNextI(Map<T>* s, u32 i) { return MapNextI(&s->base, i); }
+template<typename T> inline f32 MapLoadFactor(Map<T>* s) { return MapLoadFactor(&s->base); }
+template<typename T> inline MapResult<T> MapInsert(Map<T>* s, const T& value) { return MapInsert(&s->base, s->pA, value); }
+template<typename T> inline MapResult<T> MapSearch(Map<T>* s, const T& value) { return MapSearch(&s->base, value); }
+template<typename T> inline void MapRemove(Map<T>*s, u32 i) { MapRemove(&s->base, i); }
+template<typename T> inline void MapRemove(Map<T>*s, const T& x) { MapRemove(&s->base, x); }
+template<typename T> inline void _MapRehash(Map<T>* s, u32 size) { _MapRehash(&s->base, s->pA, size); }
+template<typename T> inline MapResult<T> MapTryInsert(Map<T>* s, const T& value) { return MapTryInsert(&s->base, s->pA, value); }
+template<typename T> inline void MapDestroy(Map<T>* s) { MapDestroy(&s->base, s->pA); }
 
 } /* namespace adt */

@@ -142,9 +142,10 @@ ChunkFreeAll(ChunkAllocator* s)
         ::free(p);
         p = next;
     }
+    s->pBlocks = nullptr;
 }
 
-inline const AllocatorInterface inl_ChunkAllocatorVTable {
+inline const AllocatorInterface inl_chunkAllocatorVTable {
     .alloc = decltype(AllocatorInterface::alloc)(ChunkAlloc),
     .realloc = decltype(AllocatorInterface::realloc)(_ChunkRealloc),
     .free = decltype(AllocatorInterface::free)(ChunkFree),
@@ -153,7 +154,7 @@ inline const AllocatorInterface inl_ChunkAllocatorVTable {
 
 inline
 ChunkAllocator::ChunkAllocator(u64 chunkSize, u64 blockSize)
-    : base {&inl_ChunkAllocatorVTable},
+    : base {&inl_chunkAllocatorVTable},
       blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
       chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
       pBlocks {_ChunkAllocatorNewBlock(this)} {}

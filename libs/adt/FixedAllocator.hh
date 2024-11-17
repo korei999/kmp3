@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Allocator.hh"
+#include "utils.hh"
 
 #include <cassert>
 #include <cstring>
@@ -20,19 +21,19 @@ struct FixedAllocator
     constexpr FixedAllocator(void* pMemory, u64 capacity);
 };
 
-constexpr void* FixedAllocatorAlloc(FixedAllocator* s, u64 mCount, u64 mSize);
-constexpr void* FixedAllocatorRealloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize);
-constexpr void FixedAllocatorFree(FixedAllocator* s, void* p);
-constexpr void FixedAllocatorFreeAll(FixedAllocator* s);
-constexpr void FixedAllocatorReset(FixedAllocator* s);
+constexpr void* FixedAlloc(FixedAllocator* s, u64 mCount, u64 mSize);
+constexpr void* FixedRealloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize);
+constexpr void FixedFree(FixedAllocator* s, void* p);
+constexpr void FixedFreeAll(FixedAllocator* s);
+constexpr void FixedReset(FixedAllocator* s);
 
-inline void* alloc(FixedAllocator* s, u64 mCount, u64 mSize) { return FixedAllocatorAlloc(s, mCount, mSize); }
-inline void* realloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize) { return FixedAllocatorRealloc(s, p, mCount, mSize); }
-inline void free(FixedAllocator* s, void* p) { return FixedAllocatorFree(s, p); }
-inline void freeAll(FixedAllocator* s) { return FixedAllocatorFreeAll(s); }
+inline void* alloc(FixedAllocator* s, u64 mCount, u64 mSize) { return FixedAlloc(s, mCount, mSize); }
+inline void* realloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize) { return FixedRealloc(s, p, mCount, mSize); }
+inline void free(FixedAllocator* s, void* p) { return FixedFree(s, p); }
+inline void freeAll(FixedAllocator* s) { return FixedFreeAll(s); }
 
 constexpr void*
-FixedAllocatorAlloc(FixedAllocator* s, u64 mCount, u64 mSize)
+FixedAlloc(FixedAllocator* s, u64 mCount, u64 mSize)
 {
     u64 aligned = align8(mCount * mSize);
     void* ret = &s->pMemBuffer[s->size];
@@ -45,7 +46,7 @@ FixedAllocatorAlloc(FixedAllocator* s, u64 mCount, u64 mSize)
 }
 
 constexpr void*
-FixedAllocatorRealloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize)
+FixedRealloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize)
 {
     void* ret = nullptr;
     u64 aligned = align8(mCount * mSize);
@@ -61,7 +62,9 @@ FixedAllocatorRealloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize)
     {
         ret = &s->pMemBuffer[s->size];
         s->pLastAlloc = ret;
-        memcpy(ret, p, aligned);
+        u64 nBytesUntilEndOfBlock = s->cap - s->size;
+        u64 nBytesToCopy = utils::min(aligned, nBytesUntilEndOfBlock);
+        memcpy(ret, p, nBytesToCopy);
         s->size += aligned;
     }
 
@@ -69,31 +72,31 @@ FixedAllocatorRealloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize)
 }
 
 constexpr void
-FixedAllocatorFree([[maybe_unused]] FixedAllocator* s, [[maybe_unused]] void* p)
+FixedFree([[maybe_unused]] FixedAllocator* s, [[maybe_unused]] void* p)
 {
     //
 }
 
 constexpr void
-FixedAllocatorFreeAll([[maybe_unused]] FixedAllocator* s)
+FixedFreeAll([[maybe_unused]] FixedAllocator* s)
 {
     //
 }
 
 constexpr void
-FixedAllocatorReset(FixedAllocator* s)
+FixedReset(FixedAllocator* s)
 {
     s->size = 0;
 }
 
-inline const AllocatorInterface __FixedAllocatorVTable {
-    .alloc = decltype(AllocatorInterface::alloc)(FixedAllocatorAlloc),
-    .realloc = decltype(AllocatorInterface::realloc)(FixedAllocatorRealloc),
-    .free = decltype(AllocatorInterface::free)(FixedAllocatorFree),
-    .freeAll = decltype(AllocatorInterface::freeAll)(FixedAllocatorFreeAll),
+inline const AllocatorInterface inl_FixedAllocatorVTable {
+    .alloc = decltype(AllocatorInterface::alloc)(FixedAlloc),
+    .realloc = decltype(AllocatorInterface::realloc)(FixedRealloc),
+    .free = decltype(AllocatorInterface::free)(FixedFree),
+    .freeAll = decltype(AllocatorInterface::freeAll)(FixedFreeAll),
 };
 
 constexpr FixedAllocator::FixedAllocator(void* pMemory, u64 capacity)
-    : base{.pVTable = &__FixedAllocatorVTable}, pMemBuffer((u8*)pMemory), cap(capacity) {}
+    : base{.pVTable = &inl_FixedAllocatorVTable}, pMemBuffer((u8*)pMemory), cap(capacity) {}
 
 } /* namespace adt */

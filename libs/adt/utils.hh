@@ -1,7 +1,6 @@
 #pragma once
 
 #ifdef __linux__
-    #include <ctime>
     #include <unistd.h>
 #elif _WIN32
     #ifndef WIN32_LEAN_AND_MEAN
@@ -24,6 +23,7 @@
 
 #include "types.hh"
 
+#include <ctime>
 #include <cstring>
 #include <cassert>
 
@@ -48,53 +48,53 @@ toggle(auto* x)
     *x = !*x;
 }
 
-[[nodiscard]]
-constexpr auto&
+[[nodiscard]] constexpr auto&
 max(const auto& l, const auto& r)
 {
     return l > r ? l : r;
 }
 
-[[nodiscard]]
-constexpr auto&
+[[nodiscard]] constexpr auto&
 min(const auto& l, const auto& r)
 {
     return l < r ? l : r;
 }
 
-[[nodiscard]]
-constexpr u64
+[[nodiscard]] constexpr u64
 size(const auto& a)
 {
     return sizeof(a) / sizeof(a[0]);
 }
 
 template<typename T>
-[[nodiscard]]
-constexpr bool
+[[nodiscard]] constexpr bool
 odd(const T& a)
 {
     return a & 1;
 }
 
-[[nodiscard]]
-constexpr bool
+[[nodiscard]] constexpr bool
 even(const auto& a)
 {
     return !odd(a);
 }
 
-/* negative is l < r, positive if l > r, 0 if l == r */
+/* negative if l < r, positive if l > r, 0 if l == r */
 template<typename T>
-[[nodiscard]]
-constexpr s64
+[[nodiscard]] constexpr s64
 compare(const T& l, const T& r)
 {
     return l - r;
 }
 
-[[nodiscard]]
-inline long
+template<typename T>
+[[nodiscard]] constexpr s64
+compareRev(const T& l, const T& r)
+{
+    return r - l;
+}
+
+[[nodiscard]] inline long
 timeNowUS()
 {
 #ifdef __linux__
@@ -114,8 +114,7 @@ timeNowUS()
 #endif
 }
 
-[[nodiscard]]
-inline f64
+[[nodiscard]] inline f64
 timeNowMS()
 {
 #ifdef __linux__
@@ -131,8 +130,7 @@ timeNowMS()
 #endif
 }
 
-[[nodiscard]]
-inline f64
+[[nodiscard]] inline f64
 timeNowS()
 {
     return timeNowMS() / 1000.0;
@@ -148,7 +146,6 @@ sleepMS(f64 ms)
 #endif
 }
 
-#ifdef __linux__
 constexpr void
 addNSToTimespec(timespec* const pTs, const long nsec)
 {
@@ -161,9 +158,6 @@ addNSToTimespec(timespec* const pTs, const long nsec)
     }
     else pTs->tv_nsec += nsec;
 }
-#else
-// TODO: ?
-#endif
 
 template<typename T>
 inline void
@@ -183,30 +177,40 @@ fill(T* pData, T x, u64 size)
 }
 
 template<typename T>
-[[nodiscard]]
-constexpr auto
+[[nodiscard]] constexpr auto
 clamp(const T& x, const T& _min, const T& _max)
 {
     return max(_min, min(_max, x));
 }
 
-template<template<typename> typename CON, typename T>
-inline T&
-searchMax(CON<T>& s)
+template<template<typename> typename CON_T, typename T>
+[[nodiscard]] constexpr bool
+empty(const CON_T<T>* s)
 {
-    auto _max = s.begin();
-    for (auto it = ++s.begin(); it != s.end(); ++it)
+    return s->size == 0;
+}
+
+template<template<typename> typename CON_T, typename T>
+[[nodiscard]] inline T&
+searchMax(CON_T<T>* s)
+{
+    assert(!empty(s));
+
+    auto _max = s->begin();
+    for (auto it = ++s->begin(); it != s->end(); ++it)
         if (*it > *_max) _max = it;
 
     return *_max;
 }
 
-template<template<typename> typename CON, typename T>
-inline T&
-searchMin(CON<T>& s)
+template<template<typename> typename CON_T, typename T>
+[[nodiscard]] inline T&
+searchMin(CON_T<T>* s)
 {
-    auto _min = s.begin();
-    for (auto it = ++s.begin(); it != s.end(); ++it)
+    assert(!empty(s));
+
+    auto _min = s->begin();
+    for (auto it = ++s->begin(); it != s->end(); ++it)
         if (*it < *_min) _min = it;
 
     return *_min;
@@ -224,7 +228,6 @@ reverse(auto* a)
 {
     reverse(a->pData, a->size);
 }
-
 
 } /* namespace utils */
 } /* namespace adt */

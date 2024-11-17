@@ -1,9 +1,11 @@
 #pragma once
 
-#include <stdint.h>
-
 namespace adt
 {
+
+#ifdef ADT_STD_TYPES
+
+    #include <stdint.h>
 
 using s8 = int8_t;
 using u8 = uint8_t;
@@ -14,22 +16,28 @@ using u32 = uint32_t;
 using s64 = int64_t;
 using u64 = uint64_t;
 
+#else
+
+using s8 = signed char;
+using u8 = unsigned char;
+using s16 = signed short;
+using u16 = unsigned short;
+using s32 = signed int;
+using u32 = unsigned int;
+using s64 = signed long long;
+using u64 = unsigned long long;
+
+#endif
+
 using f32 = float;
 using f64 = double;
 
 using null = decltype(nullptr);
 
-constexpr int U24_MAX = 8388607;
-
-struct u24
-{
-    u8 data[3];
-};
-
-constexpr u16 NPOS8 = 0xff;
-constexpr u16 NPOS16 = 0xffff;
+constexpr u16 NPOS8 = u8(-1);
+constexpr u16 NPOS16 = u16(-1);
 constexpr u32 NPOS = u32(-1U);
-constexpr u64 NPOS64 = u64(-1UL);
+constexpr u64 NPOS64 = u64(-1ULL);
 
 #if defined __clang__ || __GNUC__
     #define ADT_NO_UB __attribute__((no_sanitize("undefined")))

@@ -2,11 +2,7 @@
 
 #include "RBTree.hh"
 
-#ifndef NDEBUG
-    #include "Arena.hh"
-    #include "defer.hh"
-    #include "logs.hh"
-#endif
+#include "logs.hh"
 
 namespace adt
 {
@@ -21,10 +17,10 @@ struct FreeListBlock
 
 constexpr u64 IS_FREE_BITMASK = 1UL << 63;
 
-struct FreeListNodeData
+struct FreeListData
 {
-    FreeListNodeData* pPrev {};
-    FreeListNodeData* pNext {}; /* TODO: calculate from the size (save 8 bytes) */
+    FreeListData* pPrev {};
+    FreeListData* pNext {}; /* TODO: calculate from the size (save 8 bytes) */
     u64 sizeAndIsFree {}; /* isFree bool as leftmost bit */
     u8 pMem[];
 
@@ -34,26 +30,25 @@ struct FreeListNodeData
     constexpr void setSizeSetFree(u64 _size, bool _bFree) { sizeAndIsFree = _size; setFree(_bFree); }
     constexpr void setSize(u64 _size) { setSizeSetFree(_size, isFree()); }
     constexpr void addSize(u64 _size) { setSize(_size + getSize()); }
-    constexpr FreeListNodeData* nextNode() const { return (FreeListNodeData*)((u8*)this + getSize()); }
+    // constexpr FreeListData* nextNode() const { return (FreeListData*)((u8*)this + getSize()); }
 };
 
 /* best-fit logarithmic time thing */
 struct FreeList
 {
-    using Node = RBNode<FreeListNodeData>;
+    using Node = RBNode<FreeListData>;
 
     Allocator base {};
     u64 blockSize {};
-    RBTreeBase<FreeListNodeData> tree {};
+    RBTreeBase<FreeListData> tree {};
     FreeListBlock* pBlocks {};
 
     FreeList() = default;
     FreeList(u64 _blockSize);
 };
 
-#ifndef NDEBUG
 inline void
-_FreeListPrintTree(FreeList* s)
+_FreeListPrintTree(FreeList* s, Allocator* pAlloc)
 {
     auto pfn = +[](const FreeList::Node* pNode, [[maybe_unused]] void* pArgs) -> void {
         CERR(
@@ -62,17 +57,12 @@ _FreeListPrintTree(FreeList* s)
         );
     };
 
-    Arena arena(SIZE_1K);
-    defer( freeAll(&arena) );
-    RBPrintNodes(&arena.base, &s->tree, s->tree.pRoot, pfn, {}, stderr, {}, false);
+    RBPrintNodes(pAlloc, &s->tree, s->tree.pRoot, pfn, {}, stderr, {}, false);
 }
-#else
-#define _FreeListPrintTree //
-#endif
 
 template<>
 constexpr s64
-utils::compare(const FreeListNodeData& l, const FreeListNodeData& r)
+utils::compare(const FreeListData& l, const FreeListData& r)
 {
     return l.getSize() - r.getSize();
 }
@@ -134,12 +124,13 @@ FreeListFreeAll(FreeList* s)
         ::free(it);
         it = next;
     }
+    s->pBlocks = nullptr;
 }
 
-inline FreeListNodeData*
+inline FreeListData*
 FreeListDataNodeFromPtr(void* p)
 {
-    return (FreeListNodeData*)((u8*)p - sizeof(FreeListNodeData));
+    return (FreeListData*)((u8*)p - sizeof(FreeListData));
 }
 
 inline FreeList::Node*
