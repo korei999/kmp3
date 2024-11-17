@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
 
 namespace adt
 {
@@ -11,10 +12,12 @@ namespace adt
 struct ChunkAllocator;
 
 inline void* ChunkAlloc(ChunkAllocator* s, u64 ignored0, u64 ignored1);
+inline void* ChunkZalloc(ChunkAllocator* s, u64 ignored0, u64 ignored1);
 inline void ChunkFree(ChunkAllocator* s, void* p);
 inline void ChunkFreeAll(ChunkAllocator* s);
 
 inline void* alloc(ChunkAllocator* s, u64 mCount, u64 mSize) { return ChunkAlloc(s, mCount, mSize); }
+inline void* zalloc(ChunkAllocator* s, u64 mCount, u64 mSize) { return ChunkZalloc(s, mCount, mSize); }
 inline void free(ChunkAllocator* s, void* p) { ChunkFree(s, p); }
 inline void freeAll(ChunkAllocator* s) { ChunkFreeAll(s); }
 
@@ -98,6 +101,14 @@ ChunkAlloc(ChunkAllocator* s, [[maybe_unused]] u64 ignored0, [[maybe_unused]] u6
 }
 
 inline void*
+ChunkZalloc(ChunkAllocator* s, [[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignored1)
+{
+    auto* p = ChunkAlloc(s, ignored0, ignored1);
+    memset(p, 0, s->chunkSize);
+    return p;
+}
+
+inline void*
 _ChunkRealloc(
     [[maybe_unused]] ChunkAllocator* s,
     [[maybe_unused]] void* ___ignored,
@@ -147,6 +158,7 @@ ChunkFreeAll(ChunkAllocator* s)
 
 inline const AllocatorInterface inl_chunkAllocatorVTable {
     .alloc = decltype(AllocatorInterface::alloc)(ChunkAlloc),
+    .zalloc = decltype(AllocatorInterface::zalloc)(ChunkZalloc),
     .realloc = decltype(AllocatorInterface::realloc)(_ChunkRealloc),
     .free = decltype(AllocatorInterface::free)(ChunkFree),
     .freeAll = decltype(AllocatorInterface::freeAll)(ChunkFreeAll),

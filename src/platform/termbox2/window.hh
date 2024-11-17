@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/Allocator.hh"
+#include "adt/Arena.hh"
 
 using namespace adt;
 
@@ -11,11 +11,11 @@ namespace termbox2
 namespace window
 {
 
-extern Allocator* g_pFrameAlloc;
+extern Arena* g_pFrameArena;
 extern bool g_bDrawHelpMenu;
 extern u16 g_firstIdx;
 
-void init(Allocator* pAlloc);
+void init(Arena* pAlloc);
 void destroy();
 void procEvents();
 void render();

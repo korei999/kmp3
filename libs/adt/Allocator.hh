@@ -12,13 +12,13 @@ constexpr bool isPowerOf2(u64 x) { return (x & (x - 1)) == 0; }
 constexpr u64
 nextPowerOf2(u64 x)
 {
-    x--;
+    --x;
     x |= x >> 1;
     x |= x >> 2;
     x |= x >> 4;
     x |= x >> 8;
     x |= x >> 16;
-    x++;
+    ++x;
 
     return x;
 }
@@ -36,6 +36,7 @@ struct Allocator;
 struct AllocatorInterface
 {
     void* (*alloc)(Allocator* s, u64 mCount, u64 mSize);
+    void* (*zalloc)(Allocator* s, u64 mCOunt, u64 mSize);
     void* (*realloc)(Allocator* s, void* p, u64 mCount, u64 mSize);
     void (*free)(Allocator* s, void* p);
     void (*freeAll)(Allocator* s);
@@ -43,11 +44,11 @@ struct AllocatorInterface
 
 struct Allocator
 {
-    /* allow non const? */
     const AllocatorInterface* pVTable;
 };
 
 [[nodiscard]] ADT_NO_UB constexpr void* alloc(Allocator* s, u64 mCount, u64 mSize) { return s->pVTable->alloc(s, mCount, mSize); }
+[[nodiscard]] ADT_NO_UB constexpr void* zalloc(Allocator* s, u64 mCount, u64 mSize) { return s->pVTable->zalloc(s, mCount, mSize); }
 [[nodiscard]] ADT_NO_UB constexpr void* realloc(Allocator* s, void* p, u64 mCount, u64 mSize) { return s->pVTable->realloc(s, p, mCount, mSize); }
 ADT_NO_UB constexpr void free(Allocator* s, void* p) { s->pVTable->free(s, p); }
 ADT_NO_UB constexpr void freeAll(Allocator* s) { s->pVTable->freeAll(s); }

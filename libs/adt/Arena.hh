@@ -35,12 +35,14 @@ struct Arena
 };
 
 [[nodiscard]] inline void* ArenaAlloc(Arena* s, u64 mCount, u64 mSize);
+[[nodiscard]] inline void* ArenaZalloc(Arena* s, u64 mCount, u64 mSize);
 [[nodiscard]] inline void* ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize);
 inline void ArenaFree(Arena* s, void* ptr);
 inline void ArenaFreeAll(Arena* s);
 inline void ArenaReset(Arena* s);
 
 [[nodiscard]] inline void* alloc(Arena* s, u64 mCount, u64 mSize) { return ArenaAlloc(s, mCount, mSize); }
+[[nodiscard]] inline void* zalloc(Arena* s, u64 mCount, u64 mSize) { return ArenaZalloc(s, mCount, mSize); }
 [[nodiscard]] inline void* realloc(Arena* s, void* ptr, u64 mCount, u64 mSize) { return ArenaRealloc(s, ptr, mCount, mSize); }
 inline void free(Arena* s, void* ptr) { return ArenaFree(s, ptr); }
 inline void freeAll(Arena* s) { return ArenaFreeAll(s); }
@@ -76,7 +78,7 @@ _ArenaFindFittingBlock(Arena* s, u64 size)
 }
 
 [[nodiscard]] inline ArenaBlock*
-_ArenaAllocBlock(Arena* s, u64 size)
+_ArenaAllocBlock(u64 size)
 {
     ArenaBlock* pBlock = (ArenaBlock*)::calloc(1, size + sizeof(ArenaBlock));
     pBlock->size = size;
@@ -88,7 +90,7 @@ _ArenaAllocBlock(Arena* s, u64 size)
 [[nodiscard]] inline ArenaBlock*
 _ArenaPrependBlock(Arena* s, u64 size)
 {
-    auto* pNew = _ArenaAllocBlock(s, size);
+    auto* pNew = _ArenaAllocBlock(size);
     pNew->pNext = s->pBlocks;
     s->pBlocks = pNew;
 
@@ -118,9 +120,17 @@ ArenaAlloc(Arena* s, u64 mCount, u64 mSize)
 }
 
 inline void*
+ArenaZalloc(Arena* s, u64 mCount, u64 mSize)
+{
+    auto* p = ArenaAlloc(s, mCount, mSize);
+    memset(p, 0, mCount * mSize);
+    return p;
+}
+
+inline void*
 ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize)
 {
-    assert(ptr != nullptr && "[Arena]: passing nullptr to realloc");
+    assert(ptr != nullptr && "[Arena]: passing nullptr to realloc()");
 
     u64 requested = mSize * mCount;
     u64 realSize = align8(requested);
@@ -186,6 +196,7 @@ ArenaReset(Arena* s)
 
 inline const AllocatorInterface inl_ArenaVTable {
     .alloc = decltype(AllocatorInterface::alloc)(ArenaAlloc),
+    .zalloc = decltype(AllocatorInterface::zalloc)(ArenaZalloc),
     .realloc = decltype(AllocatorInterface::realloc)(ArenaRealloc),
     .free = decltype(AllocatorInterface::free)(ArenaFree),
     .freeAll = decltype(AllocatorInterface::freeAll)(ArenaFreeAll),
@@ -194,6 +205,6 @@ inline const AllocatorInterface inl_ArenaVTable {
 inline Arena::Arena(u64 capacity)
     : base(&inl_ArenaVTable),
       defaultCapacity(align8(capacity)),
-      pBlocks(_ArenaAllocBlock(this, this->defaultCapacity)) {}
+      pBlocks(_ArenaAllocBlock(this->defaultCapacity)) {}
 
 } /* namespace adt */

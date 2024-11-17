@@ -9,20 +9,6 @@
 namespace adt
 {
 
-/* https://github.com/termbox/termbox2/blob/master/termbox2.h */
-constexpr u8 mapUtf8CharLength[256] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-    3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 1, 1
-};
-
 constexpr u32
 nullTermStringSize(const char* str)
 {
@@ -251,37 +237,36 @@ StringLastOf(String sv, char c)
     return NPOS;
 }
 
-constexpr String
+inline String
 StringAlloc(Allocator* p, const char* str, u32 size)
 {
-    char* pData = (char*)alloc(p, size + 1, sizeof(char));
-    for (u32 i = 0; i < size; i++)
-        pData[i] = str[i];
+    char* pData = (char*)zalloc(p, size + 1, sizeof(char));
+    strncpy(pData, str, size);
     pData[size] = '\0';
 
     return {pData, size};
 }
 
-constexpr String
+inline String
 StringAlloc(Allocator* p, u32 size)
 {
-    char* pData = (char*)alloc(p, size + 1, sizeof(char));
+    char* pData = (char*)zalloc(p, size + 1, sizeof(char));
     return {pData, size};
 }
 
-constexpr String
+inline String
 StringAlloc(Allocator* p, const char* str)
 {
     return StringAlloc(p, str, nullTermStringSize(str));
 }
 
-constexpr String
+inline String
 StringAlloc(Allocator* p, const String s)
 {
     return StringAlloc(p, s.pData, s.size);
 }
 
-constexpr void
+inline void
 StringDestroy(Allocator* p, String* s)
 {
     free(p, s->pData);
@@ -293,11 +278,11 @@ hashFNV(const String str)
     return hash::fnv(str.pData, str.size);
 }
 
-constexpr String
+inline String
 StringCat(Allocator* p, const String l, const String r)
 {
     u32 len = l.size + r.size;
-    char* ret = (char*)alloc(p, len + 1, sizeof(char));
+    char* ret = (char*)zalloc(p, len + 1, sizeof(char));
 
     u32 pos = 0;
     for (u32 i = 0; i < l.size; ++i, ++pos)
@@ -310,7 +295,7 @@ StringCat(Allocator* p, const String l, const String r)
     return {ret, len};
 }
 
-constexpr void
+inline void
 StringAppend(String* l, const String r)
 {
     for (long i = l->size, j = 0; i < long(l->size + r.size); ++i, ++j)
@@ -319,7 +304,7 @@ StringAppend(String* l, const String r)
     l->size += r.size;
 }
 
-constexpr void
+inline void
 StringTrimEnd(String* s)
 {
     auto isWhiteSpace = [&](int i) -> bool {

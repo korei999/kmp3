@@ -83,28 +83,28 @@ VecPush(VecBase<T>* s, Allocator* p, const T& data)
 }
 
 template<typename T>
-inline T&
+[[nodiscard]] inline T&
 VecLast(VecBase<T>* s)
 {
     return s->pData[s->size - 1];
 }
 
 template<typename T>
-inline const T&
+[[nodiscard]] inline const T&
 VecLast(const VecBase<T>* s)
 {
     return s->pData[s->size - 1];
 }
 
 template<typename T>
-inline T&
+[[nodiscard]] inline T&
 VecFirst(VecBase<T>* s)
 {
     return s->pData[0];
 }
 
 template<typename T>
-inline const T&
+[[nodiscard]] inline const T&
 VecFirst(const VecBase<T>* s)
 {
     return s->pData[0];
@@ -152,7 +152,7 @@ VecPopAsLast(VecBase<T>* s, u32 i)
 }
 
 template<typename T>
-inline u32
+[[nodiscard]] inline u32
 VecIdx(const VecBase<T>* s, const T* x)
 {
     u32 r = u32(x - s->pData);
@@ -161,14 +161,14 @@ VecIdx(const VecBase<T>* s, const T* x)
 }
 
 template<typename T>
-inline u32
+[[nodiscard]] inline u32
 VecLastI(const VecBase<T>* s)
 {
     return VecIdx(s, &VecLast(s));
 }
 
 template<typename T>
-inline T&
+[[nodiscard]] inline T&
 VecAt(VecBase<T>* s, u32 at)
 {
     assert(at < s->size && "[Vec]: out of size");
@@ -176,7 +176,7 @@ VecAt(VecBase<T>* s, u32 at)
 }
 
 template<typename T>
-inline const T&
+[[nodiscard]] inline const T&
 VecAt(const VecBase<T>* s, u32 at)
 {
     assert(at < s->size && "[Vec]: out of size");
@@ -191,7 +191,7 @@ VecDestroy(VecBase<T>* s, Allocator* p)
 }
 
 template<typename T>
-inline u32
+[[nodiscard]] inline u32
 VecSize(const VecBase<T>* s)
 {
     return s->size;
@@ -205,10 +205,28 @@ VecCap(const VecBase<T>* s)
 }
 
 template<typename T>
-inline T*
+[[nodiscard]] inline T*
 VecData(VecBase<T>* s)
 {
     return s->pData;
+}
+
+template<typename T>
+inline void
+VecZeroOut(VecBase<T>* s)
+{
+    memset(s->pData, 0, s->size * sizeof(T));
+}
+
+template<typename T>
+[[nodiscard]] inline VecBase<T>
+VecClone(const VecBase<T>* s, Allocator* pAlloc)
+{
+    auto nVec = VecBase<T>(pAlloc, s->capacity);
+    memcpy(nVec.pData, s->pData, s->size * sizeof(T));
+    nVec.size = s->size;
+
+    return nVec;
 }
 
 /* Dynamic array (aka Vector), with Allocator* stored */
@@ -237,23 +255,25 @@ struct Vec
 
 template<typename T> inline void VecGrow(Vec<T>* s, u32 size) { VecGrow(&s->base, s->pAlloc, size); }
 template<typename T> inline u32 VecPush(Vec<T>* s, const T& data) { return VecPush(&s->base, s->pAlloc, data); }
-template<typename T> inline T& VecLast(Vec<T>* s) { return VecLast(&s->base); }
-template<typename T> inline const T& VecLast(Vec<T>* s) { return VecLast(&s->base); }
-template<typename T> inline T& VecFirst(Vec<T>* s) { return VecFirst(&s->base); }
-template<typename T> inline const T& VecFirst(const Vec<T>* s) { return VecFirst(&s->base); }
+template<typename T> [[nodiscard]] inline T& VecLast(Vec<T>* s) { return VecLast(&s->base); }
+template<typename T> [[nodiscard]] inline const T& VecLast(Vec<T>* s) { return VecLast(&s->base); }
+template<typename T> [[nodiscard]] inline T& VecFirst(Vec<T>* s) { return VecFirst(&s->base); }
+template<typename T> [[nodiscard]] inline const T& VecFirst(const Vec<T>* s) { return VecFirst(&s->base); }
 template<typename T> inline T* VecPop(Vec<T>* s) { return VecPop(&s->base); }
 template<typename T> inline void VecSetSize(Vec<T>* s, u32 size) { VecSetSize(&s->base, s->pAlloc, size); }
 template<typename T> inline void VecSetCap(Vec<T>* s, u32 cap) { VecSetCap(&s->base, s->pAlloc, cap); }
 template<typename T> inline void VecSwapWithLast(Vec<T>* s, u32 i) { VecSwapWithLast(&s->base, i); }
 template<typename T> inline void VecPopAsLast(Vec<T>* s, u32 i) { VecPopAsLast(&s->base, i); }
-template<typename T> inline u32 VecIdx(const Vec<T>* s, const T* x) { return VecIdx(&s->base, x); }
-template<typename T> inline u32 VecLastI(const Vec<T>* s) { return VecLastI(&s->base); }
-template<typename T> inline T& VecAt(Vec<T>* s, u32 at) { return VecAt(&s->base, at); }
-template<typename T> inline const T& VecAt(const Vec<T>* s, u32 at) { return VecAt(&s->base, at); }
+template<typename T> [[nodiscard]] inline u32 VecIdx(const Vec<T>* s, const T* x) { return VecIdx(&s->base, x); }
+template<typename T> [[nodiscard]] inline u32 VecLastI(const Vec<T>* s) { return VecLastI(&s->base); }
+template<typename T> [[nodiscard]] inline T& VecAt(Vec<T>* s, u32 at) { return VecAt(&s->base, at); }
+template<typename T> [[nodiscard]] inline const T& VecAt(const Vec<T>* s, u32 at) { return VecAt(&s->base, at); }
 template<typename T> inline void VecDestroy(Vec<T>* s) { VecDestroy(&s->base, s->pAlloc); }
 template<typename T> inline u32 VecSize(const Vec<T>* s) { return VecSize(&s->base); }
 template<typename T> inline u32 VecCap(const Vec<T>* s) { return VecCap(&s->base); }
-template<typename T> inline T* VecData(Vec<T>* s) { return VecData(&s->base); }
+template<typename T> [[nodiscard]] inline T* VecData(Vec<T>* s) { return VecData(&s->base); }
+template<typename T> inline void VecZeroOut(Vec<T>* s) { VecZeroOut(&s->base); }
+template<typename T> [[nodiscard]] inline VecBase<T> VecClone(const Vec<T>* s, Allocator* pAlloc) { return VecClone(&s->base, pAlloc); }
 
 namespace utils
 {

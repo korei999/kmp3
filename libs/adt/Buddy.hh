@@ -120,11 +120,11 @@ BuddyNodeSplit(BuddyNode* s, const u64 size)
 }
 
 inline void*
-BuddyAlloc(Buddy* s, u64 nMembers, u64 memeberSize)
+BuddyAlloc(Buddy* s, u64 nMembers, u64 mSize)
 {
     assert(s->pBlocks && "[Buddy]: ininitialized alloc");
 
-    u64 requested = nMembers * memeberSize;
+    u64 requested = nMembers * mSize;
 
     auto* pBlock = s->pBlocks;
     while (pBlock && pBlock->size - sizeof(BuddyBlock) < requested)
@@ -165,6 +165,14 @@ again:
     return pNode->pMem;
 }
 
+inline void*
+BuddyZalloc(Buddy* s, u64 nMembers, u64 mSize)
+{
+    auto* p = BuddyAlloc(s, nMembers, mSize);
+    memset(p, 0, nMembers*mSize);
+    return p;
+}
+
 inline BuddyBlock*
 BuddyBlockOfNode(Buddy* s, BuddyNode* pNode)
 {
@@ -182,18 +190,18 @@ BuddyBlockOfNode(Buddy* s, BuddyNode* pNode)
 }
 
 inline void
-BuddyCoalescence(const BuddyBlock* pBlock, const BuddyNode* pNode)
+BuddyCoalescence([[maybe_unused]] const BuddyBlock* pBlock, [[maybe_unused]] const BuddyNode* pNode)
 {
-    auto* pTail = ((u8*)pBlock + pBlock->size);
+    // auto* pTail = ((u8*)pBlock + pBlock->size);
 
-    auto* pPrev = pNode;
-    auto* pNext = BuddyNodeNext(pNode);
+    // auto* pPrev = pNode;
+    // auto* pNext = BuddyNodeNext(pNode);
 
-    while (pPrev && BuddyNodeIsFree(pPrev) && pNext && BuddyNodeIsFree(pNext))
-    {
-        pPrev = pNext;
-        pNext = BuddyNodeNext(pNext);
-    }
+    // while (pPrev && BuddyNodeIsFree(pPrev) && pNext && BuddyNodeIsFree(pNext))
+    // {
+    //     pPrev = pNext;
+    //     pNext = BuddyNodeNext(pNext);
+    // }
 }
 
 inline void
@@ -234,6 +242,7 @@ BuddyFreeAll(Buddy* s)
 
 inline const AllocatorInterface inl_BuddyAllocatorVTable {
     .alloc = decltype(AllocatorInterface::alloc)(BuddyAlloc),
+    .zalloc = decltype(AllocatorInterface::zalloc)(BuddyZalloc),
     .realloc = decltype(AllocatorInterface::realloc)(BuddyRealloc),
     .free = decltype(AllocatorInterface::free)(BuddyFree),
     .freeAll = decltype(AllocatorInterface::freeAll)(BuddyFreeAll),
@@ -245,6 +254,7 @@ inline Buddy::Buddy(u64 _blockSize)
       blockSize(nextPowerOf2(_blockSize)) {}
 
 inline void* alloc(Buddy* s, u64 mCount, u64 mSize) { return BuddyAlloc(s, mCount, mSize); }
+inline void* zalloc(Buddy* s, u64 mCount, u64 mSize) { return BuddyZalloc(s, mCount, mSize); }
 inline void* realloc(Buddy* s, void* p, u64 mCount, u64 mSize) { return BuddyRealloc(s, p, mCount, mSize); }
 inline void free(Buddy* s, void* p) { BuddyFree(s, p); }
 inline void freeAll(Buddy* s) { BuddyFreeAll(s); }

@@ -21,7 +21,7 @@ namespace window
 
 enum READ_MODE : u8 {NONE, SEARCH, SEEK};
 
-Allocator* g_pFrameAlloc {};
+Arena* g_pFrameArena {};
 bool g_bDrawHelpMenu = false;
 u16 g_firstIdx = 0;
 
@@ -30,6 +30,8 @@ static struct {
     u32 idx = 0;
     READ_MODE eCurrMode {};
     READ_MODE eLastUsedMode {};
+
+    void zeroOutBuff() { memset(aBuff, 0, sizeof(aBuff)); }
 } s_input {};
 
 constexpr String
@@ -61,7 +63,7 @@ fixFirstIdx()
 }
 
 void
-init(Allocator* pAlloc)
+init(Arena* pAlloc)
 {
     [[maybe_unused]] int r = tb_init();
     assert(r == 0 && "'tb_init()' failed");
@@ -71,7 +73,7 @@ init(Allocator* pAlloc)
     LOG_NOTIFY("tb_has_truecolor: {}\n", (bool)tb_has_truecolor());
     LOG_NOTIFY("tb_has_egc: {}\n", (bool)tb_has_egc());
 
-    g_pFrameAlloc = pAlloc;
+    g_pFrameArena = pAlloc;
 }
 
 void
@@ -98,7 +100,7 @@ readWChar(tb_event* pEv)
         if (s_input.idx > 0)
         {
             s_input.idx = 0;
-            utils::fill(s_input.aBuff, L'\0', utils::size(s_input.aBuff));
+            s_input.zeroOutBuff();
         }
     }
     else if (ev.key == TB_KEY_BACKSPACE || ev.key == TB_KEY_BACKSPACE2 || ev.key == TB_KEY_CTRL_H)
@@ -124,12 +126,12 @@ subStringSearch()
     s_input.eLastUsedMode = s_input.eCurrMode = READ_MODE::SEARCH;
     defer( s_input.eCurrMode = READ_MODE::NONE );
 
-    utils::fill(s_input.aBuff, L'\0', utils::size(s_input.aBuff));
+    s_input.zeroOutBuff();
     s_input.idx = 0;
 
     do
     {
-        PlayerSubStringSearch(&pl, g_pFrameAlloc, s_input.aBuff, utils::size(s_input.aBuff));
+        PlayerSubStringSearch(&pl, g_pFrameArena, s_input.aBuff, utils::size(s_input.aBuff));
         g_firstIdx = 0;
         render();
     } while (readWChar(&ev) != READ_STATUS::DONE);
@@ -192,7 +194,7 @@ seekFromInput()
     s_input.eLastUsedMode = s_input.eCurrMode = READ_MODE::SEEK;
     defer( s_input.eCurrMode = READ_MODE::NONE );
 
-    utils::fill(s_input.aBuff, L'\0', utils::size(s_input.aBuff));
+    s_input.zeroOutBuff();
     s_input.idx = 0;
 
     do
@@ -395,7 +397,7 @@ drawSongList()
 using VOLUME_COLOR = int;
 
 [[nodiscard]] static VOLUME_COLOR
-drawVolume(Allocator* pAlloc, const u16 split)
+drawVolume(Arena* pAlloc, const u16 split)
 {
     const auto width = tb_width();
     const f32 vol = app::g_pMixer->volume;
@@ -432,8 +434,7 @@ drawVolume(Allocator* pAlloc, const u16 split)
         tb_set_cell(i, 2, wc, col, TB_DEFAULT);
     }
 
-    char* pBuff = (char*)alloc(pAlloc, 1, width);
-    utils::fill(pBuff, '\0', width);
+    char* pBuff = (char*)zalloc(pAlloc, 1, width + 1);
     snprintf(pBuff, width, fmt.pData, int(std::round(vol * 100.0f)));
     drawUtf8String(0, 2, pBuff, split + 1, col);
 
@@ -446,8 +447,7 @@ drawTime(const u16 split)
     const auto width = tb_width();
     auto& mixer = *app::g_pMixer;
 
-    char* pBuff = (char*)alloc(g_pFrameAlloc, 1, width);
-    utils::fill(pBuff, '\0', width);
+    char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
 
     u64 t = std::round(f64(mixer.currentTimeStamp) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
     u64 totalT = std::round(f64(mixer.totalSamplesCount) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
@@ -466,13 +466,12 @@ drawTime(const u16 split)
 }
 
 static void
-drawTotal(Allocator* pAlloc, const u16 split)
+drawTotal(Arena* pAlloc, const u16 split)
 {
     const auto width = tb_width();
     auto& pl = *app::g_pPlayer;
 
-    char* pBuff = (char*)alloc(pAlloc, 1, width);
-    utils::fill(pBuff, '\0', width);
+    char* pBuff = (char*)zalloc(pAlloc, 1, width + 1);
 
     int n = snprintf(pBuff, width, "total: %ld / %u", pl.selected, pl.aShortArgvs.size - 1);
     if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
@@ -494,8 +493,8 @@ drawStatus()
     const auto& pl = *app::g_pPlayer;
     const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
 
-    drawTotal(g_pFrameAlloc, split);
-    VOLUME_COLOR volumeColor = drawVolume(g_pFrameAlloc, split);
+    drawTotal(g_pFrameArena, split);
+    VOLUME_COLOR volumeColor = drawVolume(g_pFrameArena, split);
     drawTime(split);
     drawBox(0, 0, split, pl.statusAndInfoHeight + 1, volumeColor, TB_DEFAULT);
 }
@@ -510,14 +509,13 @@ drawInfo()
 
     drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);
 
-    char* pBuff = (char*)alloc(g_pFrameAlloc, 1, width);
-    utils::fill(pBuff, '\0', width);
+    char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
 
     /* title */
     {
         int n = print::toBuffer(pBuff, width, "title: ");
         drawUtf8String(split + 1, 1, pBuff, maxStringWidth);
-        utils::fill(pBuff, '\0', width);
+        memset(pBuff, 0, width + 1);
         if (pl.info.title.size > 0)
             print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
@@ -526,12 +524,12 @@ drawInfo()
 
     /* album */
     {
-        utils::fill(pBuff, '\0', width);
+        memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
         drawUtf8String(split + 1, 3, pBuff, maxStringWidth);
         if (pl.info.album.size > 0)
         {
-            utils::fill(pBuff, '\0', width);
+            memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.album);
             drawUtf8String(split + 1 + n, 3, pBuff, maxStringWidth - n, TB_BOLD);
         }
@@ -539,12 +537,12 @@ drawInfo()
 
     /* artist */
     {
-        utils::fill(pBuff, '\0', width);
+        memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
         drawUtf8String(split + 1, 4, pBuff, maxStringWidth);
         if (pl.info.artist.size > 0)
         {
-            utils::fill(pBuff, '\0', width);
+            memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.artist);
             drawUtf8String(split + 1 + n, 4, pBuff, maxStringWidth - n, TB_BOLD);
         }
@@ -559,7 +557,7 @@ drawBottomLine()
     auto height = tb_height();
     auto width = tb_width();
 
-    print::toBuffer(aBuff, utils::size(aBuff), "{}", pl.focused);
+    print::toBuffer(aBuff, utils::size(aBuff) - 1, "{}", pl.focused);
     String str(aBuff);
 
     drawUtf8String(width - str.size - 2, height - 1, str, str.size + 2); /* yeah + 2 */

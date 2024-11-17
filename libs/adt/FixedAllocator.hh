@@ -22,12 +22,14 @@ struct FixedAllocator
 };
 
 constexpr void* FixedAlloc(FixedAllocator* s, u64 mCount, u64 mSize);
+constexpr void* FixedZalloc(FixedAllocator* s, u64 mCount, u64 mSize);
 constexpr void* FixedRealloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize);
 constexpr void FixedFree(FixedAllocator* s, void* p);
 constexpr void FixedFreeAll(FixedAllocator* s);
 constexpr void FixedReset(FixedAllocator* s);
 
 inline void* alloc(FixedAllocator* s, u64 mCount, u64 mSize) { return FixedAlloc(s, mCount, mSize); }
+inline void* zalloc(FixedAllocator* s, u64 mCount, u64 mSize) { return FixedZalloc(s, mCount, mSize); }
 inline void* realloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize) { return FixedRealloc(s, p, mCount, mSize); }
 inline void free(FixedAllocator* s, void* p) { return FixedFree(s, p); }
 inline void freeAll(FixedAllocator* s) { return FixedFreeAll(s); }
@@ -43,6 +45,14 @@ FixedAlloc(FixedAllocator* s, u64 mCount, u64 mSize)
     assert(s->size < s->cap && "Out of memory");
 
     return ret;
+}
+
+constexpr void*
+FixedZalloc(FixedAllocator* s, u64 mCount, u64 mSize)
+{
+    auto* p = FixedAlloc(s, mCount, mSize);
+    memset(p, 0, mCount * mSize);
+    return p;
 }
 
 constexpr void*
@@ -91,6 +101,7 @@ FixedReset(FixedAllocator* s)
 
 inline const AllocatorInterface inl_FixedAllocatorVTable {
     .alloc = decltype(AllocatorInterface::alloc)(FixedAlloc),
+    .zalloc = decltype(AllocatorInterface::zalloc)(FixedZalloc),
     .realloc = decltype(AllocatorInterface::realloc)(FixedRealloc),
     .free = decltype(AllocatorInterface::free)(FixedFree),
     .freeAll = decltype(AllocatorInterface::freeAll)(FixedFreeAll),

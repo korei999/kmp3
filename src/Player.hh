@@ -1,5 +1,6 @@
 #pragma once
 
+#include "adt/Arena.hh"
 #include "adt/types.hh"
 #include "adt/String.hh"
 #include "adt/Vec.hh"
@@ -27,7 +28,7 @@ void PlayerSetDefaultIdxs(Player* s);
 void PlayerFocusLast(Player* s);
 u16 PlayerFindSongIdxFromSelected(Player* s);
 void PlayerFocusSelected(Player* s);
-void PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pWBuff, u32 size);
+void PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pWBuff, u32 size);
 void PlayerSelectFocused(Player* s); /* starts playing focused song */
 void PlayerPause(Player* s, bool bPause);
 void PlayerTogglePause(Player* s);

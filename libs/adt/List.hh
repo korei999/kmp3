@@ -7,7 +7,7 @@ namespace adt
 {
 
 #define ADT_LIST_FOREACH_SAFE(L, IT, TMP) for (decltype((L)->pFirst) IT = (L)->pFirst, TMP = {}; IT && ((TMP) = (IT)->pNext, true); (IT) = (TMP))
-#define ADT_LIST_FOREACH(L, IT) for (auto (IT) = (L)->pFirst; (IT); (IT) = (IT)->pNext)
+#define ADT_LIST_FOREACH(L, IT) for (auto IT = (L)->pFirst; (IT); (IT) = (IT)->pNext)
 
 template<typename T>
 struct ListNode

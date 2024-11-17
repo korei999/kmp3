@@ -96,7 +96,7 @@ PlayerSetDefaultIdxs(Player* s)
 }
 
 void
-PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pBuff, u32 size)
+PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pBuff, u32 size)
 {
     if (pBuff && wcsnlen(pBuff, size) == 0)
     {
@@ -108,7 +108,7 @@ PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pBuff, u32 size)
     for (u32 i = 0; i < size && i < ArrCap(&aUpperRight) && pBuff[i]; ++i)
         ArrPush(&aUpperRight, wchar_t(towupper(pBuff[i])));
 
-    Vec<wchar_t> aSongToUpper(pAlloc, s->longestStringSize + 1);
+    Vec<wchar_t> aSongToUpper(&pAlloc->base, s->longestStringSize + 1);
     VecSetSize(&aSongToUpper, s->longestStringSize + 1);
 
     VecSetSize(&s->aSongIdxs, s->pAlloc, 0);
@@ -118,7 +118,7 @@ PlayerSubStringSearch(Player* s, Allocator* pAlloc, wchar_t* pBuff, u32 size)
         const auto& song = s->aShortArgvs[i];
         if (!PlayerAcceptedFormat(song)) continue;
 
-        utils::fill(VecData(&aSongToUpper), L'\0', VecSize(&aSongToUpper));
+        VecZeroOut(&aSongToUpper);
         mbstowcs(VecData(&aSongToUpper), song.pData, song.size);
         for (auto& wc : aSongToUpper)
             wc = towupper(wc);

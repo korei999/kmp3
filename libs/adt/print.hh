@@ -306,47 +306,47 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x)
 inline u32
 formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x)
 {
-    char nbuff[64] {};
-    snprintf(nbuff, utils::size(nbuff), "%.*f", fmtArgs.maxFloatLen, x);
+    char aBuff[64] {};
+    snprintf(aBuff, utils::size(aBuff), "%.*f", fmtArgs.maxFloatLen, x);
 
-    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
+    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }
 
 inline u32
 formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x)
 {
-    char nbuff[64] {};
-    snprintf(nbuff, utils::size(nbuff), "%.*lf", fmtArgs.maxFloatLen, x);
+    char aBuff[64] {};
+    snprintf(aBuff, utils::size(aBuff), "%.*lf", fmtArgs.maxFloatLen, x);
 
-    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
+    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }
 
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const wchar_t x)
 {
-    char nbuff[4] {};
-    snprintf(nbuff, utils::size(nbuff), "%lc", x);
+    char aBuff[4] {};
+    snprintf(aBuff, utils::size(aBuff), "%lc", x);
 
-    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
+    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }
 
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char32_t x)
 {
-    char nbuff[MB_LEN_MAX] {};
+    char aBuff[MB_LEN_MAX] {};
     mbstate_t ps {};
-    c32rtomb(nbuff, x, &ps);
+    c32rtomb(aBuff, x, &ps);
 
-    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
+    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }
 
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char x)
 {
-    char nbuff[4] {};
-    snprintf(nbuff, utils::size(nbuff), "%c", x);
+    char aBuff[4] {};
+    snprintf(aBuff, utils::size(aBuff), "%c", x);
 
-    return copyBackToBuffer(ctx, nbuff, utils::size(nbuff));
+    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }
 
 inline u32
