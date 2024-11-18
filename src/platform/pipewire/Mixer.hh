@@ -6,8 +6,22 @@
 #include <atomic>
 #include <threads.h>
 
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#elif defined __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
+
 #include <pipewire/pipewire.h>
 #include <spa/param/audio/format-utils.h>
+
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#elif defined __GNUC__
+    #pragma GCC diagnostic pop
+#endif
 
 namespace platform
 {
@@ -42,7 +56,7 @@ void MixerDestroy(Mixer* s);
 void MixerPlay(Mixer* s, String sPath);
 void MixerPause(Mixer* s, bool bPause);
 void MixerTogglePause(Mixer* s);
-void MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave);
+void MixerChangeSampleRate(Mixer* s, u64 sampleRate, bool bSave);
 void MixerSeekMS(Mixer* s, long ms);
 void MixerSeekLeftMS(Mixer* s, long ms);
 void MixerSeekRightMS(Mixer* s, long ms);

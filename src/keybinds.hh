@@ -44,7 +44,7 @@ struct key
 };
 
 /* match key OR char (mods are ignored) */
-constexpr key gc_aKeys[] {
+inline const key gc_aKeys[] {
     /*   key                char   function                                            arg */
     {{}, {},                L'q',  (void*)app::quit,                                   NONE                           },
     {{}, {},                L'/',  (void*)platform::termbox2::window::subStringSearch, NONE                           },

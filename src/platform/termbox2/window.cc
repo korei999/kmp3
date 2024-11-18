@@ -7,10 +7,24 @@
 #include "defaults.hh"
 #include "input.hh"
 
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#elif defined __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
+
 #define TB_IMPL
 #define TB_OPT_ATTR_W 32
 // #define TB_OPT_EGC
 #include "termbox2/termbox2.h"
+
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#elif defined __GNUC__
+    #pragma GCC diagnostic pop
+#endif
 
 namespace platform
 {

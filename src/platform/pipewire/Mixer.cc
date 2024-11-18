@@ -314,21 +314,19 @@ MixerTogglePause(Mixer* s)
 }
 
 void
-MixerChangeSampleRate(Mixer* s, int sampleRate, bool bSave)
+MixerChangeSampleRate(Mixer* s, u64 sampleRate, bool bSave)
 {
-    sampleRate = utils::clamp(sampleRate, 0, std::numeric_limits<int>::max());
-
-    u8 setupBuffer[512] {};
+    u8 aSetupBuff[512] {};
     spa_audio_info_raw rawInfo {
         .format = s->eformat,
         .flags {},
-        .rate = sampleRate,
+        .rate = static_cast<u32>(sampleRate),
         .channels = s->nChannels,
         .position {}
     };
 
     spa_pod_builder b {};
-    spa_pod_builder_init(&b, setupBuffer, sizeof(setupBuffer));
+    spa_pod_builder_init(&b, aSetupBuff, sizeof(aSetupBuff));
 
     const spa_pod* aParams[1] {};
     aParams[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
