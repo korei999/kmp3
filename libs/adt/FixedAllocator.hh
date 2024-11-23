@@ -11,7 +11,7 @@ namespace adt
 
 struct FixedAllocator
 {
-    Allocator base {};
+    Allocator super {};
     u8* pMemBuffer = nullptr;
     u64 size = 0;
     u64 cap = 0;
@@ -58,6 +58,8 @@ FixedZalloc(FixedAllocator* s, u64 mCount, u64 mSize)
 constexpr void*
 FixedRealloc(FixedAllocator* s, void* p, u64 mCount, u64 mSize)
 {
+    if (!p) return FixedAlloc(s, mCount, mSize);
+
     void* ret = nullptr;
     u64 aligned = align8(mCount * mSize);
 
@@ -108,6 +110,6 @@ inline const AllocatorInterface inl_FixedAllocatorVTable {
 };
 
 constexpr FixedAllocator::FixedAllocator(void* pMemory, u64 capacity)
-    : base{.pVTable = &inl_FixedAllocatorVTable}, pMemBuffer((u8*)pMemory), cap(capacity) {}
+    : super{.pVTable = &inl_FixedAllocatorVTable}, pMemBuffer((u8*)pMemory), cap(capacity) {}
 
 } /* namespace adt */

@@ -27,6 +27,16 @@ MutexArenaAlloc(MutexArena* s, u64 mCount, u64 mSize)
 }
 
 inline void*
+MutexArenaZalloc(MutexArena* s, u64 mCount, u64 mSize)
+{
+    mtx_lock(&s->mtx);
+    auto* r = ArenaZalloc(&s->arena, mCount, mSize);
+    mtx_unlock(&s->mtx);
+
+    return r;
+}
+
+inline void*
 MutexArenaRealloc(MutexArena* s, void* p, u64 mCount, u64 mSize)
 {
     mtx_lock(&s->mtx);
@@ -51,6 +61,7 @@ MutexArenaFreeAll(MutexArena* s)
 
 inline const AllocatorInterface __AtomicArenaAllocatorVTable {
     .alloc = decltype(AllocatorInterface::alloc)(MutexArenaAlloc),
+    .zalloc = decltype(AllocatorInterface::zalloc)(MutexArenaZalloc),
     .realloc = decltype(AllocatorInterface::realloc)(MutexArenaRealloc),
     .free = decltype(AllocatorInterface::free)(MutexArenaFree),
     .freeAll = decltype(AllocatorInterface::freeAll)(MutexArenaFreeAll),
@@ -58,13 +69,14 @@ inline const AllocatorInterface __AtomicArenaAllocatorVTable {
 
 inline
 MutexArena::MutexArena(u32 blockCap)
-    : arena (blockCap)
+    : arena(blockCap)
 {
-    arena.base = {&__AtomicArenaAllocatorVTable};
+    arena.super = {&__AtomicArenaAllocatorVTable};
     mtx_init(&mtx, mtx_plain);
 }
 
 inline void* alloc(MutexArena* s, u64 mCount, u64 mSize) { return MutexArenaAlloc(s, mCount, mSize); }
+inline void* zalloc(MutexArena* s, u64 mCount, u64 mSize) { return MutexArenaZalloc(s, mCount, mSize); }
 inline void* realloc(MutexArena* s, void* p, u64 mCount, u64 mSize) { return MutexArenaRealloc(s, p, mCount, mSize); }
 inline void free(MutexArena* s, void* p) { MutexArenaFree(s, p); }
 inline void freeAll(MutexArena* s) { MutexArenaFreeAll(s); }

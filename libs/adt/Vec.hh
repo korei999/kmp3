@@ -61,22 +61,18 @@ struct VecBase
 
 template<typename T>
 inline void
-VecGrow(VecBase<T>* s, Allocator* p, u32 size)
+VecGrow(VecBase<T>* s, Allocator* p, u32 newCapacity)
 {
-    assert(s->size * sizeof(T) > 0);
-    s->capacity = size;
-    s->pData = (T*)realloc(p, s->pData, size, sizeof(T));
+    assert(newCapacity * sizeof(T) > 0);
+    s->capacity = newCapacity;
+    s->pData = (T*)realloc(p, s->pData, newCapacity, sizeof(T));
 }
 
 template<typename T>
 inline u32
 VecPush(VecBase<T>* s, Allocator* p, const T& data)
 {
-    if (s->capacity == 0) *s = VecBase<T>(p, SIZE_MIN);
-
-    assert(s->capacity > 0 && "[Vec]: uninitialized push");
-
-    if (s->size >= s->capacity) VecGrow(s, p, s->capacity * 2);
+    if (s->size >= s->capacity) VecGrow(s, p, utils::max(s->capacity * 2U, u32(SIZE_MIN)));
 
     s->pData[s->size++] = data;
     return s->size - 1;

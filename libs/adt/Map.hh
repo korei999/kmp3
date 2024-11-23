@@ -240,6 +240,7 @@ MapBase<T>::MapBase(Allocator* pAllocator, u32 prealloc)
       maxLoadFactor(MAP_DEFAULT_LOAD_FACTOR)
 {
     VecSetSize(&aBuckets, pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV);
+    memset(aBuckets.pData, 0, sizeof(aBuckets[0]) * VecSize(&aBuckets));
 }
 
 template<typename T>

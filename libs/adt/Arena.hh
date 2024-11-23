@@ -26,7 +26,7 @@ struct ArenaBlock
 
 struct Arena
 {
-    Allocator base {};
+    Allocator super {};
     u64 defaultCapacity {};
     ArenaBlock* pBlocks {};
 
@@ -130,7 +130,7 @@ ArenaZalloc(Arena* s, u64 mCount, u64 mSize)
 inline void*
 ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize)
 {
-    assert(ptr != nullptr && "[Arena]: passing nullptr to realloc()");
+    if (!ptr) return ArenaAlloc(s, mCount, mSize);
 
     u64 requested = mSize * mCount;
     u64 realSize = align8(requested);
@@ -203,7 +203,7 @@ inline const AllocatorInterface inl_ArenaVTable {
 };
 
 inline Arena::Arena(u64 capacity)
-    : base(&inl_ArenaVTable),
+    : super(&inl_ArenaVTable),
       defaultCapacity(align8(capacity)),
       pBlocks(_ArenaAllocBlock(this->defaultCapacity)) {}
 

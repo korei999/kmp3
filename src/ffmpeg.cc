@@ -68,8 +68,8 @@ DecoderGetMetadataValue(Decoder* s, const String sKey)
 ERROR
 DecoderOpen(Decoder* s, String sPath)
 {
-    String sPathNullTerm = StringAlloc(&inl_OsAllocator.base, sPath); /* with null char */
-    defer( StringDestroy(&inl_OsAllocator.base, &sPathNullTerm) );
+    String sPathNullTerm = StringAlloc(inl_pOsAlloc, sPath); /* with null char */
+    defer( StringDestroy(inl_pOsAlloc, &sPathNullTerm) );
 
     int err = 0;
     defer( if (err < 0) DecoderClose(s) );

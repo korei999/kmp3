@@ -48,14 +48,26 @@ toggle(auto* x)
     *x = !*x;
 }
 
-[[nodiscard]] constexpr auto&
+[[nodiscard]] constexpr const auto&
 max(const auto& l, const auto& r)
 {
     return l > r ? l : r;
 }
 
 [[nodiscard]] constexpr auto&
+max(auto& l, auto& r)
+{
+    return l > r ? l : r;
+}
+
+[[nodiscard]] constexpr const auto&
 min(const auto& l, const auto& r)
+{
+    return l < r ? l : r;
+}
+
+[[nodiscard]] constexpr auto&
+min(auto& l, auto& r)
 {
     return l < r ? l : r;
 }
@@ -79,16 +91,15 @@ even(const auto& a)
     return !odd(a);
 }
 
-/* negative if l < r, positive if l > r, 0 if l == r */
 template<typename T>
-[[nodiscard]] constexpr s64
+[[nodiscard]] constexpr long
 compare(const T& l, const T& r)
 {
     return l - r;
 }
 
 template<typename T>
-[[nodiscard]] constexpr s64
+[[nodiscard]] constexpr long
 compareRev(const T& l, const T& r)
 {
     return r - l;
@@ -219,6 +230,8 @@ searchMin(CON_T<T>* s)
 constexpr void
 reverse(auto* a, const u32 size)
 {
+    assert(size > 0);
+
     for (u32 i = 0; i < size / 2; ++i)
         swap(&a[i], &a[size - 1 - i]);
 }

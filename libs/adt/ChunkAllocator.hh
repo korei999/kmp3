@@ -38,7 +38,7 @@ struct ChunkAllocatorBlock
 /* each alloc is the same size (good for linked data structures) */
 struct ChunkAllocator
 {
-    Allocator base {};
+    Allocator super {};
     u64 blockCap = 0; 
     u64 chunkSize = 0;
     ChunkAllocatorBlock* pBlocks = nullptr;
@@ -166,7 +166,7 @@ inline const AllocatorInterface inl_chunkAllocatorVTable {
 
 inline
 ChunkAllocator::ChunkAllocator(u64 chunkSize, u64 blockSize)
-    : base {&inl_chunkAllocatorVTable},
+    : super {&inl_chunkAllocatorVTable},
       blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
       chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
       pBlocks {_ChunkAllocatorNewBlock(this)} {}

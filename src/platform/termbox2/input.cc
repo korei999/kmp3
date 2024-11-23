@@ -4,6 +4,8 @@
 #include "window.hh"
 #include "keybinds.hh"
 
+#include <cmath>
+
 namespace platform
 {
 namespace termbox2

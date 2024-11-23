@@ -27,7 +27,7 @@ main(int argc, char** argv)
     Arena arena(SIZE_8K);
     defer( ArenaFreeAll(&arena) );
 
-    Vec<String> aInput(&arena.base, argc);
+    Vec<String> aInput(&arena.super, argc);
     if (argc < 2) /* use stdin instead */
     {
         int flags = fcntl(0, F_GETFL, 0);
@@ -39,7 +39,7 @@ main(int argc, char** argv)
 
         while ((nread = getline(&line, &len, stdin)) != -1)
         {
-            String s = StringAlloc(&arena.base, line, nread);
+            String s = StringAlloc(&arena.super, line, nread);
             StringRemoveNLEnd(&s);
             VecPush(&aInput, s);
         }
@@ -58,9 +58,9 @@ main(int argc, char** argv)
     app::g_argv = argv;
 
     for (int i = 0; i < argc; ++i)
-        VecPush(&app::g_aArgs, &arena.base, {app::g_argv[i]});
+        VecPush(&app::g_aArgs, &arena.super, {app::g_argv[i]});
 
-    Player player(&arena.base, argc, argv);
+    Player player(&arena.super, argc, argv);
     app::g_pPlayer = &player;
 
     PlayerSetDefaultIdxs(&player);
@@ -85,7 +85,7 @@ main(int argc, char** argv)
     player.statusToInfoWidthRatio = 0.4;
     player.eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
 
-    platform::pipewire::Mixer mixer(&arena.base);
+    platform::pipewire::Mixer mixer(&arena.super);
     platform::pipewire::MixerInit(&mixer);
     defer( platform::pipewire::MixerDestroy(&mixer) );
     mixer.base.volume = defaults::VOLUME;

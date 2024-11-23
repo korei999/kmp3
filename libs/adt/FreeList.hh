@@ -38,7 +38,7 @@ struct FreeList
 {
     using Node = RBNode<FreeListData>;
 
-    Allocator base {};
+    Allocator super {};
     u64 blockSize {};
     RBTreeBase<FreeListData> tree {};
     FreeListBlock* pBlocks {};
@@ -61,7 +61,7 @@ _FreeListPrintTree(FreeList* s, Allocator* pAlloc)
 }
 
 template<>
-constexpr s64
+constexpr long
 utils::compare(const FreeListData& l, const FreeListData& r)
 {
     return l.getSize() - r.getSize();
@@ -311,6 +311,8 @@ FreeListFree(FreeList* s, void* ptr)
 inline void*
 FreeListRealloc(FreeList* s, void* ptr, u64 nMembers, u64 mSize)
 {
+    if (!ptr) return FreeListAlloc(s, nMembers, mSize);
+
     auto* pNode = FreeListTreeNodeFromPtr(ptr);
     long nodeSize = (long)pNode->data.getSize() - (long)sizeof(FreeList::Node);
     assert(nodeSize > 0);
@@ -335,7 +337,7 @@ inline const AllocatorInterface inl_FreeListAllocatorVTable {
 };
 
 inline FreeList::FreeList(u64 _blockSize)
-    : base(&inl_FreeListAllocatorVTable),
+    : super(&inl_FreeListAllocatorVTable),
       blockSize(align8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
       pBlocks(FreeListAllocBlock(this, this->blockSize)) {}
 

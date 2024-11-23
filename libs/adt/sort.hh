@@ -120,27 +120,6 @@ heapMax(auto* a, const u32 size)
     }
 }
 
-template<typename T>
-[[nodiscard]]
-constexpr long
-partition(T a[], long l, long h)
-{
-    long p = h, firstHigh = l;
-
-    for (long i = l; i < h; ++i)
-    {
-        if (a[i] < a[p])
-        {
-            utils::swap(&a[i], &a[firstHigh]);
-            firstHigh++;
-        }
-    }
-
-    utils::swap(&a[p], &a[firstHigh]);
-
-    return firstHigh;
-}
-
 constexpr auto
 median3(const auto& x, const auto& y, const auto& z)
 {
@@ -150,45 +129,54 @@ median3(const auto& x, const auto& y, const auto& z)
 }
 
 template<typename T, auto FN_CMP = utils::compare<T>>
-constexpr void
-quick(T* a, long l, long h)
+constexpr long
+partition(T a[], long l, long r, const T pivot)
 {
-    if (l < h)
+    while (l <= r)
     {
-        if ((h - l + 1) < 64)
+        while (FN_CMP(a[l], pivot) < 0) ++l;
+        while (FN_CMP(a[r], pivot) > 0) --r;
+
+        if (l <= r) utils::swap(&a[l++], &a[r--]);
+    }
+
+    return r;
+}
+
+template<typename T, auto FN_CMP = utils::compare<T>>
+constexpr void
+quick(T a[], long l, long r)
+{
+    if (l < r)
+    {
+        if ((r - l + 1) < 64)
         {
-            insertion<T, FN_CMP>(a, l, h);
+            insertion<T, FN_CMP>(a, l, r);
             return;
         }
 
-        long pivotIdx = median3(l, (l + h) / 2, h);
-        T pivot = a[pivotIdx];
-        long i = l, j = h;
+        T pivot = a[ median3(l, (l + r) / 2, r) ];
+        long i = l, j = r;
 
         while (i <= j)
         {
             while (FN_CMP(a[i], pivot) < 0) ++i;
             while (FN_CMP(a[j], pivot) > 0) --j;
 
-            if (i <= j)
-            {
-                utils::swap(&a[i], &a[j]);
-                ++i, --j;
-            }
+            if (i <= j) utils::swap(&a[i++], &a[j--]);
         }
 
-        if (l < j) quick(a, l, j);
-        if (i < h) quick(a, i, h);
+        if (l < j) quick<T, FN_CMP>(a, l, j);
+        if (i < r) quick<T, FN_CMP>(a, i, r);
     }
 }
 
 template<template<typename> typename CON_T, typename T, auto FN_CMP = utils::compare<T>>
 constexpr void
-quick(CON_T<T>* pArr)
+quick(CON_T<T>* pArrayContainer)
 {
-    if (pArr->size <= 1) return;
-
-    quick<T, FN_CMP>(pArr->pData, 0, pArr->size - 1);
+    if (pArrayContainer->size <= 1) return;
+    quick<T, FN_CMP>(pArrayContainer->pData, 0, pArrayContainer->size - 1);
 }
 
 } /* namespace sort */

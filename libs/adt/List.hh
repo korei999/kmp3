@@ -199,7 +199,7 @@ template<typename T, auto FN_CMP = utils::compare<T>>
 constexpr void
 ListSort(ListBase<T>* s)
 {
-    ListNode<T>* p, * q, * e, * tail, * oldhead;
+    ListNode<T>* p, * q, * e, * tail;
     long inSize, nMerges, pSize, qSize, i;
     ListNode<T>* list = s->pFirst;
 
@@ -210,7 +210,6 @@ ListSort(ListBase<T>* s)
     while (true)
     {
         p = list;
-        oldhead = list;
         list = nullptr;
         tail = nullptr;
         nMerges = 0; /* count number of merges we do in this pass */

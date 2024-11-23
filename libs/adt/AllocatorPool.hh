@@ -23,7 +23,7 @@ template<typename A>
 inline Allocator*
 AllocatorPoolGet(AllocatorPool<A>* s, u32 size)
 {
-    auto* pA = ListPushBack(&s->lAllocators, &s->al.base, A(size));
+    auto* pA = ListPushBack(&s->lAllocators, &s->al.super, A(size));
     return (Allocator*)(&pA->data);
 }
 

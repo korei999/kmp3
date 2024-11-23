@@ -6,7 +6,6 @@
 #include <ctype.h> /* win32 */
 
 #include <climits>
-#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cuchar>
@@ -307,7 +306,9 @@ inline u32
 formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x)
 {
     char aBuff[64] {};
-    snprintf(aBuff, utils::size(aBuff), "%.*f", fmtArgs.maxFloatLen, x);
+    if (fmtArgs.maxFloatLen == NPOS8)
+        snprintf(aBuff, utils::size(aBuff), "%g", x);
+    else snprintf(aBuff, utils::size(aBuff), "%.*f", fmtArgs.maxFloatLen, x);
 
     return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }
@@ -315,8 +316,21 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x)
 inline u32
 formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x)
 {
-    char aBuff[64] {};
-    snprintf(aBuff, utils::size(aBuff), "%.*lf", fmtArgs.maxFloatLen, x);
+#if defined __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
+
+    char aBuff[128] {};
+    if (fmtArgs.maxFloatLen == NPOS8)
+        snprintf(aBuff, utils::size(aBuff), "%g", x);
+    else snprintf(aBuff, utils::size(aBuff), "%.*lf", fmtArgs.maxFloatLen, x);
+
+#if defined __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#pragma GCC diagnostic pop
+#endif
 
     return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }
@@ -325,7 +339,11 @@ inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const wchar_t x)
 {
     char aBuff[4] {};
+#ifdef _WIN32
+    snprintf(aBuff, utils::size(aBuff), "%lc", (wint_t)x);
+#else
     snprintf(aBuff, utils::size(aBuff), "%lc", x);
+#endif
 
     return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }
