@@ -36,7 +36,7 @@ struct Allocator;
 struct AllocatorInterface
 {
     void* (*alloc)(Allocator* s, u64 mCount, u64 mSize);
-    void* (*zalloc)(Allocator* s, u64 mCOunt, u64 mSize);
+    void* (*zalloc)(Allocator* s, u64 mCount, u64 mSize);
     void* (*realloc)(Allocator* s, void* p, u64 mCount, u64 mSize); /* realloc should alloc() if p == nullptr */
     void (*free)(Allocator* s, void* p); /* not all allocators can free() */
     void (*freeAll)(Allocator* s); /* not all allocators can freeAll() */

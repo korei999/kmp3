@@ -2,9 +2,6 @@
 
 #include "utils.hh"
 
-#include <cmath>
-#include <cstdio>
-
 namespace adt
 {
 
@@ -29,7 +26,7 @@ HeapRightI(const u32 i)
 constexpr void
 maxHeapify(auto* a, const u32 size, u32 i)
 {
-    long largest, left, right;
+    s64 largest, left, right;
 
 again:
     left = HeapLeftI(i);
@@ -42,7 +39,7 @@ again:
     if (right < size && a[right] > a[largest])
         largest = right;
 
-    if (largest != i)
+    if (largest != (s64)i)
     {
         utils::swap(&a[i], &a[largest]);
         i = largest;

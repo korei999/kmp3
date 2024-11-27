@@ -21,7 +21,7 @@ struct AllocatorPool
 
 template<typename A>
 inline Allocator*
-AllocatorPoolGet(AllocatorPool<A>* s, u32 size)
+AllocatorPoolRent(AllocatorPool<A>* s, u32 size)
 {
     auto* pA = ListPushBack(&s->lAllocators, &s->al.super, A(size));
     return (Allocator*)(&pA->data);
@@ -29,7 +29,7 @@ AllocatorPoolGet(AllocatorPool<A>* s, u32 size)
 
 template<typename A>
 inline void
-AllocatorPoolGiveBack(AllocatorPool<A>* s, Allocator* p)
+AllocatorPoolReturn(AllocatorPool<A>* s, Allocator* p)
 {
     auto* pNode = (ListNode<A>*)((u8*)p - offsetof(ListNode<A>, data));
     freeAll(pNode->data);

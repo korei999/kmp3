@@ -123,7 +123,7 @@ PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pBuff, u32 size)
         for (auto& wc : aSongToUpper)
             wc = towupper(wc);
 
-        if (wcsstr(VecData(&aSongToUpper), aUpperRight.pData) != nullptr)
+        if (wcsstr(VecData(&aSongToUpper), aUpperRight.aData) != nullptr)
             VecPush(&s->aSongIdxs, s->pAlloc, u16(i));
     }
 }

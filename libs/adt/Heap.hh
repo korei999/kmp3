@@ -87,7 +87,7 @@ again:
     if (right < a.size && a[right] < a[smallest])
         smallest = right;
 
-    if (smallest != i)
+    if (smallest != (long)i)
     {
         utils::swap(&a[i], &a[smallest]);
         i = smallest;
@@ -113,7 +113,7 @@ again:
     if (right < a.size && a[right] > a[largest])
         largest = right;
 
-    if (largest != i)
+    if (largest != (long)i)
     {
         utils::swap(&a[i], &a[largest]);
         i = largest;

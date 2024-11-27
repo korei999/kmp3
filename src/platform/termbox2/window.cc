@@ -7,6 +7,8 @@
 #include "defaults.hh"
 #include "input.hh"
 
+#include <cmath>
+
 #ifdef __clang__
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
@@ -188,13 +190,13 @@ parseSeekThenRun()
     {
         long maxMS = audio::MixerGetMaxMS(app::g_pMixer);
 
-        audio::MixerSeekMS(app::g_pMixer, maxMS * (f64(atoll(aMinutesBuff.pData)) / 100.0));
+        audio::MixerSeekMS(app::g_pMixer, maxMS * (f64(atoll(aMinutesBuff.aData)) / 100.0));
     }
     else
     {
         long sec;
-        if (aSecondsBuff.size == 0) sec = atoll(aMinutesBuff.pData);
-        else sec = atoll(aSecondsBuff.pData) + atoll(aMinutesBuff.pData)*60;
+        if (aSecondsBuff.size == 0) sec = atoll(aMinutesBuff.aData);
+        else sec = atoll(aSecondsBuff.aData) + atoll(aMinutesBuff.aData)*60;
 
         audio::MixerSeekMS(app::g_pMixer, sec * 1000);
     }

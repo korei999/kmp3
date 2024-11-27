@@ -15,7 +15,7 @@ struct FreeListBlock
     u8 pMem[];
 };
 
-constexpr u64 IS_FREE_BITMASK = 1UL << 63;
+constexpr u64 IS_FREE_BITMASK = 1ULL << 63;
 
 struct FreeListData
 {
@@ -218,7 +218,7 @@ FreeListAlloc(FreeList* s, u64 nMembers, u64 mSize)
     auto* pBlock = s->pBlocks;
     while (pBlock)
     {
-        bool bFits = (((long)pBlock->size - (long)sizeof(FreeListBlock)) - (long)pBlock->nBytesOccupied) >= (long)realSize;
+        bool bFits = (((pdiff)pBlock->size - (pdiff)sizeof(FreeListBlock)) - (pdiff)pBlock->nBytesOccupied) >= (pdiff)realSize;
 
         if (!bFits)
             pBlock = pBlock->pNext;
@@ -238,13 +238,13 @@ again:
     assert(pFree->data.isFree());
 
     pBlock->nBytesOccupied += realSize;
-    long splitSize = long(pFree->data.getSize()) - long(realSize);
+    s64 splitSize = s64(pFree->data.getSize()) - s64(realSize);
 
     assert(splitSize >= 0);
 
     RBRemove(&s->tree, pFree);
 
-    if (splitSize <= (long)sizeof(FreeList::Node))
+    if (splitSize <= (s64)sizeof(FreeList::Node))
     {
         pFree->data.setFree(false);
         return pFree->data.pMem;
@@ -314,10 +314,10 @@ FreeListRealloc(FreeList* s, void* ptr, u64 nMembers, u64 mSize)
     if (!ptr) return FreeListAlloc(s, nMembers, mSize);
 
     auto* pNode = FreeListTreeNodeFromPtr(ptr);
-    long nodeSize = (long)pNode->data.getSize() - (long)sizeof(FreeList::Node);
+    s64 nodeSize = (s64)pNode->data.getSize() - (s64)sizeof(FreeList::Node);
     assert(nodeSize > 0);
 
-    if ((long)nMembers*(long)mSize <= nodeSize) return ptr;
+    if ((s64)nMembers*(s64)mSize <= nodeSize) return ptr;
 
     assert(!pNode->data.isFree());
 

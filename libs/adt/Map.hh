@@ -29,7 +29,8 @@ struct MapResult
     u64 hash;
     bool bInserted;
 
-    constexpr explicit operator bool() const
+    constexpr explicit
+    operator bool() const
     {
         return this->pData != nullptr;
     }
@@ -41,9 +42,9 @@ struct MapResult
 template<typename T>
 struct MapBase
 {
-    VecBase<Bucket<T>> aBuckets;
-    f32 maxLoadFactor;
-    u32 bucketCount = 0;
+    VecBase<Bucket<T>> aBuckets {};
+    f32 maxLoadFactor {};
+    u32 bucketCount {};
 
     MapBase() = default;
     MapBase(Allocator* pAllocator, u32 prealloc = SIZE_MIN);
@@ -53,7 +54,7 @@ struct MapBase
         MapBase* s {};
         u32 i = 0;
 
-        It(MapBase* _s, u32 _i) : s {_s}, i {_i} {}
+        It(MapBase* _s, u32 _i) : s(_s), i(_i) {}
 
         T& operator*() { return s->aBuckets[i].data; }
         T* operator->() { return &s->aBuckets[i].data; }

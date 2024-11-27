@@ -76,10 +76,7 @@ ChunkAlloc(ChunkAllocator* s, [[maybe_unused]] u64 ignored0, [[maybe_unused]] u6
     ChunkAllocatorBlock* pPrev = nullptr;
     while (pBlock)
     {
-        if (s->blockCap - pBlock->used >= s->chunkSize)
-        {
-            break;
-        }
+        if (s->blockCap - pBlock->used >= s->chunkSize) break;
         else
         {
             pPrev = pBlock;

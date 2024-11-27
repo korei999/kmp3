@@ -30,14 +30,14 @@ constexpr f32 toRad(int x) { return toRad(f32(x)); }
 constexpr f32 toDeg(int x) { return toDeg(f32(x)); }
 
 /* epsilon float comparison */
-constexpr bool
+inline bool
 eq(f64 l, f64 r)
 {
     return std::abs(l - r) <= EPS64*(std::abs(l) + std::abs(r) + 1.0);
 }
 
 /* epsilon float comparison */
-constexpr bool
+inline bool
 eq(f32 l, f32 r)
 {
     return std::abs(l - r) <= EPS32*(std::abs(l) + std::abs(r) + 1.0f);

@@ -111,8 +111,8 @@ timeNowUS()
 #ifdef __linux__
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    time_t micros = ts.tv_sec * 1000000000;
-    micros += ts.tv_nsec;
+    time_t micros = ts.tv_sec * 1'000'000;
+    micros += ts.tv_nsec / 1'000;
 
     return micros;
 
@@ -121,24 +121,14 @@ timeNowUS()
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&count);
 
-    return (count.QuadPart * 1000000000) / freq.QuadPart;
+    return (count.QuadPart * 1'000'000) / freq.QuadPart;
 #endif
 }
 
 [[nodiscard]] inline f64
 timeNowMS()
 {
-#ifdef __linux__
-    return timeNowUS() / 1000000.0;
-
-#elif _WIN32
-    LARGE_INTEGER count, freq;
-    QueryPerformanceFrequency(&freq);
-    QueryPerformanceCounter(&count);
-
-    auto ret = (count.QuadPart * 1000000) / freq.QuadPart;
-    return f64(ret) / 1000.0;
-#endif
+    return timeNowUS() / 1000.0;
 }
 
 [[nodiscard]] inline f64
@@ -154,6 +144,16 @@ sleepMS(f64 ms)
     usleep(ms * 1000.0);
 #elif _WIN32
     Sleep(ms);
+#endif
+}
+
+inline void
+sleepS(f64 s)
+{
+#ifdef __linux__
+    usleep(s * 1'000'000.0);
+#elif _WIN32
+    Sleep(s * 1000.0);
 #endif
 }
 
