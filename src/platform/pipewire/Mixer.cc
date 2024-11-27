@@ -269,13 +269,13 @@ onProcess(void* pData)
         {
             /* modify each sample here */
             *pDest++ = s_aPwBuff[nWrites++] * vol;
+        }
 
-            if (nWrites >= nDecodedSamples)
-            {
-                /* ask to fill the buffer when it's empty */
-                writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples, &s->base.currentTimeStamp);
-                nWrites = 0;
-            }
+        if (nWrites >= nDecodedSamples)
+        {
+            /* ask to fill the buffer when it's empty */
+            writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples, &s->base.currentTimeStamp);
+            nWrites = 0;
         }
     }
 
