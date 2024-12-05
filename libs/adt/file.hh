@@ -2,7 +2,7 @@
 
 #include "String.hh"
 #include "logs.hh"
-#include "Option.hh"
+#include "Opt.hh"
 #include "defer.hh"
 
 namespace adt
@@ -10,9 +10,16 @@ namespace adt
 namespace file
 {
 
+struct Buff
+{
+    u8* pData {};
+    u64 size {};
+};
+
+template<typename BUFF_T = String>
 [[nodiscard]]
-inline Option<String>
-load(Allocator* pAlloc, String sPath)
+inline Opt<BUFF_T>
+load(IAllocator* pAlloc, String sPath)
 {
     FILE* pf = fopen(sPath.pData, "rb");
     if (!pf)
@@ -22,10 +29,10 @@ load(Allocator* pAlloc, String sPath)
     }
     defer(fclose(pf));
 
-    String ret {};
+    BUFF_T ret {};
 
     fseek(pf, 0, SEEK_END);
-    long size = ftell(pf) + 1;
+    s64 size = ftell(pf) + 1;
     rewind(pf);
 
     ret.pData = (char*)alloc(pAlloc, size, sizeof(char));
@@ -45,7 +52,7 @@ getPathEnding(String sPath)
 
 [[nodiscard]]
 inline String
-replacePathEnding(Allocator* pAlloc, String sPath, String sEnding)
+replacePathEnding(IAllocator* pAlloc, String sPath, String sEnding)
 {
     u32 lastSlash = StringLastOf(sPath, '/');
     String sNoEnding = {&sPath[0], lastSlash + 1};

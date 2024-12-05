@@ -377,6 +377,8 @@ template<typename PTR_T> requires std::is_pointer_v<PTR_T>
 inline u32
 formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p)
 {
+    if (p == nullptr) return formatToContext(ctx, fmtArgs, nullptr);
+
     fmtArgs.bHash = true;
     fmtArgs.eBase = BASE::SIXTEEN;
     return formatToContext(ctx, fmtArgs, u64(p));

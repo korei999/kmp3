@@ -14,7 +14,7 @@ extern char** g_argv;
 extern VecBase<String> g_aArgs;
 
 extern Player* g_pPlayer;
-extern audio::Mixer* g_pMixer;
+extern audio::IMixer* g_pMixer;
 
 inline void quit() { g_bRunning = false; }
 inline void focusNext() { PlayerFocusNext(g_pPlayer); }

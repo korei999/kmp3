@@ -1,3 +1,7 @@
+/* simple hashmap with linear probing.
+ * For customr key types, add template<> hash::func(const key& x), (or template<> hash::funcHVal(const key& x, u64 hval) for reusable hash)
+ * and bool operator==(const key& other) */
+
 #pragma once
 
 #include "Vec.hh"
@@ -9,45 +13,98 @@ namespace adt
 constexpr f32 MAP_DEFAULT_LOAD_FACTOR = 0.5f;
 constexpr f32 MAP_DEFAULT_LOAD_FACTOR_INV = 1.0f / MAP_DEFAULT_LOAD_FACTOR;
 
-template<typename T> struct MapBase;
+enum class MAP_RESULT_STATUS : u8 { FOUND, NOT_FOUND, INSERTED };
 
-template<typename T> inline void _MapRehash(MapBase<T>* s, Allocator* p, u32 size);
-
-template<typename T>
-struct Bucket
+template<typename K, typename V>
+struct KeyVal
 {
-    T data;
+    K key {};
+    V val {};
+};
+
+template<typename K, typename V>
+struct MapBucket
+{
+    K key {};
+    V val {};
     bool bOccupied = false;
     bool bDeleted = false;
+    /* keep this order for iterators */
 };
 
 /* custom return type for insert/search operations */
-template<typename T>
+template<typename K, typename V>
 struct MapResult
 {
-    T* pData;
-    u64 hash;
-    bool bInserted;
+    MapBucket<K, V>* pData {};
+    u64 hash {};
+    MAP_RESULT_STATUS eStatus {};
 
-    constexpr explicit
-    operator bool() const
+    constexpr explicit operator bool() const
     {
         return this->pData != nullptr;
     }
 };
 
-/* Value is the key in this map.
- * For key/value pairs, use struct { KEY k; VALUE v; }, add `u64 adt::hash::func(const struct&)`
- * and* bool operator==(const struct& l, const struct& r). */
-template<typename T>
+template<typename K, typename V> struct MapBase;
+
+template<typename K, typename V>
+inline u32 MapIdx(MapBase<K, V>* s, KeyVal<K, V>* p);
+
+template<typename K, typename V>
+inline u32 MapIdx(MapBase<K, V>* s, MapResult<K, V> res);
+
+template<typename K, typename V>
+inline u32 MapFirstI(MapBase<K, V>* s);
+
+template<typename K, typename V>
+inline u32 MapNextI(MapBase<K, V>* s, u32 i);
+
+template<typename K, typename V>
+inline f32 MapLoadFactor(MapBase<K, V>* s);
+
+template<typename K, typename V>
+inline MapResult<K, V> MapInsert(MapBase<K ,V>* s, IAllocator* p, const K& key, const V& val);
+
+template<typename K, typename V>
+[[nodiscard]] inline MapResult<K, V> MapSearch(MapBase<K, V>* s, const K& key);
+
+template<typename K, typename V>
+inline void MapRemove(MapBase<K, V>*s, u32 i);
+
+template<typename K, typename V>
+inline void MapRemove(MapBase<K, V>*s, const K& key);
+
+template<typename K, typename V>
+inline MapResult<K, V> MapTryInsert(MapBase<K, V>* s, IAllocator* p, const K& key, const V& val);
+
+template<typename K, typename V>
+inline void MapDestroy(MapBase<K, V>* s, IAllocator* p);
+
+template<typename K, typename V>
+inline u32 MapCap(MapBase<K, V>* s);
+
+template<typename K, typename V>
+inline u32 MapSize(MapBase<K, V>* s);
+
+template<typename K, typename V>
+inline void _MapRehash(MapBase<K, V>* s, IAllocator* p, u32 size);
+
+template<typename K, typename V>
+inline MapResult<K, V> _MapInsertHashed(MapBase<K ,V>* s, IAllocator* p, const K& key, const V& val, u64 hash);
+
+template<typename K, typename V>
+[[nodiscard]] inline MapResult<K, V> _MapSearchHashed(MapBase<K, V>* s, const K& key, u64 keyHash);
+
+template<typename K, typename V>
 struct MapBase
 {
-    VecBase<Bucket<T>> aBuckets {};
+    VecBase<MapBucket<K, V>> aBuckets {};
     f32 maxLoadFactor {};
-    u32 bucketCount {};
+    u32 nOccupied {};
 
     MapBase() = default;
-    MapBase(Allocator* pAllocator, u32 prealloc = SIZE_MIN);
+    MapBase(IAllocator* pAllocator, u32 prealloc = SIZE_MIN);
 
     struct It
     {
@@ -56,18 +113,18 @@ struct MapBase
 
         It(MapBase* _s, u32 _i) : s(_s), i(_i) {}
 
-        T& operator*() { return s->aBuckets[i].data; }
-        T* operator->() { return &s->aBuckets[i].data; }
+        KeyVal<K, V>& operator*() { return *(KeyVal<K, V>*)&s->aBuckets[i]; }
+        KeyVal<K, V>* operator->() { return (KeyVal<K, V>*)&s->aBuckets[i]; }
 
         It operator++()
         {
             i = MapNextI(s, i);
             return {s, i};
         }
-        It operator++(int) { T* tmp = s++; return tmp; }
+        It operator++(int) { auto* tmp = s++; return tmp; }
 
-        friend constexpr bool operator==(const It& l, const It& r) { return l.i == r.i; }
-        friend constexpr bool operator!=(const It& l, const It& r) { return l.i != r.i; }
+        friend bool operator==(const It& l, const It& r) { return l.i == r.i; }
+        friend bool operator!=(const It& l, const It& r) { return l.i != r.i; }
     };
 
     It begin() { return {this, MapFirstI(this)}; }
@@ -77,166 +134,199 @@ struct MapBase
     const It end() const { return {this, NPOS}; }
 };
 
-template<typename T>
+template<typename K, typename V>
 inline u32
-MapIdx(MapBase<T>* s, T* p)
+MapIdx(MapBase<K, V>* s, KeyVal<K, V>* p)
 {
-    return p - VecData(&s->aBuckets);
+    auto r = (MapBucket<K, V>*)p - &s->aBuckets[0];
+    assert(r < VecCap(&s->aBuckets));
+    return r;
 }
 
-template<typename T>
+template<typename K, typename V>
 inline u32
-MapIdx(MapBase<T>* s, MapResult<T>* pRes)
+MapIdx(MapBase<K, V>* s, MapResult<K, V> res)
 {
-    return pRes->pData - VecData(&s->aBuckets);
+    auto idx = res.pData - &s->aBuckets[0];
+    assert(idx < VecCap(&s->aBuckets));
+    return idx;
 }
 
-template<typename T>
+template<typename K, typename V>
 inline u32
-MapFirstI(MapBase<T>* s)
+MapFirstI(MapBase<K, V>* s)
 {
     u32 i = 0;
     while (i < VecCap(&s->aBuckets) && !s->aBuckets[i].bOccupied)
-        i++;
+        ++i;
 
     if (i >= VecCap(&s->aBuckets)) i = NPOS;
 
     return i;
 }
 
-template<typename T>
+template<typename K, typename V>
 inline u32
-MapNextI(MapBase<T>* s, u32 i)
+MapNextI(MapBase<K, V>* s, u32 i)
 {
-    ++i;
-    while (i < VecCap(&s->aBuckets) && !s->aBuckets[i].bOccupied)
-        i++;
+    do ++i;
+    while (i < VecCap(&s->aBuckets) && !s->aBuckets[i].bOccupied);
 
     if (i >= VecCap(&s->aBuckets)) i = NPOS;
 
     return i;
 }
 
-template<typename T>
+template<typename K, typename V>
 inline f32
-MapLoadFactor(MapBase<T>* s)
+MapLoadFactor(MapBase<K, V>* s)
 {
-    return f32(s->bucketCount) / f32(VecCap(&s->aBuckets));
+    return f32(s->nOccupied) / f32(VecCap(&s->aBuckets));
 }
 
-template<typename T>
-inline MapResult<T>
-MapInsert(MapBase<T>* s, Allocator* p, const T& value)
+template<typename K, typename V>
+inline MapResult<K, V>
+MapInsert(MapBase<K ,V>* s, IAllocator* p, const K& key, const V& val)
 {
+    u64 keyHash = hash::func(key);
+
     if (VecCap(&s->aBuckets) == 0) *s = {p};
 
     if (MapLoadFactor(s) >= s->maxLoadFactor)
         _MapRehash(s, p, VecCap(&s->aBuckets) * 2);
 
-    u64 hash = hash::func(value);
-    u32 idx = u32(hash % VecCap(&s->aBuckets));
-
-    while (s->aBuckets[idx].bOccupied)
-    {
-        idx++;
-        if (idx >= VecCap(&s->aBuckets))
-            idx = 0;
-    }
-
-    s->aBuckets[idx].data = value;
-    s->aBuckets[idx].bOccupied = true;
-    s->aBuckets[idx].bDeleted = false;
-    s->bucketCount++;
-
-    return {
-        .pData = &s->aBuckets[idx].data,
-        .hash = hash,
-        .bInserted = true
-    };
+    return _MapInsertHashed(s, p, key, val, keyHash);
 }
 
-template<typename T>
-inline MapResult<T>
-MapSearch(MapBase<T>* s, const T& value)
+template<typename K, typename V>
+[[nodiscard]] inline MapResult<K, V>
+MapSearch(MapBase<K, V>* s, const K& key)
 {
-    assert(s && "MapBase: map is nullptr");
-
-    if (s->bucketCount == 0) return {};
-
-    u64 hash = hash::func(value);
-    u32 idx = u32(hash % VecCap(&s->aBuckets));
-
-    MapResult<T> ret;
-    ret.hash = hash;
-    ret.pData = nullptr;
-    ret.bInserted = false;
-
-    while (s->aBuckets[idx].bOccupied || s->aBuckets[idx].bDeleted)
-    {
-        if (s->aBuckets[idx].data == value)
-        {
-            ret.pData = &s->aBuckets[idx].data;
-            break;
-        }
-
-        idx++;
-        if (idx >= VecCap(&s->aBuckets)) idx = 0;
-    }
-
-    /*ret.idx = idx;*/
-    return ret;
+    u64 keyHash = hash::func(key);
+    return _MapSearchHashed(s, key, keyHash);
 }
 
-template<typename T>
+template<typename K, typename V>
 inline void
-MapRemove(MapBase<T>*s, u32 i)
+MapRemove(MapBase<K, V>*s, u32 i)
 {
     s->aBuckets[i].bDeleted = true;
     s->aBuckets[i].bOccupied = false;
-
-    s->bucketCount--;
+    --s->nOccupied;
 }
 
-template<typename T>
+template<typename K, typename V>
 inline void
-MapRemove(MapBase<T>*s, const T& x)
+MapRemove(MapBase<K, V>*s, const K& key)
 {
-    auto f = MapSearch(s, x);
-    MapRemove(s, f.idx);
+    auto f = MapSearch<K, V>(s, key);
+    assert(f && "[Map]: not found");
+    MapRemove<K, V>(s, MapIdx(s, f));
 }
 
-template<typename T>
+template<typename K, typename V>
+inline MapResult<K, V>
+MapTryInsert(MapBase<K, V>* s, IAllocator* p, const K& key, const V& val)
+{
+    auto f = MapSearch<K, V>(s, key);
+    if (f)
+    {
+        f.eStatus = MAP_RESULT_STATUS::FOUND;
+        return f;
+    }
+    else return MapInsert<K, V>(s, p, key, val);
+}
+
+template<typename K, typename V>
 inline void
-_MapRehash(MapBase<T>* s, Allocator* p, u32 size)
-{
-    auto mNew = MapBase<T>(p, size);
-
-    for (u32 i = 0; i < VecCap(&s->aBuckets); i++)
-        if (s->aBuckets[i].bOccupied)
-            MapInsert(&mNew, p, s->aBuckets[i].data);
-
-    MapDestroy(s, p);
-    *s = mNew;
-}
-
-template<typename T>
-inline MapResult<T>
-MapTryInsert(MapBase<T>* s, Allocator* p, const T& value)
-{
-    auto f = MapSearch(s, value);
-    if (f) return f;
-    else return MapInsert(s, p, value);
-}
-
-template<typename T>
-inline void
-MapDestroy(MapBase<T>* s, Allocator* p)
+MapDestroy(MapBase<K, V>* s, IAllocator* p)
 {
     VecDestroy(&s->aBuckets, p);
 }
 
-template<typename T>
-MapBase<T>::MapBase(Allocator* pAllocator, u32 prealloc)
+template<typename K, typename V>
+inline u32 MapCap(MapBase<K, V>* s)
+{
+    return VecCap(&s->aBuckets);
+}
+
+template<typename K, typename V>
+inline u32 MapSize(MapBase<K, V>* s)
+{
+    return s->nOccupied;
+}
+
+template<typename K, typename V>
+inline void
+_MapRehash(MapBase<K, V>* s, IAllocator* p, u32 size)
+{
+    auto mNew = MapBase<K, V>(p, size);
+
+    for (u32 i = 0; i < VecCap(&s->aBuckets); ++i)
+        if (s->aBuckets[i].bOccupied)
+            MapInsert<K, V>(&mNew, p, s->aBuckets[i].key, s->aBuckets[i].val);
+
+    MapDestroy<K, V>(s, p);
+    *s = mNew;
+}
+
+template<typename K, typename V>
+inline MapResult<K, V>
+_MapInsertHashed(MapBase<K ,V>* s, IAllocator* p, const K& key, const V& val, u64 keyHash)
+{
+    u32 idx = u32(keyHash % VecCap(&s->aBuckets));
+
+    while (s->aBuckets[idx].bOccupied)
+    {
+        ++idx;
+        if (idx >= VecCap(&s->aBuckets)) idx = 0;
+    }
+
+    s->aBuckets[idx].key = key;
+    s->aBuckets[idx].val = val;
+    s->aBuckets[idx].bOccupied = true;
+    s->aBuckets[idx].bDeleted = false;
+    ++s->nOccupied;
+
+    return {
+        .pData = &s->aBuckets[idx],
+        .hash = keyHash,
+        .eStatus = MAP_RESULT_STATUS::INSERTED
+    };
+}
+
+template<typename K, typename V>
+[[nodiscard]] inline MapResult<K, V>
+_MapSearchHashed(MapBase<K, V>* s, const K& key, u64 keyHash)
+{
+    MapResult<K, V> res {.eStatus = MAP_RESULT_STATUS::NOT_FOUND};
+
+    if (s->nOccupied == 0) return res;
+
+    auto& aBuckets = s->aBuckets;
+
+    u32 idx = u32(keyHash % u64(VecCap(&aBuckets)));
+    res.hash = keyHash;
+
+    while (aBuckets[idx].bOccupied || aBuckets[idx].bDeleted)
+    {
+        if (!aBuckets[idx].bDeleted && aBuckets[idx].key == key)
+        {
+            res.pData = &aBuckets[idx];
+            res.eStatus = MAP_RESULT_STATUS::FOUND;
+            break;
+        }
+
+        ++idx;
+        if (idx >= VecCap(&aBuckets)) idx = 0;
+    }
+
+    return res;
+}
+
+
+template<typename K, typename V>
+MapBase<K, V>::MapBase(IAllocator* pAllocator, u32 prealloc)
     : aBuckets(pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV),
       maxLoadFactor(MAP_DEFAULT_LOAD_FACTOR)
 {
@@ -244,38 +334,235 @@ MapBase<T>::MapBase(Allocator* pAllocator, u32 prealloc)
     memset(aBuckets.pData, 0, sizeof(aBuckets[0]) * VecSize(&aBuckets));
 }
 
-template<typename T>
-struct Map
+template<typename K, typename V>
+struct MapBaseRehashed
 {
-    MapBase<T> base {};
-    Allocator* pA {};
+    MapBase<K, V> base {};
 
-    Map() = default;
-    Map(Allocator* _pA, u32 prealloc = SIZE_MIN)
-        : base(_pA, prealloc), pA(_pA) {}
+    MapBaseRehashed() = default;
+    MapBaseRehashed(IAllocator* pAlloc, u32 prealloc = SIZE_MIN)
+        : base(pAlloc, prealloc) {}
 
-    MapBase<T>::It begin() { return base.begin(); }
-    MapBase<T>::It end() { return base.end(); }
-    MapBase<T>::It rbegin() { return base.rbegin(); }
-    MapBase<T>::It rend() { return rend(); }
+    MapBase<K, V>::It begin() { return base.begin(); }
+    MapBase<K, V>::It end() { return base.end(); }
 
-    const MapBase<T>::It begin() const { return base.begin(); }
-    const MapBase<T>::It end() const { return base.end(); }
-    const MapBase<T>::It rbegin() const { return base.rbegin(); }
-    const MapBase<T>::It rend() const { return rend(); }
+    const MapBase<K, V>::It begin() const { return base.begin(); }
+    const MapBase<K, V>::It end() const { return base.end(); }
 };
 
-template<typename T> inline u32 MapIdx(Map<T>* s, T* p) { return MapIdx(&s->base, p); }
-template<typename T> inline u32 MapIdx(Map<T>* s, MapResult<T>* pRes) { return MapIdx(s->base, pRes); }
-template<typename T> inline u32 MapFirstI(Map<T>* s) { return MapFirstI(&s->base); }
-template<typename T> inline u32 MapNextI(Map<T>* s, u32 i) { return MapNextI(&s->base, i); }
-template<typename T> inline f32 MapLoadFactor(Map<T>* s) { return MapLoadFactor(&s->base); }
-template<typename T> inline MapResult<T> MapInsert(Map<T>* s, const T& value) { return MapInsert(&s->base, s->pA, value); }
-template<typename T> inline MapResult<T> MapSearch(Map<T>* s, const T& value) { return MapSearch(&s->base, value); }
-template<typename T> inline void MapRemove(Map<T>*s, u32 i) { MapRemove(&s->base, i); }
-template<typename T> inline void MapRemove(Map<T>*s, const T& x) { MapRemove(&s->base, x); }
-template<typename T> inline void _MapRehash(Map<T>* s, u32 size) { _MapRehash(&s->base, s->pA, size); }
-template<typename T> inline MapResult<T> MapTryInsert(Map<T>* s, const T& value) { return MapTryInsert(&s->base, s->pA, value); }
-template<typename T> inline void MapDestroy(Map<T>* s) { MapDestroy(&s->base, s->pA); }
+template<typename K, typename V>
+inline u32 MapIdx(MapBaseRehashed<K, V>* s, KeyVal<K, V>* p) { return MapIdx<K, V>(&s->base, p); }
+
+template<typename K, typename V>
+inline u32 MapIdx(MapBaseRehashed<K, V>* s, MapResult<K, V> res) { return MapIdx<K, V>(&s->base, res); }
+
+template<typename K, typename V>
+inline u32 MapFirstI(MapBaseRehashed<K, V>* s) { return MapFirstI<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline u32 MapNextI(MapBaseRehashed<K, V>* s, u32 i) { return MapNextI<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline f32 MapLoadFactor(MapBaseRehashed<K, V>* s) { return MapLoadFactor<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline MapResult<K, V>
+MapInsert(MapBaseRehashed<K ,V>* s, IAllocator* p, const K& key, const V& val, u64 hashValue)
+{
+    assert(MapSize(&s->base) < MapCap(&s->base) && "[MapRehashed]: no more space left (can't rehash)");
+
+    u64 keyHash = hash::funcHVal(key, hashValue);
+    return _MapInsertHashed(&s->base, p, key, val, keyHash);
+}
+
+template<typename K, typename V>
+[[nodiscard]] inline MapResult<K, V>
+MapSearch(MapBaseRehashed<K, V>* s, const K& key, u64 hashValue)
+{
+    u64 keyHash = hash::funcHVal(key, hashValue);
+    return _MapSearchHashed<K, V>(&s->base, key, keyHash);
+}
+
+template<typename K, typename V>
+inline void MapRemove(MapBaseRehashed<K, V>*s, u32 i) { MapRemove<K, V>(&s->base, i); }
+
+template<typename K, typename V>
+inline void
+MapRemove(MapBaseRehashed<K, V>*s, const K& key, u64 hashValue)
+{
+    auto f = MapSearch<K, V>(s, key, hashValue);
+    assert(f && "[Map]: not found");
+    MapRemove<K, V>(&s->base, MapIdx<K, V>(&s->base, f));
+}
+
+template<typename K, typename V>
+inline MapResult<K, V>
+MapTryInsert(MapBaseRehashed<K, V>* s, IAllocator* p, const K& key, const V& val, u64 hashValue)
+{
+    auto f = MapSearch<K, V>(s, key, hashValue);
+    if (f)
+    {
+        f.eStatus = MAP_RESULT_STATUS::FOUND;
+        return f;
+    }
+    else return MapInsert<K, V>(s, p, key, val, hashValue);
+}
+
+template<typename K, typename V>
+inline void MapDestroy(MapBaseRehashed<K, V>* s, IAllocator* p) { MapDestroy<K, V>(&s->base, p); }
+
+template<typename K, typename V>
+inline u32 MapCap(MapBaseRehashed<K, V>* s) { return MapCap<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline u32 MapSize(MapBaseRehashed<K, V>* s) { return MapSize<K, V>(&s->base); }
+
+template<typename K, typename V>
+struct Map
+{
+    MapBase<K, V> base {};
+    IAllocator* pA {};
+
+    Map() = default;
+    Map(IAllocator* pAlloc, u32 prealloc = SIZE_MIN)
+        : base(pAlloc, prealloc), pA(pAlloc) {}
+
+    MapBase<K, V>::It begin() { return base.begin(); }
+    MapBase<K, V>::It end() { return base.end(); }
+
+    const MapBase<K, V>::It begin() const { return base.begin(); }
+    const MapBase<K, V>::It end() const { return base.end(); }
+};
+
+template<typename K, typename V>
+inline u32 MapIdx(Map<K, V>* s, MapResult<K, V> res) { return MapIdx<K, V>(&s->base, res); }
+
+template<typename K, typename V>
+inline u32 MapFirstI(Map<K, V>* s) { return MapFirstI<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline u32 MapNextI(Map<K, V>* s, u32 i) { return MapNextI<K, V>(&s->base, i); }
+
+template<typename K, typename V>
+inline f32 MapLoadFactor(Map<K, V>* s) { return MapLoadFactor<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline MapResult<K, V> MapInsert(Map<K ,V>* s, const K& key, const V& val) { return MapInsert<K, V>(&s->base, s->pA, key, val); }
+
+template<typename K, typename V>
+[[nodiscard]] inline MapResult<K, V> MapSearch(Map<K, V>* s, const K& key) { return MapSearch<K, V>(&s->base, key); }
+
+template<typename K, typename V>
+inline void MapRemove(Map<K, V>*s, u32 i) { MapRemove<K, V>(&s->base, i); }
+
+template<typename K, typename V>
+inline void MapRemove(Map<K, V>*s, const K& key) { MapRemove<K, V>(&s->base, key); }
+
+template<typename K, typename V>
+inline MapResult<K, V> MapTryInsert(Map<K, V>* s, const K& key, const V& val) { return MapTryInsert<K, V>(&s->base, s->pA, key, val); }
+
+template<typename K, typename V>
+inline void MapDestroy(Map<K, V>* s) { MapDestroy<K, V>(&s->base, s->pA); }
+
+template<typename K, typename V>
+inline u32 MapCap(Map<K, V>* s) { return MapCap<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline u32 MapSize(Map<K, V>* s) { return MapSize<K, V>(&s->base); }
+
+template<typename K, typename V>
+struct MapRehashed
+{
+    MapBaseRehashed<K, V> base {};
+    IAllocator* pA {};
+
+    MapRehashed() = default;
+    MapRehashed(IAllocator* pAlloc, u32 prealloc = SIZE_MIN)
+        : base(pAlloc, prealloc), pA(pAlloc) {}
+
+    MapBase<K, V>::It begin() { return base.begin(); }
+    MapBase<K, V>::It end() { return base.end(); }
+
+    const MapBase<K, V>::It begin() const { return base.begin(); }
+    const MapBase<K, V>::It end() const { return base.end(); }
+};
+
+template<typename K, typename V>
+inline u32 MapIdx(MapRehashed<K, V>* s, KeyVal<K, V>* p) { return MapIdx<K, V>(&s->base, p); }
+
+template<typename K, typename V>
+inline u32 MapIdx(MapRehashed<K, V>* s, MapResult<K, V> res) { return MapIdx<K, V>(&s->base, res); }
+
+template<typename K, typename V>
+inline u32 MapFirstI(MapRehashed<K, V>* s) { return MapFirstI<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline u32 MapNextI(MapRehashed<K, V>* s, u32 i) { return MapNextI<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline f32 MapLoadFactor(MapRehashed<K, V>* s) { return MapLoadFactor<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline MapResult<K, V> MapInsert(MapRehashed<K ,V>* s, const K& key, const V& val, u64 hashValue)
+{ return MapInsert<K, V>(&s->base, s->pA, key, val, hashValue); }
+
+template<typename K, typename V>
+[[nodiscard]] inline MapResult<K, V> MapSearch(MapRehashed<K, V>* s, const K& key, u64 hashValue) { return MapSearch<K, V>(&s->base, key, hashValue); }
+
+template<typename K, typename V>
+inline void MapRemove(MapRehashed<K, V>*s, u32 i) { MapRemove<K, V>(&s->base, i); }
+
+template<typename K, typename V>
+inline void MapRemove(MapRehashed<K, V>*s, const K& key, u64 hashValue) { MapRemove<K, V>(&s->base, key, hashValue); }
+
+template<typename K, typename V>
+inline MapResult<K, V> MapTryInsert(MapRehashed<K, V>* s, const K& key, const V& val, u64 hashValue)
+{ return MapTryInsert<K, V>(&s->base, s->pA, key, val, hashValue); }
+
+template<typename K, typename V>
+inline void MapDestroy(MapRehashed<K, V>* s) { MapDestroy<K, V>(&s->base, s->pA); }
+
+template<typename K, typename V>
+inline u32 MapCap(MapRehashed<K, V>* s) { return MapCap<K, V>(&s->base); }
+
+template<typename K, typename V>
+inline u32 MapSize(MapRehashed<K, V>* s) { return MapSize<K, V>(&s->base); }
+
+namespace print
+{
+
+inline u32
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, MAP_RESULT_STATUS eStatus)
+{
+    ctx.fmt = "{}";
+    ctx.fmtIdx = 0;
+    constexpr String map[] {
+        "FOUND", "NOT_FOUND", "INSERTED"
+    };
+
+    auto statusIdx = std::underlying_type_t<MAP_RESULT_STATUS>(eStatus);
+    assert(statusIdx < utils::size(map) && "out of range enum");
+    return printArgs(ctx, map[statusIdx]);
+}
+
+template<typename K, typename V>
+inline u32
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const MapBucket<K, V>& x)
+{
+    ctx.fmt = "[{}, {}]";
+    ctx.fmtIdx = 0;
+    return printArgs(ctx, x.key, x.val);
+}
+
+template<typename K, typename V>
+inline u32
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const KeyVal<K, V>& x)
+{
+    ctx.fmt = "[{}, {}]";
+    ctx.fmtIdx = 0;
+    return printArgs(ctx, x.key, x.val);
+}
+
+} /* namespace print */
 
 } /* namespace adt */

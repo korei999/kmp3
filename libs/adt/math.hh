@@ -9,6 +9,14 @@
 #include <concepts>
 #include <limits>
 
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmissing-braces"
+#elif defined __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
 namespace adt
 {
 namespace math
@@ -1146,3 +1154,9 @@ formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::M
 
 } /* namespace print */
 } /* namespace adt */
+
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#elif defined __GNUC__
+    #pragma GCC diagnostic pop
+#endif

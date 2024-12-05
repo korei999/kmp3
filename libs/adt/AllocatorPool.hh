@@ -1,7 +1,6 @@
 #pragma once
 
 #include "List.hh"
-#include "Allocator.hh"
 #include "ChunkAllocator.hh"
 
 #include <cassert>
@@ -20,16 +19,16 @@ struct AllocatorPool
 };
 
 template<typename A>
-inline Allocator*
+inline IAllocator*
 AllocatorPoolRent(AllocatorPool<A>* s, u32 size)
 {
     auto* pA = ListPushBack(&s->lAllocators, &s->al.super, A(size));
-    return (Allocator*)(&pA->data);
+    return (IAllocator*)(&pA->data);
 }
 
 template<typename A>
 inline void
-AllocatorPoolReturn(AllocatorPool<A>* s, Allocator* p)
+AllocatorPoolReturn(AllocatorPool<A>* s, IAllocator* p)
 {
     auto* pNode = (ListNode<A>*)((u8*)p - offsetof(ListNode<A>, data));
     freeAll(pNode->data);

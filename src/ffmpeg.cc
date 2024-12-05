@@ -29,7 +29,7 @@ struct Decoder
 };
 
 Decoder*
-DecoderAlloc(Allocator* pAlloc)
+DecoderAlloc(IAllocator* pAlloc)
 {
     Decoder* s = (Decoder*)alloc(pAlloc, 1, sizeof(Decoder));
     *s = {};
@@ -47,7 +47,7 @@ DecoderClose(Decoder* s)
     *s = {};
 }
 
-Option<String>
+Opt<String>
 DecoderGetMetadataValue(Decoder* s, const String sKey)
 {
     char aBuff[64] {};

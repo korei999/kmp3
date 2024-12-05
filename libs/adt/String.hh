@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Allocator.hh"
+#include "IAllocator.hh"
 #include "hash.hh"
 
 #include <cstring>
@@ -9,16 +9,35 @@
 namespace adt
 {
 
-constexpr u32
+[[nodiscard]] constexpr u32
 nullTermStringSize(const char* str)
 {
     u32 i = 0;
-    if (!str) return i;
+    if (!str) return 0;
 
     while (str[i] != '\0') ++i;
 
     return i;
 }
+
+struct String;
+
+[[nodiscard]] constexpr bool StringEndsWith(String l, String r);
+[[nodiscard]] inline bool operator==(const String& l, const String& r);
+[[nodiscard]] inline bool operator==(const String& l, const char* r);
+[[nodiscard]] inline bool operator!=(const String& l, const String& r);
+[[nodiscard]] constexpr s64 operator-(const String& l, const String& r);
+[[nodiscard]] constexpr u32 StringLastOf(String sv, char c);
+[[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str, u32 size);
+[[nodiscard]] inline String StringAlloc(IAllocator* p, u32 size);
+[[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str);
+[[nodiscard]] inline String StringAlloc(IAllocator* p, const String s);
+inline void StringDestroy(IAllocator* p, String* s);
+[[nodiscard]] inline String StringCat(IAllocator* p, const String l, const String r);
+inline void StringAppend(String* l, const String r);
+inline void StringTrimEnd(String* s);
+constexpr void StringRemoveNLEnd(String* s); /* removes nextline character if it ends with one */
+[[nodiscard]] constexpr bool StringContains(String l, const String r);
 
 /* just pointer + size, no allocations, use `StringAlloc()` for that */
 struct String
@@ -238,7 +257,7 @@ StringLastOf(String sv, char c)
 }
 
 inline String
-StringAlloc(Allocator* p, const char* str, u32 size)
+StringAlloc(IAllocator* p, const char* str, u32 size)
 {
     char* pData = (char*)zalloc(p, size + 1, sizeof(char));
     strncpy(pData, str, size);
@@ -248,38 +267,32 @@ StringAlloc(Allocator* p, const char* str, u32 size)
 }
 
 inline String
-StringAlloc(Allocator* p, u32 size)
+StringAlloc(IAllocator* p, u32 size)
 {
     char* pData = (char*)zalloc(p, size + 1, sizeof(char));
     return {pData, size};
 }
 
 inline String
-StringAlloc(Allocator* p, const char* str)
+StringAlloc(IAllocator* p, const char* str)
 {
     return StringAlloc(p, str, nullTermStringSize(str));
 }
 
 inline String
-StringAlloc(Allocator* p, const String s)
+StringAlloc(IAllocator* p, const String s)
 {
     return StringAlloc(p, s.pData, s.size);
 }
 
 inline void
-StringDestroy(Allocator* p, String* s)
+StringDestroy(IAllocator* p, String* s)
 {
     free(p, s->pData);
 }
 
-constexpr u64
-hashFNV(const String str)
-{
-    return hash::fnv(str.pData, str.size);
-}
-
 inline String
-StringCat(Allocator* p, const String l, const String r)
+StringCat(IAllocator* p, const String l, const String r)
 {
     u32 len = l.size + r.size;
     char* ret = (char*)zalloc(p, len + 1, sizeof(char));
@@ -324,19 +337,25 @@ StringTrimEnd(String* s)
         else break;
 }
 
-/* removes nextline character if it ends with one */
 constexpr void
 StringRemoveNLEnd(String* s)
 {
-    if (s->size > 0 && s->pData[s->size - 1] == '\n')
-        s->pData[--s->size] = '\0';
-    if (s->size > 0 && s->pData[s->size - 1] == '\r')
+    auto oneOf = [&](char c) -> bool {
+        constexpr String chars = "\r\n";
+        for (auto ch : chars)
+            if (c == ch) return true;
+        return false;
+    };
+
+    u64 pos = s->size - 1;
+    while (s->size > 0 && oneOf((*s)[pos]))
         s->pData[--s->size] = '\0';
 }
 
 constexpr bool
 StringContains(String l, const String r)
 {
+
     if (l.size < r.size) return false;
 
     for (u32 i = 0; i < l.size; ++i)
@@ -351,16 +370,30 @@ StringContains(String l, const String r)
 
 template<>
 constexpr u64
-hash::func<String>(String& str)
+hash::func(String& str)
 {
-    return fnv(str.pData, str.size);
+    return hash::fnvStr(str.pData, str.size);
 }
 
 template<>
 constexpr u64
-hash::func<const String>(const String& str)
+hash::func(const String& str)
 {
-    return fnv(str.pData, str.size);
+    return hash::fnvStr(str.pData, str.size);
+}
+
+template<>
+inline u64
+hash::funcHVal(String& str, u64 hashValue)
+{
+    return hash::fnvBuffHVal(str.pData, str.size, hashValue);
+}
+
+template<>
+inline u64
+hash::funcHVal(const String& str, u64 hashValue)
+{
+    return hash::fnvBuffHVal(str.pData, str.size, hashValue);
 }
 
 namespace utils

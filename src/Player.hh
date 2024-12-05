@@ -39,7 +39,7 @@ void PlayerSelectPrev(Player* s);
 
 struct Player
 {
-    Allocator* pAlloc {};
+    IAllocator* pAlloc {};
     struct {
         String time {};
         String volume {};
@@ -63,6 +63,6 @@ struct Player
     PLAYER_REPEAT_METHOD eReapetMethod {};
 
     Player() = delete;
-    Player(Allocator* p, int nArgs, [[maybe_unused]] char** ppArgs)
+    Player(IAllocator* p, int nArgs, [[maybe_unused]] char** ppArgs)
         : pAlloc(p), aShortArgvs(p, nArgs), aSongIdxs(p, nArgs) {}
 };

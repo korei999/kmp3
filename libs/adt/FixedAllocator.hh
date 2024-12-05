@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Allocator.hh"
+#include "IAllocator.hh"
 #include "utils.hh"
 
 #include <cassert>
@@ -11,7 +11,7 @@ namespace adt
 
 struct FixedAllocator
 {
-    Allocator super {};
+    IAllocator super {};
     u8* pMemBuffer = nullptr;
     u64 size = 0;
     u64 cap = 0;
@@ -101,12 +101,12 @@ FixedReset(FixedAllocator* s)
     s->size = 0;
 }
 
-inline const AllocatorInterface inl_FixedAllocatorVTable {
-    .alloc = decltype(AllocatorInterface::alloc)(FixedAlloc),
-    .zalloc = decltype(AllocatorInterface::zalloc)(FixedZalloc),
-    .realloc = decltype(AllocatorInterface::realloc)(FixedRealloc),
-    .free = decltype(AllocatorInterface::free)(FixedFree),
-    .freeAll = decltype(AllocatorInterface::freeAll)(FixedFreeAll),
+inline const AllocatorVTable inl_FixedAllocatorVTable {
+    .alloc = decltype(AllocatorVTable::alloc)(FixedAlloc),
+    .zalloc = decltype(AllocatorVTable::zalloc)(FixedZalloc),
+    .realloc = decltype(AllocatorVTable::realloc)(FixedRealloc),
+    .free = decltype(AllocatorVTable::free)(FixedFree),
+    .freeAll = decltype(AllocatorVTable::freeAll)(FixedFreeAll),
 };
 
 constexpr FixedAllocator::FixedAllocator(void* pMemory, u64 capacity)

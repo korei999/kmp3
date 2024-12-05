@@ -9,6 +9,44 @@
 namespace adt
 {
 
+template<typename T, u32 CAP> requires(CAP > 0) struct Arr;
+
+template<typename T, u32 CAP>
+constexpr u32 ArrPush(Arr<T, CAP>* s, const T& x);
+
+template<typename T, u32 CAP>
+constexpr u32 ArrFakePush(Arr<T, CAP>* s);
+
+template<typename T, u32 CAP>
+constexpr T* ArrPop(Arr<T, CAP>* s);
+
+template<typename T, u32 CAP>
+constexpr void ArrFakePop(Arr<T, CAP>* s);
+
+template<typename T, u32 CAP>
+constexpr u32 ArrCap([[maybe_unused]] Arr<T, CAP>* s);
+
+template<typename T, u32 CAP>
+constexpr u32 ArrSize(Arr<T, CAP>* s);
+
+template<typename T, u32 CAP>
+constexpr void ArrSetSize(Arr<T, CAP>* s, u32 newSize);
+
+template<typename T, u32 CAP>
+constexpr u32 ArrIdx(Arr<T, CAP>* s, const T* p);
+
+template<typename T, u32 CAP>
+constexpr T& ArrFirst(Arr<T, CAP>* s);
+
+template<typename T, u32 CAP>
+constexpr const T& ArrFirst(const Arr<T, CAP>* s);
+
+template<typename T, u32 CAP>
+constexpr T& ArrLast(Arr<T, CAP>* s);
+
+template<typename T, u32 CAP>
+constexpr const T& ArrLast(const Arr<T, CAP>* s);
+
 /* statically sized array */
 template<typename T, u32 CAP> requires(CAP > 0)
 struct Arr

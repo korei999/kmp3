@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Allocator.hh"
+#include "IAllocator.hh"
 
 #include <cassert>
 #include <cstdlib>
@@ -8,6 +8,8 @@
 namespace adt
 {
 
+/* default os allocator (aka malloc() / calloc() / realloc() / free()).
+ * freeAll() method is not supported. */
 struct OsAllocator;
 
 inline void* OsAlloc(OsAllocator* s, u64 mCount, u64 mSize);
@@ -20,22 +22,24 @@ inline void* alloc(OsAllocator* s, u64 mCount, u64 mSize) { return OsAlloc(s, mC
 inline void* zalloc(OsAllocator* s, u64 mCount, u64 mSize) { return OsZalloc(s, mCount, mSize); }
 inline void* realloc(OsAllocator* s, void* p, u64 mCount, u64 mSize) { return OsRealloc(s, p, mCount, mSize); }
 inline void free(OsAllocator* s, void* p) { OsFree(s, p); }
-inline void freeAll(OsAllocator* s) { _OsFreeAll(s); }
 
-inline const AllocatorInterface inl_OsAllocatorVTable {
-    .alloc = (decltype(AllocatorInterface::alloc))OsAlloc,
-    .zalloc = (decltype(AllocatorInterface::zalloc))OsZalloc,
-    .realloc = (decltype(AllocatorInterface::realloc))OsRealloc,
-    .free = (decltype(AllocatorInterface::free))OsFree,
-    .freeAll = (decltype(AllocatorInterface::freeAll))_OsFreeAll,
+inline const AllocatorVTable inl_OsAllocatorVTable {
+    .alloc = decltype(AllocatorVTable::alloc)(OsAlloc),
+    .zalloc = decltype(AllocatorVTable::zalloc)(OsZalloc),
+    .realloc = decltype(AllocatorVTable::realloc)(OsRealloc),
+    .free = decltype(AllocatorVTable::free)(OsFree),
+    .freeAll = decltype(AllocatorVTable::freeAll)(_OsFreeAll),
 };
 
 struct OsAllocator
 {
-    Allocator super {};
+    IAllocator super {};
 
     constexpr OsAllocator([[maybe_unused]] u32 _ingnored = 0) : super(&inl_OsAllocatorVTable) {}
 };
+
+inline OsAllocator inl_OsAllocator {};
+inline IAllocator* inl_pOsAlloc = &inl_OsAllocator.super;
 
 inline void*
 OsAlloc([[maybe_unused]] OsAllocator* s, u64 mCount, u64 mSize)
@@ -72,8 +76,5 @@ _OsFreeAll([[maybe_unused]] OsAllocator* s)
 {
     assert(false && "[OsAllocator]: no 'freeAll()' method");
 }
-
-inline OsAllocator inl_OsAllocator {};
-inline Allocator* inl_pOsAlloc = &inl_OsAllocator.super;
 
 } /* namespace adt */

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/Option.hh"
+#include "adt/Opt.hh"
 #include "adt/String.hh"
 
 using namespace adt;
@@ -39,9 +39,9 @@ constexpr String mapERRORToString[] {
 
 struct Decoder;
 
-[[nodiscard]] Decoder* DecoderAlloc(Allocator* pAlloc);
+[[nodiscard]] Decoder* DecoderAlloc(IAllocator* pAlloc);
 void DecoderClose(Decoder* s);
-[[nodiscard]] Option<String> DecoderGetMetadataValue(Decoder* s, const String sKey);
+[[nodiscard]] Opt<String> DecoderGetMetadataValue(Decoder* s, const String sKey);
 [[nodiscard]] ERROR DecoderOpen(Decoder* s, String sPath);
 
 [[nodiscard]] ERROR

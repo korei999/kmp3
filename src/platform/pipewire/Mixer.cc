@@ -372,7 +372,7 @@ MixerSeekRightMS(Mixer* s, long ms)
     MixerSeekMS(s, currMs + ms);
 }
 
-Option<String>
+Opt<String>
 MixerGetMetadata(Mixer* s, const String sKey)
 {
     return ffmpeg::DecoderGetMetadataValue(s->pDecoder, sKey);

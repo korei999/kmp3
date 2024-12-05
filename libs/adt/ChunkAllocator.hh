@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Allocator.hh"
+#include "IAllocator.hh"
 
 #include <cassert>
 #include <cstdlib>
@@ -9,6 +9,7 @@
 namespace adt
 {
 
+/* fixed byte size (chunk) per alloc. Calling realloc() is an error */
 struct ChunkAllocator;
 
 inline void* ChunkAlloc(ChunkAllocator* s, u64 ignored0, u64 ignored1);
@@ -35,10 +36,9 @@ struct ChunkAllocatorBlock
     u8 pMem[];
 };
 
-/* each alloc is the same size (good for linked data structures) */
 struct ChunkAllocator
 {
-    Allocator super {};
+    IAllocator super {};
     u64 blockCap = 0; 
     u64 chunkSize = 0;
     ChunkAllocatorBlock* pBlocks = nullptr;
@@ -113,7 +113,7 @@ _ChunkRealloc(
     [[maybe_unused]] u64 __ignored
 )
 {
-    assert(false && "ChunkAllocator can't realloc");
+    assert(false && "ChunkAllocator can't realloc()");
     return nullptr;
 }
 
@@ -153,12 +153,12 @@ ChunkFreeAll(ChunkAllocator* s)
     s->pBlocks = nullptr;
 }
 
-inline const AllocatorInterface inl_chunkAllocatorVTable {
-    .alloc = decltype(AllocatorInterface::alloc)(ChunkAlloc),
-    .zalloc = decltype(AllocatorInterface::zalloc)(ChunkZalloc),
-    .realloc = decltype(AllocatorInterface::realloc)(_ChunkRealloc),
-    .free = decltype(AllocatorInterface::free)(ChunkFree),
-    .freeAll = decltype(AllocatorInterface::freeAll)(ChunkFreeAll),
+inline const AllocatorVTable inl_chunkAllocatorVTable {
+    .alloc = decltype(AllocatorVTable::alloc)(ChunkAlloc),
+    .zalloc = decltype(AllocatorVTable::zalloc)(ChunkZalloc),
+    .realloc = decltype(AllocatorVTable::realloc)(_ChunkRealloc),
+    .free = decltype(AllocatorVTable::free)(ChunkFree),
+    .freeAll = decltype(AllocatorVTable::freeAll)(ChunkFreeAll),
 };
 
 inline

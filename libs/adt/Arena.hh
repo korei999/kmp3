@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Allocator.hh"
+#include "IAllocator.hh"
 #include "utils.hh"
 
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 
-#ifndef NDEBUG
+#if defined ADT_DBG_MEMORY
     #include <cstdio>
 #endif
 
@@ -24,9 +24,10 @@ struct ArenaBlock
     u8 pMem[];
 };
 
+/* fast region based allocator, only freeAll() free's memory, free() does nothing */
 struct Arena
 {
-    Allocator super {};
+    IAllocator super {};
     u64 defaultCapacity {};
     ArenaBlock* pBlocks {};
 
@@ -103,7 +104,7 @@ ArenaAlloc(Arena* s, u64 mCount, u64 mSize)
     u64 realSize = align8(mCount * mSize);
     auto* pBlock = _ArenaFindFittingBlock(s, realSize);
 
-#ifndef NDEBUG
+#if defined ADT_DBG_MEMORY
     if (s->defaultCapacity <= realSize)
         fprintf(stderr, "[Arena]: allocating more than defaultCapacity (%llu, %llu)\n", s->defaultCapacity, realSize);
 #endif
@@ -194,12 +195,12 @@ ArenaReset(Arena* s)
     }
 }
 
-inline const AllocatorInterface inl_ArenaVTable {
-    .alloc = decltype(AllocatorInterface::alloc)(ArenaAlloc),
-    .zalloc = decltype(AllocatorInterface::zalloc)(ArenaZalloc),
-    .realloc = decltype(AllocatorInterface::realloc)(ArenaRealloc),
-    .free = decltype(AllocatorInterface::free)(ArenaFree),
-    .freeAll = decltype(AllocatorInterface::freeAll)(ArenaFreeAll),
+inline const AllocatorVTable inl_ArenaVTable {
+    .alloc = decltype(AllocatorVTable::alloc)(ArenaAlloc),
+    .zalloc = decltype(AllocatorVTable::zalloc)(ArenaZalloc),
+    .realloc = decltype(AllocatorVTable::realloc)(ArenaRealloc),
+    .free = decltype(AllocatorVTable::free)(ArenaFree),
+    .freeAll = decltype(AllocatorVTable::freeAll)(ArenaFreeAll),
 };
 
 inline Arena::Arena(u64 capacity)

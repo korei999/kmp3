@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Allocator.hh"
+#include "IAllocator.hh"
 #include "utils.hh"
 
 #include <cassert>
@@ -27,7 +27,7 @@ struct BuddyNode
 /* FIXME: terribly slow buddy allocator */
 struct Buddy
 {
-    Allocator super {};
+    IAllocator super {};
     BuddyBlock* pBlocks {};
     u64 blockSize {};
 
@@ -242,12 +242,12 @@ BuddyFreeAll(Buddy* s)
     }
 }
 
-inline const AllocatorInterface inl_BuddyAllocatorVTable {
-    .alloc = decltype(AllocatorInterface::alloc)(BuddyAlloc),
-    .zalloc = decltype(AllocatorInterface::zalloc)(BuddyZalloc),
-    .realloc = decltype(AllocatorInterface::realloc)(BuddyRealloc),
-    .free = decltype(AllocatorInterface::free)(BuddyFree),
-    .freeAll = decltype(AllocatorInterface::freeAll)(BuddyFreeAll),
+inline const AllocatorVTable inl_BuddyAllocatorVTable {
+    .alloc = decltype(AllocatorVTable::alloc)(BuddyAlloc),
+    .zalloc = decltype(AllocatorVTable::zalloc)(BuddyZalloc),
+    .realloc = decltype(AllocatorVTable::realloc)(BuddyRealloc),
+    .free = decltype(AllocatorVTable::free)(BuddyFree),
+    .freeAll = decltype(AllocatorVTable::freeAll)(BuddyFreeAll),
 };
 
 inline Buddy::Buddy(u64 _blockSize)

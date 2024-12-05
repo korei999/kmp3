@@ -113,7 +113,7 @@ struct ThreadTask
 
 struct ThreadPool
 {
-    Allocator* pAlloc {};
+    IAllocator* pAlloc {};
     QueueBase<ThreadTask> qTasks {};
     VecBase<thrd_t> aThreads {};
     cnd_t cndQ {}, cndWait {};
@@ -124,7 +124,7 @@ struct ThreadPool
     bool bStarted {};
 
     ThreadPool() = default;
-    ThreadPool(Allocator* pAlloc, u32 _nThreads = ADT_GET_NCORES());
+    ThreadPool(IAllocator* pAlloc, u32 _nThreads = ADT_GET_NCORES());
 };
 
 inline void ThreadPoolStart(ThreadPool* s);
@@ -138,7 +138,7 @@ inline void ThreadPoolSubmitSignal(ThreadPool* s, thrd_start_t pfnTask, void* pA
 inline void ThreadPoolWait(ThreadPool* s); /* wait for all active tasks to finish, without joining */
 
 inline
-ThreadPool::ThreadPool(Allocator* _pAlloc, u32 _nThreads)
+ThreadPool::ThreadPool(IAllocator* _pAlloc, u32 _nThreads)
     : pAlloc(_pAlloc),
       qTasks(_pAlloc, _nThreads),
       aThreads(_pAlloc, _nThreads),

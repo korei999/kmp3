@@ -9,6 +9,6 @@ char** g_argv {};
 VecBase<String> g_aArgs {};
 
 Player* g_pPlayer {};
-audio::Mixer* g_pMixer {};
+audio::IMixer* g_pMixer {};
 
 } /* namespace app */

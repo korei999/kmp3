@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Allocator.hh"
+#include "IAllocator.hh"
 #include "String.hh"
 #include "utils.hh"
 #include "Pair.hh"
@@ -26,14 +26,14 @@ struct AVLNode
 template<typename T>
 struct AVLTree
 {
-    Allocator* pAlloc = nullptr;
+    IAllocator* pAlloc = nullptr;
     AVLNode<T>* pRoot = nullptr;
 
     AVLTree() = default;
-    AVLTree(Allocator* pA) : pAlloc {pA} {}
+    AVLTree(IAllocator* pA) : pAlloc {pA} {}
 };
 
-template<typename T> AVLNode<T>* AVLNodeAlloc(Allocator* pA, const T& data);
+template<typename T> AVLNode<T>* AVLNodeAlloc(IAllocator* pA, const T& data);
 template<typename T> inline AVLNode<T>* AVLMin(AVLNode<T>* p);
 template<typename T> inline AVLNode<T>* AVLMax(AVLNode<T>* p);
 template<typename T> inline void AVLRemove(AVLTree<T>* s, AVLNode<T>* d);
@@ -57,7 +57,7 @@ template<typename T> inline s16 AVLNodeHeight(AVLNode<T>* p);
 template<typename T>
 inline void
 AVLPrintNodes(
-    Allocator* pA,
+    IAllocator* pA,
     const AVLTree<T>* s,
     const AVLNode<T>* pNode,
     void (*pfnPrint)(const AVLNode<T>*, void*),
@@ -82,7 +82,7 @@ template<typename T> inline void __AVLRebalance(AVLTree<T>* s, AVLNode<T>* p);
 
 template<typename T>
 AVLNode<T>*
-AVLNodeAlloc(Allocator* pA, const T& data)
+AVLNodeAlloc(IAllocator* pA, const T& data)
 {
     auto* pNew = (AVLNode<T>*)alloc(pA, 1, sizeof(AVLNode<T>));
     pNew->data = data;
@@ -447,7 +447,7 @@ AVLDepth(AVLNode<T>* p)
 template<typename T>
 inline void
 AVLPrintNodes(
-    Allocator* pA,
+    IAllocator* pA,
     const AVLTree<T>* s,
     const AVLNode<T>* pNode,
     void (*pfnPrint)(const AVLNode<T>*, void*),
