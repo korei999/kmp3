@@ -32,6 +32,13 @@ namespace adt
 namespace utils
 {
 
+/* bit number starts from 0 */
+constexpr u64
+setBit(u64 num, u64 bit, bool val)
+{
+    return (num & ~((u64)1 << bit)) | ((u64)val << bit);
+}
+
 template<typename T>
 constexpr void
 swap(T* l, T* r)

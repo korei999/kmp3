@@ -10,7 +10,7 @@ namespace adt
 {
 
 /* Best-fit logarithmic time allocator, all IAllocator methods are supported.
- * Can be slow and memory wasteful for small allocations (56 bytes of metadata for each allocation).
+ * Can be slow and memory wasteful for small allocations (48 bytes of metadata per allocation).
  * Preallocating big blocks would help. */
 struct FreeList;
 
@@ -74,7 +74,7 @@ _FreeListPrintTree(FreeList* s, IAllocator* pAlloc)
     auto pfn = +[](const FreeList::Node* pNode, [[maybe_unused]] void* pArgs) -> void {
         CERR(
             "{}" ADT_LOGS_COL_NORM " {}\n",
-            pNode->color == RB_COLOR::RED ? ADT_LOGS_COL_RED "(R)" : ADT_LOGS_COL_BLUE "(B)", pNode->data.getSize()
+            pNode->color() == RB_COLOR::RED ? ADT_LOGS_COL_RED "(R)" : ADT_LOGS_COL_BLUE "(B)", pNode->data.getSize()
         );
     };
 
@@ -186,8 +186,8 @@ _FreeListFindFittingNode(FreeList* s, const u64 size)
         long cmp = realSize - nodeSize;
 
         if (cmp == 0) break;
-        else if (cmp < 0) it = it->left;
-        else it = it->right;
+        else if (cmp < 0) it = it->left();
+        else it = it->right();
     }
 
     return pLastFitting;
