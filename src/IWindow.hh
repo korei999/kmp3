@@ -31,10 +31,10 @@ struct DummyWindow
     DummyWindow();
 };
 
-inline bool DummyStart(DummyWindow* s, Arena* pArena) { return true; }
-inline void DummyDestroy(DummyWindow* s) {}
-inline void DummyDraw(DummyWindow* s) {}
-inline void DummyProcEvents(DummyWindow* s) {}
+inline bool DummyStart([[maybe_unused]] DummyWindow* s, [[maybe_unused]] Arena* pArena) { return true; }
+inline void DummyDestroy([[maybe_unused]] DummyWindow* s) {}
+inline void DummyDraw([[maybe_unused]] DummyWindow* s) {}
+inline void DummyProcEvents([[maybe_unused]] DummyWindow* s) {}
 
 inline const WindowVTable inl_DummyWindowVTable {
     .start = decltype(WindowVTable::start)(DummyStart),
