@@ -170,8 +170,14 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     pkg_check_modules(NCURSES ncursesw)
     if (${NCURSES_FOUND})
         include_directories(BEFORE ${CMAKE_PROJECT_NAME})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${NCURSES_LIBRARIES})
         add_definitions("-DUSE_NCURSES")
+        add_definitions("-DNCURSES_WIDECHAR")
+        target_sources(
+            ${CMAKE_PROJECT_NAME} PRIVATE
+            "src/platform/ncurses/Win.cc"
+            "src/platform/ncurses/input.cc"
+        )
     endif()
 
     pkg_check_modules(SYSTEMD libsystemd)

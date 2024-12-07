@@ -3,6 +3,10 @@
 #include "adt/logs.hh"
 #include "platform/termbox2/window.hh"
 
+#ifdef USE_NCURSES
+    #include "platform/ncurses/Win.hh"
+#endif
+
 namespace app
 {
 
@@ -32,8 +36,14 @@ allocWindow(IAllocator* pArena)
 
         case UI_BACKEND::NCURSES:
         {
-            CERR("UI_BACKEND::NCURSES: not implemented yet\n");
+#ifdef USE_NCURSES
+            auto* pNCurses = (platform::ncurses::Win*)alloc(pArena, 1, sizeof(platform::ncurses::Win*));
+            *pNCurses = platform::ncurses::Win();
+            pRet = &pNCurses->super;
+#else
+            CERR("UI_BACKEND::NCURSES: not available\n");
             exit(1);
+#endif
         } break;
     }
 

@@ -38,6 +38,11 @@ void
 run()
 {
     app::g_pWin = app::allocWindow(inl_pOsAlloc);
+    if (app::g_pWin == nullptr)
+    {
+        CERR("app::allocWindow(): failed\n");
+        return;
+    }
     defer( free(inl_pOsAlloc, app::g_pWin) );
 
     Arena arena(SIZE_1M);
