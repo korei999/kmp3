@@ -18,7 +18,7 @@ extern u16 g_firstIdx;
 bool init(Arena* pAlloc);
 void destroy();
 void procEvents();
-void render();
+void draw();
 void seekFromInput();
 void subStringSearch();
 
@@ -33,14 +33,18 @@ struct Win
 
 inline bool WinStart([[maybe_unused]] Win* s, Arena* pArena) { return window::init(pArena); }
 inline void WinDestroy([[maybe_unused]] Win* s) { window::destroy(); }
-inline void WinDraw([[maybe_unused]] Win* s) { window::render(); }
+inline void WinDraw([[maybe_unused]] Win* s) { window::draw(); }
 inline void WinProcEvents([[maybe_unused]] Win* s) { window::procEvents(); }
+inline void WinSeekFromInput([[maybe_unused]] Win* s) { window::seekFromInput(); }
+inline void WinSubStringSearch([[maybe_unused]] Win* s) { window::subStringSearch(); }
 
 inline const WindowVTable inl_WinVTable {
     .start = decltype(WindowVTable::start)(WinStart),
     .destroy = decltype(WindowVTable::destroy)(WinDestroy),
     .draw = decltype(WindowVTable::draw)(WinDraw),
     .procEvents = decltype(WindowVTable::procEvents)(WinProcEvents),
+    .seekFromInput = decltype(WindowVTable::seekFromInput)(WinSeekFromInput),
+    .subStringSearch = decltype(WindowVTable::subStringSearch)(WinSubStringSearch),
 };
 
 inline

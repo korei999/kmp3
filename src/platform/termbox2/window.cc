@@ -5,6 +5,7 @@
 #include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
+#include "common.hh"
 #include "input.hh"
 
 #include <cmath>
@@ -151,7 +152,7 @@ subStringSearch()
     {
         PlayerSubStringSearch(&pl, g_pFrameArena, s_input.aBuff, utils::size(s_input.aBuff));
         g_firstIdx = 0;
-        render();
+        draw();
     } while (readWChar(&ev) != READ_STATUS::DONE);
 
     /* fix focused if it ends up out of the list range */
@@ -217,7 +218,7 @@ seekFromInput()
 
     do
     {
-        render();
+        draw();
     } while (readWChar(&ev) != READ_STATUS::DONE);
 
     parseSeekThenRun();
@@ -268,14 +269,14 @@ drawBox(
     const u32 fgColor = TB_WHITE,
     const u32 bgColor = TB_DEFAULT,
     const bool bCleanInside = false,
-    const u32 tl = L'┏',
-    const u32 tr = L'┓',
-    const u32 bl = L'┗',
-    const u32 br = L'┛',
-    const u32 t = L'━',
-    const u32 b = L'━',
-    const u32 l = L'┃',
-    const u32 r = L'┃'
+    const u32 tl = common::CHAR_TL,
+    const u32 tr = common::CHAR_TR,
+    const u32 bl = common::CHAR_BL,
+    const u32 br = common::CHAR_BR,
+    const u32 t = common::CHAR_T,
+    const u32 b = common::CHAR_B,
+    const u32 l = common::CHAR_L,
+    const u32 r = common::CHAR_R
 )
 {
     const u16 termHeight = tb_height();
@@ -441,12 +442,12 @@ drawVolume(Arena* pAlloc, const u16 split)
         if (bMuted)
         {
             col = TB_BLUE;
-            wc = L'▯';
+            wc = common::CHAR_VOL;
         }
         else
         {
             col = volumeColor(nTimes);
-            wc = L'▮';
+            wc = common::CHAR_VOL_MUTED;
         }
 
         tb_set_cell(i, 2, wc, col, TB_DEFAULT);
@@ -462,25 +463,9 @@ drawVolume(Arena* pAlloc, const u16 split)
 static void
 drawTime(const u16 split)
 {
-    const auto width = tb_width();
-    auto& mixer = *app::g_pMixer;
-
-    char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
-
-    u64 t = std::round(f64(mixer.currentTimeStamp) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
-    u64 totalT = std::round(f64(mixer.totalSamplesCount) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
-
-    u64 currMin = t / 60;
-    u64 currSec = t - (60 * currMin);
-
-    u64 maxMin = totalT / 60;
-    u64 maxSec = totalT - (60 * maxMin);
-
-    int n = snprintf(pBuff, width, "time: %llu:%02llu / %llu:%02llu", currMin, currSec, maxMin, maxSec);
-    if (mixer.sampleRate != mixer.changedSampleRate)
-        snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f64(mixer.changedSampleRate) / f64(mixer.sampleRate) * 100.0)));
-
-    drawUtf8String(0, 4, pBuff, split + 1);
+    const int width = tb_width();
+    const String str = common::allocTimeString(g_pFrameArena, width);
+    drawUtf8String(0, 4, str, split + 1);
 }
 
 static void
@@ -630,7 +615,7 @@ drawHelpMenu()
 }
 
 void
-render()
+draw()
 {
     if (tb_height() < 6 || tb_width() < 6) return;
 

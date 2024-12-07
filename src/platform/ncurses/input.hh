@@ -7,6 +7,7 @@ namespace ncurses
 namespace input
 {
 
+void procEvents();
 
 
 } /*namespace input */
