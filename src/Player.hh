@@ -4,17 +4,19 @@
 #include "adt/types.hh"
 #include "adt/String.hh"
 #include "adt/Vec.hh"
+#include "adt/enum.hh"
 
 using namespace adt;
 
-enum PLAYER_REPEAT_METHOD: u8 { NONE, TRACK, PLAYLIST, ESIZE };
+enum class PLAYER_REPEAT_METHOD: u8 { NONE, TRACK, PLAYLIST, ESIZE };
+ADT_ENUM_BITWISE_OPERATORS(PLAYER_REPEAT_METHOD);
 
 constexpr String mapPlayerRepeatMethodStrings[] {"None", "Track", "Playlist"};
 
 constexpr String
 PlayerRepeatMethodToString(PLAYER_REPEAT_METHOD e)
 {
-    return mapPlayerRepeatMethodStrings[e];
+    return mapPlayerRepeatMethodStrings[int(e)];
 }
 
 struct Player;

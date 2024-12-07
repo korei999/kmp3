@@ -10,6 +10,15 @@ namespace platform
 namespace ncurses
 {
 
+static struct {
+    wchar_t aBuff[64] {};
+    u32 idx = 0;
+    READ_MODE eCurrMode {};
+    READ_MODE eLastUsedMode {};
+
+    void zeroOutBuff() { memset(aBuff, 0, sizeof(aBuff)); }
+} s_input {};
+
 bool
 WinStart(Win* s, Arena* pArena)
 {

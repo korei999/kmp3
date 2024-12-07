@@ -9,7 +9,7 @@ using namespace adt;
 namespace app
 {
 
-enum UI_BACKEND : u8 { TERMBOX, NCURSES };
+enum class UI_BACKEND : u8 { TERMBOX, NCURSES };
 
 extern UI_BACKEND g_eUIBackend;
 extern IWindow* g_pWin;

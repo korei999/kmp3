@@ -36,7 +36,7 @@ namespace termbox2
 namespace window
 {
 
-enum READ_MODE : u8 {NONE, SEARCH, SEEK};
+// enum READ_MODE : u8 {NONE, SEARCH, SEEK};
 
 Arena* g_pFrameArena {};
 bool g_bDrawHelpMenu = false;
@@ -55,7 +55,7 @@ constexpr String
 readModeToString(READ_MODE e)
 {
     constexpr String map[] {"", "searching: ", "time: "};
-    return map[e];
+    return map[int(e)];
 }
 
 /* fix song list range after focus change */

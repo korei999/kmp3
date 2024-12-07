@@ -4,6 +4,8 @@
 
 using namespace adt;
 
+enum class READ_MODE : u8 { NONE, SEARCH, SEEK };
+
 struct IWindow;
 
 struct WindowVTable

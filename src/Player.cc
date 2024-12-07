@@ -195,10 +195,12 @@ PlayerOnSongEnd(Player* s)
 PLAYER_REPEAT_METHOD
 PlayerCycleRepeatMethods(Player* s, bool bForward)
 {
+    using enum PLAYER_REPEAT_METHOD;
+
     PLAYER_REPEAT_METHOD rm {};
 
-    if (bForward) rm = PLAYER_REPEAT_METHOD((s->eReapetMethod + 1) % ESIZE);
-    else rm = PLAYER_REPEAT_METHOD((s->eReapetMethod + (ESIZE - 1)) % ESIZE);
+    if (bForward) rm = (s->eReapetMethod + 1) % ESIZE;
+    else rm = (s->eReapetMethod + (ESIZE - 1)) % ESIZE;
 
     s->eReapetMethod = rm;
 
