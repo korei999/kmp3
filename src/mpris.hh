@@ -9,7 +9,7 @@ extern bool g_bReady;
 extern mtx_t g_mtx;
 extern cnd_t g_cnd;
 
-#ifdef MPRIS_LIB
+#ifdef USE_MPRIS
 
 void init();
 void proc();

@@ -6,7 +6,7 @@
 #include "app.hh"
 #include "adt/logs.hh"
 
-#ifdef BASU_LIB
+#ifdef USE_BASU
     #include <basu/sd-bus.h>
 #else
     #include <systemd/sd-bus.h>

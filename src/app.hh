@@ -2,12 +2,17 @@
 
 #include "Player.hh"
 #include "audio.hh"
+#include "IWindow.hh"
 
 using namespace adt;
 
 namespace app
 {
 
+enum UI_BACKEND : u8 { TERMBOX, NCURSES };
+
+extern UI_BACKEND g_eUIBackend;
+extern IWindow* g_pWin;
 extern bool g_bRunning;
 extern int g_argc;
 extern char** g_argv;
@@ -15,6 +20,8 @@ extern VecBase<String> g_aArgs;
 
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
+
+IWindow* allocWindow(IAllocator* pArena);
 
 inline void quit() { g_bRunning = false; }
 inline void focusNext() { PlayerFocusNext(g_pPlayer); }

@@ -9,7 +9,7 @@
 #include "frame.hh"
 #include "platform/pipewire/Mixer.hh"
 
-#ifdef MPRIS_LIB
+#ifdef USE_MPRIS
     #include "mpris.hh"
 #endif
 
@@ -26,6 +26,20 @@ main(int argc, char** argv)
 
     Arena arena(SIZE_8K);
     defer( ArenaFreeAll(&arena) );
+
+    if (argc > 1)
+    {
+        if (argv[1] == String("--termbox"))
+        {
+            app::g_eUIBackend = app::UI_BACKEND::TERMBOX;
+            LOG_NOTIFY("setting TERMBOX ui\n");
+        }
+        else if (argv[1] == String("--ncurses"))
+        {
+            app::g_eUIBackend = app::UI_BACKEND::NCURSES;
+            LOG_NOTIFY("setting NCURSES ui\n");
+        }
+    }
 
     Vec<String> aInput(&arena.super, argc);
     if (argc < 2) /* use stdin instead */
@@ -91,7 +105,7 @@ main(int argc, char** argv)
     mixer.base.volume = defaults::VOLUME;
     app::g_pMixer = &mixer.base;
 
-#ifdef MPRIS_LIB
+#ifdef USE_MPRIS
     mpris::initMutexes();
     defer(
         if (mpris::g_bReady) mpris::destroy();
@@ -109,8 +123,5 @@ main(int argc, char** argv)
 
         frame::run();
     }
-    else
-    {
-        CERR("No accepted input provided\n");
-    }
+    else CERR("No accepted input provided\n");
 }

@@ -78,7 +78,7 @@ fixFirstIdx()
     g_firstIdx = first;
 }
 
-void
+bool
 init(Arena* pAlloc)
 {
     [[maybe_unused]] int r = tb_init();
@@ -90,6 +90,8 @@ init(Arena* pAlloc)
     LOG_NOTIFY("tb_has_egc: {}\n", (bool)tb_has_egc());
 
     g_pFrameArena = pAlloc;
+
+    return r == 0;
 }
 
 void

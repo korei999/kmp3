@@ -36,7 +36,7 @@ struct IMixer
 {
     const MixerVTable* pVTable {};
     std::atomic<bool> bPaused = false;
-#ifdef MPRIS_LIB
+#ifdef USE_MPRIS
     std::atomic<bool> bUpdateMpris {};
 #endif
     bool bMuted = false;

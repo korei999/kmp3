@@ -1,18 +1,19 @@
 #include "frame.hh"
 
 #include "adt/Arena.hh"
+#include "adt/OsAllocator.hh"
 #include "adt/defer.hh"
+#include "adt/logs.hh"
 #include "app.hh"
-#include "platform/termbox2/window.hh"
 
-#ifdef MPRIS_LIB
+#ifdef USE_MPRIS
     #include "mpris.hh"
 #endif
 
 namespace frame
 {
 
-#ifdef MPRIS_LIB
+#ifdef USE_MPRIS
 static int
 mprisPollLoop([[maybe_unused]] void* pNull)
 {
@@ -39,13 +40,20 @@ run()
     Arena arena(SIZE_1M);
     defer( ArenaFreeAll(&arena) );
 
-    platform::termbox2::window::init(&arena);
-    defer( platform::termbox2::window::destroy() );
+    app::g_pWin = app::allocWindow(inl_pOsAlloc);
+    defer( free(inl_pOsAlloc, app::g_pWin) );
+
+    if (WindowStart(app::g_pWin, &arena) == false)
+    {
+        CERR("failed to start window\n");
+        return;
+    }
+    defer( WindowDestroy(app::g_pWin) );
 
     app::g_pPlayer->focused = 0;
     PlayerSelectFocused(app::g_pPlayer);
 
-#ifdef MPRIS_LIB
+#ifdef USE_MPRIS
     mpris::init();
     thrd_t mprisThrd {};
     thrd_create(&mprisThrd, mprisPollLoop, {});
@@ -54,8 +62,8 @@ run()
 
     do
     {
-        platform::termbox2::window::render();
-        platform::termbox2::window::procEvents();
+        WindowDraw(app::g_pWin);
+        WindowProcEvents(app::g_pWin);
 
         ArenaReset(&arena);
     }
