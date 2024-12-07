@@ -3,8 +3,9 @@
 #include "mpris.hh"
 
 #include "adt/guard.hh"
-#include "app.hh"
 #include "adt/logs.hh"
+#include "app.hh"
+#include "defaults.hh"
 
 #ifdef USE_BASU
     #include <basu/sd-bus.h>

@@ -5,6 +5,7 @@
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "app.hh"
+#include "defaults.hh"
 
 #ifdef USE_MPRIS
     #include "mpris.hh"

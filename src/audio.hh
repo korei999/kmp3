@@ -2,9 +2,6 @@
 
 #include "adt/Opt.hh"
 #include "adt/String.hh"
-#include "adt/utils.hh"
-#include "defaults.hh"
-#include "mpris.hh"
 
 #include <atomic>
 
@@ -30,6 +27,7 @@ struct MixerVTable
     void (*seekLeftMS)(IMixer* s, u64 ms);
     void (*seekRightMS)(IMixer* s, u64 ms);
     Opt<String> (*getMetadata)(IMixer* s, const String sKey);
+    void (*setVolume)(IMixer* s, const f32 volume);
 };
 
 struct IMixer
@@ -59,13 +57,7 @@ ADT_NO_UB constexpr void MixerSeekMS(IMixer* s, u64 ms) { s->pVTable->seekMS(s, 
 ADT_NO_UB constexpr void MixerSeekLeftMS(IMixer* s, u64 ms) { s->pVTable->seekLeftMS(s, ms); }
 ADT_NO_UB constexpr void MixerSeekRightMS(IMixer* s, u64 ms) { s->pVTable->seekRightMS(s, ms); }
 [[nodiscard]] ADT_NO_UB constexpr Opt<String> MixerGetMetadata(IMixer* s, const String sKey) { return s->pVTable->getMetadata(s, sKey); }
-
-inline void
-MixerSetVolume(IMixer* s, const f32 volume)
-{
-    s->volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
-    mpris::volumeChanged();
-}
+ADT_NO_UB constexpr void MixerSetVolume(IMixer* s, const f32 volume) { s->pVTable->setVolume(s, volume); }
 
 inline void MixerVolumeDown(IMixer* s, const f32 step) { MixerSetVolume(s, s->volume - step); }
 inline void MixerVolumeUp(IMixer* s, const f32 step) { MixerSetVolume(s, s->volume + step); }
@@ -94,6 +86,7 @@ constexpr void DummyMixerSeekMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]]
 constexpr void DummyMixerSeekLeftMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms) {}
 constexpr void DummyMixerSeekRightMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms) {}
 constexpr Opt<String> DummyMixerGetMetadata([[maybe_unused]] IMixer* s, [[maybe_unused]] const String sKey) { return {}; }
+constexpr void DummyMixerSetVolume([[maybe_unused]] DummyMixer* s, [[maybe_unused]] const f32 volume) {}
 
 inline const MixerVTable inl_DummyMixerVTable {
     .init = decltype(MixerVTable::init)(DummyMixerInit),
@@ -106,6 +99,7 @@ inline const MixerVTable inl_DummyMixerVTable {
     .seekLeftMS = decltype(MixerVTable::seekMS)(DummyMixerSeekLeftMS),
     .seekRightMS = decltype(MixerVTable::seekMS)(DummyMixerSeekRightMS),
     .getMetadata = decltype(MixerVTable::getMetadata)(DummyMixerGetMetadata),
+    .setVolume = decltype(MixerVTable::setVolume)(DummyMixerSetVolume),
 };
 
 constexpr

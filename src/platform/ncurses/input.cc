@@ -32,8 +32,7 @@ procEvents()
 {
     while (app::g_bRunning)
     {
-        int ch {};
-        ch = getch();
+        int ch = getch();
 
         procKey(ch);
     }

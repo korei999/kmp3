@@ -5,6 +5,7 @@
 #include "adt/utils.hh"
 #include "adt/math.hh"
 #include "app.hh"
+#include "defaults.hh"
 #include "mpris.hh"
 
 #include <cmath>
@@ -376,6 +377,13 @@ Opt<String>
 MixerGetMetadata(Mixer* s, const String sKey)
 {
     return ffmpeg::DecoderGetMetadataValue(s->pDecoder, sKey);
+}
+
+void
+MixerSetVolume(Mixer* s, const f32 volume)
+{
+    s->base.volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
+    mpris::volumeChanged();
 }
 
 } /* namespace pipewire */

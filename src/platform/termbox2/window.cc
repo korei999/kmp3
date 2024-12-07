@@ -576,7 +576,7 @@ drawBottomLine()
         if (s_input.eCurrMode != READ_MODE::NONE)
         {
             u32 wlen = wcsnlen(s_input.aBuff, utils::size(s_input.aBuff));
-            drawWideString(sSearching.size + wlen, height - 1, L"█", 1, 3);
+            drawWideString(sSearching.size + wlen, height - 1, common::CURSOR_BLOCK, 1, 3);
         }
     }
 }

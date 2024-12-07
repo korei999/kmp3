@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/types.hh"
+#include "app.hh"
 
 using namespace adt;
 
@@ -14,5 +14,7 @@ constexpr int READ_TIMEOUT = 5000; /* string input timeout (ms) */
 constexpr f64 MPRIS_UPDATE_RATE = 100.0; /* delay between mpris polls (ms) */
 constexpr int MIN_SAMPLE_RATE = 1000;
 constexpr int MAX_SAMPLE_RATE = 9999999;
+
+constexpr app::UI_BACKEND eDefautUIBackend = app::UI_BACKEND::TERMBOX;
 
 } /* namespace defaults */

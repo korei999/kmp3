@@ -15,6 +15,7 @@ constexpr u32 CHAR_L = L'┃';
 constexpr u32 CHAR_R = L'┃';
 constexpr u32 CHAR_VOL = L'▯';
 constexpr u32 CHAR_VOL_MUTED = L'▮';
+static const wchar_t* CURSOR_BLOCK = L"█";
 
 inline String
 allocTimeString(Arena* pArena, int width)

@@ -61,6 +61,7 @@ void MixerSeekMS(Mixer* s, long ms);
 void MixerSeekLeftMS(Mixer* s, long ms);
 void MixerSeekRightMS(Mixer* s, long ms);
 Opt<String> MixerGetMetadata(Mixer* s, const String sKey);
+void MixerSetVolume(Mixer* s, const f32 volume);
 
 inline const audio::MixerVTable inl_MixerVTable {
     .init = decltype(audio::MixerVTable::init)(MixerInit),
@@ -73,6 +74,7 @@ inline const audio::MixerVTable inl_MixerVTable {
     .seekLeftMS = decltype(audio::MixerVTable::seekLeftMS)(MixerSeekLeftMS),
     .seekRightMS = decltype(audio::MixerVTable::seekRightMS)(MixerSeekRightMS),
     .getMetadata = decltype(audio::MixerVTable::getMetadata)(MixerGetMetadata),
+    .setVolume = decltype(audio::MixerVTable::setVolume)(MixerSetVolume),
 };
 
 inline Mixer::Mixer(IAllocator* pA) : base(&inl_MixerVTable), pDecoder(ffmpeg::DecoderAlloc(pA)) {}
