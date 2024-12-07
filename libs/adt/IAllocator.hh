@@ -38,7 +38,7 @@ struct AllocatorVTable
 {
     void* (*alloc)(IAllocator* s, u64 mCount, u64 mSize);
     void* (*zalloc)(IAllocator* s, u64 mCount, u64 mSize);
-    void* (*realloc)(IAllocator* s, void* p, u64 mCount, u64 mSize);
+    void* (*realloc)(IAllocator* s, void* p, u64 mCount, u64 mSize); /* must alloc if p == nullptr */
     void (*free)(IAllocator* s, void* p);
     void (*freeAll)(IAllocator* s);
 };

@@ -40,7 +40,7 @@ struct FreeListData
 
     FreeListData* pPrev {};
     FreeListData* pNext {}; /* TODO: calculate from the size (save 8 bytes) */
-    u64 sizeAndIsFree {}; /* isFree bool as leftmost bit */
+    u64 sizeAndIsFree {}; /* isFree bool as leftmost (most significant) bit */
     u8 pMem[];
 
     constexpr u64 getSize() const { return sizeAndIsFree & ~IS_FREE_MASK; }
@@ -49,16 +49,16 @@ struct FreeListData
     constexpr void setSizeSetFree(u64 _size, bool _bFree) { sizeAndIsFree = _size; setFree(_bFree); }
     constexpr void setSize(u64 _size) { setSizeSetFree(_size, isFree()); }
     constexpr void addSize(u64 _size) { setSize(_size + getSize()); }
-    // constexpr FreeListData* nextNode() const { return (FreeListData*)((u8*)this + getSize()); }
+    // constexpr FreeListData* next() const { return (FreeListData*)((u8*)this + getSize()); }
 };
 
 struct FreeList
 {
-    using Node = RBNode<FreeListData>;
+    using Node = RBNode<FreeListData>; /* node is the header + memory chunk of the allocation */
 
     IAllocator super {};
     u64 blockSize {};
-    RBTreeBase<FreeListData> tree {};
+    RBTreeBase<FreeListData> tree {}; /* free nodes sorted by size */
     FreeListBlock* pBlocks {};
 
     FreeList() = default;
@@ -67,7 +67,6 @@ struct FreeList
 
 
 #if defined ADT_DBG_MEMORY
-
 inline void
 _FreeListPrintTree(FreeList* s, IAllocator* pAlloc)
 {
@@ -80,13 +79,12 @@ _FreeListPrintTree(FreeList* s, IAllocator* pAlloc)
 
     RBPrintNodes(pAlloc, &s->tree, s->tree.pRoot, pfn, {}, stderr, {}, false);
 }
-
 #else
     #define _FreeListPrintTree(...) (void)0
 #endif
 
 template<>
-constexpr long
+constexpr s64
 utils::compare(const FreeListData& l, const FreeListData& r)
 {
     return l.getSize() - r.getSize();
@@ -106,6 +104,7 @@ _FreeListBlockFromNode(FreeList* s, FreeList::Node* pNode)
     {
         if ((u8*)pNode > (u8*)pBlock && (u8*)pNode < (u8*)pBlock + pBlock->size)
             return pBlock;
+        pBlock = pBlock->pNext;
     }
 
     return nullptr;
@@ -155,13 +154,13 @@ FreeListFreeAll(FreeList* s)
 }
 
 inline FreeListData*
-_FreeListDataNodeFromPtr(void* p)
+_FreeListDataFromPtr(void* p)
 {
     return (FreeListData*)((u8*)p - sizeof(FreeListData));
 }
 
 inline FreeList::Node*
-_FreeListTreeNodeFromPtr(void* p)
+_FreeListNodeFromPtr(void* p)
 {
     return (FreeList::Node*)((u8*)p - sizeof(FreeList::Node));
 }
@@ -170,20 +169,20 @@ inline FreeList::Node*
 _FreeListFindFittingNode(FreeList* s, const u64 size)
 {
     auto* it = s->tree.pRoot;
-    const long realSize = size + sizeof(FreeList::Node);
+    const s64 realSize = size + sizeof(FreeList::Node);
 
     FreeList::Node* pLastFitting {};
     while (it)
     {
-        assert(it->data.isFree() && "non free node in the free list");
+        assert(it->data.isFree() && "[FreeList]: non free node in the free list");
 
-        long nodeSize = it->data.getSize();
+        s64 nodeSize = it->data.getSize();
 
         if (nodeSize >= realSize)
             pLastFitting = it;
 
         /* save size for the header */
-        long cmp = realSize - nodeSize;
+        s64 cmp = realSize - nodeSize;
 
         if (cmp == 0) break;
         else if (cmp < 0) it = it->left();
@@ -197,8 +196,7 @@ _FreeListFindFittingNode(FreeList* s, const u64 size)
 inline void
 _FreeListVerify(FreeList* s)
 {
-    auto* pBlock = s->pBlocks;
-    while (pBlock)
+    for (auto* pBlock = s->pBlocks; pBlock; pBlock = pBlock->pNext)
     {
         auto* pListNode = &_FreeListNodeFromBlock(pBlock)->data;
         auto* pPrev = pListNode;
@@ -208,7 +206,10 @@ _FreeListVerify(FreeList* s)
             if (pListNode->pNext)
             {
                 bool bNextAdjecent = ((u8*)pListNode + pListNode->getSize()) == ((u8*)pListNode->pNext);
-                assert(bNextAdjecent);
+                if (!bNextAdjecent)
+                    LOG_FATAL("size and next don't match: [next: {}, calc: {}], size: {}, calcSize: {}\n",
+                        pListNode->pNext, ((u8*)pListNode + pListNode->getSize()), pListNode->getSize(), (u8*)pListNode->pNext - (u8*)pListNode
+                    );
             }
 
             pPrev = pListNode;
@@ -226,13 +227,44 @@ _FreeListVerify(FreeList* s)
             pPrev = pListNode;
             pListNode = pListNode->pPrev;
         }
-
-        pBlock = pBlock->pNext;
     }
 }
 #else
-#define _FreeListVerify //
+#define _FreeListVerify(...) (void)0
 #endif
+
+/* Split node in two pieces.
+ * Return left part with realSize.
+ * Insert right part with the rest of the space to the tree */
+inline FreeList::Node*
+_FreeListSplitNode(FreeList* s, FreeList::Node* pNode, u64 realSize)
+{
+    s64 splitSize = s64(pNode->data.getSize()) - s64(realSize);
+
+    assert(splitSize >= 0);
+
+    assert(pNode->data.isFree() && "splitting non free node (corruption)");
+    RBRemove(&s->tree, pNode);
+
+    if (splitSize <= (s64)sizeof(FreeList::Node))
+    {
+        pNode->data.setFree(false);
+        return pNode;
+    }
+
+    FreeList::Node* pSplit = (FreeList::Node*)((u8*)pNode + realSize);
+    pSplit->data.setSizeSetFree(splitSize, true);
+
+    pSplit->data.pNext = pNode->data.pNext;
+    pSplit->data.pPrev = &pNode->data;
+
+    if (pNode->data.pNext) pNode->data.pNext->pPrev = &pSplit->data;
+    pNode->data.pNext = &pSplit->data;
+    pNode->data.setSizeSetFree(realSize, false);
+
+    RBInsert(&s->tree, pSplit, true);
+    return pSplit;
+}
 
 inline void*
 FreeListAlloc(FreeList* s, u64 nMembers, u64 mSize)
@@ -247,8 +279,7 @@ FreeListAlloc(FreeList* s, u64 nMembers, u64 mSize)
     {
         bool bFits = (((pdiff)pBlock->size - (pdiff)sizeof(FreeListBlock)) - (pdiff)pBlock->nBytesOccupied) >= (pdiff)realSize;
 
-        if (!bFits)
-            pBlock = pBlock->pNext;
+        if (!bFits) pBlock = pBlock->pNext;
         else break;
     }
 
@@ -265,35 +296,11 @@ again:
     auto* pFree = _FreeListFindFittingNode(s, requested);
     if (!pFree) goto again;
 
-
-    assert(pFree->data.isFree());
-
     pBlock->nBytesOccupied += realSize;
-    s64 splitSize = s64(pFree->data.getSize()) - s64(realSize);
 
-    assert(splitSize >= 0);
+    _FreeListSplitNode(s, pFree, realSize);
 
-    RBRemove(&s->tree, pFree);
-
-    if (splitSize <= (s64)sizeof(FreeList::Node))
-    {
-        pFree->data.setFree(false);
-        return pFree->data.pMem;
-    }
-
-    FreeList::Node* pSplit = (FreeList::Node*)((u8*)pFree + splitSize);
-    pSplit->data.setSizeSetFree(realSize, false);
-
-    pSplit->data.pNext = pFree->data.pNext;
-    pSplit->data.pPrev = &pFree->data;
-
-    if (pFree->data.pNext) pFree->data.pNext->pPrev = &pSplit->data;
-    pFree->data.pNext = &pSplit->data;
-    pFree->data.setSizeSetFree(splitSize, true);
-
-    RBInsert(&s->tree, pFree, true);
-
-    return pSplit->data.pMem;
+    return pFree->data.pMem;
 }
 
 inline void*
@@ -307,16 +314,18 @@ FreeListZalloc(FreeList* s, u64 nMembers, u64 mSize)
 inline void
 FreeListFree(FreeList* s, void* ptr)
 {
-    auto* pThis = _FreeListTreeNodeFromPtr(ptr);
-
+    auto* pThis = _FreeListNodeFromPtr(ptr);
     assert(!pThis->data.isFree());
 
+    auto* pBlock = _FreeListBlockFromNode(s, pThis);
+
     pThis->data.setFree(true);
+    pBlock->nBytesOccupied -= pThis->data.getSize();
 
     /* next adjecent node coalescence */
     if (pThis->data.pNext && pThis->data.pNext->isFree())
     {
-        RBRemove(&s->tree, _FreeListTreeNodeFromPtr(pThis->data.pNext->pMem));
+        RBRemove(&s->tree, _FreeListNodeFromPtr(pThis->data.pNext->pMem));
 
         pThis->data.addSize(pThis->data.pNext->getSize());
         if (pThis->data.pNext->pNext)
@@ -327,7 +336,7 @@ FreeListFree(FreeList* s, void* ptr)
     /* prev adjecent node coalescence */
     if (pThis->data.pPrev && pThis->data.pPrev->isFree())
     {
-        auto* pPrev = _FreeListTreeNodeFromPtr(pThis->data.pPrev->pMem);
+        auto* pPrev = _FreeListNodeFromPtr(pThis->data.pPrev->pMem);
         RBRemove(&s->tree, pPrev);
 
         pThis = pPrev;
@@ -346,13 +355,45 @@ FreeListRealloc(FreeList* s, void* ptr, u64 nMembers, u64 mSize)
 {
     if (!ptr) return FreeListAlloc(s, nMembers, mSize);
 
-    auto* pNode = _FreeListTreeNodeFromPtr(ptr);
-    s64 nodeSize = (s64)pNode->data.getSize() - (s64)sizeof(FreeList::Node);
-    assert(nodeSize > 0);
+    auto* pThis = _FreeListNodeFromPtr(ptr);
+    s64 nodeSize = (s64)pThis->data.getSize() - (s64)sizeof(FreeList::Node);
+    assert(nodeSize > 0 && "[FreeList]: 0 or negative size allocation (corruption)");
 
     if ((s64)nMembers*(s64)mSize <= nodeSize) return ptr;
 
-    assert(!pNode->data.isFree());
+    assert(!pThis->data.isFree() && "[FreeList]: trying to realloc non free node");
+
+    /* try to bump if next is free and can fit */
+    {
+        u64 requested = align8(nMembers * mSize);
+        u64 realSize = requested + sizeof(FreeList::Node);
+        auto* pNext = pThis->data.pNext;
+
+        if (pNext && pNext->isFree() && pThis->data.getSize() + pNext->getSize() >= realSize)
+        {
+            auto* pBlock = _FreeListBlockFromNode(s, pThis);
+            assert(pBlock && "[FreeList]: failed to find the block");
+
+            pBlock->nBytesOccupied += realSize - pThis->data.getSize();;
+
+            /* remove next from the free list */
+            pNext->setFree(false);
+            RBRemove(&s->tree, _FreeListNodeFromPtr(pNext->pMem));
+
+            /* merge with next */
+            pThis->data.addSize(pNext->getSize());
+            pThis->data.pNext = pNext->pNext;
+            if (pNext->pNext) pNext->pNext->pPrev = &pThis->data;
+            pThis->data.setFree(true);
+
+            RBInsert(&s->tree, _FreeListNodeFromPtr(ptr), true);
+
+            _FreeListSplitNode(s, pThis, realSize);
+
+            assert(ptr == pThis->data.pMem);
+            return ptr;
+        }
+    }
 
     auto* pRet = FreeListAlloc(s, nMembers, mSize);
     memcpy(pRet, ptr, nodeSize);

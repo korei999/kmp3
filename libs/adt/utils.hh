@@ -99,14 +99,14 @@ even(const auto& a)
 }
 
 template<typename T>
-[[nodiscard]] constexpr long
+[[nodiscard]] constexpr s64
 compare(const T& l, const T& r)
 {
     return l - r;
 }
 
 template<typename T>
-[[nodiscard]] constexpr long
+[[nodiscard]] constexpr s64
 compareRev(const T& l, const T& r)
 {
     return r - l;

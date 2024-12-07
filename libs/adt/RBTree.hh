@@ -50,30 +50,21 @@ class RBNode
     static constexpr u64 COLOR_MASK = 1ULL;
     RBNode* m_left {};
     RBNode* m_right {};
-    RBNode* m_parentCol {}; /* NOTE: color is stored as the least significant bit */
+    RBNode* m_parentColor {}; /* NOTE: color is stored as the least significant bit */
 
 public:
     T data {};
 
     RBNode*& left() { return m_left; }
-
     RBNode* const& left() const { return m_left; }
-
     RBNode*& right() { return m_right; }
-
     RBNode* const& right() const { return m_right; }
-
-    RB_COLOR color() const { return (RB_COLOR)((u64)m_parentCol & COLOR_MASK); }
-
-    RB_COLOR setColor(const RB_COLOR eColor) { m_parentCol = (RBNode*)((u64)parent() | (u64)eColor); return eColor; }
-
-    RBNode* parent() const {  return (RBNode*)((u64)m_parentCol & ~COLOR_MASK); }
-
-    void setParent(RBNode* par) { m_parentCol = (RBNode*)(((u64)par & ~COLOR_MASK) | (u64)color()); }
-
-    RBNode*& parentAndColor() { return m_parentCol; }
-
-    RBNode* const& parentAndColor() const { return m_parentCol; }
+    RB_COLOR color() const { return (RB_COLOR)((u64)m_parentColor & COLOR_MASK); }
+    RB_COLOR setColor(const RB_COLOR eColor) { m_parentColor = (RBNode*)((u64)parent() | (u64)eColor); return eColor; }
+    RBNode* parent() const {  return (RBNode*)((u64)m_parentColor & ~COLOR_MASK); }
+    void setParent(RBNode* par) { m_parentColor = (RBNode*)(((u64)par & ~COLOR_MASK) | (u64)color()); }
+    RBNode*& parentAndColor() { return m_parentColor; }
+    RBNode* const& parentAndColor() const { return m_parentColor; }
 };
 
 template<typename T>
@@ -575,7 +566,7 @@ RBTraverse(
         return RBTraversePOST(p, pfn, pUserData);
     }
 
-    assert(false && "[RbTree]: incorrect RB_ORDER");
+    assert(false && "[RBTree]: incorrect RB_ORDER");
     return {};
 }
 
