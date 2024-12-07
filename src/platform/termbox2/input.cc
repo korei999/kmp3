@@ -1,6 +1,5 @@
 #include "input.hh"
 
-#include "adt/logs.hh"
 #include "app.hh"
 #include "window.hh"
 #include "keybinds.hh"
@@ -17,15 +16,13 @@ namespace termbox2
 namespace input
 {
 
-static u16 s_aInputMap[0xffff] {};
+static u16 s_aInputMap[0xffff + 1] {};
 
 void
 procKey(tb_event* pEv)
 {
     const auto key = s_aInputMap[pEv->key];
-    const auto ch = s_aInputMap[pEv->ch];
-
-    LOG_NOTIFY("key({}): '{}', ch({}): '{}'\n", key, (wchar_t)key, ch, (wchar_t)ch);
+    const u32 ch = pEv->ch <= utils::size(s_aInputMap) ? s_aInputMap[pEv->ch] : 0;
 
     for (auto& k : keybinds::gc_aKeys)
     {

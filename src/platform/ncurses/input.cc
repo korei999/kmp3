@@ -1,8 +1,7 @@
 #include "input.hh"
 
-#include "adt/logs.hh"
 #include "app.hh"
-#include "keys.hh"
+#include "keybinds.hh"
 
 #include <ncurses.h>
 
@@ -13,23 +12,31 @@ namespace ncurses
 namespace input
 {
 
-static u16 s_aInputMap[1000] {};
-
-void
-procEvents()
+static void
+procKey(int ch)
 {
-    int ch {};
-    while (app::g_bRunning)
+    if (ch == -1) return;
+
+    for (auto& k : keybinds::gc_aKeys)
     {
-        ch = getch();
-        LOG_GOOD("ch({}): '{}'\n", ch, (wchar_t)ch);
+        auto& pfn = k.pfn;
+        auto& arg = k.arg;
+
+        if ((k.key > 0 && k.key == ch) || (k.ch > 0 && k.ch == (u32)ch))
+            resolvePFN(k.pfn, k.arg);
     }
 }
 
 void
-fillInputMap()
+procEvents()
 {
-    for (int i = '!'; i < '~'; ++i) s_aInputMap[i] = i;
+    while (app::g_bRunning)
+    {
+        int ch {};
+        ch = getch();
+
+        procKey(ch);
+    }
 }
 
 } /*namespace input */

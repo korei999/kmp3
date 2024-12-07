@@ -31,6 +31,7 @@ WinStart(Win* s, Arena* pArena)
 void
 WinDestroy(Win* s)
 {
+    endwin();
 }
 
 void
