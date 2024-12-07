@@ -37,11 +37,11 @@ mprisPollLoop([[maybe_unused]] void* pNull)
 void
 run()
 {
-    Arena arena(SIZE_1M);
-    defer( ArenaFreeAll(&arena) );
-
     app::g_pWin = app::allocWindow(inl_pOsAlloc);
     defer( free(inl_pOsAlloc, app::g_pWin) );
+
+    Arena arena(SIZE_1M);
+    defer( ArenaFreeAll(&arena) );
 
     if (WindowStart(app::g_pWin, &arena) == false)
     {
