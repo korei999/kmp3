@@ -1,8 +1,12 @@
 #include "input.hh"
 
+#include "adt/logs.hh"
 #include "app.hh"
 #include "window.hh"
 #include "keybinds.hh"
+#include "common.hh"
+
+#include "termbox2/termbox2.h"
 
 #include <cmath>
 
@@ -13,12 +17,15 @@ namespace termbox2
 namespace input
 {
 
+static u16 s_aInputMap[0xffff] {};
+
 void
 procKey(tb_event* pEv)
 {
-    const auto& key = pEv->key;
-    const auto& ch = pEv->ch;
-    [[maybe_unused]] const auto& mod = pEv->mod;
+    const auto key = s_aInputMap[pEv->key];
+    const auto ch = s_aInputMap[pEv->ch];
+
+    LOG_NOTIFY("key({}): '{}', ch({}): '{}'\n", key, (wchar_t)key, ch, (wchar_t)ch);
 
     for (auto& k : keybinds::gc_aKeys)
     {
@@ -26,34 +33,7 @@ procKey(tb_event* pEv)
         auto& arg = k.arg;
 
         if ((k.key > 0 && k.key == key) || (k.ch > 0 && k.ch == ch))
-        {
-            switch (k.arg.eType)
-            {
-                case keybinds::ARG_TYPE::NONE:
-                pfn.none();
-                break;
-
-                case keybinds::ARG_TYPE::LONG:
-                pfn.long_(arg.uVal.l);
-                break;
-
-                case keybinds::ARG_TYPE::F32:
-                pfn.f32_(arg.uVal.f);
-                break;
-
-                case keybinds::ARG_TYPE::U64:
-                pfn.u64_(arg.uVal.u);
-                break;
-
-                case keybinds::ARG_TYPE::U64_BOOL:
-                pfn.u64b(arg.uVal.ub.u, arg.uVal.ub.b);
-                break;
-
-                case keybinds::ARG_TYPE::BOOL:
-                pfn.bool_(arg.uVal.b);
-                break;
-            }
-        }
+            resolvePFN(k.pfn, k.arg);
     }
 
     if (key == TB_KEY_F1)
@@ -126,6 +106,28 @@ procMouse(tb_event* pEv)
         PlayerFocus(&pl, pl.focused + 22);
 }
 
+void
+fillInputMap()
+{
+    /* ascii's are all the same */
+    for (int i = '!'; i < '~'; ++i) s_aInputMap[i] = i;
+
+    s_aInputMap[TB_KEY_ENTER] = keys::ENTER;
+
+    s_aInputMap[TB_KEY_PGDN] = keys::PGDN;
+    s_aInputMap[TB_KEY_PGUP] = keys::PGUP;
+
+    s_aInputMap[TB_KEY_CTRL_D] = keys::CTRL_D;
+    s_aInputMap[TB_KEY_CTRL_U] = keys::CTRL_U;
+
+    s_aInputMap[TB_KEY_HOME] = keys::HOME;
+    s_aInputMap[TB_KEY_END] = keys::END;
+
+    s_aInputMap[TB_KEY_ARROW_UP] = keys::ARROWUP;
+    s_aInputMap[TB_KEY_ARROW_DOWN] = keys::ARROWDOWN;
+    s_aInputMap[TB_KEY_ARROW_LEFT] = keys::ARROWLEFT;
+    s_aInputMap[TB_KEY_ARROW_RIGHT] = keys::ARROWRIGHT;
+}
 
 } /* namespace input */
 } /* namespace termbox2 */

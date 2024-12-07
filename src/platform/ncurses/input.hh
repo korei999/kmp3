@@ -8,7 +8,7 @@ namespace input
 {
 
 void procEvents();
-
+void fillInputMap();
 
 } /*namespace input */
 } /*namespace ncurses */

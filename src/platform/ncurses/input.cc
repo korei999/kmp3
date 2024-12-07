@@ -2,6 +2,7 @@
 
 #include "adt/logs.hh"
 #include "app.hh"
+#include "keys.hh"
 
 #include <ncurses.h>
 
@@ -12,6 +13,8 @@ namespace ncurses
 namespace input
 {
 
+static u16 s_aInputMap[1000] {};
+
 void
 procEvents()
 {
@@ -21,6 +24,12 @@ procEvents()
         ch = getch();
         LOG_GOOD("ch({}): '{}'\n", ch, (wchar_t)ch);
     }
+}
+
+void
+fillInputMap()
+{
+    for (int i = '!'; i < '~'; ++i) s_aInputMap[i] = i;
 }
 
 } /*namespace input */

@@ -92,6 +92,8 @@ init(Arena* pAlloc)
 
     g_pFrameArena = pAlloc;
 
+    input::fillInputMap();
+
     return r == 0;
 }
 

@@ -11,6 +11,7 @@ namespace input
 
 void procKey(tb_event* pEv);
 void procMouse(tb_event* pEv);
+void fillInputMap();
 
 } /* namespace input */
 } /* namespace termbox2 */
