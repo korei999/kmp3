@@ -295,6 +295,25 @@ drawBox(
 }
 
 static void
+drawWideString(
+    const int x,
+    const int y,
+    const wchar_t* pBuff,
+    const u32 buffSize,
+    const long maxLen,
+    const u32 fg = TB_WHITE,
+    const u32 bg = TB_DEFAULT
+)
+{
+    long i = 0;
+    while (i < buffSize && pBuff[i] && i < maxLen - 2)
+    {
+        tb_set_cell(x + 1 + i, y, pBuff[i], fg, bg);
+        ++i;
+    }
+}
+
+static void
 drawMBString(
     const int x,
     const int y,
@@ -314,48 +333,41 @@ drawMBString(
     int nWraps = 0;
     long maxLenMod = maxLen;
 
-    for (; it < str.size; ++max)
+    wchar_t* pWstr = (wchar_t*)zalloc(g_pFrameArena, str.size + 1, sizeof(wchar_t));
+    auto mbLen = mbstowcs(pWstr, str.pData, str.size);
+
+    for (long i = 0, wrapLen = 0; i < maxLen - 2 && i < (long)mbLen && pWstr[i]; ++i, ++wrapLen, ++xOff)
     {
-        if (max >= maxLenMod - 2)
-        {
-            if (bWrap)
-            {
-                max = 0;
-                maxLenMod = maxLen + (x - xWrapAt); /* string gets longer */
-                xOff = xWrapAt;
-                ++yOff;
-                ++nWraps;
-                if (nWraps > nMaxWraps) break;
-            }
-            else break;
-        }
-
-        wchar_t wc {};
-        int charLen = mbtowc(&wc, &str[it], str.size - it);
-        if (charLen < 0) return;
-
-        it += charLen;
-        tb_set_cell(xOff + 1 + max, yOff, wc, fg, bg);
+        tb_set_cell(xOff + 1, yOff, pWstr[i], fg, bg);
     }
-}
 
-static void
-drawWideString(
-    const int x,
-    const int y,
-    const wchar_t* pBuff,
-    const u32 buffSize,
-    const long maxLen,
-    const u32 fg = TB_WHITE,
-    const u32 bg = TB_DEFAULT
-)
-{
-    long i = 0;
-    while (i < buffSize && pBuff[i] && i < maxLen - 2)
-    {
-        tb_set_cell(x + 1 + i, y, pBuff[i], fg, bg);
-        ++i;
-    }
+
+    // wchar_t wc {};
+    // for (; it < str.size; ++max)
+    // {
+    //     if (max >= maxLenMod - 2)
+    //     {
+    //         break;
+
+    //         /* FIXME: breaks termbox */
+    //         // if (bWrap)
+    //         // {
+    //         //     max = 0;
+    //         //     maxLenMod = maxLen + (x - xWrapAt); /* string gets longer */
+    //         //     xOff = xWrapAt;
+    //         //     ++yOff;
+    //         //     ++nWraps;
+    //         //     if (nWraps > nMaxWraps) break;
+    //         // }
+    //         // else break;
+    //     }
+
+    //     int charLen = mbtowc(&wc, &str[it], str.size - it);
+    //     if (charLen < 0) break;
+
+    //     it += charLen;
+    //     tb_set_cell(xOff + 1 + max, yOff, wc, fg, bg);
+    // }
 }
 
 static void
@@ -505,7 +517,7 @@ drawInfo()
         if (pl.info.title.size > 0)
             print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
-        drawMBString(split + 1 + n, 1, pBuff, maxStringWidth - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT, true, split + 1, 1);
+        drawMBString(split + 1 + n, 1, pBuff, maxStringWidth - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT, true, split + 1, 1);
     }
 
     /* album */
@@ -517,7 +529,7 @@ drawInfo()
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.album);
-            drawMBString(split + 1 + n, 3, pBuff, maxStringWidth - n, TB_BOLD);
+            drawMBString(split + 1 + n, 3, pBuff, maxStringWidth - n - 1, TB_BOLD);
         }
     }
 
@@ -530,7 +542,7 @@ drawInfo()
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.artist);
-            drawMBString(split + 1 + n, 4, pBuff, maxStringWidth - n, TB_BOLD);
+            drawMBString(split + 1 + n, 4, pBuff, maxStringWidth - n - 1, TB_BOLD);
         }
     }
 }
