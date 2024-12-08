@@ -39,6 +39,11 @@ main(int argc, char** argv)
             app::g_eUIBackend = app::UI_BACKEND::NCURSES;
             LOG_NOTIFY("setting NCURSES ui\n");
         }
+        else if (argv[1] == String("--notcurses"))
+        {
+            app::g_eUIBackend = app::UI_BACKEND::NOTCURSES;
+            LOG_NOTIFY("setting NOTCURSES ui\n");
+        }
     }
 
     Vec<String> aInput(&arena.super, argc);

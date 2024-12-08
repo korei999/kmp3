@@ -1,9 +1,14 @@
 #include "app.hh"
 
+#include "adt/logs.hh"
 #include "platform/termbox2/window.hh"
 
 #ifdef USE_NCURSES
     #include "platform/ncurses/Win.hh"
+#endif
+
+#ifdef USE_NOTCURSES
+    #include "platform/notcurses/Win.hh"
 #endif
 
 namespace app
@@ -20,7 +25,7 @@ Player* g_pPlayer {};
 audio::IMixer* g_pMixer {};
 
 IWindow*
-allocWindow(IAllocator* pArena)
+allocWindow(IAllocator* pAlloc)
 {
     IWindow* pRet {};
 
@@ -28,7 +33,7 @@ allocWindow(IAllocator* pArena)
     {
         case UI_BACKEND::TERMBOX:
         {
-            auto* pTermboxWin = (platform::termbox2::Win*)alloc(pArena, 1, sizeof(platform::termbox2::Win));
+            auto* pTermboxWin = (platform::termbox2::Win*)alloc(pAlloc, 1, sizeof(platform::termbox2::Win));
             *pTermboxWin = platform::termbox2::Win();
             pRet = &pTermboxWin->super;
         } break;
@@ -36,7 +41,7 @@ allocWindow(IAllocator* pArena)
         case UI_BACKEND::NCURSES:
         {
 #ifdef USE_NCURSES
-            auto* pNCurses = (platform::ncurses::Win*)alloc(pArena, 1, sizeof(platform::ncurses::Win));
+            auto* pNCurses = (platform::ncurses::Win*)alloc(pAlloc, 1, sizeof(platform::ncurses::Win));
             *pNCurses = platform::ncurses::Win();
             pRet = &pNCurses->super;
 #else
@@ -44,6 +49,18 @@ allocWindow(IAllocator* pArena)
             exit(1);
 #endif
         } break;
+
+        case UI_BACKEND::NOTCURSES:
+        {
+#ifdef USE_NOTCURSES
+            auto* pNotCurses = (platform::notcurses::Win*)alloc(pAlloc, 1, sizeof(platform::notcurses::Win));
+            *pNotCurses = platform::notcurses::Win();
+            pRet = &pNotCurses->super;
+#else
+            CERR("UI_BACKEND::NCURSES: not available\n");
+            exit(1);
+#endif
+        };
     }
 
     return pRet;

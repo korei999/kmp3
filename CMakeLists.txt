@@ -180,6 +180,17 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         )
     endif()
 
+    pkg_check_modules(NOTCURSES notcurses)
+    if (${NOTCURSES_FOUND})
+        include_directories(BEFORE ${CMAKE_PROJECT_NAME})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${NOTCURSES_LIBRARIES})
+        add_definitions("-DUSE_NOTCURSES")
+        target_sources(
+            ${CMAKE_PROJECT_NAME} PRIVATE
+            "src/platform/notcurses/Win.cc"
+        )
+    endif()
+
     pkg_check_modules(SYSTEMD libsystemd)
     if (${SYSTEMD_FOUND})
         include_directories(BEFORE ${CMAKE_PROJECT_NAME})
