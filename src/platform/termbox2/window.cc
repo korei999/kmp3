@@ -333,41 +333,40 @@ drawMBString(
     int nWraps = 0;
     long maxLenMod = maxLen;
 
-    wchar_t* pWstr = (wchar_t*)zalloc(g_pFrameArena, str.size + 1, sizeof(wchar_t));
-    auto mbLen = mbstowcs(pWstr, str.pData, str.size);
+    // wchar_t* pWstr = (wchar_t*)zalloc(g_pFrameArena, str.size + 1, sizeof(wchar_t));
+    // auto mbLen = mbstowcs(pWstr, str.pData, str.size);
 
-    for (long i = 0, wrapLen = 0; i < maxLen - 2 && i < (long)mbLen && pWstr[i]; ++i, ++wrapLen, ++xOff)
-    {
-        tb_set_cell(xOff + 1, yOff, pWstr[i], fg, bg);
-    }
-
-
-    // wchar_t wc {};
-    // for (; it < str.size; ++max)
+    // for (long i = 0, wrapLen = 0; i < maxLen - 2 && i < (long)mbLen && pWstr[i]; ++i, ++wrapLen, ++xOff)
     // {
-    //     if (max >= maxLenMod - 2)
-    //     {
-    //         break;
-
-    //         /* FIXME: breaks termbox */
-    //         // if (bWrap)
-    //         // {
-    //         //     max = 0;
-    //         //     maxLenMod = maxLen + (x - xWrapAt); /* string gets longer */
-    //         //     xOff = xWrapAt;
-    //         //     ++yOff;
-    //         //     ++nWraps;
-    //         //     if (nWraps > nMaxWraps) break;
-    //         // }
-    //         // else break;
-    //     }
-
-    //     int charLen = mbtowc(&wc, &str[it], str.size - it);
-    //     if (charLen < 0) break;
-
-    //     it += charLen;
-    //     tb_set_cell(xOff + 1 + max, yOff, wc, fg, bg);
+    //     tb_set_cell(xOff + 1, yOff, pWstr[i], fg, bg);
     // }
+
+    wchar_t wc {};
+    for (; it < str.size; ++max)
+    {
+        if (max >= maxLenMod - 2)
+        {
+            break;
+
+            /* FIXME: breaks termbox */
+            // if (bWrap)
+            // {
+            //     max = 0;
+            //     maxLenMod = maxLen + (x - xWrapAt); /* string gets longer */
+            //     xOff = xWrapAt;
+            //     ++yOff;
+            //     ++nWraps;
+            //     if (nWraps > nMaxWraps) break;
+            // }
+            // else break;
+        }
+
+        int charLen = mbtowc(&wc, &str[it], str.size - it);
+        if (charLen < 0) break;
+
+        it += charLen;
+        tb_set_cell(xOff + 1 + max, yOff, wc, fg, bg);
+    }
 }
 
 static void
