@@ -26,6 +26,8 @@ struct Decoder
     SwrContext* pSwr {};
     int audioStreamIdx {};
     u64 currentSamplePos {};
+
+    AVStream* pPictureStream {};
 };
 
 Decoder*
@@ -65,6 +67,37 @@ DecoderGetMetadataValue(Decoder* s, const String sKey)
     }
 }
 
+static ERROR
+DecoderLoadPicture(Decoder* s, AVStream* pStream)
+{
+    int err = 0;
+    s->pPictureStream = pStream;
+
+    const AVCodec* pCodec = avcodec_find_decoder(pStream->codecpar->codec_id);
+    if (!pCodec) return ERROR::DECODER_NOT_FOUND;
+
+    auto* pCodecCtx = avcodec_alloc_context3(pCodec);
+    if (!pCodecCtx) return ERROR::DECODING_CONTEXT_ALLOCATION;
+
+    LOG_WARN("codec name: '{}'\n", pCodec->long_name);
+
+    err = av_read_frame(s->pFormatCtx, &pStream->attached_pic);
+        LOG_WARN("av_read_frame(): {}\n", err);
+
+    err = avcodec_send_packet(pCodecCtx, &pStream->attached_pic);
+    LOG_WARN("avcodec_send_packet(): {}\n", err);
+
+    AVFrame frame {};
+    err = avcodec_receive_frame(pCodecCtx, &frame);
+    if (err == AVERROR(EINVAL))
+        LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
+
+    defer( av_frame_unref(&frame) );
+    LOG_WARN("width: {}, height: {}\n", frame.width, frame.height);
+
+    return ERROR::OK;
+}
+
 ERROR
 DecoderOpen(Decoder* s, String sPath)
 {
@@ -89,7 +122,6 @@ DecoderOpen(Decoder* s, String sPath)
     s->pStream = s->pFormatCtx->streams[idx];
 
     const AVCodec* pCodec = avcodec_find_decoder(s->pStream->codecpar->codec_id);
-
     if (!pCodec) return ERROR::DECODER_NOT_FOUND;
 
     s->pCodecCtx = avcodec_alloc_context3(pCodec);
@@ -109,6 +141,18 @@ DecoderOpen(Decoder* s, String sPath)
         &s->pStream->codecpar->ch_layout, (AVSampleFormat)s->pStream->codecpar->format, s->pStream->codecpar->sample_rate,
         0, {}
     );
+
+    for (u32 i = 0; i < s->pFormatCtx->nb_streams; ++i)
+    {
+        auto* pStream = s->pFormatCtx->streams[i];
+        if (pStream->disposition & AV_DISPOSITION_ATTACHED_PIC)
+        {
+            LOG_WARN("Found 'attached_pic'\n");
+            auto eErr = DecoderLoadPicture(s, pStream);
+            LOG_WARN("DecoderLoadPicture(): {}\n", int(eErr));
+            break;
+        }
+    }
 
     LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
 

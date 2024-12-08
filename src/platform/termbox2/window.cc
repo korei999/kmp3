@@ -29,6 +29,10 @@
     #pragma GCC diagnostic pop
 #endif
 
+#ifdef USE_SIXEL
+    #include "platform/sixel/Img.hh"
+#endif
+
 namespace platform
 {
 namespace termbox2
@@ -39,6 +43,7 @@ namespace window
 Arena* g_pFrameArena {};
 bool g_bDrawHelpMenu = false;
 u16 g_firstIdx = 0;
+bool s_bRedrawImg = true;
 
 static struct {
     wchar_t aBuff[64] {};
@@ -623,7 +628,12 @@ draw()
         drawTimeSlider();
         drawSongList();
         drawBottomLine();
+
         if (g_bDrawHelpMenu) drawHelpMenu();
+
+        if (s_bRedrawImg)
+        {
+        }
     }
 
     tb_present();

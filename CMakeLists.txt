@@ -46,9 +46,10 @@ add_executable(
     src/platform/termbox2/input.cc
 )
 
-option(OPT_NCURSES "build with ncurses support" ON)
-option(OPT_NOTCURSES "build with notcurses support" OFF)
-option(OPT_MPRIS "build with mpris support" ON)
+option(OPT_NCURSES "ncurses support" ON)
+option(OPT_NOTCURSES "notcurses support" OFF)
+option(OPT_MPRIS "mpris support" ON)
+option(OPT_SIXEL "sixel support" ON)
 
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
 
@@ -171,17 +172,32 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         ${LINUX_PKGS_LIBRARIES}
     )
 
-    pkg_check_modules(NCURSES ncursesw)
-    if (${NCURSES_FOUND})
-        include_directories(BEFORE ${CMAKE_PROJECT_NAME})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${NCURSES_LIBRARIES})
-        add_definitions("-DUSE_NCURSES")
-        add_definitions("-DNCURSES_WIDECHAR")
-        target_sources(
-            ${CMAKE_PROJECT_NAME} PRIVATE
-            "src/platform/ncurses/Win.cc"
-            "src/platform/ncurses/input.cc"
-        )
+    if (OPT_SIXEL)
+        pkg_check_modules(SIXEL libsixel)
+        if (${SIXEL_FOUND})
+            include_directories(BEFORE ${CMAKE_PROJECT_NAME})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SIXEL_LIBRARIES})
+            add_definitions("-DUSE_SIXEL")
+            target_sources(
+                ${CMAKE_PROJECT_NAME} PRIVATE
+                "src/platform/sixel/Img.cc"
+            )
+        endif()
+    endif()
+
+    if (OPT_NCURSES)
+        pkg_check_modules(NCURSES ncursesw)
+        if (${NCURSES_FOUND})
+            include_directories(BEFORE ${CMAKE_PROJECT_NAME})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${NCURSES_LIBRARIES})
+            add_definitions("-DUSE_NCURSES")
+            add_definitions("-DNCURSES_WIDECHAR")
+            target_sources(
+                ${CMAKE_PROJECT_NAME} PRIVATE
+                "src/platform/ncurses/Win.cc"
+                "src/platform/ncurses/input.cc"
+            )
+        endif()
     endif()
 
     if (OPT_NOTCURSES)
