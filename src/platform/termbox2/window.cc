@@ -311,7 +311,6 @@ drawMBString(
     long max = 0;
     int yOff = y;
     int xOff = x;
-    int xWrap = xWrapAt;
     int nWraps = 0;
     long maxLenMod = maxLen;
 
