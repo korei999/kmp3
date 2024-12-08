@@ -39,4 +39,23 @@ allocTimeString(Arena* pArena, int width)
     return pBuff;
 }
 
+/* fix song list range after focus change */
+inline void
+fixFirstIdx(const u16 listHeight, u16* pFirstIdx)
+{
+    const auto& pl = *app::g_pPlayer;
+
+    const u16 focused = pl.focused;
+    u16 first = *pFirstIdx;
+
+    if (focused > first + listHeight)
+        first = focused - listHeight;
+    else if (focused < first)
+        first = focused;
+    else if (pl.aSongIdxs.size < listHeight)
+        first = 0;
+
+    *pFirstIdx = first;
+}
+
 } /* namespace common */

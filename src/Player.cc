@@ -197,16 +197,15 @@ PlayerCycleRepeatMethods(Player* s, bool bForward)
 {
     using enum PLAYER_REPEAT_METHOD;
 
-    PLAYER_REPEAT_METHOD rm {};
+    int rm;
+    if (bForward) rm = ((int(s->eReapetMethod) + 1) % int(ESIZE));
+    else rm = ((int(s->eReapetMethod) + (int(ESIZE) - 1)) % int(ESIZE));
 
-    if (bForward) rm = (s->eReapetMethod + 1) % ESIZE;
-    else rm = (s->eReapetMethod + (ESIZE - 1)) % ESIZE;
-
-    s->eReapetMethod = rm;
+    s->eReapetMethod = PLAYER_REPEAT_METHOD(rm);
 
     mpris::loopStatusChanged();
 
-    return rm;
+    return PLAYER_REPEAT_METHOD(rm);
 }
 
 void

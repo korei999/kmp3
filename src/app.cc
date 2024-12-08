@@ -1,6 +1,5 @@
 #include "app.hh"
 
-#include "adt/logs.hh"
 #include "platform/termbox2/window.hh"
 
 #ifdef USE_NCURSES
@@ -37,7 +36,7 @@ allocWindow(IAllocator* pArena)
         case UI_BACKEND::NCURSES:
         {
 #ifdef USE_NCURSES
-            auto* pNCurses = (platform::ncurses::Win*)alloc(pArena, 1, sizeof(platform::ncurses::Win*));
+            auto* pNCurses = (platform::ncurses::Win*)alloc(pArena, 1, sizeof(platform::ncurses::Win));
             *pNCurses = platform::ncurses::Win();
             pRet = &pNCurses->super;
 #else

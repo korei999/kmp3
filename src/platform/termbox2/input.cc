@@ -24,7 +24,7 @@ procKey(tb_event* pEv)
     const auto key = s_aInputMap[pEv->key];
     const u32 ch = pEv->ch <= utils::size(s_aInputMap) ? s_aInputMap[pEv->ch] : 0;
 
-    for (auto& k : keybinds::gc_aKeys)
+    for (const auto& k : keybinds::inl_aKeys)
     {
         auto& pfn = k.pfn;
         auto& arg = k.arg;
@@ -110,6 +110,7 @@ fillInputMap()
     for (int i = '!'; i < '~'; ++i) s_aInputMap[i] = i;
 
     s_aInputMap[TB_KEY_ENTER] = keys::ENTER;
+    s_aInputMap[TB_KEY_CTRL_C] = keys::CTRL_C;
 
     s_aInputMap[TB_KEY_PGDN] = keys::PGDN;
     s_aInputMap[TB_KEY_PGUP] = keys::PGUP;

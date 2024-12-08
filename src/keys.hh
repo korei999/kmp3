@@ -107,5 +107,6 @@ constexpr int PGDN = 338;
 constexpr int PGUP = 339;
 
 constexpr int ENTER = 10;
+constexpr int CTRL_C = 3;
 
 } /* namespace keys */

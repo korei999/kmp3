@@ -36,8 +36,6 @@ namespace termbox2
 namespace window
 {
 
-// enum READ_MODE : u8 {NONE, SEARCH, SEEK};
-
 Arena* g_pFrameArena {};
 bool g_bDrawHelpMenu = false;
 u16 g_firstIdx = 0;
@@ -56,27 +54,6 @@ readModeToString(READ_MODE e)
 {
     constexpr String map[] {"", "searching: ", "time: "};
     return map[int(e)];
-}
-
-/* fix song list range after focus change */
-static void
-fixFirstIdx()
-{
-    const auto& pl = *app::g_pPlayer;
-    const auto off = pl.statusAndInfoHeight;
-    const u16 listHeight = tb_height() - 7 - off;
-
-    const u16 focused = pl.focused;
-    u16 first = g_firstIdx;
-
-    if (focused > first + listHeight)
-        first = focused - listHeight;
-    else if (focused < first)
-        first = focused;
-    else if (pl.aSongIdxs.size < listHeight)
-        first = 0;
-
-    g_firstIdx = first;
 }
 
 bool
@@ -237,6 +214,9 @@ procEvents()
 {
     tb_event ev;
     tb_peek_event(&ev, defaults::UPDATE_RATE);
+    auto height = tb_height();
+
+    const auto& pl = *app::g_pPlayer;
 
     switch (ev.type)
     {
@@ -248,7 +228,7 @@ procEvents()
 
         case TB_EVENT_KEY:
         input::procKey(&ev);
-        fixFirstIdx();
+        common::fixFirstIdx(height - 7 - pl.statusAndInfoHeight, &g_firstIdx);
         break;
 
         case TB_EVENT_RESIZE:
@@ -257,7 +237,7 @@ procEvents()
 
         case TB_EVENT_MOUSE:
         input::procMouse(&ev);
-        fixFirstIdx();
+        common::fixFirstIdx(height - 7 - pl.statusAndInfoHeight, &g_firstIdx);
         break;
     }
 }

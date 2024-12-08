@@ -2,6 +2,8 @@
 
 #include "IWindow.hh"
 
+#include <ncurses.h>
+
 using namespace adt;
 
 namespace platform
@@ -9,9 +11,20 @@ namespace platform
 namespace ncurses
 {
 
+struct Box
+{
+    WINDOW* pBor {}; /* border window */
+    WINDOW* pCon {}; /* content window */
+};
+
 struct Win
 {
     IWindow super {};
+    Arena* pArena {};
+    Box list {};
+    Box info {};
+    f64 split {};
+    u16 firstIdx {};
 
     Win();
 };

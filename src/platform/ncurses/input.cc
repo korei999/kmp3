@@ -1,6 +1,6 @@
 #include "input.hh"
 
-#include "app.hh"
+#include "adt/logs.hh"
 #include "keybinds.hh"
 
 #include <ncurses.h>
@@ -12,29 +12,18 @@ namespace ncurses
 namespace input
 {
 
-static void
-procKey(int ch)
+void
+procKey(Win* s, wint_t ch)
 {
-    if (ch == -1) return;
+    LOG_GOOD("ch({}): '{}'\n", ch, (wchar_t)ch);
 
-    for (auto& k : keybinds::gc_aKeys)
+    for (const auto& k : keybinds::inl_aKeys)
     {
         auto& pfn = k.pfn;
         auto& arg = k.arg;
 
         if ((k.key > 0 && k.key == ch) || (k.ch > 0 && k.ch == (u32)ch))
             resolvePFN(k.pfn, k.arg);
-    }
-}
-
-void
-procEvents()
-{
-    while (app::g_bRunning)
-    {
-        int ch = getch();
-
-        procKey(ch);
     }
 }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Win.hh"
+
 namespace platform
 {
 namespace ncurses
@@ -7,8 +9,7 @@ namespace ncurses
 namespace input
 {
 
-void procEvents();
-void fillInputMap();
+void procKey(Win* s, wint_t ch);
 
 } /*namespace input */
 } /*namespace ncurses */

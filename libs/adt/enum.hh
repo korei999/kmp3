@@ -44,34 +44,4 @@
         return Lhs = static_cast<ENUM>(                                                                                \
                    static_cast<std::underlying_type_t<ENUM>>(Lhs) ^ static_cast<std::underlying_type_t<ENUM>>(Lhs)     \
                );                                                                                                      \
-    }                                                                                                                  \
-    inline constexpr ENUM operator+(ENUM Lhs, int Rhs)                                                                 \
-    {                                                                                                                  \
-        return Lhs = static_cast<ENUM>(                                                                                \
-                   static_cast<std::underlying_type_t<ENUM>>(Lhs) + static_cast<std::underlying_type_t<ENUM>>(Lhs)     \
-               );                                                                                                      \
-    }                                                                                                                  \
-    inline constexpr ENUM operator+(ENUM Lhs, ENUM Rhs)                                                                \
-    {                                                                                                                  \
-        return Lhs = static_cast<ENUM>(                                                                                \
-                   static_cast<std::underlying_type_t<ENUM>>(Lhs) + static_cast<std::underlying_type_t<ENUM>>(Lhs)     \
-               );                                                                                                      \
-    }                                                                                                                  \
-    inline constexpr ENUM operator-(ENUM Lhs, int Rhs)                                                                 \
-    {                                                                                                                  \
-        return Lhs = static_cast<ENUM>(                                                                                \
-                   static_cast<std::underlying_type_t<ENUM>>(Lhs) - static_cast<std::underlying_type_t<ENUM>>(Lhs)     \
-               );                                                                                                      \
-    }                                                                                                                  \
-    inline constexpr ENUM operator-(ENUM Lhs, ENUM Rhs)                                                                \
-    {                                                                                                                  \
-        return Lhs = static_cast<ENUM>(                                                                                \
-                   static_cast<std::underlying_type_t<ENUM>>(Lhs) - static_cast<std::underlying_type_t<ENUM>>(Lhs)     \
-               );                                                                                                      \
-    }                                                                                                                  \
-    inline constexpr ENUM operator%(ENUM Lhs, ENUM Rhs)                                                                \
-    {                                                                                                                  \
-        return Lhs = static_cast<ENUM>(                                                                                \
-                   static_cast<std::underlying_type_t<ENUM>>(Lhs) % static_cast<std::underlying_type_t<ENUM>>(Lhs)     \
-               );                                                                                                      \
     }
