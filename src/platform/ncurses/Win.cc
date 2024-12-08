@@ -215,6 +215,19 @@ drawList(Win* s)
 
         wattron(s->list.pCon, col);
         mvwaddnwstr(s->list.pCon, i, 0, pWstr, mx);
+
+        // for (long len = 0; len < mx; ++len)
+        // {
+        //     if (!pWstr[len]) break;
+
+        //     int pair = 0;
+        //     cchar_t cch;
+        //     wchar_t wc[2] {pWstr[len], L'\0'};
+
+        //     setcchar(&cch, wc, A_NORMAL, -1, &pair);
+        //     mvwadd_wch(s->list.pCon, i, len, &cch);
+        // }
+
         wattroff(s->list.pCon, col | A_REVERSE | A_BOLD);
     }
 

@@ -107,7 +107,7 @@ void
 fillInputMap()
 {
     /* ascii's are all the same */
-    for (int i = '!'; i < '~'; ++i) s_aInputMap[i] = i;
+    for (int i = ' '; i < '~'; ++i) s_aInputMap[i] = i;
 
     s_aInputMap[TB_KEY_ENTER] = keys::ENTER;
     s_aInputMap[TB_KEY_CTRL_C] = keys::CTRL_C;

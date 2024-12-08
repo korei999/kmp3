@@ -62,7 +62,7 @@ init(Arena* pAlloc)
     [[maybe_unused]] int r = tb_init();
     assert(r == 0 && "'tb_init()' failed");
 
-    tb_set_input_mode(TB_INPUT_ESC|TB_INPUT_MOUSE);
+    tb_set_input_mode(TB_INPUT_ESC | TB_INPUT_MOUSE);
 
     LOG_NOTIFY("tb_has_truecolor: {}\n", (bool)tb_has_truecolor());
     LOG_NOTIFY("tb_has_egc: {}\n", (bool)tb_has_egc());
@@ -295,38 +295,40 @@ drawBox(
 }
 
 static void
-drawUtf8String(
+drawMBString(
     const int x,
     const int y,
     const String str,
     const long maxLen,
     const u32 fg = TB_WHITE,
-    const u32 bg = TB_DEFAULT
-    // const bool bWrap = false,
-    // const int xWrapOrigin = 0,
-    // const int nMaxWraps = 0
+    const u32 bg = TB_DEFAULT,
+    const bool bWrap = false,
+    const int xWrapAt = 0,
+    const int nMaxWraps = 0
 )
 {
     long it = 0;
     long max = 0;
     int yOff = y;
     int xOff = x;
-    // int nWraps = 0;
+    int xWrap = xWrapAt;
+    int nWraps = 0;
+    long maxLenMod = maxLen;
 
     for (; it < str.size; ++max)
     {
-        if (max >= maxLen - 2)
+        if (max >= maxLenMod - 2)
         {
-            /* FIXME: breaks the whole termbox */
-            // if (bWrap)
-            // {
-            //     max = 0;
-            //     xOff = xWrapOrigin;
-            //     ++yOff;
-            //     if (++nWraps > nMaxWraps) break;
-            // }
-            // else break;
-            break;
+            if (bWrap)
+            {
+                max = 0;
+                maxLenMod = maxLen + (x - xWrapAt); /* string gets longer */
+                xOff = xWrapAt;
+                ++yOff;
+                ++nWraps;
+                if (nWraps > nMaxWraps) break;
+            }
+            else break;
         }
 
         wchar_t wc {};
@@ -389,7 +391,7 @@ drawSongList()
             fg = TB_YELLOW|TB_BOLD;
         }
 
-        drawUtf8String(1, i + off + 4, sSong, maxLen, fg, bg);
+        drawMBString(1, i + off + 4, sSong, maxLen, fg, bg);
     }
 
     drawBox(0, off + 3, tb_width() - 1, listHeight, TB_BLUE, TB_DEFAULT);
@@ -437,7 +439,7 @@ drawVolume(Arena* pAlloc, const u16 split)
 
     char* pBuff = (char*)zalloc(pAlloc, 1, width + 1);
     snprintf(pBuff, width, fmt.pData, int(std::round(vol * 100.0f)));
-    drawUtf8String(0, 2, pBuff, split + 1, col);
+    drawMBString(0, 2, pBuff, split + 1, col);
 
     return col;
 }
@@ -447,7 +449,7 @@ drawTime(const u16 split)
 {
     const int width = tb_width();
     const String str = common::allocTimeString(g_pFrameArena, width);
-    drawUtf8String(0, 4, str, split + 1);
+    drawMBString(0, 4, str, split + 1);
 }
 
 static void
@@ -468,7 +470,7 @@ drawTotal(Arena* pAlloc, const u16 split)
         snprintf(pBuff + n, width - n, " (repeat %s)", sArg);
     }
 
-    drawUtf8String(0, 1, pBuff, split + 1);
+    drawMBString(0, 1, pBuff, split + 1);
 }
 
 static void
@@ -499,24 +501,24 @@ drawInfo()
     /* title */
     {
         int n = print::toBuffer(pBuff, width, "title: ");
-        drawUtf8String(split + 1, 1, pBuff, maxStringWidth);
+        drawMBString(split + 1, 1, pBuff, maxStringWidth);
         memset(pBuff, 0, width + 1);
         if (pl.info.title.size > 0)
             print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
-        drawUtf8String(split + 1 + n, 1, pBuff, maxStringWidth - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
+        drawMBString(split + 1 + n, 1, pBuff, maxStringWidth - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT, true, split + 1, 1);
     }
 
     /* album */
     {
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
-        drawUtf8String(split + 1, 3, pBuff, maxStringWidth);
+        drawMBString(split + 1, 3, pBuff, maxStringWidth);
         if (pl.info.album.size > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.album);
-            drawUtf8String(split + 1 + n, 3, pBuff, maxStringWidth - n, TB_BOLD);
+            drawMBString(split + 1 + n, 3, pBuff, maxStringWidth - n, TB_BOLD);
         }
     }
 
@@ -524,12 +526,12 @@ drawInfo()
     {
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
-        drawUtf8String(split + 1, 4, pBuff, maxStringWidth);
+        drawMBString(split + 1, 4, pBuff, maxStringWidth);
         if (pl.info.artist.size > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.artist);
-            drawUtf8String(split + 1 + n, 4, pBuff, maxStringWidth - n, TB_BOLD);
+            drawMBString(split + 1 + n, 4, pBuff, maxStringWidth - n, TB_BOLD);
         }
     }
 }
@@ -545,12 +547,12 @@ drawBottomLine()
     print::toBuffer(aBuff, utils::size(aBuff) - 1, "{}", pl.focused);
     String str(aBuff);
 
-    drawUtf8String(width - str.size - 2, height - 1, str, str.size + 2); /* yeah + 2 */
+    drawMBString(width - str.size - 2, height - 1, str, str.size + 2); /* yeah + 2 */
 
     if (s_input.eCurrMode != READ_MODE::NONE || (s_input.eCurrMode == READ_MODE::NONE && wcsnlen(s_input.aBuff, utils::size(s_input.aBuff)) > 0))
     {
         const String sSearching = readModeToString(s_input.eLastUsedMode);
-        drawUtf8String(0, height - 1, sSearching, sSearching.size + 2);
+        drawMBString(0, height - 1, sSearching, sSearching.size + 2);
         drawWideString(sSearching.size, height - 1, s_input.aBuff, utils::size(s_input.aBuff), width - sSearching.size);
 
         if (s_input.eCurrMode != READ_MODE::NONE)

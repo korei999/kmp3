@@ -36,13 +36,23 @@ main(int argc, char** argv)
         }
         else if (argv[1] == String("--ncurses"))
         {
+#ifdef USE_NCURSES
             app::g_eUIBackend = app::UI_BACKEND::NCURSES;
             LOG_NOTIFY("setting NCURSES ui\n");
+#else
+            CERR("Program was built without ncurses support.\n");
+            return 1;
+#endif
         }
         else if (argv[1] == String("--notcurses"))
         {
+#ifdef USE_NOTCURSES
             app::g_eUIBackend = app::UI_BACKEND::NOTCURSES;
             LOG_NOTIFY("setting NOTCURSES ui\n");
+#else
+            CERR("Program was built without notcurses support.\n");
+            return 1;
+#endif
         }
     }
 

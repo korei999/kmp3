@@ -46,6 +46,10 @@ add_executable(
     src/platform/termbox2/input.cc
 )
 
+option(OPT_NCURSES "build with ncurses support" ON)
+option(OPT_NOTCURSES "build with notcurses support" OFF)
+option(OPT_MPRIS "build with mpris support" ON)
+
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
 
 # add_definitions("-DADT_LOGS")
@@ -180,30 +184,34 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         )
     endif()
 
-    pkg_check_modules(NOTCURSES notcurses)
-    if (${NOTCURSES_FOUND})
-        include_directories(BEFORE ${CMAKE_PROJECT_NAME})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${NOTCURSES_LIBRARIES})
-        add_definitions("-DUSE_NOTCURSES")
-        target_sources(
-            ${CMAKE_PROJECT_NAME} PRIVATE
-            "src/platform/notcurses/Win.cc"
-        )
+    if (OPT_NOTCURSES)
+        pkg_check_modules(NOTCURSES notcurses)
+        if (${NOTCURSES_FOUND})
+            include_directories(BEFORE ${CMAKE_PROJECT_NAME})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${NOTCURSES_LIBRARIES})
+            add_definitions("-DUSE_NOTCURSES")
+            target_sources(
+                ${CMAKE_PROJECT_NAME} PRIVATE
+                "src/platform/notcurses/Win.cc"
+            )
+        endif()
     endif()
 
-    pkg_check_modules(SYSTEMD libsystemd)
-    if (${SYSTEMD_FOUND})
-        include_directories(BEFORE ${CMAKE_PROJECT_NAME})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
-        target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
-        add_definitions("-DUSE_MPRIS")
-    else()
-        pkg_check_modules(BASU basu)
-        if (${BASU_FOUND})
-            include_directories(BEFORE ${BASU_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARIES})
+    if(OPT_MPRIS)
+        pkg_check_modules(SYSTEMD libsystemd)
+        if (${SYSTEMD_FOUND})
+            include_directories(BEFORE ${CMAKE_PROJECT_NAME})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
             target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
-            add_definitions("-DUSE_MPRIS -DUSE_BASU")
+            add_definitions("-DUSE_MPRIS")
+        else()
+            pkg_check_modules(BASU basu)
+            if (${BASU_FOUND})
+                include_directories(BEFORE ${BASU_INCLUDE_DIRS})
+                target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARIES})
+                target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
+                add_definitions("-DUSE_MPRIS -DUSE_BASU")
+            endif()
         endif()
     endif()
 endif()
