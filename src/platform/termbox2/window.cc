@@ -613,6 +613,9 @@ draw()
         {
             app::g_pPlayer->bSelectionChanged = false;
 
+#ifdef USE_SIXEL
+            tb_set_cursor(0, 0);
+
             sixel::Img img(INIT_FLAG::INIT);
             defer( sixel::ImgDestroy(&img) );
             Opt<ffmpeg::Image> oCover = audio::MixerGetCoverImage(app::g_pMixer);
@@ -622,6 +625,7 @@ draw()
                 sixel::ImgPrintBytes(&img, oCover.data);
                 s_bImage = true;
             }
+#endif
         }
 
         drawTimeSlider();

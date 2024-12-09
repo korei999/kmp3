@@ -46,7 +46,7 @@ add_executable(
     src/platform/termbox2/input.cc
 )
 
-option(OPT_NCURSES "ncurses support" ON)
+option(OPT_NCURSES "ncurses support" OFF)
 option(OPT_NOTCURSES "notcurses support" OFF)
 option(OPT_MPRIS "mpris support" ON)
 option(OPT_SIXEL "sixel support" ON)

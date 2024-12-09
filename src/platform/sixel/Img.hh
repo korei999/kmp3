@@ -21,6 +21,8 @@ void ImgPrintBytes(Img* s, ffmpeg::Image img);
 struct Img
 {
     sixel_encoder_t *pEncoder {};
+    sixel_output_t* pOutput {};
+    sixel_dither_t* pDither {};
 
     Img() = default;
     Img(INIT_FLAG eInit) { if (eInit == INIT_FLAG::INIT) ImgInit(this); }
