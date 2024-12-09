@@ -110,9 +110,10 @@ main(int argc, char** argv)
             longsetSize = app::g_aArgs[i].size;
     }
     player.longestStringSize = longsetSize;
-    player.statusAndInfoHeight = 4;
+    player.statusAndInfoHeight = 12;
     player.statusToInfoWidthRatio = 0.4;
     player.eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
+    player.bSelectionChanged = true;
 
     platform::pipewire::Mixer mixer(&arena.super);
     platform::pipewire::MixerInit(&mixer);

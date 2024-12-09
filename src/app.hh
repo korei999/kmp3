@@ -21,8 +21,6 @@ extern VecBase<String> g_aArgs;
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
 
-extern bool g_bSelectionChanged;
-
 IWindow* allocWindow(IAllocator* pArena);
 
 inline void quit() { g_bRunning = false; }

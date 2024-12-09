@@ -25,7 +25,7 @@ covertFormat(int format)
     {
         default: return PIXEL_FORMAT::NONE;
         case AV_PIX_FMT_RGB24: return PIXEL_FORMAT::RGB888;
-        /*case AV_PIX_FMT_YUVJ420P: return PIXEL_FORMAT::RGB555;*/
+        /*case AV_PIX_FMT_YUVJ420P: return PIXEL_FORMAT::RGB565;*/
         case AV_PIX_FMT_RGBA: return PIXEL_FORMAT::RGBA8888;
     }
 };
@@ -39,7 +39,7 @@ struct Decoder
     int audioStreamIdx {};
     u64 currentSamplePos {};
 
-    AVFrame imgFrame {};
+    AVFrame* pImgFrame {};
 };
 
 Decoder*
@@ -56,10 +56,10 @@ DecoderClose(Decoder* s)
     if (s->pFormatCtx) avformat_close_input(&s->pFormatCtx);
     if (s->pCodecCtx) avcodec_free_context(&s->pCodecCtx);
     if (s->pSwr) swr_free(&s->pSwr);
+    if (s->pImgFrame) av_frame_free(&s->pImgFrame);
+
     LOG_NOTIFY("DecoderClose()\n");
 
-
-    av_frame_unref(&s->imgFrame);
     *s = {};
 }
 
@@ -123,20 +123,19 @@ DecoderGetPicture(Decoder* s)
     err = avcodec_send_packet(pCodecCtx, &pStream->attached_pic);
     LOG_WARN("avcodec_send_packet(): {}\n", err);
 
-    auto& frame = s->imgFrame;
-    err = avcodec_receive_frame(pCodecCtx, &frame);
+    s->pImgFrame = av_frame_alloc();
+    err = avcodec_receive_frame(pCodecCtx, s->pImgFrame);
     if (err == AVERROR(EINVAL))
         LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
 
-    /*defer( av_frame_unref(&frame) );*/
-    LOG_WARN("width: {}, height: {}, format: {}\n", frame.width, frame.height, frame.format);
+    LOG_WARN("width: {}, height: {}, format: {}\n", s->pImgFrame->width, s->pImgFrame->height, s->pImgFrame->format);
 
     return {
         Image{
-            .pBuff = frame.data[0],
-            .width = frame.width,
-            .height = frame.height,
-            .eFormat = covertFormat(frame.format)
+            .pBuff = s->pImgFrame->data[0],
+            .width = s->pImgFrame->width,
+            .height = s->pImgFrame->height,
+            .eFormat = covertFormat(s->pImgFrame->format)
         }
     };
 }

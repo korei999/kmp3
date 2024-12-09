@@ -63,6 +63,7 @@ struct Player
     long selected {};
     u32 longestStringSize {};
     PLAYER_REPEAT_METHOD eReapetMethod {};
+    bool bSelectionChanged {};
 
     Player() = delete;
     Player(IAllocator* p, int nArgs, [[maybe_unused]] char** ppArgs)

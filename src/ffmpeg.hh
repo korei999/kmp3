@@ -63,7 +63,7 @@ enum class PIXEL_FORMAT : int
 {
     NONE,
     RGB555,
-    // RGB565,
+    RGB565,
     RGB888,
     // BGR555,
     // BGR565,

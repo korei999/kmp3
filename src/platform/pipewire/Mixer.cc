@@ -383,7 +383,8 @@ Opt<ffmpeg::Image>
 MixerGetCover(Mixer* s)
 {
     guard::Mtx lock(&s->mtxDecoder);
-    return s->oCoverImg;
+    /*return s->oCoverImg;*/
+    return {};
 }
 
 void

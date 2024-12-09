@@ -28,6 +28,7 @@ convertFormat(ffmpeg::PIXEL_FORMAT eFormat)
         case ffmpeg::PIXEL_FORMAT::RGB888: return SIXEL_PIXELFORMAT_RGB888;
         case ffmpeg::PIXEL_FORMAT::RGB555: return SIXEL_PIXELFORMAT_RGB555;
         case ffmpeg::PIXEL_FORMAT::RGBA8888: return SIXEL_PIXELFORMAT_RGBA8888;
+        /*case ffmpeg::PIXEL_FORMAT::RGB565: return SIXEL_PIXELFORMAT_RGB565;*/
     }
 }
 

@@ -210,7 +210,7 @@ seekFromInput()
 static void
 procResize([[maybe_unused]] tb_event* pEv)
 {
-    app::g_bSelectionChanged = true;
+    app::g_pPlayer->bSelectionChanged = true;
 }
 
 void
@@ -631,9 +631,9 @@ draw()
 
         if (g_bDrawHelpMenu) drawHelpMenu();
 
-        if (app::g_bSelectionChanged)
+        if (app::g_pPlayer->bSelectionChanged)
         {
-            app::g_bSelectionChanged = false;
+            app::g_pPlayer->bSelectionChanged = false;
 
             sixel::Img img(INIT_FLAG::INIT);
             defer( sixel::ImgDestroy(&img) );
