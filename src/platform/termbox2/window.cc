@@ -609,12 +609,12 @@ draw()
 
     if (tb_height() > 9 && tb_width() > 9)
     {
+
         if (app::g_pPlayer->bSelectionChanged)
         {
             app::g_pPlayer->bSelectionChanged = false;
 
 #ifdef USE_SIXEL
-            tb_set_cursor(0, 0);
 
             sixel::Img img(INIT_FLAG::INIT);
             defer( sixel::ImgDestroy(&img) );
