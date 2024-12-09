@@ -58,7 +58,8 @@ DecoderClose(Decoder* s)
     if (s->pFormatCtx) avformat_close_input(&s->pFormatCtx);
     if (s->pCodecCtx) avcodec_free_context(&s->pCodecCtx);
     if (s->pSwr) swr_free(&s->pSwr);
-    /*if (s->pImgFrame) av_frame_free(&s->pImgFrame);*/
+    if (s->pImgPacket) av_packet_free(&s->pImgPacket);
+    if (s->pImgFrame) av_frame_free(&s->pImgFrame);
 
     LOG_NOTIFY("DecoderClose()\n");
 
@@ -119,18 +120,12 @@ DecoderGetAttachedPicture(Decoder* s)
 
     LOG_WARN("codec name: '{}'\n", pCodec->long_name);
 
-    /*err = av_read_frame(s->pFormatCtx, &pStream->attached_pic);*/
-    /*    LOG_WARN("av_read_frame(): {}\n", err);*/
-
     s->pImgPacket = av_packet_alloc();
     err = av_read_frame(s->pFormatCtx, s->pImgPacket);
         LOG_WARN("av_read_frame(): {}\n", err);
 
     err = avcodec_send_packet(pCodecCtx, s->pImgPacket);
     LOG_WARN("avcodec_send_packet(): {}\n", err);
-
-    /*err = avcodec_send_packet(pCodecCtx, &pStream->attached_pic);*/
-    /*LOG_WARN("avcodec_send_packet(): {}\n", err);*/
 
     s->pImgFrame = av_frame_alloc();
     err = avcodec_receive_frame(pCodecCtx, s->pImgFrame);
@@ -146,11 +141,6 @@ DecoderGetAttachedPicture(Decoder* s)
         .height = s->pImgFrame->height,
         .eFormat = covertFormat(s->pImgFrame->format)
     };
-
-    /*av_frame_unref(s->pImgFrame);*/
-    // av_frame_free(&s->pImgFrame);
-    // avcodec_free_context(&pCodecCtx);
-    /*av_freep(s->pImgFrame->data[0]);*/
 }
 
 Opt<ffmpeg::Image>
