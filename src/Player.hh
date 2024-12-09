@@ -38,6 +38,7 @@ void PlayerOnSongEnd(Player* s);
 PLAYER_REPEAT_METHOD PlayerCycleRepeatMethods(Player* s, bool bForward);
 void PlayerSelectNext(Player* s);
 void PlayerSelectPrev(Player* s);
+void PlayerDestroy(Player* s);
 
 struct Player
 {

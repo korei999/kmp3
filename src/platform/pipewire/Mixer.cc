@@ -380,7 +380,6 @@ MixerGetMetadata(Mixer* s, const String sKey)
 Opt<ffmpeg::Image>
 MixerGetCover(Mixer* s)
 {
-    guard::Mtx lock(&s->mtxDecoder);
     return ffmpeg::DecoderGetCoverImage(s->pDecoder);
 }
 

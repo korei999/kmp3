@@ -11,6 +11,8 @@
 
 #include <cmath>
 
+#include "platform/chafa/Img.hh"
+
 namespace platform
 {
 namespace ncurses
@@ -32,7 +34,7 @@ ADT_ENUM_BITWISE_OPERATORS(COLOR);
 static void WinCreateBoxes(Win* s);
 static void WinDestroyBoxes(Win* s);
 static void drawBox(WINDOW* pWin, COLOR eColor);
-static void procResize(Win* s);
+static void WinProcResize(Win* s);
 static void drawList(Win* s);
 
 static struct {
@@ -56,6 +58,7 @@ WinStart(Win* s, Arena* pArena)
     set_escdelay(0);
     timeout(defaults::UPDATE_RATE);
     noecho();
+    /*raw();*/
     cbreak();
     keypad(stdscr, true);
 
@@ -89,6 +92,20 @@ WinDraw(Win* s)
     
     drawList(s);
 
+    if (app::g_pPlayer->bSelectionChanged)
+    {
+        app::g_pPlayer->bSelectionChanged = false;
+
+        auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
+        if (oCover)
+        {
+            int y, x;
+            getmaxyx(s->info.pCon, y, x);
+            platform::chafa::showImage(s->info.pCon, oCover.data, y, x);
+        }
+    }
+
+    wnoutrefresh(s->info.pBor);
     wnoutrefresh(s->list.pBor);
 
     doupdate();
@@ -100,7 +117,7 @@ WinProcEvents(Win* s)
     wint_t ch {};
     get_wch(&ch);
 
-    if (ch == KEY_RESIZE) procResize(s);
+    if (ch == KEY_RESIZE) WinProcResize(s);
     else if (ch != 0)
     {
         input::procKey(s, ch);
@@ -162,23 +179,30 @@ drawBox(WINDOW* pWin, COLOR eColor)
     cchar_t ls, rs, ts, bs, tl, tr, bl, br;
     short col = short(eColor);
 
-    setcchar(&ls, L"┃", 0, col, nullptr);
-    setcchar(&rs, L"┃", 0, col, nullptr);
-    setcchar(&ts, L"━", 0, col, nullptr);
-    setcchar(&bs, L"━", 0, col, nullptr);
-    setcchar(&tl, L"┏", 0, col, nullptr);
-    setcchar(&tr, L"┓", 0, col, nullptr);
-    setcchar(&bl, L"┗", 0, col, nullptr);
-    setcchar(&br, L"┛", 0, col, nullptr);
+    setcchar(&ls, L"┃", 0, col, {});
+    setcchar(&rs, L"┃", 0, col, {});
+    setcchar(&ts, L"━", 0, col, {});
+    setcchar(&bs, L"━", 0, col, {});
+    setcchar(&tl, L"┏", 0, col, {});
+    setcchar(&tr, L"┓", 0, col, {});
+    setcchar(&bl, L"┗", 0, col, {});
+    setcchar(&br, L"┛", 0, col, {});
     wborder_set(pWin, &ls, &rs, &ts, &bs, &tl, &tr, &bl, &br);
 }
 
 static void
-procResize(Win* s)
+WinProcResize(Win* s)
 {
     WinDestroyBoxes(s);
     WinCreateBoxes(s);
-    clear();
+
+    redrawwin(stdscr);
+    werase(stdscr);
+    refresh();
+    LOG_WARN("REFRESH\n");
+
+    app::g_pPlayer->bSelectionChanged = true;
+    WinDraw(s);
 }
 
 static void
@@ -186,11 +210,10 @@ drawList(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
     const int off = std::round(s->split);
-    const u16 listHeight = getmaxy(s->list.pCon) - 3 - s->split;
 
     wclear(s->list.pCon);
 
-    for (u16 h = s->firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
+    for (u16 h = s->firstIdx, i = 0; h < pl.aSongIdxs.size; ++h, ++i)
     {
         const u16 songIdx = pl.aSongIdxs[h];
         const String sSong = pl.aShortArgvs[songIdx];
@@ -232,7 +255,6 @@ drawList(Win* s)
     }
 
     drawBox(s->list.pBor, COLOR::BLUE);
-    wnoutrefresh(s->info.pBor);
 }
 
 } /*namespace ncurses */

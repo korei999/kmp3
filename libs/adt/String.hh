@@ -289,6 +289,8 @@ inline void
 StringDestroy(IAllocator* p, String* s)
 {
     free(p, s->pData);
+    s->pData = {};
+    s->size = {};
 }
 
 inline String

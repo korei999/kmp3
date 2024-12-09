@@ -91,6 +91,7 @@ main(int argc, char** argv)
 
     Player player(&arena.super, argc, argv);
     app::g_pPlayer = &player;
+    defer( PlayerDestroy(&player) );
 
     PlayerSetDefaultIdxs(&player);
 
@@ -110,7 +111,7 @@ main(int argc, char** argv)
             longsetSize = app::g_aArgs[i].size;
     }
     player.longestStringSize = longsetSize;
-    player.statusAndInfoHeight = 20;
+    player.statusAndInfoHeight = 4;
     player.statusToInfoWidthRatio = 0.4;
     player.eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.bSelectionChanged = true;

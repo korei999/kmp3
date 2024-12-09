@@ -1,6 +1,7 @@
 #include "Player.hh"
 
 #include "adt/Arr.hh"
+#include "adt/OsAllocator.hh"
 #include "adt/logs.hh"
 #include "app.hh"
 #include "mpris.hh"
@@ -131,9 +132,12 @@ PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pBuff, u32 size)
 static void
 updateInfo(Player* s)
 {
-    s->info.title = audio::MixerGetMetadata(app::g_pMixer, "title").data;
-    s->info.album = audio::MixerGetMetadata(app::g_pMixer, "album").data;
-    s->info.artist = audio::MixerGetMetadata(app::g_pMixer, "artist").data;
+    PlayerDestroy(s);
+
+    /* clone string to avoid data races with ffmpeg */
+    s->info.title = StringAlloc(inl_pOsAlloc, audio::MixerGetMetadata(app::g_pMixer, "title").data);
+    s->info.album = StringAlloc(inl_pOsAlloc, audio::MixerGetMetadata(app::g_pMixer, "album").data);
+    s->info.artist = StringAlloc(inl_pOsAlloc, audio::MixerGetMetadata(app::g_pMixer, "artist").data);
 
     s->bSelectionChanged = true;
 }
@@ -226,4 +230,12 @@ PlayerSelectPrev(Player* s)
     s->selected = s->aSongIdxs[currIdx];
     audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
     updateInfo(s);
+}
+
+void
+PlayerDestroy(Player* s)
+{
+    StringDestroy(inl_pOsAlloc, &s->info.title);
+    StringDestroy(inl_pOsAlloc, &s->info.album);
+    StringDestroy(inl_pOsAlloc, &s->info.artist);
 }

@@ -24,9 +24,9 @@ covertFormat(int format)
     switch (format)
     {
         default: return PIXEL_FORMAT::NONE;
-        case AV_PIX_FMT_RGB24: return PIXEL_FORMAT::RGB888;
+        case AV_PIX_FMT_RGB24: return PIXEL_FORMAT::RGB8;
         /*case AV_PIX_FMT_YUVJ420P: return PIXEL_FORMAT::RGB565;*/
-        case AV_PIX_FMT_RGBA: return PIXEL_FORMAT::RGBA8888;
+        case AV_PIX_FMT_RGBA: return PIXEL_FORMAT::RGBA8_UNASSOCIATED;
     }
 };
 
@@ -122,10 +122,10 @@ DecoderGetAttachedPicture(Decoder* s)
 
     s->pImgPacket = av_packet_alloc();
     err = av_read_frame(s->pFormatCtx, s->pImgPacket);
-        LOG_WARN("av_read_frame(): {}\n", err);
+    if (err != 0) return;
 
     err = avcodec_send_packet(pCodecCtx, s->pImgPacket);
-    LOG_WARN("avcodec_send_packet(): {}\n", err);
+    if (err != 0) return;
 
     s->pImgFrame = av_frame_alloc();
     err = avcodec_receive_frame(pCodecCtx, s->pImgFrame);

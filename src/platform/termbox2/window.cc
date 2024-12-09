@@ -29,10 +29,6 @@
     #pragma GCC diagnostic pop
 #endif
 
-#ifdef USE_SIXEL
-    #include "platform/sixel/Img.hh"
-#endif
-
 namespace platform
 {
 namespace termbox2
@@ -613,19 +609,6 @@ draw()
         if (app::g_pPlayer->bSelectionChanged)
         {
             app::g_pPlayer->bSelectionChanged = false;
-
-#ifdef USE_SIXEL
-
-            sixel::Img img(INIT_FLAG::INIT);
-            defer( sixel::ImgDestroy(&img) );
-            Opt<ffmpeg::Image> oCover = audio::MixerGetCoverImage(app::g_pMixer);
-
-            if (oCover)
-            {
-                sixel::ImgPrintBytes(&img, oCover.data);
-                s_bImage = true;
-            }
-#endif
         }
 
         drawTimeSlider();
