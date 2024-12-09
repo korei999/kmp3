@@ -60,7 +60,7 @@ ADT_NO_UB inline void MixerSeekMS(IMixer* s, u64 ms) { s->pVTable->seekMS(s, ms)
 ADT_NO_UB inline void MixerSeekLeftMS(IMixer* s, u64 ms) { s->pVTable->seekLeftMS(s, ms); }
 ADT_NO_UB inline void MixerSeekRightMS(IMixer* s, u64 ms) { s->pVTable->seekRightMS(s, ms); }
 [[nodiscard]] ADT_NO_UB inline Opt<String> MixerGetMetadata(IMixer* s, const String sKey) { return s->pVTable->getMetadata(s, sKey); }
-[[nodiscard]] ADT_NO_UB inline Opt<ffmpeg::Image> MixerGetCover(IMixer* s) { return s->pVTable->getCover(s); }
+[[nodiscard]] ADT_NO_UB inline Opt<ffmpeg::Image> MixerGetCoverImage(IMixer* s) { return s->pVTable->getCover(s); }
 ADT_NO_UB inline void MixerSetVolume(IMixer* s, const f32 volume) { s->pVTable->setVolume(s, volume); }
 
 inline void MixerVolumeDown(IMixer* s, const f32 step) { MixerSetVolume(s, s->volume - step); }

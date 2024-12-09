@@ -35,7 +35,6 @@ struct Mixer
     enum spa_audio_format eformat {};
     std::atomic<bool> bDecodes = false;
     ffmpeg::Decoder* pDecoder {};
-    Opt<ffmpeg::Image> oCoverImg {};
     String sPath {};
 
     pw_thread_loop* pThrdLoop {};

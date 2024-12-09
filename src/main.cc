@@ -110,7 +110,7 @@ main(int argc, char** argv)
             longsetSize = app::g_aArgs[i].size;
     }
     player.longestStringSize = longsetSize;
-    player.statusAndInfoHeight = 12;
+    player.statusAndInfoHeight = 20;
     player.statusToInfoWidthRatio = 0.4;
     player.eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.bSelectionChanged = true;

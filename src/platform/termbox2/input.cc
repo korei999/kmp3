@@ -30,7 +30,7 @@ procKey(tb_event* pEv)
         auto& arg = k.arg;
 
         if ((k.key > 0 && k.key == key) || (k.ch > 0 && k.ch == ch))
-            resolvePFN(k.pfn, k.arg);
+            keybinds::resolveKey(k.pfn, k.arg);
     }
 
     if (key == TB_KEY_F1)

@@ -97,7 +97,7 @@ struct Decoder;
 [[nodiscard]] Decoder* DecoderAlloc(IAllocator* pAlloc);
 void DecoderClose(Decoder* s);
 [[nodiscard]] Opt<String> DecoderGetMetadataValue(Decoder* s, const String sKey);
-Opt<Image> DecoderGetPicture(Decoder* s);
+[[nodiscard]] Opt<ffmpeg::Image> DecoderGetCoverImage(Decoder* s);
 [[nodiscard]] ERROR DecoderOpen(Decoder* s, String sPath);
 
 [[nodiscard]] ERROR

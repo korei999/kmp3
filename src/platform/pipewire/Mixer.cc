@@ -138,7 +138,6 @@ MixerPlay(Mixer* s, String sPath)
         if (s->bDecodes)
         {
             ffmpeg::DecoderClose(s->pDecoder);
-            s->oCoverImg = {};
         }
 
         auto err = ffmpeg::DecoderOpen(s->pDecoder, sPath);
@@ -147,7 +146,6 @@ MixerPlay(Mixer* s, String sPath)
             LOG_WARN("DecoderOpen\n");
             return;
         }
-        s->oCoverImg = ffmpeg::DecoderGetPicture(s->pDecoder);
         s->bDecodes = true;
     }
 
@@ -383,8 +381,7 @@ Opt<ffmpeg::Image>
 MixerGetCover(Mixer* s)
 {
     guard::Mtx lock(&s->mtxDecoder);
-    /*return s->oCoverImg;*/
-    return {};
+    return ffmpeg::DecoderGetCoverImage(s->pDecoder);
 }
 
 void

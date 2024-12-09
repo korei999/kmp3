@@ -83,7 +83,7 @@ WinProcEvents(Win* s)
         for (const auto& k : keybinds::inl_aKeys)
         {
             if (key == k.key || key == k.ch)
-                resolvePFN(k.pfn, k.arg);
+                resolveKey(k.pfn, k.arg);
         }
     }
 }

@@ -83,7 +83,7 @@ inline const Key inl_aKeys[] {
 };
 
 inline void
-resolvePFN(const keybinds::PFN pfn, const keybinds::Arg arg)
+resolveKey(const keybinds::PFN pfn, const keybinds::Arg arg)
 {
     switch (arg.eType)
     {

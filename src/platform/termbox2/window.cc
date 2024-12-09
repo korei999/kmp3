@@ -44,6 +44,8 @@ Arena* g_pFrameArena {};
 bool g_bDrawHelpMenu = false;
 u16 g_firstIdx = 0;
 
+static bool s_bImage = false;
+
 static struct {
     wchar_t aBuff[64] {};
     u32 idx = 0;
@@ -598,50 +600,37 @@ drawTimeSlider()
     }
 }
 
-static void
-drawHelpMenu()
-{
-    const auto termWidth = tb_width();
-    const auto termHeight = tb_height();
-
-    const int x = termWidth/8;
-    const int y = termHeight/4;
-    const int xWidth = termWidth - (termWidth/4);
-    const int yHeight = termHeight/2;
-
-    drawBox(x, y, xWidth, yHeight, TB_YELLOW, TB_DEFAULT, true);
-}
-
 void
 draw()
 {
     if (tb_height() < 6 || tb_width() < 6) return;
 
-
     tb_clear();
-
-    drawStatus();
-    drawInfo();
 
     if (tb_height() > 9 && tb_width() > 9)
     {
-        drawTimeSlider();
-        drawSongList();
-        drawBottomLine();
-
-        if (g_bDrawHelpMenu) drawHelpMenu();
-
         if (app::g_pPlayer->bSelectionChanged)
         {
             app::g_pPlayer->bSelectionChanged = false;
 
             sixel::Img img(INIT_FLAG::INIT);
             defer( sixel::ImgDestroy(&img) );
-            Opt<ffmpeg::Image> oCover = audio::MixerGetCover(app::g_pMixer);
+            Opt<ffmpeg::Image> oCover = audio::MixerGetCoverImage(app::g_pMixer);
 
-            if (oCover) sixel::ImgPrintBytes(&img, oCover.data);
+            if (oCover)
+            {
+                sixel::ImgPrintBytes(&img, oCover.data);
+                s_bImage = true;
+            }
         }
+
+        drawTimeSlider();
+        drawSongList();
+        drawBottomLine();
     }
+
+    drawStatus();
+    drawInfo();
 
     tb_present();
 }

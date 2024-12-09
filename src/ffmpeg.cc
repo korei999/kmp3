@@ -39,7 +39,9 @@ struct Decoder
     int audioStreamIdx {};
     u64 currentSamplePos {};
 
+    AVPacket* pImgPacket {};
     AVFrame* pImgFrame {};
+    Opt<ffmpeg::Image> oCoverImg {};
 };
 
 Decoder*
@@ -56,7 +58,7 @@ DecoderClose(Decoder* s)
     if (s->pFormatCtx) avformat_close_input(&s->pFormatCtx);
     if (s->pCodecCtx) avcodec_free_context(&s->pCodecCtx);
     if (s->pSwr) swr_free(&s->pSwr);
-    if (s->pImgFrame) av_frame_free(&s->pImgFrame);
+    /*if (s->pImgFrame) av_frame_free(&s->pImgFrame);*/
 
     LOG_NOTIFY("DecoderClose()\n");
 
@@ -81,8 +83,8 @@ DecoderGetMetadataValue(Decoder* s, const String sKey)
     }
 }
 
-Opt<Image>
-DecoderGetPicture(Decoder* s)
+static void
+DecoderGetAttachedPicture(Decoder* s)
 {
     int err = 0;
     AVStream* pStream {};
@@ -98,13 +100,13 @@ DecoderGetPicture(Decoder* s)
         }
     }
 
-    if (!pStream) return {};
+    if (!pStream) return;
 
     const AVCodec* pCodec = avcodec_find_decoder(pStream->codecpar->codec_id);
-    if (!pCodec) return {};
+    if (!pCodec) return;
 
     auto* pCodecCtx = avcodec_alloc_context3(pCodec);
-    if (!pCodecCtx) return {};
+    if (!pCodecCtx) return;
     defer( avcodec_free_context(&pCodecCtx) );
 
     avcodec_parameters_to_context(pCodecCtx, pStream->codecpar);
@@ -112,32 +114,49 @@ DecoderGetPicture(Decoder* s)
     if (err < 0)
     {
         LOG("avcodec_open2()\n");
-        return {};
+        return;
     }
 
     LOG_WARN("codec name: '{}'\n", pCodec->long_name);
 
-    err = av_read_frame(s->pFormatCtx, &pStream->attached_pic);
+    /*err = av_read_frame(s->pFormatCtx, &pStream->attached_pic);*/
+    /*    LOG_WARN("av_read_frame(): {}\n", err);*/
+
+    s->pImgPacket = av_packet_alloc();
+    err = av_read_frame(s->pFormatCtx, s->pImgPacket);
         LOG_WARN("av_read_frame(): {}\n", err);
 
-    err = avcodec_send_packet(pCodecCtx, &pStream->attached_pic);
+    err = avcodec_send_packet(pCodecCtx, s->pImgPacket);
     LOG_WARN("avcodec_send_packet(): {}\n", err);
+
+    /*err = avcodec_send_packet(pCodecCtx, &pStream->attached_pic);*/
+    /*LOG_WARN("avcodec_send_packet(): {}\n", err);*/
 
     s->pImgFrame = av_frame_alloc();
     err = avcodec_receive_frame(pCodecCtx, s->pImgFrame);
+
     if (err == AVERROR(EINVAL))
         LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
 
     LOG_WARN("width: {}, height: {}, format: {}\n", s->pImgFrame->width, s->pImgFrame->height, s->pImgFrame->format);
 
-    return {
-        Image{
-            .pBuff = s->pImgFrame->data[0],
-            .width = s->pImgFrame->width,
-            .height = s->pImgFrame->height,
-            .eFormat = covertFormat(s->pImgFrame->format)
-        }
+    s->oCoverImg = Image {
+        .pBuff = s->pImgFrame->data[0],
+        .width = s->pImgFrame->width,
+        .height = s->pImgFrame->height,
+        .eFormat = covertFormat(s->pImgFrame->format)
     };
+
+    /*av_frame_unref(s->pImgFrame);*/
+    // av_frame_free(&s->pImgFrame);
+    // avcodec_free_context(&pCodecCtx);
+    /*av_freep(s->pImgFrame->data[0]);*/
+}
+
+Opt<ffmpeg::Image>
+DecoderGetCoverImage(Decoder* s)
+{
+    return s->oCoverImg;
 }
 
 ERROR
@@ -185,6 +204,8 @@ DecoderOpen(Decoder* s, String sPath)
     );
 
     LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
+
+    ffmpeg::DecoderGetAttachedPicture(s);
 
     return ERROR::OK_;
 }
@@ -255,7 +276,7 @@ DecoderWriteToBuffer(
             }
             else if (nFrameChannles == 1)
             {
-                auto* data = (f32*)(res.data[0]);
+                f32* data = (f32*)(res.data[0]);
                 for (u32 i = 0; i < maxSamples; ++i)
                 {
                     for (u32 j = 0; j < nChannles; ++j)
@@ -264,7 +285,7 @@ DecoderWriteToBuffer(
             }
             else
             {
-                auto* data = (f32*)(res.data[0]);
+                f32* data = (f32*)(res.data[0]);
                 for (u32 i = 0; i < maxSamples; i += nFrameChannles)
                 {
                     for (u32 j = 0; j < nChannles; ++j)
