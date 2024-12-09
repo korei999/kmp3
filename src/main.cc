@@ -123,10 +123,10 @@ main(int argc, char** argv)
     app::g_pMixer = &mixer.base;
 
 #ifdef USE_MPRIS
-    mpris::initMutexes();
+    mpris::initLocks();
     defer(
         if (mpris::g_bReady) mpris::destroy();
-        mpris::destroyMutexes();
+        mpris::destroyLocks();
     );
 #endif
 

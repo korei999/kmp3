@@ -15,8 +15,8 @@ void init();
 void proc();
 void destroy();
 
-inline void initMutexes() { mtx_init(&g_mtx, mtx_recursive); cnd_init(&g_cnd); }
-inline void destroyMutexes() { mtx_destroy(&g_mtx); cnd_destroy(&g_cnd); }
+inline void initLocks() { mtx_init(&g_mtx, mtx_recursive); cnd_init(&g_cnd); }
+inline void destroyLocks() { mtx_destroy(&g_mtx); cnd_destroy(&g_cnd); }
 
 void playbackStatusChanged();
 void loopStatusChanged();
