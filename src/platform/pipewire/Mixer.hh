@@ -35,6 +35,7 @@ struct Mixer
     enum spa_audio_format eformat {};
     std::atomic<bool> bDecodes = false;
     ffmpeg::Decoder* pDecoder {};
+    Opt<ffmpeg::Image> oCoverImg {};
     String sPath {};
 
     pw_thread_loop* pThrdLoop {};
@@ -42,8 +43,6 @@ struct Mixer
     u32 nLastFrames {};
 
     mtx_t mtxDecoder {};
-    mtx_t mtxThrdLoop {};
-    cnd_t cndThrdLoop {};
 
     thrd_t threadLoop {};
 
@@ -61,6 +60,7 @@ void MixerSeekMS(Mixer* s, long ms);
 void MixerSeekLeftMS(Mixer* s, long ms);
 void MixerSeekRightMS(Mixer* s, long ms);
 Opt<String> MixerGetMetadata(Mixer* s, const String sKey);
+Opt<ffmpeg::Image> MixerGetCover(Mixer* s);
 void MixerSetVolume(Mixer* s, const f32 volume);
 
 inline const audio::MixerVTable inl_MixerVTable {
@@ -74,6 +74,7 @@ inline const audio::MixerVTable inl_MixerVTable {
     .seekLeftMS = decltype(audio::MixerVTable::seekLeftMS)(MixerSeekLeftMS),
     .seekRightMS = decltype(audio::MixerVTable::seekRightMS)(MixerSeekRightMS),
     .getMetadata = decltype(audio::MixerVTable::getMetadata)(MixerGetMetadata),
+    .getCover = decltype(audio::MixerVTable::getCover)(MixerGetCover),
     .setVolume = decltype(audio::MixerVTable::setVolume)(MixerSetVolume),
 };
 

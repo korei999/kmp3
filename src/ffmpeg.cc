@@ -18,6 +18,18 @@ extern "C"
 namespace ffmpeg
 {
 
+static PIXEL_FORMAT
+covertFormat(int format)
+{
+    switch (format)
+    {
+        default: return PIXEL_FORMAT::NONE;
+        case AV_PIX_FMT_RGB24: return PIXEL_FORMAT::RGB888;
+        /*case AV_PIX_FMT_YUVJ420P: return PIXEL_FORMAT::RGB555;*/
+        case AV_PIX_FMT_RGBA: return PIXEL_FORMAT::RGBA8888;
+    }
+};
+
 struct Decoder
 {
     AVStream* pStream {};
@@ -27,7 +39,7 @@ struct Decoder
     int audioStreamIdx {};
     u64 currentSamplePos {};
 
-    AVStream* pPictureStream {};
+    AVFrame imgFrame {};
 };
 
 Decoder*
@@ -46,6 +58,8 @@ DecoderClose(Decoder* s)
     if (s->pSwr) swr_free(&s->pSwr);
     LOG_NOTIFY("DecoderClose()\n");
 
+
+    av_frame_unref(&s->imgFrame);
     *s = {};
 }
 
@@ -67,17 +81,39 @@ DecoderGetMetadataValue(Decoder* s, const String sKey)
     }
 }
 
-static ERROR
-DecoderLoadPicture(Decoder* s, AVStream* pStream)
+Opt<Image>
+DecoderGetPicture(Decoder* s)
 {
     int err = 0;
-    s->pPictureStream = pStream;
+    AVStream* pStream {};
+
+    for (u32 i = 0; i < s->pFormatCtx->nb_streams; ++i)
+    {
+        auto* itStream = s->pFormatCtx->streams[i];
+        if (itStream->disposition & AV_DISPOSITION_ATTACHED_PIC)
+        {
+            LOG_WARN("Found 'attached_pic'\n");
+            pStream = itStream;
+            break;
+        }
+    }
+
+    if (!pStream) return {};
 
     const AVCodec* pCodec = avcodec_find_decoder(pStream->codecpar->codec_id);
-    if (!pCodec) return ERROR::DECODER_NOT_FOUND;
+    if (!pCodec) return {};
 
     auto* pCodecCtx = avcodec_alloc_context3(pCodec);
-    if (!pCodecCtx) return ERROR::DECODING_CONTEXT_ALLOCATION;
+    if (!pCodecCtx) return {};
+    defer( avcodec_free_context(&pCodecCtx) );
+
+    avcodec_parameters_to_context(pCodecCtx, pStream->codecpar);
+    err = avcodec_open2(pCodecCtx, pCodec, {});
+    if (err < 0)
+    {
+        LOG("avcodec_open2()\n");
+        return {};
+    }
 
     LOG_WARN("codec name: '{}'\n", pCodec->long_name);
 
@@ -87,15 +123,22 @@ DecoderLoadPicture(Decoder* s, AVStream* pStream)
     err = avcodec_send_packet(pCodecCtx, &pStream->attached_pic);
     LOG_WARN("avcodec_send_packet(): {}\n", err);
 
-    AVFrame frame {};
+    auto& frame = s->imgFrame;
     err = avcodec_receive_frame(pCodecCtx, &frame);
     if (err == AVERROR(EINVAL))
         LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
 
-    defer( av_frame_unref(&frame) );
-    LOG_WARN("width: {}, height: {}\n", frame.width, frame.height);
+    /*defer( av_frame_unref(&frame) );*/
+    LOG_WARN("width: {}, height: {}, format: {}\n", frame.width, frame.height, frame.format);
 
-    return ERROR::OK;
+    return {
+        Image{
+            .pBuff = frame.data[0],
+            .width = frame.width,
+            .height = frame.height,
+            .eFormat = covertFormat(frame.format)
+        }
+    };
 }
 
 ERROR
@@ -133,7 +176,7 @@ DecoderOpen(Decoder* s, String sPath)
     if (err < 0)
     {
         LOG("avcodec_open2\n");
-        return ERROR::UNKNOWN;
+        return ERROR::CODEC_OPEN;
     }
 
     err = swr_alloc_set_opts2(&s->pSwr,
@@ -142,21 +185,9 @@ DecoderOpen(Decoder* s, String sPath)
         0, {}
     );
 
-    for (u32 i = 0; i < s->pFormatCtx->nb_streams; ++i)
-    {
-        auto* pStream = s->pFormatCtx->streams[i];
-        if (pStream->disposition & AV_DISPOSITION_ATTACHED_PIC)
-        {
-            LOG_WARN("Found 'attached_pic'\n");
-            auto eErr = DecoderLoadPicture(s, pStream);
-            LOG_WARN("DecoderLoadPicture(): {}\n", int(eErr));
-            break;
-        }
-    }
-
     LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
 
-    return ERROR::OK;
+    return ERROR::OK_;
 }
 
 ERROR
@@ -245,7 +276,7 @@ DecoderWriteToBuffer(
             if (nWrites >= maxSamples && nWrites >= nFrames*2) /* mul by nChannels */
             {
                 *pSamplesWritten += nWrites;
-                return ERROR::OK;
+                return ERROR::OK_;
             }
         }
     }

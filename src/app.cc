@@ -24,6 +24,8 @@ VecBase<String> g_aArgs {};
 Player* g_pPlayer {};
 audio::IMixer* g_pMixer {};
 
+bool g_bSelectionChanged = true;
+
 IWindow*
 allocWindow(IAllocator* pAlloc)
 {

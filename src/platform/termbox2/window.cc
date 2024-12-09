@@ -43,7 +43,6 @@ namespace window
 Arena* g_pFrameArena {};
 bool g_bDrawHelpMenu = false;
 u16 g_firstIdx = 0;
-bool s_bRedrawImg = true;
 
 static struct {
     wchar_t aBuff[64] {};
@@ -211,7 +210,7 @@ seekFromInput()
 static void
 procResize([[maybe_unused]] tb_event* pEv)
 {
-    //
+    app::g_bSelectionChanged = true;
 }
 
 void
@@ -618,6 +617,7 @@ draw()
 {
     if (tb_height() < 6 || tb_width() < 6) return;
 
+
     tb_clear();
 
     drawStatus();
@@ -631,8 +631,15 @@ draw()
 
         if (g_bDrawHelpMenu) drawHelpMenu();
 
-        if (s_bRedrawImg)
+        if (app::g_bSelectionChanged)
         {
+            app::g_bSelectionChanged = false;
+
+            sixel::Img img(INIT_FLAG::INIT);
+            defer( sixel::ImgDestroy(&img) );
+            Opt<ffmpeg::Image> oCover = audio::MixerGetCover(app::g_pMixer);
+
+            if (oCover) sixel::ImgPrintBytes(&img, oCover.data);
         }
     }
 

@@ -96,8 +96,6 @@ MixerInit(Mixer* s)
     s->eformat = SPA_AUDIO_FORMAT_F32;
 
     mtx_init(&s->mtxDecoder, mtx_plain);
-    mtx_init(&s->mtxThrdLoop, mtx_plain);
-    cnd_init(&s->cndThrdLoop);
 
     MixerRunThread(s, app::g_argc, app::g_argv);
 }
@@ -122,8 +120,6 @@ MixerDestroy(Mixer* s)
     pw_deinit();
 
     mtx_destroy(&s->mtxDecoder);
-    mtx_destroy(&s->mtxThrdLoop);
-    cnd_destroy(&s->cndThrdLoop);
     LOG_NOTIFY("MixerDestroy()\n");
 }
 
@@ -139,14 +135,19 @@ MixerPlay(Mixer* s, String sPath)
 
         s->sPath = sPath;
 
-        if (s->bDecodes) ffmpeg::DecoderClose(s->pDecoder);
+        if (s->bDecodes)
+        {
+            ffmpeg::DecoderClose(s->pDecoder);
+            s->oCoverImg = {};
+        }
 
         auto err = ffmpeg::DecoderOpen(s->pDecoder, sPath);
-        if (err != ffmpeg::ERROR::OK)
+        if (err != ffmpeg::ERROR::OK_)
         {
             LOG_WARN("DecoderOpen\n");
             return;
         }
+        s->oCoverImg = ffmpeg::DecoderGetPicture(s->pDecoder);
         s->bDecodes = true;
     }
 
@@ -223,7 +224,6 @@ writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten, u64*
             MixerPause(s, true);
             ffmpeg::DecoderClose(s->pDecoder);
             s->bDecodes = false;
-
         }
     }
 
@@ -377,6 +377,13 @@ Opt<String>
 MixerGetMetadata(Mixer* s, const String sKey)
 {
     return ffmpeg::DecoderGetMetadataValue(s->pDecoder, sKey);
+}
+
+Opt<ffmpeg::Image>
+MixerGetCover(Mixer* s)
+{
+    guard::Mtx lock(&s->mtxDecoder);
+    return s->oCoverImg;
 }
 
 void

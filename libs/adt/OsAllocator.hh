@@ -45,7 +45,7 @@ inline void*
 OsAlloc([[maybe_unused]] OsAllocator* s, u64 mCount, u64 mSize)
 {
     auto* r = ::malloc(mCount * mSize);
-    assert(r != nullptr && "[OsAllocator]: calloc failed");
+    assert(r != nullptr && "[OsAllocator]: malloc failed");
     return r;
 }
 

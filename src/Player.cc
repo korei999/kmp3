@@ -134,6 +134,8 @@ updateInfo(Player* s)
     s->info.title = audio::MixerGetMetadata(app::g_pMixer, "title").data;
     s->info.album = audio::MixerGetMetadata(app::g_pMixer, "album").data;
     s->info.artist = audio::MixerGetMetadata(app::g_pMixer, "artist").data;
+
+    app::g_bSelectionChanged = true;
 }
 
 void
