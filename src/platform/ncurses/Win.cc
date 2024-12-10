@@ -388,13 +388,11 @@ WinDrawStatus(Win* s)
         {
             cchar_t wch {};
             wchar_t aCh[2] {L'━', L'\0'};
-            int pair = 256;
-            int fg = 255, bg = 0;
-
+            int pair = 0;
+            int fg = 200, bg = 0;
 
             if ((j - 0) == std::floor(timePlace)) aCh[0] = L'╋';
 
-            /* FIXME: bg fg color? */
             init_extended_pair(pair, fg, bg);
             setcchar(&wch, aCh, A_NORMAL, -1, &pair);
 
