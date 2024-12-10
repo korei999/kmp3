@@ -55,7 +55,7 @@ allocTimeString(Arena* pArena, int width)
     u64 maxMin = totalT / 60;
     u64 maxSec = totalT - (60 * maxMin);
 
-    int n = snprintf(pBuff, width, "%llu:%02llu / %llu:%02llu", currMin, currSec, maxMin, maxSec);
+    int n = snprintf(pBuff, width, "time: %llu:%02llu / %llu:%02llu", currMin, currSec, maxMin, maxSec);
     if (mixer.sampleRate != mixer.changedSampleRate)
         snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f64(mixer.changedSampleRate) / f64(mixer.sampleRate) * 100.0)));
 

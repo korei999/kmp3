@@ -458,7 +458,7 @@ WinDrawVolume(Win* s)
         else
         {
             col |= volumeColor(nTimes);
-            wc = ACS_BLOCK;
+            wc = ACS_DIAMOND;
         }
 
         attron(col);
