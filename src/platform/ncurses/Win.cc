@@ -164,7 +164,7 @@ WinCreateBoxes(Win* s)
     s->info.pBor = subwin(stdscr, std::round(f64(height) - split), width, 0, 0);
     s->info.pCon = derwin(s->info.pBor, getmaxy(s->info.pBor) - 2, getmaxx(s->info.pBor) - 2, 1, 1);
 
-    s->list.pBor = subwin(stdscr, std::round(split - 1.0) - 1, width, std::round(f64(height) - split) + 1, 0);
+    s->list.pBor = subwin(stdscr, std::round(split - 1.0) - 2, width, std::round(f64(height) - split) + 2, 0);
     s->list.pCon = derwin(s->list.pBor, getmaxy(s->list.pBor) - 2, width - 2, 1, 1);
 
     s->split = split;
@@ -264,7 +264,7 @@ WinDrawBottomLine(Win* s)
     move(height - 1, 0);
     clrtoeol();
 
-    /* total */
+    /* selected / focused */
     {
         char* pBuff = (char*)zalloc(s->pArena, 1, width + 1);
 
@@ -300,7 +300,7 @@ WinDrawBottomLine(Win* s)
 }
 
 static void
-WinDrawInfoAndVolume(Win* s)
+WinDrawInfo(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
     auto* pWin = s->info.pCon;
@@ -358,7 +358,7 @@ WinDrawInfoAndVolume(Win* s)
 }
 
 static void
-WinDrawStatus(Win* s)
+WinDrawTime(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
     const auto& mix = *app::g_pMixer;
@@ -415,6 +415,62 @@ WinDrawStatus(Win* s)
     }
 }
 
+static void
+WinDrawVolume(Win* s)
+{
+    const auto& pl = *app::g_pPlayer;
+    auto* pWin = stdscr;
+
+    int height = getmaxy(pWin);
+    int width = getmaxx(pWin) - 1;
+    int split = std::round(f64(height) * (1.0 - app::g_pPlayer->statusToInfoWidthRatio)) + 1;
+
+    move(split, 0);
+    clrtoeol();
+
+    using VOLUME_COLOR = int;
+
+    const f32 vol = app::g_pMixer->volume;
+    const bool bMuted = app::g_pMixer->bMuted;
+    constexpr String fmt = "volume: %3d";
+    const int maxVolumeBars = (width - fmt.size - 2) * vol * 1.0f/defaults::MAX_VOLUME;
+
+    auto volumeColor = [&](int i) -> VOLUME_COLOR {
+        f32 col = f32(i) / (f32(width - fmt.size - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
+
+        if (col <= 0.33f) return COLOR_PAIR(COLOR::GREEN);
+        else if (col > 0.33f && col <= 0.66f) return COLOR_PAIR(COLOR::GREEN);
+        else if (col > 0.66f && col <= 1.00f) return COLOR_PAIR(COLOR::YELLOW);
+        else return COLOR_PAIR(COLOR::RED);
+    };
+
+    const auto col = bMuted ? COLOR_PAIR(COLOR::BLUE) : volumeColor(maxVolumeBars - 1) | A_BOLD;
+
+    for (int i = fmt.size + 2, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
+    {
+        VOLUME_COLOR col = A_BOLD;
+        wchar_t wc;
+        if (bMuted)
+        {
+            col |= COLOR_PAIR(COLOR::BLUE);
+            wc = common::CHAR_VOL;
+        }
+        else
+        {
+            col |= volumeColor(nTimes);
+            wc = common::CHAR_VOL_MUTED;
+        }
+
+        attron(col);
+        mvwaddch(pWin, split, i, '#');
+    }
+
+    char* pBuff = (char*)zalloc(s->pArena, 1, width + 1);
+    snprintf(pBuff, width, fmt.pData, int(std::round(vol * 100.0f)));
+    mvwaddnstr(pWin, split, 1, pBuff, width);
+    attroff(col);
+}
+
 void
 WinDraw(Win* s)
 {
@@ -422,9 +478,6 @@ WinDraw(Win* s)
     getmaxyx(stdscr, y, x);
 
     if (y < 10 || x < 10) return;
-
-    WinDrawList(s);
-    WinDrawBottomLine(s); /* draws to the stdscr */
 
     f64 aspect = 1.0;
     if (app::g_pPlayer->bSelectionChanged)
@@ -445,10 +498,13 @@ WinDraw(Win* s)
             platform::chafa::showImage(s->info.pCon, oCover.data, y + 1, x);
         }
 
-        WinDrawInfoAndVolume(s);
+        WinDrawInfo(s);
     }
 
-    WinDrawStatus(s);
+    WinDrawList(s);
+    WinDrawBottomLine(s); /* draws to the stdscr */
+    WinDrawTime(s);
+    WinDrawVolume(s);
     drawBox(s->info.pBor, COLOR::BLUE);
 
     wnoutrefresh(s->info.pCon);
