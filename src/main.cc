@@ -29,6 +29,8 @@ main(int argc, char** argv)
 
 #ifdef USE_NCURSES
     app::g_eUIBackend = app::UI_BACKEND::NCURSES;
+#else
+    app::g_eUIBackend = app::UI_BACKEND::TERMBOX;
 #endif
 
     if (argc > 1)

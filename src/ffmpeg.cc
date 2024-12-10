@@ -193,7 +193,9 @@ DecoderOpen(Decoder* s, String sPath)
 
     LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
 
+#ifdef USE_CHAFA
     ffmpeg::DecoderGetAttachedPicture(s);
+#endif
 
     return ERROR::OK_;
 }
