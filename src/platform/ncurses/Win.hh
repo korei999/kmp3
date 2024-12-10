@@ -11,6 +11,8 @@ namespace platform
 namespace ncurses
 {
 
+extern int g_timeStringSize;
+
 struct Box
 {
     WINDOW* pBor {}; /* border window */

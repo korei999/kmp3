@@ -112,4 +112,9 @@ constexpr int CTRL_C = 3;
 
 constexpr int ESC = 27;
 
+constexpr int MOUSELEFT = 4;
+constexpr int MOUSERIGHT = 4096;
+constexpr int MOUSEUP = 65536;
+constexpr int MOUSEDOWN = 2097152;
+
 } /* namespace keys */

@@ -1,5 +1,7 @@
 #include "chafa.hh"
+
 #include "adt/logs.hh"
+#include "defaults.hh"
 
 #include <chafa/chafa.h>
 #include <ncurses.h>
@@ -42,7 +44,7 @@ formatChannels(const ffmpeg::PIXEL_FORMAT eFormat)
     }
 }
 
-static ChafaCanvasMode
+[[nodiscard]] static ChafaCanvasMode
 detectCanvasMode()
 {
     /* COLORS is a global variable defined by ncurses. It depends on termcap
@@ -54,14 +56,14 @@ detectCanvasMode()
      * TERM=xterm-256color
      * TERM=xterm-direct
      */
-    return COLORS  >= (1 << 24)  ? CHAFA_CANVAS_MODE_TRUECOLOR
+    return COLORS  >= (1 << 24) ? CHAFA_CANVAS_MODE_TRUECOLOR
            : COLORS >= (1 << 8) ? CHAFA_CANVAS_MODE_INDEXED_240
            : COLORS >= (1 << 4) ? CHAFA_CANVAS_MODE_INDEXED_16
            : COLORS >= (1 << 3) ? CHAFA_CANVAS_MODE_INDEXED_8
                                 : CHAFA_CANVAS_MODE_FGBG;
 }
 
-static ChafaCanvas*
+[[nodiscard]] static ChafaCanvas*
 createCanvas(const int width, const int height)
 {
     ChafaSymbolMap* symbol_map;
@@ -144,12 +146,11 @@ canvasToNcurses(WINDOW* pWin, ChafaCanvas* canvas, const int width, const int he
     ChafaCanvasMode mode = detectCanvasMode();
 
     int pair = 256; /* Reserve lower pairs for application in direct-color mode */
-    int x, y;
     const int halfOff = std::round(off / 2.0);
 
-    for (y = 0; y < height - 1; ++y)
+    for (int y = 0; y < height - 1; ++y)
     {
-        for (x = 0; x < width; ++x)
+        for (int x = 0; x < width; ++x)
         {
             wchar_t wc[2];
             cchar_t cch;
@@ -189,8 +190,7 @@ showImage(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, const int
     if (convertFormat(img.eFormat) == -1) return;
 
     f64 scaleFactor = f64(termHeight) / f64(img.height);
-    /* adjust for typical monospace font character ratio */
-    int scaledWidth = std::round(img.width * scaleFactor / 0.5);
+    int scaledWidth = std::round(img.width * scaleFactor / defaults::FONT_ASPECT_RATIO);
     int diff = termWidth - scaledWidth;
 
     LOG_GOOD("termWidth: {}, scaledWidth: {}, diff: {}\n", termWidth, scaledWidth, diff);

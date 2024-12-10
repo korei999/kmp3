@@ -125,6 +125,7 @@ main(int argc, char** argv)
     platform::pipewire::Mixer mixer(&alctr.super);
     platform::pipewire::MixerInit(&mixer);
     defer( platform::pipewire::MixerDestroy(&mixer) );
+
     mixer.base.volume = defaults::VOLUME;
     app::g_pMixer = &mixer.base;
 

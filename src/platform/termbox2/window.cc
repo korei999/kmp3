@@ -137,6 +137,7 @@ procEvents()
     tb_event ev;
     tb_peek_event(&ev, defaults::UPDATE_RATE);
     auto height = tb_height();
+    auto width = tb_width();
 
     const auto& pl = *app::g_pPlayer;
 

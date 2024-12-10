@@ -40,6 +40,8 @@ static void drawBox(WINDOW* pWin, COLOR eColor);
 static void WinProcResize(Win* s);
 static void WinDrawList(Win* s);
 
+int g_timeStringSize {};
+
 bool
 WinStart(Win* s, Arena* pArena)
 {
@@ -55,6 +57,8 @@ WinStart(Win* s, Arena* pArena)
     /*raw();*/
     cbreak();
     keypad(stdscr, true);
+
+    mousemask(ALL_MOUSE_EVENTS, {});
 
     short td =  -1;
     init_pair(short(COLOR::GREEN), COLOR_GREEN, td);
@@ -86,6 +90,12 @@ WinProcEvents(Win* s)
     get_wch(&ch);
 
     if (ch == KEY_RESIZE) WinProcResize(s);
+    else if (ch == KEY_MOUSE)
+    {
+        MEVENT ev;
+        getmouse(&ev);
+        input::WinProcMouse(s, ev);
+    }
     else if (ch != 0)
     {
         input::WinProcKey(s, ch);
@@ -388,6 +398,7 @@ WinDrawTime(Win* s)
 
         n += strlen(ntsIndicator);
     }
+    g_timeStringSize = n;
     
     /* time slider */
     {
