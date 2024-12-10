@@ -189,6 +189,7 @@ showImage(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, const int
     if (convertFormat(img.eFormat) == -1) return;
 
     f64 scaleFactor = f64(termHeight) / f64(img.height);
+    /* adjust for typical monospace font character ratio */
     int scaledWidth = std::round(img.width * scaleFactor / 0.5);
     int diff = termWidth - scaledWidth;
 
