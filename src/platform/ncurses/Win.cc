@@ -490,6 +490,8 @@ WinDraw(Win* s)
     {
         app::g_pPlayer->bSelectionChanged = false;
 
+        wclear(s->info.pCon);
+
 #ifdef USE_CHAFA
         auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCover)
@@ -497,7 +499,6 @@ WinDraw(Win* s)
             int y, x;
             getmaxyx(s->info.pCon, y, x);
 
-            wclear(s->info.pCon);
             platform::chafa::showImage(s->info.pCon, oCover.data, y + 1, x);
         }
 #endif
@@ -511,8 +512,8 @@ WinDraw(Win* s)
     WinDrawVolume(s);
     drawBox(s->info.pBor, COLOR::BLUE);
 
-    wnoutrefresh(s->info.pCon);
     wnoutrefresh(stdscr);
+    wnoutrefresh(s->info.pCon);
     wnoutrefresh(s->info.pBor);
     wnoutrefresh(s->list.pBor);
 
