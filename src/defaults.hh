@@ -16,6 +16,6 @@ constexpr int MIN_SAMPLE_RATE = 1000;
 constexpr int MAX_SAMPLE_RATE = 9999999;
 constexpr f64 FONT_ASPECT_RATIO = 1.0 / 2.0; /* typical monospaced font is 1/2 or 3/5 (width/height) */
 
-constexpr app::UI_BACKEND eDefautUIBackend = app::UI_BACKEND::TERMBOX;
+constexpr app::UI_FRONTEND eDefautUIFrontend = app::UI_FRONTEND::TERMBOX;
 
 } /* namespace defaults */

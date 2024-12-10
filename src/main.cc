@@ -28,7 +28,7 @@ main(int argc, char** argv)
     defer( freeAll(&alctr) );
 
 #ifdef USE_NCURSES
-    app::g_eUIBackend = app::UI_BACKEND::NCURSES;
+    app::g_eUIFrontend = app::UI_FRONTEND::NCURSES;
 #else
     app::g_eUIBackend = app::UI_BACKEND::TERMBOX;
 #endif
@@ -37,13 +37,13 @@ main(int argc, char** argv)
     {
         if (argv[1] == String("--termbox"))
         {
-            app::g_eUIBackend = app::UI_BACKEND::TERMBOX;
+            app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
             LOG_NOTIFY("setting TERMBOX ui\n");
         }
         else if (argv[1] == String("--ncurses"))
         {
 #ifdef USE_NCURSES
-            app::g_eUIBackend = app::UI_BACKEND::NCURSES;
+            app::g_eUIFrontend = app::UI_FRONTEND::NCURSES;
             LOG_NOTIFY("setting NCURSES ui\n");
 #else
             CERR("Program was built without ncurses support.\n");

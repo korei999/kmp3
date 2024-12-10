@@ -9,9 +9,9 @@ using namespace adt;
 namespace app
 {
 
-enum class UI_BACKEND : u8 { TERMBOX, NCURSES, NOTCURSES };
+enum class UI_FRONTEND : u8 { TERMBOX, NCURSES, NOTCURSES };
 
-extern UI_BACKEND g_eUIBackend;
+extern UI_FRONTEND g_eUIFrontend;
 extern IWindow* g_pWin;
 extern bool g_bRunning;
 extern int g_argc;

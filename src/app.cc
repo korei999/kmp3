@@ -14,7 +14,7 @@
 namespace app
 {
 
-UI_BACKEND g_eUIBackend = UI_BACKEND::TERMBOX;
+UI_FRONTEND g_eUIFrontend = UI_FRONTEND::TERMBOX;
 IWindow* g_pWin {};
 bool g_bRunning {};
 int g_argc {};
@@ -29,16 +29,16 @@ allocWindow(IAllocator* pAlloc)
 {
     IWindow* pRet {};
 
-    switch (app::g_eUIBackend)
+    switch (app::g_eUIFrontend)
     {
-        case UI_BACKEND::TERMBOX:
+        case UI_FRONTEND::TERMBOX:
         {
             auto* pTermboxWin = (platform::termbox2::Win*)alloc(pAlloc, 1, sizeof(platform::termbox2::Win));
             *pTermboxWin = platform::termbox2::Win();
             pRet = &pTermboxWin->super;
         } break;
 
-        case UI_BACKEND::NCURSES:
+        case UI_FRONTEND::NCURSES:
         {
 #ifdef USE_NCURSES
             auto* pNCurses = (platform::ncurses::Win*)alloc(pAlloc, 1, sizeof(platform::ncurses::Win));
@@ -50,7 +50,7 @@ allocWindow(IAllocator* pAlloc)
 #endif
         } break;
 
-        case UI_BACKEND::NOTCURSES:
+        case UI_FRONTEND::NOTCURSES:
         {
 #ifdef USE_NOTCURSES
             auto* pNotCurses = (platform::notcurses::Win*)alloc(pAlloc, 1, sizeof(platform::notcurses::Win));
