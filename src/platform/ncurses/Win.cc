@@ -382,14 +382,23 @@ WinDrawStatus(Win* s)
     {
         const auto& time = mix.currentTimeStamp;
         const auto& maxTime = mix.totalSamplesCount;
-        const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2);
+        const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - (n + 3));
 
-        for (long i = split + 1; i < width - 1; ++i)
+        for (long i = n + 3, j = 0; i < width - 2; ++i, ++j)
         {
-            wchar_t wc = L'━';
-            if ((i - 1) == std::floor(timePlace)) wc = L'╋';
-            /*tb_set_cell(i, off, wc, TB_WHITE, TB_DEFAULT);*/
-            /*waddch(pWin, mc);*/
+            cchar_t wch {};
+            wchar_t aCh[2] {L'━', L'\0'};
+            int pair = 256;
+            int fg = 255, bg = 0;
+
+
+            if ((j - 0) == std::floor(timePlace)) aCh[0] = L'╋';
+
+            /* FIXME: bg fg color? */
+            init_extended_pair(pair, fg, bg);
+            setcchar(&wch, aCh, A_NORMAL, -1, &pair);
+
+            mvwadd_wch(pWin, split, i, &wch);
         }
     }
 }
