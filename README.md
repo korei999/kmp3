@@ -1,4 +1,4 @@
-![kmp3_1](https://github.com/user-attachments/assets/4950e95a-7ea6-48bb-a8dd-804f507b7900)
+![kmp3_2](https://github.com/user-attachments/assets/65255025-0882-4065-9aac-9c36cb04d16a)
 
 ### Features
 - Plays most of the audio/video formats.
@@ -23,7 +23,8 @@
 
 ### Dependencies
 `libpipewire-0.3 libavformat libavcodec libavutil libswresample`\
-To enable mpris support: `libsystemd` or `basu`
+To enable mpris support: `libsystemd` or `basu`\
+For image support: `ncursesw chafa glib-2.0 libswscale`
 
 ### Install
 ```
