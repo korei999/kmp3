@@ -22,9 +22,9 @@
 - `[` / `]` playback speed shifting fun. `\` Set original speed back.
 
 ### Dependencies
-`libpipewire-0.3 libavformat libavcodec libavutil libswresample`\
-To enable mpris support: `libsystemd` or `basu`\
-For image support: `ncursesw chafa glib-2.0 libswscale`
+`libpipewire-0.3 libavformat libavcodec libavutil libswresample`.\
+To enable mpris support: `libsystemd` or `basu`.\
+For image support: `ncursesw chafa glib-2.0 libswscale`, set TERM=xterm-direct for better quality.
 
 ### Install
 ```
