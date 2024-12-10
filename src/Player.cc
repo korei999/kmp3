@@ -248,7 +248,7 @@ PlayerResetData(Player* s)
 }
 
 void
-PlayerDestroy(Player* s)
+PlayerDestroy([[maybe_unused]] Player* s)
 {
     //
 }

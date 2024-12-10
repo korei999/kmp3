@@ -26,9 +26,6 @@ procKey(tb_event* pEv)
 
     for (const auto& k : keybinds::inl_aKeys)
     {
-        auto& pfn = k.pfn;
-        auto& arg = k.arg;
-
         if ((k.key > 0 && k.key == key) || (k.ch > 0 && k.ch == ch))
             keybinds::resolveKey(k.pfn, k.arg);
     }

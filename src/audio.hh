@@ -90,7 +90,7 @@ constexpr void DummyMixerSeekMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]]
 constexpr void DummyMixerSeekLeftMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms) {}
 constexpr void DummyMixerSeekRightMS([[maybe_unused]] DummyMixer* s, [[maybe_unused]] u64 ms) {}
 constexpr Opt<String> DummyMixerGetMetadata([[maybe_unused]] IMixer* s, [[maybe_unused]] const String sKey) { return {}; }
-constexpr Opt<String> DummyMixerGetCover([[maybe_unused]] IMixer* s) { return {}; }
+constexpr Opt<ffmpeg::Image> DummyMixerGetCover([[maybe_unused]] IMixer* s) { return {}; }
 constexpr void DummyMixerSetVolume([[maybe_unused]] DummyMixer* s, [[maybe_unused]] const f32 volume) {}
 
 inline const MixerVTable inl_DummyMixerVTable {

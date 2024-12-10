@@ -38,8 +38,6 @@ Arena* g_pFrameArena {};
 bool g_bDrawHelpMenu = false;
 u16 g_firstIdx = 0;
 
-static bool s_bImage = false;
-
 bool
 init(Arena* pAlloc)
 {
@@ -245,17 +243,17 @@ drawMBString(
     const long maxLen,
     const u32 fg = TB_WHITE,
     const u32 bg = TB_DEFAULT,
-    const bool bWrap = false,
-    const int xWrapAt = 0,
-    const int nMaxWraps = 0
+    [[maybe_unused]] const bool bWrap = false,
+    [[maybe_unused]] const int xWrapAt = 0,
+    [[maybe_unused]] const int nMaxWraps = 0
 )
 {
     long it = 0;
     long max = 0;
     int yOff = y;
     int xOff = x;
-    int nWraps = 0;
     long maxLenMod = maxLen;
+    // int nWraps = 0;
 
     // wchar_t* pWstr = (wchar_t*)zalloc(g_pFrameArena, str.size + 1, sizeof(wchar_t));
     // auto mbLen = mbstowcs(pWstr, str.pData, str.size);

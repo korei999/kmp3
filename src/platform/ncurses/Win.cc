@@ -218,7 +218,6 @@ static void
 WinDrawList(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
-    const int off = std::round(s->split);
 
     wclear(s->list.pCon);
     drawBox(s->list.pBor, COLOR::BLUE);
@@ -227,7 +226,6 @@ WinDrawList(Win* s)
     {
         const u16 songIdx = pl.aSongIdxs[h];
         const String sSong = pl.aShortArgvs[songIdx];
-        const u32 maxLen = getmaxx(s->list.pCon);
 
         bool bSelected = songIdx == pl.selected ? true : false;
 
@@ -305,7 +303,6 @@ WinDrawInfo(Win* s)
     const auto& pl = *app::g_pPlayer;
     auto* pWin = s->info.pCon;
 
-    int height = getmaxy(pWin);
     int width = getmaxx(pWin);
     char* pBuff = (char*)zalloc(s->pArena, 1, width + 1);
 
@@ -360,7 +357,6 @@ WinDrawInfo(Win* s)
 static void
 WinDrawTime(Win* s)
 {
-    const auto& pl = *app::g_pPlayer;
     const auto& mix = *app::g_pMixer;
     auto* pWin = stdscr;
 
@@ -418,7 +414,6 @@ WinDrawTime(Win* s)
 static void
 WinDrawVolume(Win* s)
 {
-    const auto& pl = *app::g_pPlayer;
     auto* pWin = stdscr;
 
     int height = getmaxy(pWin);
@@ -479,7 +474,6 @@ WinDraw(Win* s)
 
     if (y < 10 || x < 10) return;
 
-    f64 aspect = 1.0;
     if (app::g_pPlayer->bSelectionChanged)
     {
         app::g_pPlayer->bSelectionChanged = false;
@@ -487,12 +481,8 @@ WinDraw(Win* s)
         auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCover)
         {
-            aspect = f64(oCover.data.width) / f64(oCover.data.height);
-
             int y, x;
             getmaxyx(s->info.pCon, y, x);
-            LOG_GOOD("y: {}, x: {}, aspect: {}\n", y, x, aspect);
-            /*x = std::round(f64(x) / aspect);*/
 
             wclear(s->info.pCon);
             platform::chafa::showImage(s->info.pCon, oCover.data, y + 1, x);
