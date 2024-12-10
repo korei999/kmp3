@@ -453,7 +453,7 @@ WinDrawVolume(Win* s)
         if (bMuted)
         {
             col |= COLOR_PAIR(COLOR::BLUE);
-            wc = ACS_BOARD;
+            wc = ACS_S7;
         }
         else
         {
