@@ -13,7 +13,9 @@
 #include <ncursesw/ncurses.h>
 #include <stdatomic.h>
 
-#include "platform/chafa/Img.hh"
+#ifdef USE_CHAFA
+    #include "platform/chafa/Img.hh"
+#endif
 
 namespace platform
 {
@@ -478,6 +480,7 @@ WinDraw(Win* s)
     {
         app::g_pPlayer->bSelectionChanged = false;
 
+#ifdef USE_CHAFA
         auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCover)
         {
@@ -487,6 +490,7 @@ WinDraw(Win* s)
             wclear(s->info.pCon);
             platform::chafa::showImage(s->info.pCon, oCover.data, y + 1, x);
         }
+#endif
 
         WinDrawInfo(s);
     }
