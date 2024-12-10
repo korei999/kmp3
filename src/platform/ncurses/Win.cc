@@ -2,7 +2,6 @@
 
 #include "adt/defer.hh"
 #include "adt/enum.hh"
-#include "adt/logs.hh"
 #include "common.hh"
 #include "defaults.hh"
 #include "input.hh"
@@ -14,7 +13,7 @@
 #include <stdatomic.h>
 
 #ifdef USE_CHAFA
-    #include "platform/chafa/Img.hh"
+    #include "platform/chafa/chafa.hh"
 #endif
 
 namespace platform

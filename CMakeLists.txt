@@ -211,7 +211,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
             add_definitions("-DUSE_CHAFA")
             target_sources(
                 ${CMAKE_PROJECT_NAME} PRIVATE
-                "src/platform/chafa/Img.cc"
+                "src/platform/chafa/chafa.cc"
             )
         endif()
     endif()

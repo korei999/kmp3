@@ -1,4 +1,4 @@
-#include "Img.hh"
+#include "chafa.hh"
 #include "adt/logs.hh"
 
 #include <chafa/chafa.h>
