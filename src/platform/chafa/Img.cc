@@ -186,9 +186,7 @@ showImage(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, const int
 {
     if (convertFormat(img.eFormat) == -1) return;
 
-    ChafaCanvas* canvas;
-
-    canvas = createCanvas(termWidth, termHeight);
+    ChafaCanvas* canvas = createCanvas(termWidth, termHeight);
 
     paintCanvas(canvas, img.pBuff, img.width, img.height, img.eFormat);
     canvasToNcurses(pWin, canvas, termWidth, termHeight);

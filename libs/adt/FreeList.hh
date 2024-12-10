@@ -58,6 +58,7 @@ struct FreeList
 
     IAllocator super {};
     u64 blockSize {};
+    u64 totalAllocated {};
     RBTreeBase<FreeListData> tree {}; /* free nodes sorted by size */
     FreeListBlock* pBlocks {};
 
@@ -94,6 +95,12 @@ inline FreeList::Node*
 _FreeListNodeFromBlock(FreeListBlock* pBlock)
 {
     return (FreeList::Node*)pBlock->pMem;
+}
+
+inline u64
+_FreeListGetBytesAllocated(FreeList* s)
+{
+    return s->totalAllocated;
 }
 
 inline FreeListBlock*
@@ -297,6 +304,7 @@ again:
     if (!pFree) goto again;
 
     pBlock->nBytesOccupied += realSize;
+    s->totalAllocated += realSize;
 
     _FreeListSplitNode(s, pFree, realSize);
 
@@ -323,6 +331,7 @@ FreeListFree(FreeList* s, void* ptr)
 
     pThis->data.setFree(true);
     pBlock->nBytesOccupied -= pThis->data.getSize();
+    s->totalAllocated -= pThis->data.getSize();
 
     /* next adjecent node coalescence */
     if (pThis->data.pNext && pThis->data.pNext->isFree())
@@ -376,7 +385,8 @@ FreeListRealloc(FreeList* s, void* ptr, u64 nMembers, u64 mSize)
             auto* pBlock = _FreeListBlockFromNode(s, pThis);
             assert(pBlock && "[FreeList]: failed to find the block");
 
-            pBlock->nBytesOccupied += realSize - pThis->data.getSize();;
+            pBlock->nBytesOccupied += realSize - pThis->data.getSize();
+            s->totalAllocated += realSize - pThis->data.getSize();
 
             /* remove next from the free list */
             pNext->setFree(false);

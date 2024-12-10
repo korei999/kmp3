@@ -41,6 +41,7 @@ add_executable(
     src/Player.cc
     src/ffmpeg.cc
     src/mpris.cc
+    src/common.cc
     src/platform/pipewire/Mixer.cc
     src/platform/termbox2/window.cc
     src/platform/termbox2/input.cc

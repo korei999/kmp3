@@ -1,9 +1,25 @@
+#include "adt/Arr.hh"
+#include "adt/defer.hh"
 #include "app.hh"
 
 #include <cmath>
+#include <cwctype>
 
 namespace common
 {
+
+struct InputBuff {
+    wchar_t aBuff[64] {};
+    u32 idx = 0;
+    READ_MODE eCurrMode {};
+    READ_MODE eLastUsedMode {};
+
+    void zeroOutBuff() { memset(aBuff, 0, sizeof(aBuff)); }
+};
+
+extern InputBuff g_input;
+
+enum class READ_STATUS : u8 { OK_, DONE };
 
 constexpr u32 CHAR_TL = L'┏';
 constexpr u32 CHAR_TR = L'┓';
@@ -16,6 +32,13 @@ constexpr u32 CHAR_R = L'┃';
 constexpr u32 CHAR_VOL = L'▯';
 constexpr u32 CHAR_VOL_MUTED = L'▮';
 static const wchar_t* CURSOR_BLOCK = L"█";
+
+inline constexpr String
+readModeToString(READ_MODE e)
+{
+    constexpr String map[] {"", "searching: ", "time: "};
+    return map[int(e)];
+}
 
 inline String
 allocTimeString(Arena* pArena, int width)
@@ -56,6 +79,104 @@ fixFirstIdx(const u16 listHeight, u16* pFirstIdx)
         first = 0;
 
     *pFirstIdx = first;
+}
+
+inline void
+procSeekString(const wchar_t* pBuff, u32 size)
+{
+    bool bPercent = false;
+    bool bColon = false;
+
+    Arr<char, 32> aMinutesBuff {};
+    Arr<char, 32> aSecondsBuff {};
+
+    const auto& buff = pBuff;
+    for (long i = 0; buff[i] && i < size; ++i)
+    {
+        if (buff[i] == L'%') bPercent = true;
+        else if (buff[i] == L':')
+        {
+            /* leave if there is one more colon or bPercent */
+            if (bColon || bPercent) break;
+            bColon = true;
+        }
+        else if (iswdigit(buff[i]))
+        {
+            Arr<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
+            if (i < ArrCap(pTargetArray) - 1)
+                ArrPush(pTargetArray, char(buff[i]));
+        }
+    }
+
+    if (aMinutesBuff.size == 0) return;
+
+    if (bPercent)
+    {
+        long maxMS = audio::MixerGetMaxMS(app::g_pMixer);
+
+        audio::MixerSeekMS(app::g_pMixer, maxMS * (f64(atoll(aMinutesBuff.aData)) / 100.0));
+    }
+    else
+    {
+        long sec;
+        if (aSecondsBuff.size == 0) sec = atoll(aMinutesBuff.aData);
+        else sec = atoll(aSecondsBuff.aData) + atoll(aMinutesBuff.aData)*60;
+
+        audio::MixerSeekMS(app::g_pMixer, sec * 1000);
+    }
+}
+
+inline void
+subStringSearch(
+    Arena* pArena,
+    READ_STATUS (*pfnRead)(void*),
+    void* pReadArg,
+    void (*pfnDraw)(void*),
+    void* pDrawArg,
+    u16* pFirstIdx
+)
+{
+    auto& pl = *app::g_pPlayer;
+
+    g_input.eLastUsedMode = g_input.eCurrMode = READ_MODE::SEARCH;
+    defer( g_input.eCurrMode = READ_MODE::NONE );
+
+    g_input.zeroOutBuff();
+    g_input.idx = 0;
+
+    do
+    {
+        PlayerSubStringSearch(&pl, pArena, g_input.aBuff, utils::size(g_input.aBuff));
+        *pFirstIdx = 0;
+        pfnDraw(pDrawArg);
+
+    } while (pfnRead(pReadArg) != READ_STATUS::DONE);
+
+    /* fix focused if it ends up out of the list range */
+    if (pl.focused >= (VecSize(&pl.aSongIdxs)))
+        pl.focused = *pFirstIdx;
+}
+
+inline void
+seekFromInput(
+    READ_STATUS (*pfnRead)(void*),
+    void* pReadArg,
+    void (*pfnDraw)(void*),
+    void* pDrawArg
+)
+{
+    g_input.eLastUsedMode = g_input.eCurrMode = READ_MODE::SEEK;
+    defer( g_input.eCurrMode = READ_MODE::NONE );
+
+    g_input.zeroOutBuff();
+    g_input.idx = 0;
+
+    do
+    {
+        pfnDraw(pDrawArg);
+    } while (pfnRead(pReadArg) != READ_STATUS::DONE);
+
+    procSeekString(g_input.aBuff, utils::size(g_input.aBuff));
 }
 
 } /* namespace common */

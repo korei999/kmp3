@@ -9,7 +9,7 @@ namespace ncurses
 namespace input
 {
 
-void procKey(Win* s, wint_t ch);
+void WinProcKey(Win* s, wint_t ch);
 
 } /*namespace input */
 } /*namespace ncurses */

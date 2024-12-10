@@ -102,11 +102,14 @@ constexpr int END = 360;
 
 constexpr int CTRL_D = 4;
 constexpr int CTRL_U = 21;
+constexpr int CTRL_W = 23;
 
 constexpr int PGDN = 338;
 constexpr int PGUP = 339;
 
 constexpr int ENTER = 10;
 constexpr int CTRL_C = 3;
+
+constexpr int ESC = 27;
 
 } /* namespace keys */

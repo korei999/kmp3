@@ -12,7 +12,7 @@ namespace input
 {
 
 void
-procKey(Win* s, wint_t ch)
+WinProcKey(Win* s, wint_t ch)
 {
     for (const auto& k : keybinds::inl_aKeys)
     {

@@ -1,7 +1,5 @@
 #include "window.hh"
 
-#include "adt/Arr.hh"
-#include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
@@ -42,22 +40,6 @@ u16 g_firstIdx = 0;
 
 static bool s_bImage = false;
 
-static struct {
-    wchar_t aBuff[64] {};
-    u32 idx = 0;
-    READ_MODE eCurrMode {};
-    READ_MODE eLastUsedMode {};
-
-    void zeroOutBuff() { memset(aBuff, 0, sizeof(aBuff)); }
-} s_input {};
-
-constexpr String
-readModeToString(READ_MODE e)
-{
-    constexpr String map[] {"", "searching: ", "time: "};
-    return map[int(e)];
-}
-
 bool
 init(Arena* pAlloc)
 {
@@ -83,107 +65,53 @@ destroy()
     LOG_NOTIFY("tb_shutdown()\n");
 }
 
-enum READ_STATUS : u8 { OK, DONE };
-
-static READ_STATUS
+static common::READ_STATUS
 readWChar(tb_event* pEv)
 {
+    namespace c = common;
+
     const auto& ev = *pEv;
     tb_peek_event(pEv, defaults::READ_TIMEOUT);
 
-    if (ev.type == 0) return READ_STATUS::DONE;
-    else if (ev.key == TB_KEY_ESC) return READ_STATUS::DONE;
-    else if (ev.key == TB_KEY_CTRL_C) return READ_STATUS::DONE;
-    else if (ev.key == TB_KEY_ENTER) return READ_STATUS::DONE;
+    if (ev.type == 0) return c::READ_STATUS::DONE;
+    else if (ev.key == TB_KEY_ESC) return c::READ_STATUS::DONE;
+    else if (ev.key == TB_KEY_CTRL_C) return c::READ_STATUS::DONE;
+    else if (ev.key == TB_KEY_ENTER) return c::READ_STATUS::DONE;
     else if (ev.key == TB_KEY_CTRL_W)
     {
-        if (s_input.idx > 0)
+        if (c::g_input.idx > 0)
         {
-            s_input.idx = 0;
-            s_input.zeroOutBuff();
+            c::g_input.idx = 0;
+            c::g_input.zeroOutBuff();
         }
     }
     else if (ev.key == TB_KEY_BACKSPACE || ev.key == TB_KEY_BACKSPACE2 || ev.key == TB_KEY_CTRL_H)
     {
-        if (s_input.idx > 0)
-            s_input.aBuff[--s_input.idx] = L'\0';
+        if (c::g_input.idx > 0)
+            c::g_input.aBuff[--c::g_input.idx] = L'\0';
     }
     else if (ev.ch)
     {
-        if (s_input.idx < utils::size(s_input.aBuff) - 1)
-            s_input.aBuff[s_input.idx++] = ev.ch;
+        if (c::g_input.idx < utils::size(c::g_input.aBuff) - 1)
+            c::g_input.aBuff[c::g_input.idx++] = ev.ch;
     }
 
-    return READ_STATUS::OK;
+    return c::READ_STATUS::OK_;
 }
 
 void
 subStringSearch()
 {
     tb_event ev {};
-    auto& pl = *app::g_pPlayer;
 
-    s_input.eLastUsedMode = s_input.eCurrMode = READ_MODE::SEARCH;
-    defer( s_input.eCurrMode = READ_MODE::NONE );
-
-    s_input.zeroOutBuff();
-    s_input.idx = 0;
-
-    do
-    {
-        PlayerSubStringSearch(&pl, g_pFrameArena, s_input.aBuff, utils::size(s_input.aBuff));
-        g_firstIdx = 0;
-        draw();
-    } while (readWChar(&ev) != READ_STATUS::DONE);
-
-    /* fix focused if it ends up out of the list range */
-    if (pl.focused >= (VecSize(&pl.aSongIdxs)))
-        pl.focused = g_firstIdx;
-}
-
-static void
-parseSeekThenRun()
-{
-    bool bPercent = false;
-    bool bColon = false;
-
-    Arr<char, 32> aMinutesBuff {};
-    Arr<char, 32> aSecondsBuff {};
-
-    const auto& buff = s_input.aBuff;
-    for (long i = 0; buff[i] && i < long(utils::size(buff)); ++i)
-    {
-        if (buff[i] == L'%') bPercent = true;
-        else if (buff[i] == L':')
-        {
-            /* leave if there is one more colon or bPercent */
-            if (bColon || bPercent) break;
-            bColon = true;
-        }
-        else if (iswdigit(buff[i]))
-        {
-            Arr<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
-            if (i < ArrCap(pTargetArray) - 1)
-                ArrPush(pTargetArray, char(buff[i]));
-        }
-    }
-
-    if (aMinutesBuff.size == 0) return;
-
-    if (bPercent)
-    {
-        long maxMS = audio::MixerGetMaxMS(app::g_pMixer);
-
-        audio::MixerSeekMS(app::g_pMixer, maxMS * (f64(atoll(aMinutesBuff.aData)) / 100.0));
-    }
-    else
-    {
-        long sec;
-        if (aSecondsBuff.size == 0) sec = atoll(aMinutesBuff.aData);
-        else sec = atoll(aSecondsBuff.aData) + atoll(aMinutesBuff.aData)*60;
-
-        audio::MixerSeekMS(app::g_pMixer, sec * 1000);
-    }
+    common::subStringSearch(
+        g_pFrameArena,
+        +[](void* pArg) { return readWChar((tb_event*)pArg); },
+        &ev,
+        +[](void*) { draw(); },
+        nullptr,
+        &g_firstIdx
+    );
 }
 
 void
@@ -191,18 +119,12 @@ seekFromInput()
 {
     tb_event ev {};
 
-    s_input.eLastUsedMode = s_input.eCurrMode = READ_MODE::SEEK;
-    defer( s_input.eCurrMode = READ_MODE::NONE );
-
-    s_input.zeroOutBuff();
-    s_input.idx = 0;
-
-    do
-    {
-        draw();
-    } while (readWChar(&ev) != READ_STATUS::DONE);
-
-    parseSeekThenRun();
+    common::seekFromInput(
+        +[](void* pArg) { return readWChar((tb_event*)pArg); },
+        &ev,
+        +[](void*) { draw(); },
+        nullptr
+    );
 }
 
 static void
@@ -551,6 +473,8 @@ drawInfo()
 static void
 drawBottomLine()
 {
+    namespace c = common;
+
     const auto& pl = *app::g_pPlayer;
     char aBuff[16] {};
     auto height = tb_height();
@@ -561,15 +485,15 @@ drawBottomLine()
 
     drawMBString(width - str.size - 2, height - 1, str, str.size + 2); /* yeah + 2 */
 
-    if (s_input.eCurrMode != READ_MODE::NONE || (s_input.eCurrMode == READ_MODE::NONE && wcsnlen(s_input.aBuff, utils::size(s_input.aBuff)) > 0))
+    if (c::g_input.eCurrMode != READ_MODE::NONE || (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0))
     {
-        const String sSearching = readModeToString(s_input.eLastUsedMode);
+        const String sSearching = c::readModeToString(c::g_input.eLastUsedMode);
         drawMBString(0, height - 1, sSearching, sSearching.size + 2);
-        drawWideString(sSearching.size, height - 1, s_input.aBuff, utils::size(s_input.aBuff), width - sSearching.size);
+        drawWideString(sSearching.size, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff), width - sSearching.size);
 
-        if (s_input.eCurrMode != READ_MODE::NONE)
+        if (c::g_input.eCurrMode != READ_MODE::NONE)
         {
-            u32 wlen = wcsnlen(s_input.aBuff, utils::size(s_input.aBuff));
+            u32 wlen = wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff));
             drawWideString(sSearching.size + wlen, height - 1, common::CURSOR_BLOCK, 1, 3);
         }
     }
