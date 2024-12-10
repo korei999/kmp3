@@ -1,18 +1,17 @@
 #include "Win.hh"
 
 #include "adt/defer.hh"
+#include "adt/enum.hh"
 #include "adt/logs.hh"
+#include "common.hh"
 #include "defaults.hh"
 #include "input.hh"
-#include "common.hh"
-#include "adt/enum.hh"
+#include "keys.hh"
 
 #include <clocale>
+#include <cmath>
 #include <ncursesw/ncurses.h>
 
-#include <cmath>
-
-#include "keys.hh"
 #include "platform/chafa/Img.hh"
 
 namespace platform
@@ -37,7 +36,7 @@ static void WinCreateBoxes(Win* s);
 static void WinDestroyBoxes(Win* s);
 static void drawBox(WINDOW* pWin, COLOR eColor);
 static void WinProcResize(Win* s);
-static void drawList(Win* s);
+static void WinDrawList(Win* s);
 
 bool
 WinStart(Win* s, Arena* pArena)
@@ -159,11 +158,11 @@ WinCreateBoxes(Win* s)
     getmaxyx(stdscr, mx, my);
     auto& pl = *app::g_pPlayer;
 
-    /*f64 split = f64(mx) * pl.statusToInfoWidthRatio;*/
-    f64 split = f64(mx) * 0.5;
+    f64 split = f64(mx) * pl.statusToInfoWidthRatio;
+    /*f64 split = f64(mx) * 0.5;*/
 
     s->info.pBor = subwin(stdscr, std::round(f64(mx) - split), my, 0, 0);
-    s->info.pCon = derwin(s->info.pBor, getmaxy(s->info.pBor) - 1, getmaxx(s->info.pBor) - 2, 1, 1);
+    s->info.pCon = derwin(s->info.pBor, getmaxy(s->info.pBor) - 2, getmaxx(s->info.pBor) - 2, 1, 1);
 
     s->list.pBor = subwin(stdscr, std::round(split - 1.0), my, std::round(f64(mx) - split), 0);
     s->list.pCon = derwin(s->list.pBor, getmaxy(s->list.pBor) - 2, my - 2, 1, 1);
@@ -217,12 +216,13 @@ WinProcResize(Win* s)
 }
 
 static void
-drawList(Win* s)
+WinDrawList(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
     const int off = std::round(s->split);
 
     wclear(s->list.pCon);
+    drawBox(s->list.pBor, COLOR::BLUE);
 
     for (u16 h = s->firstIdx, i = 0; h < pl.aSongIdxs.size; ++h, ++i)
     {
@@ -251,8 +251,39 @@ drawList(Win* s)
         mvwaddnwstr(s->list.pCon, i, 0, pWstr, mx);
         wattroff(s->list.pCon, col | A_REVERSE | A_BOLD);
     }
+}
 
-    drawBox(s->list.pBor, COLOR::BLUE);
+static void
+WinDrawBottomLine(Win* s)
+{
+    namespace c = common;
+
+    const auto& pl = *app::g_pPlayer;
+    int height, width;
+    getmaxyx(stdscr, height, width);
+
+    move(height - 1, 0);
+    clrtoeol();
+
+    {
+        /* bot-right corner */
+        char aBuff[16] {};
+        auto len = print::toBuffer(aBuff, utils::size(aBuff) - 1, "{}", pl.focused);
+        mvwaddnstr(stdscr, height - 1, width - len - 2, aBuff, len);
+    }
+
+    if (c::g_input.eCurrMode != READ_MODE::NONE || (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0))
+    {
+        const String sSearching = c::readModeToString(c::g_input.eLastUsedMode);
+        mvwaddnwstr(stdscr, height - 1, sSearching.size, c::g_input.aBuff, utils::size(c::g_input.aBuff));
+        mvwaddnstr(stdscr, height - 1, 0, sSearching.pData, sSearching.size);
+
+        if (c::g_input.eCurrMode != READ_MODE::NONE)
+        {
+            u32 wlen = wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff));
+            mvwaddnwstr(stdscr, height - 1, sSearching.size + wlen, common::CURSOR_BLOCK, 1);
+        }
+    }
 }
 
 void
@@ -263,7 +294,8 @@ WinDraw(Win* s)
 
     if (y < 10 || x < 10) return;
 
-    drawList(s);
+    WinDrawBottomLine(s);
+    WinDrawList(s);
 
     f64 aspect = 1.0;
     if (app::g_pPlayer->bSelectionChanged)
@@ -281,13 +313,14 @@ WinDraw(Win* s)
             /*x = std::round(f64(x) / aspect);*/
 
             wclear(s->info.pCon);
-            platform::chafa::showImage(s->info.pCon, oCover.data, y, x);
+            platform::chafa::showImage(s->info.pCon, oCover.data, y + 1, x);
             wnoutrefresh(s->info.pCon);
         }
     }
 
     drawBox(s->info.pBor, COLOR::BLUE);
 
+    wnoutrefresh(stdscr);
     wnoutrefresh(s->info.pBor);
     wnoutrefresh(s->list.pBor);
 
