@@ -3,6 +3,7 @@
 
 #include <chafa/chafa.h>
 #include <ncurses.h>
+#include <cmath>
 
 /* https://github.com/hpjansson/chafa/blob/master/examples/ncurses.c */
 
@@ -138,12 +139,13 @@ paintCanvas(
 }
 
 static void
-canvasToNcurses(WINDOW* pWin, ChafaCanvas* canvas, const int width, const int height)
+canvasToNcurses(WINDOW* pWin, ChafaCanvas* canvas, const int width, const int height, const int off)
 {
     ChafaCanvasMode mode = detectCanvasMode();
 
     int pair = 256; /* Reserve lower pairs for application in direct-color mode */
     int x, y;
+    const int halfOff = std::round(off / 2.0);
 
     for (y = 0; y < height - 1; ++y)
     {
@@ -175,8 +177,8 @@ canvasToNcurses(WINDOW* pWin, ChafaCanvas* canvas, const int width, const int he
             }
 
             setcchar(&cch, wc, A_NORMAL, -1, &pair);
-            mvwadd_wch(pWin, y, x, &cch);
-            pair++;
+            mvwadd_wch(pWin, y, x + halfOff, &cch);
+            ++pair;
         }
     }
 }
@@ -186,10 +188,16 @@ showImage(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, const int
 {
     if (convertFormat(img.eFormat) == -1) return;
 
-    ChafaCanvas* canvas = createCanvas(termWidth, termHeight);
+                                                       /* thinner slightly */
+    int scaledWidth = std::round((f64(img.height) * f64(termWidth*1.1)) / f64(img.width));
+    int diff = termWidth - scaledWidth;
+
+    LOG_GOOD("termWidth: {}, scaledWidth: {}, diff: {}\n", termWidth, scaledWidth, diff);
+
+    ChafaCanvas* canvas = createCanvas(scaledWidth, termHeight);
 
     paintCanvas(canvas, img.pBuff, img.width, img.height, img.eFormat);
-    canvasToNcurses(pWin, canvas, termWidth, termHeight);
+    canvasToNcurses(pWin, canvas, scaledWidth, termHeight, diff);
     mvprintw(img.height - 1, 0, "%d colors detected. Try resizing, or press any key to exit.", COLORS);
 
     chafa_canvas_unref(canvas);
