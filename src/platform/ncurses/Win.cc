@@ -11,6 +11,7 @@
 #include <clocale>
 #include <cmath>
 #include <ncursesw/ncurses.h>
+#include <stdatomic.h>
 
 #include "platform/chafa/Img.hh"
 
@@ -86,7 +87,6 @@ WinProcEvents(Win* s)
     if (ch == KEY_RESIZE) WinProcResize(s);
     else if (ch != 0)
     {
-        /*LOG("ch: {}, ({})\n", ch, (wchar_t)ch);*/
         input::WinProcKey(s, ch);
         common::fixFirstIdx(getmaxy(s->list.pCon) - 1, &s->firstIdx);
     }
@@ -154,18 +154,18 @@ WinSubStringSearch(Win* s)
 static void
 WinCreateBoxes(Win* s)
 {
-    int mx, my;
-    getmaxyx(stdscr, mx, my);
+    int height, width;
+    getmaxyx(stdscr, height, width);
     auto& pl = *app::g_pPlayer;
 
-    f64 split = f64(mx) * pl.statusToInfoWidthRatio;
-    /*f64 split = f64(mx) * 0.5;*/
+    f64 split = f64(height) * pl.statusToInfoWidthRatio;
+    /*f64 split = f64(mx) * 0.4;*/
 
-    s->info.pBor = subwin(stdscr, std::round(f64(mx) - split), my, 0, 0);
+    s->info.pBor = subwin(stdscr, std::round(f64(height) - split), width, 0, 0);
     s->info.pCon = derwin(s->info.pBor, getmaxy(s->info.pBor) - 2, getmaxx(s->info.pBor) - 2, 1, 1);
 
-    s->list.pBor = subwin(stdscr, std::round(split - 1.0), my, std::round(f64(mx) - split), 0);
-    s->list.pCon = derwin(s->list.pBor, getmaxy(s->list.pBor) - 2, my - 2, 1, 1);
+    s->list.pBor = subwin(stdscr, std::round(split - 1.0) - 1, width, std::round(f64(height) - split) + 1, 0);
+    s->list.pCon = derwin(s->list.pBor, getmaxy(s->list.pBor) - 2, width - 2, 1, 1);
 
     s->split = split;
 }
@@ -272,16 +272,124 @@ WinDrawBottomLine(Win* s)
         mvwaddnstr(stdscr, height - 1, width - len - 2, aBuff, len);
     }
 
-    if (c::g_input.eCurrMode != READ_MODE::NONE || (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0))
+    if (
+        c::g_input.eCurrMode != READ_MODE::NONE ||
+        (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
+    )
     {
-        const String sSearching = c::readModeToString(c::g_input.eLastUsedMode);
-        mvwaddnwstr(stdscr, height - 1, sSearching.size, c::g_input.aBuff, utils::size(c::g_input.aBuff));
-        mvwaddnstr(stdscr, height - 1, 0, sSearching.pData, sSearching.size);
+        const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
+        mvwaddnwstr(stdscr, height - 1, sReadMode.size + 1, c::g_input.aBuff, utils::size(c::g_input.aBuff));
+        mvwaddnstr(stdscr, height - 1, 1, sReadMode.pData, sReadMode.size);
 
         if (c::g_input.eCurrMode != READ_MODE::NONE)
         {
             u32 wlen = wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff));
-            mvwaddnwstr(stdscr, height - 1, sSearching.size + wlen, common::CURSOR_BLOCK, 1);
+            mvwaddnwstr(stdscr, height - 1, sReadMode.size + wlen + 1, common::CURSOR_BLOCK, 1);
+        }
+    }
+}
+
+static void
+WinDrawInfo(Win* s)
+{
+    const auto& pl = *app::g_pPlayer;
+    auto* pWin = s->info.pCon;
+
+    int height = getmaxy(pWin);
+    int width = getmaxx(pWin);
+    char* pBuff = (char*)zalloc(s->pArena, 1, width + 1);
+
+    /* title */
+    {
+        int n = print::toBuffer(pBuff, width, "title: ");
+        mvwaddnstr(pWin, 0, 0, pBuff, width);
+
+        memset(pBuff, 0, width + 1);
+        if (pl.info.title.size > 0) print::toBuffer(pBuff, width, "{}", pl.info.title);
+        else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
+
+        mvwaddnstr(pWin, 0, n, pBuff, width);
+    }
+
+    /* album */
+    {
+        memset(pBuff, 0, width + 1);
+        int n = print::toBuffer(pBuff, width, "album: ");
+
+        mvwaddnstr(pWin, 1, 0, pBuff, width);
+        if (pl.info.album.size > 0)
+        {
+            memset(pBuff, 0, width + 1);
+            print::toBuffer(pBuff, width, "{}", pl.info.album);
+
+            mvwaddnstr(pWin, 1, n, pBuff, width);
+        }
+    }
+
+    /* artist */
+    {
+        memset(pBuff, 0, width + 1);
+        int n = print::toBuffer(pBuff, width, "artist: ");
+
+        mvwaddnstr(pWin, 2, 0, pBuff, width);
+        if (pl.info.artist.size > 0)
+        {
+            memset(pBuff, 0, width + 1);
+            print::toBuffer(pBuff, width, "{}", pl.info.artist);
+
+            mvwaddnstr(pWin, 2, n, pBuff, width);
+        }
+    }
+}
+
+static void
+WinDrawStatus(Win* s)
+{
+    const auto& pl = *app::g_pPlayer;
+    const auto& mix = *app::g_pMixer;
+    auto* pWin = stdscr;
+
+    int height, width;
+    getmaxyx(pWin, height, width);
+
+    int split = std::round(f64(height) * (1.0 - app::g_pPlayer->statusToInfoWidthRatio));
+    int n = 0;
+
+    move(split, 0);
+    clrtoeol();
+
+
+    /* time */
+    {
+        const String str = common::allocTimeString(s->pArena, width);
+        mvwaddnstr(pWin, split, 1, str.pData, str.size);
+        n += str.size;
+    }
+
+    /* play/pause indicator */
+    {
+        bool bPaused = atomic_load_explicit(&mix.bPaused, memory_order_relaxed);
+        const char* ntsIndicator = bPaused ? "II" : "I>";
+
+        wattron(pWin, A_BOLD);
+        mvwaddstr(pWin, split, 2 + n, ntsIndicator);
+        wattroff(pWin, A_BOLD);
+
+        n += strlen(ntsIndicator);
+    }
+    
+    /* time slider */
+    {
+        const auto& time = mix.currentTimeStamp;
+        const auto& maxTime = mix.totalSamplesCount;
+        const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2);
+
+        for (long i = split + 1; i < width - 1; ++i)
+        {
+            wchar_t wc = L'━';
+            if ((i - 1) == std::floor(timePlace)) wc = L'╋';
+            /*tb_set_cell(i, off, wc, TB_WHITE, TB_DEFAULT);*/
+            /*waddch(pWin, mc);*/
         }
     }
 }
@@ -294,8 +402,8 @@ WinDraw(Win* s)
 
     if (y < 10 || x < 10) return;
 
-    WinDrawBottomLine(s);
     WinDrawList(s);
+    WinDrawBottomLine(s); /* draws to the stdscr */
 
     f64 aspect = 1.0;
     if (app::g_pPlayer->bSelectionChanged)
@@ -314,12 +422,15 @@ WinDraw(Win* s)
 
             wclear(s->info.pCon);
             platform::chafa::showImage(s->info.pCon, oCover.data, y + 1, x);
-            wnoutrefresh(s->info.pCon);
         }
+
+        WinDrawInfo(s);
     }
 
+    WinDrawStatus(s);
     drawBox(s->info.pBor, COLOR::BLUE);
 
+    wnoutrefresh(s->info.pCon);
     wnoutrefresh(stdscr);
     wnoutrefresh(s->info.pBor);
     wnoutrefresh(s->list.pBor);
