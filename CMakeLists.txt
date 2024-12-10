@@ -204,7 +204,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     endif()
 
     if (OPT_CHAFA AND OPT_NCURSES)
-        pkg_check_modules(CHAFA REQUIRED chafa glib-2.0)
+        pkg_check_modules(CHAFA REQUIRED chafa glib-2.0 libswscale)
         if (${CHAFA_FOUND})
             include_directories(BEFORE ${CHAFA_INCLUDE_DIRS})
             target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES})

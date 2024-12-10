@@ -13,6 +13,10 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 
+#ifdef USE_CHAFA
+#include <libswscale/swscale.h>
+#endif
+
 }
 
 namespace ffmpeg
@@ -42,6 +46,11 @@ struct Decoder
     AVPacket* pImgPacket {};
     AVFrame* pImgFrame {};
     Opt<ffmpeg::Image> oCoverImg {};
+
+#ifdef USE_CHAFA
+    SwsContext* pSwsCtx {};
+    AVFrame* pConverted {};
+#endif
 };
 
 Decoder*
@@ -60,6 +69,11 @@ DecoderClose(Decoder* s)
     if (s->pSwr) swr_free(&s->pSwr);
     if (s->pImgPacket) av_packet_free(&s->pImgPacket);
     if (s->pImgFrame) av_frame_free(&s->pImgFrame);
+
+#ifdef USE_CHAFA
+    if (s->pConverted) av_frame_free(&s->pConverted);
+    if (s->pSwsCtx) sws_freeContext(s->pSwsCtx);
+#endif
 
     LOG_NOTIFY("DecoderClose()\n");
 
@@ -129,18 +143,45 @@ DecoderGetAttachedPicture(Decoder* s)
 
     s->pImgFrame = av_frame_alloc();
     err = avcodec_receive_frame(pCodecCtx, s->pImgFrame);
-
     if (err == AVERROR(EINVAL))
         LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
 
+#ifdef USE_CHAFA
+    s->pSwsCtx = sws_getContext(
+        s->pImgFrame->width, s->pImgFrame->height, (AVPixelFormat)s->pImgFrame->format,
+        s->pImgFrame->width, s->pImgFrame->height, AV_PIX_FMT_RGB24,
+        SWS_BILINEAR, {}, {}, {}
+    );
+
+    s->pConverted = av_frame_alloc();
+    s->pConverted->format = AV_PIX_FMT_RGB24;
+    s->pConverted->width = s->pImgFrame->width;
+    s->pConverted->height = s->pImgFrame->height;
+
+    err = av_frame_get_buffer(s->pConverted, 0);
+    if (err != 0) { LOG_BAD("av_frame_get_buffer()\n"); return; }
+
+    sws_scale(s->pSwsCtx,
+        s->pImgFrame->data, s->pImgFrame->linesize, 0, s->pImgFrame->height,
+        s->pConverted->data, s->pConverted->linesize
+    );
+
     LOG_WARN("width: {}, height: {}, format: {}\n", s->pImgFrame->width, s->pImgFrame->height, s->pImgFrame->format);
 
+    s->oCoverImg = Image {
+        .pBuff = s->pConverted->data[0],
+        .width = s->pConverted->width,
+        .height = s->pConverted->height,
+        .eFormat = covertFormat(s->pConverted->format)
+    };
+#else
     s->oCoverImg = Image {
         .pBuff = s->pImgFrame->data[0],
         .width = s->pImgFrame->width,
         .height = s->pImgFrame->height,
         .eFormat = covertFormat(s->pImgFrame->format)
     };
+#endif
 }
 
 Opt<ffmpeg::Image>
