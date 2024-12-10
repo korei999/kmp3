@@ -209,7 +209,6 @@ WinProcResize(Win* s)
     redrawwin(stdscr);
     werase(stdscr);
     refresh();
-    LOG_WARN("REFRESH\n");
 
     app::g_pPlayer->bSelectionChanged = true;
     WinDraw(s);
@@ -265,11 +264,22 @@ WinDrawBottomLine(Win* s)
     move(height - 1, 0);
     clrtoeol();
 
+    /* total */
     {
-        /* bot-right corner */
-        char aBuff[16] {};
-        auto len = print::toBuffer(aBuff, utils::size(aBuff) - 1, "{}", pl.focused);
-        mvwaddnstr(stdscr, height - 1, width - len - 2, aBuff, len);
+        char* pBuff = (char*)zalloc(s->pArena, 1, width + 1);
+
+        int n = print::toBuffer(pBuff, width, "selected: {} / {}", pl.selected, pl.aShortArgvs.size - 1);
+        if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
+        {
+            const char* sArg {};
+            if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
+            else if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
+
+            n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
+        }
+
+        n += print::toBuffer(pBuff + n, width - 1, " | focused: {}", pl.focused);
+        mvwaddnstr(stdscr, height - 1, width - n - 2, pBuff, n);
     }
 
     if (
@@ -290,7 +300,7 @@ WinDrawBottomLine(Win* s)
 }
 
 static void
-WinDrawInfo(Win* s)
+WinDrawInfoAndVolume(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
     auto* pWin = s->info.pCon;
@@ -308,7 +318,10 @@ WinDrawInfo(Win* s)
         if (pl.info.title.size > 0) print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
 
+        int col = A_BOLD | A_ITALIC | COLOR_PAIR(COLOR::YELLOW);
+        wattron(pWin, col);
         mvwaddnstr(pWin, 0, n, pBuff, width);
+        wattroff(pWin, col);
     }
 
     /* album */
@@ -337,7 +350,9 @@ WinDrawInfo(Win* s)
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.artist);
 
+            wattron(pWin, A_BOLD);
             mvwaddnstr(pWin, 2, n, pBuff, width);
+            wattroff(pWin, A_BOLD);
         }
     }
 }
@@ -357,7 +372,6 @@ WinDrawStatus(Win* s)
 
     move(split, 0);
     clrtoeol();
-
 
     /* time */
     {
@@ -384,14 +398,14 @@ WinDrawStatus(Win* s)
         const auto& maxTime = mix.totalSamplesCount;
         const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - (n + 3));
 
-        for (long i = n + 3, j = 0; i < width - 2; ++i, ++j)
+        for (long i = n + 3, t = 0; i < width - 2; ++i, ++t)
         {
             cchar_t wch {};
             wchar_t aCh[2] {L'━', L'\0'};
             int pair = 0;
             int fg = 200, bg = 0;
 
-            if ((j - 0) == std::floor(timePlace)) aCh[0] = L'╋';
+            if ((t - 0) == std::floor(timePlace)) aCh[0] = L'╋';
 
             init_extended_pair(pair, fg, bg);
             setcchar(&wch, aCh, A_NORMAL, -1, &pair);
@@ -431,7 +445,7 @@ WinDraw(Win* s)
             platform::chafa::showImage(s->info.pCon, oCover.data, y + 1, x);
         }
 
-        WinDrawInfo(s);
+        WinDrawInfoAndVolume(s);
     }
 
     WinDrawStatus(s);
