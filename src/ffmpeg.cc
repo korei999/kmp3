@@ -164,8 +164,6 @@ DecoderOpen(Decoder* s, String sPath)
     err = avformat_find_stream_info(s->pFormatCtx, {});
     if (err != 0) return ERROR::AUDIO_STREAM_NOT_FOUND;
 
-    LOG("nb_streams: {}\n", s->pFormatCtx->nb_streams);
-
     int idx = av_find_best_stream(s->pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
     if (idx < 0) return ERROR::AUDIO_STREAM_NOT_FOUND;
 

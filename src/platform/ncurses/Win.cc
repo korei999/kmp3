@@ -449,26 +449,26 @@ WinDrawVolume(Win* s)
     for (int i = fmt.size + 2, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
     {
         VOLUME_COLOR col = A_BOLD;
-        wchar_t wc;
+        chtype wc;
         if (bMuted)
         {
             col |= COLOR_PAIR(COLOR::BLUE);
-            wc = common::CHAR_VOL;
+            wc = ACS_BOARD;
         }
         else
         {
             col |= volumeColor(nTimes);
-            wc = common::CHAR_VOL_MUTED;
+            wc = ACS_BLOCK;
         }
 
         attron(col);
-        mvwaddch(pWin, split, i, '#');
+        mvwaddch(pWin, split, i, wc);
     }
 
     char* pBuff = (char*)zalloc(s->pArena, 1, width + 1);
     snprintf(pBuff, width, fmt.pData, int(std::round(vol * 100.0f)));
     mvwaddnstr(pWin, split, 1, pBuff, width);
-    attroff(col);
+    attroff(col | A_BOLD);
 }
 
 void
