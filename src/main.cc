@@ -27,6 +27,10 @@ main(int argc, char** argv)
     FreeList alctr(SIZE_8M);
     defer( freeAll(&alctr) );
 
+#ifdef USE_NCURSES
+    app::g_eUIBackend = app::UI_BACKEND::NCURSES;
+#endif
+
     if (argc > 1)
     {
         if (argv[1] == String("--termbox"))
