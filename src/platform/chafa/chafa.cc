@@ -188,8 +188,8 @@ showImage(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, const int
 {
     if (convertFormat(img.eFormat) == -1) return;
 
-                                                       /* thinner slightly */
-    int scaledWidth = std::round((f64(img.height) * f64(termWidth*1.1)) / f64(img.width));
+    f64 aspectRatio = f64(img.width) / f64(img.height);
+    int scaledWidth = std::round(f64(termWidth) / aspectRatio);
     int diff = termWidth - scaledWidth;
 
     LOG_GOOD("termWidth: {}, scaledWidth: {}, diff: {}\n", termWidth, scaledWidth, diff);
