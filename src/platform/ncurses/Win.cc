@@ -95,6 +95,7 @@ WinProcEvents(Win* s)
         MEVENT ev;
         getmouse(&ev);
         input::WinProcMouse(s, ev);
+        common::fixFirstIdx(getmaxy(s->list.pCon) - 1, &s->firstIdx);
     }
     else if (ch != 0)
     {
