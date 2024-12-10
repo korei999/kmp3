@@ -1,6 +1,5 @@
 #include "app.hh"
 
-#include "adt/Arena.hh"
 #include "adt/Vec.hh"
 #include "adt/defer.hh"
 #include "adt/file.hh"
@@ -8,6 +7,7 @@
 #include "defaults.hh"
 #include "frame.hh"
 #include "platform/pipewire/Mixer.hh"
+#include "adt/FreeList.hh"
 
 #ifdef USE_MPRIS
     #include "mpris.hh"
@@ -24,8 +24,8 @@ main(int argc, char** argv)
     close(STDERR_FILENO); /* hide mpg123 and other errors */
 #endif
 
-    Arena arena(SIZE_8K);
-    defer( ArenaFreeAll(&arena) );
+    FreeList allocator(SIZE_8M);
+    defer( freeAll(&allocator) );
 
     if (argc > 1)
     {
@@ -56,7 +56,7 @@ main(int argc, char** argv)
         }
     }
 
-    Vec<String> aInput(&arena.super, argc);
+    Vec<String> aInput(&allocator.super, argc);
     if (argc < 2) /* use stdin instead */
     {
         int flags = fcntl(0, F_GETFL, 0);
@@ -68,7 +68,7 @@ main(int argc, char** argv)
 
         while ((nread = getline(&line, &len, stdin)) != -1)
         {
-            String s = StringAlloc(&arena.super, line, nread);
+            String s = StringAlloc(&allocator.super, line, nread);
             StringRemoveNLEnd(&s);
             VecPush(&aInput, s);
         }
@@ -77,7 +77,7 @@ main(int argc, char** argv)
 
         /* make fake `argv` so core code works as usual */
         argc = VecSize(&aInput) + 1;
-        argv = (char**)ArenaAlloc(&arena, argc, sizeof(argv));
+        argv = (char**)zalloc(&allocator, argc, sizeof(argv));
 
         for (int i = 1; i < argc; ++i)
             argv[i] = aInput[i - 1].pData;
@@ -87,9 +87,9 @@ main(int argc, char** argv)
     app::g_argv = argv;
 
     for (int i = 0; i < argc; ++i)
-        VecPush(&app::g_aArgs, &arena.super, {app::g_argv[i]});
+        VecPush(&app::g_aArgs, &allocator.super, {app::g_argv[i]});
 
-    Player player(&arena.super, argc, argv);
+    Player player(&allocator.super, argc, argv);
     app::g_pPlayer = &player;
     defer( PlayerDestroy(&player) );
 
@@ -116,7 +116,7 @@ main(int argc, char** argv)
     player.eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.bSelectionChanged = true;
 
-    platform::pipewire::Mixer mixer(&arena.super);
+    platform::pipewire::Mixer mixer(&allocator.super);
     platform::pipewire::MixerInit(&mixer);
     defer( platform::pipewire::MixerDestroy(&mixer) );
     mixer.base.volume = defaults::VOLUME;

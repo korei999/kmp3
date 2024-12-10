@@ -314,6 +314,8 @@ FreeListZalloc(FreeList* s, u64 nMembers, u64 mSize)
 inline void
 FreeListFree(FreeList* s, void* ptr)
 {
+    if (ptr == nullptr) return;
+
     auto* pThis = _FreeListNodeFromPtr(ptr);
     assert(!pThis->data.isFree());
 

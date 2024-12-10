@@ -148,6 +148,7 @@ endif()
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
     add_definitions("-DADT_LOGS")
+    add_compile_definitions("-DADT_DBG_MEMORY")
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4267 /wd4101 /wd4200 /wd4244")

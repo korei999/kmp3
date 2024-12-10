@@ -44,7 +44,6 @@ void PlayerDestroy(Player* s);
 struct Player
 {
     IAllocator* pAlloc {};
-    Arena arena {};
     struct {
         String time {};
         String volume {};
@@ -70,5 +69,5 @@ struct Player
 
     Player() = delete;
     Player(IAllocator* p, int nArgs, [[maybe_unused]] char** ppArgs)
-        : pAlloc(p), arena(SIZE_1K), aShortArgvs(p, nArgs), aSongIdxs(p, nArgs) {}
+        : pAlloc(p), aShortArgvs(p, nArgs), aSongIdxs(p, nArgs) {}
 };

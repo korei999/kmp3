@@ -134,9 +134,9 @@ updateInfo(Player* s)
     PlayerResetData(s);
 
     /* clone string to avoid data races with ffmpeg */
-    s->info.title = StringAlloc(&s->arena.super, audio::MixerGetMetadata(app::g_pMixer, "title").data);
-    s->info.album = StringAlloc(&s->arena.super, audio::MixerGetMetadata(app::g_pMixer, "album").data);
-    s->info.artist = StringAlloc(&s->arena.super, audio::MixerGetMetadata(app::g_pMixer, "artist").data);
+    s->info.title = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "title").data);
+    s->info.album = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "album").data);
+    s->info.artist = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "artist").data);
 
     s->bSelectionChanged = true;
 }
@@ -234,11 +234,13 @@ PlayerSelectPrev(Player* s)
 void
 PlayerResetData(Player* s)
 {
-    ArenaReset(&s->arena);
+    StringDestroy(s->pAlloc, &s->info.title);
+    StringDestroy(s->pAlloc, &s->info.album);
+    StringDestroy(s->pAlloc, &s->info.artist);
 }
 
 void
 PlayerDestroy(Player* s)
 {
-    freeAll(&s->arena);
+    //
 }
