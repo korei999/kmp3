@@ -29,9 +29,6 @@ procKey(tb_event* pEv)
         if ((k.key > 0 && k.key == key) || (k.ch > 0 && k.ch == ch))
             keybinds::resolveKey(k.pfn, k.arg);
     }
-
-    if (key == TB_KEY_F1)
-        utils::toggle(&window::g_bDrawHelpMenu);
 }
 
 void
@@ -104,7 +101,7 @@ void
 fillInputMap()
 {
     /* ascii's are all the same */
-    for (int i = ' '; i < '~'; ++i) s_aInputMap[i] = i;
+    for (u32 i = 0; i < utils::size(s_aInputMap); ++i) s_aInputMap[i] = i;
 
     s_aInputMap[TB_KEY_ENTER] = keys::ENTER;
     s_aInputMap[TB_KEY_CTRL_C] = keys::CTRL_C;

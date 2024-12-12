@@ -500,7 +500,7 @@ WinDraw(Win* s)
             int y, x;
             getmaxyx(s->info.pCon, y, x);
 
-            platform::chafa::showImage(s->info.pCon, oCover.data, y + 1, x);
+            platform::chafa::showImageNCurses(s->info.pCon, oCover.data, y + 1, x);
         }
 #endif
 

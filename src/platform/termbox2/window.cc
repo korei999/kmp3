@@ -27,6 +27,8 @@
     #pragma GCC diagnostic pop
 #endif
 
+#include "platform/chafa/chafa.hh"
+
 namespace platform
 {
 namespace termbox2
@@ -35,7 +37,6 @@ namespace window
 {
 
 Arena* g_pFrameArena {};
-bool g_bDrawHelpMenu = false;
 u16 g_firstIdx = 0;
 
 bool
@@ -150,7 +151,7 @@ procEvents()
 
         case TB_EVENT_KEY:
         input::procKey(&ev);
-        common::fixFirstIdx(height - 7 - pl.statusAndInfoHeight, &g_firstIdx);
+        common::fixFirstIdx(height - common::getHorizontalSplitPos(height) - 7, &g_firstIdx);
         break;
 
         case TB_EVENT_RESIZE:
@@ -159,7 +160,7 @@ procEvents()
 
         case TB_EVENT_MOUSE:
         input::procMouse(&ev);
-        common::fixFirstIdx(height - 7 - pl.statusAndInfoHeight, &g_firstIdx);
+        common::fixFirstIdx(height - common::getHorizontalSplitPos(height) - 7, &g_firstIdx);
         break;
     }
 }
@@ -295,8 +296,10 @@ static void
 drawSongList()
 {
     const auto& pl = *app::g_pPlayer;
-    const auto off = pl.statusAndInfoHeight;
-    const u16 listHeight = tb_height() - 5 - off;
+    const int height = tb_height();
+    const int width = tb_width();
+    const int split = common::getHorizontalSplitPos(height) + 3;
+    const u16 listHeight = height - split - 2;
 
     for (u16 h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
     {
@@ -323,18 +326,20 @@ drawSongList()
             fg = TB_YELLOW|TB_BOLD;
         }
 
-        drawMBString(1, i + off + 4, sSong, maxLen, fg, bg);
+        drawMBString(1, i + split + 1, sSong, maxLen, fg, bg);
     }
 
-    drawBox(0, off + 3, tb_width() - 1, listHeight, TB_BLUE, TB_DEFAULT);
+    drawBox(0, split, width - 1, listHeight, TB_BLUE, TB_DEFAULT);
 }
 
 using VOLUME_COLOR = int;
 
-[[nodiscard]] static VOLUME_COLOR
-drawVolume(Arena* pAlloc, const u16 split)
+static VOLUME_COLOR
+drawVolume()
 {
     const auto width = tb_width();
+    const auto height = tb_height();
+    int split = common::getHorizontalSplitPos(height) + 2;
     const f32 vol = app::g_pMixer->volume;
     const bool bMuted = app::g_pMixer->bMuted;
     constexpr String fmt = "volume: %3d";
@@ -366,12 +371,12 @@ drawVolume(Arena* pAlloc, const u16 split)
             wc = common::CHAR_VOL_MUTED;
         }
 
-        tb_set_cell(i, 2, wc, col, TB_DEFAULT);
+        tb_set_cell(i, split, wc, col, TB_DEFAULT);
     }
 
-    char* pBuff = (char*)zalloc(pAlloc, 1, width + 1);
+    char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
     snprintf(pBuff, width, fmt.pData, int(std::round(vol * 100.0f)));
-    drawMBString(0, 2, pBuff, split + 1, col);
+    drawMBString(0, split, pBuff, split + 1, col);
 
     return col;
 }
@@ -413,7 +418,7 @@ drawStatus()
     const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
 
     drawTotal(g_pFrameArena, split);
-    VOLUME_COLOR volumeColor = drawVolume(g_pFrameArena, split);
+    VOLUME_COLOR volumeColor = drawVolume();
     drawTime(split);
     drawBox(0, 0, split, pl.statusAndInfoHeight + 1, volumeColor, TB_DEFAULT);
 }
@@ -474,25 +479,40 @@ drawBottomLine()
     namespace c = common;
 
     const auto& pl = *app::g_pPlayer;
-    char aBuff[16] {};
-    auto height = tb_height();
-    auto width = tb_width();
+    int height = tb_height();
+    int width = tb_width();
 
-    print::toBuffer(aBuff, utils::size(aBuff) - 1, "{}", pl.focused);
-    String str(aBuff);
-
-    drawMBString(width - str.size - 2, height - 1, str, str.size + 2); /* yeah + 2 */
-
-    if (c::g_input.eCurrMode != READ_MODE::NONE || (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0))
+    /* selected / focused */
     {
-        const String sSearching = c::readModeToString(c::g_input.eLastUsedMode);
-        drawMBString(0, height - 1, sSearching, sSearching.size + 2);
-        drawWideString(sSearching.size, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff), width - sSearching.size);
+        char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
+
+        int n = print::toBuffer(pBuff, width, "selected: {} / {}", pl.selected, pl.aShortArgvs.size - 1);
+        if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
+        {
+            const char* sArg {};
+            if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
+            else if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
+
+            n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
+        }
+
+        // n += print::toBuffer(pBuff + n, width - 1, " | focused: {}", pl.focused);
+        drawMBString(width - n - 2, height - 1, pBuff, width - 2);
+    }
+
+    if (
+        c::g_input.eCurrMode != READ_MODE::NONE ||
+        (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
+    )
+    {
+        const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
+        drawWideString(sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff), width - 2);
+        drawMBString(1, height - 1, sReadMode, width - 2);
 
         if (c::g_input.eCurrMode != READ_MODE::NONE)
         {
             u32 wlen = wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff));
-            drawWideString(sSearching.size + wlen, height - 1, common::CURSOR_BLOCK, 1, 3);
+            drawWideString(sReadMode.size + wlen + 1, height - 1, common::CURSOR_BLOCK, 1, 3);
         }
     }
 }
@@ -502,44 +522,76 @@ drawTimeSlider()
 {
     const auto xOff = 2;
     const auto width = tb_width();
-    const auto off = app::g_pPlayer->statusAndInfoHeight + 2;
+    const int height = tb_height();
+    const int split = common::getHorizontalSplitPos(height) + 1;
     const auto& time = app::g_pMixer->currentTimeStamp;
     const auto& maxTime = app::g_pMixer->totalSamplesCount;
     const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - xOff);
 
-    if (app::g_pMixer->bPaused) tb_set_cell(1, off, '|', TB_WHITE|TB_BOLD, TB_DEFAULT);
-    else tb_set_cell(1, off, '>', TB_WHITE|TB_BOLD, TB_DEFAULT);
+    if (app::g_pMixer->bPaused) tb_set_cell(1, split, '|', TB_WHITE|TB_BOLD, TB_DEFAULT);
+    else tb_set_cell(1, split, '>', TB_WHITE|TB_BOLD, TB_DEFAULT);
 
     for (long i = xOff + 1; i < width - 1; ++i)
     {
         wchar_t wc = L'━';
         if ((i - 1) == std::floor(timePlace + xOff)) wc = L'╋';
-        tb_set_cell(i, off, wc, TB_WHITE, TB_DEFAULT);
+        tb_set_cell(i, split, wc, TB_WHITE, TB_DEFAULT);
+    }
+}
+
+static void
+drawCoverImage()
+{
+    int height = tb_height();
+    int width = tb_width();
+    int split = common::getHorizontalSplitPos(height);
+
+    if (app::g_pPlayer->bSelectionChanged)
+    {
+        app::g_pPlayer->bSelectionChanged = false;
+
+        auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
+        if (oCover)
+        {
+            tb_invalidate();
+            auto& img = oCover.data;
+
+            f64 scaleFactor = f64(split - 1) / f64(img.height);
+            int scaledWidth = std::round(img.width * scaleFactor / defaults::FONT_ASPECT_RATIO);
+            int scaledHeight = std::round(img.height * scaleFactor);
+            int hdiff = width - 2 - scaledWidth;
+            int vdiff = split - 1 - scaledHeight;
+            const int hOff = std::round(hdiff / 2.0);
+            const int vOff = std::round(vdiff / 2.0);
+
+            LOG_GOOD("hOff: {}, vOff: {}, split: {}\n", hOff, vOff, split);
+
+            /*tb_set_cursor(1, 1);*/
+            platform::chafa::showImage(img, split - 1, width - 2, hOff, vOff);
+
+            /*tb_present();*/
+        }
     }
 }
 
 void
 draw()
 {
-    if (tb_height() < 6 || tb_width() < 6) return;
+    int height = tb_height();
+    int width = tb_width();
+
+    /*if (height < 6 || width < 6) return;*/
 
     tb_clear();
 
-    if (tb_height() > 9 && tb_width() > 9)
+    if (height > 9 && width > 9)
     {
-
-        if (app::g_pPlayer->bSelectionChanged)
-        {
-            app::g_pPlayer->bSelectionChanged = false;
-        }
-
+        drawCoverImage();
         drawTimeSlider();
         drawSongList();
         drawBottomLine();
+        drawVolume();
     }
-
-    drawStatus();
-    drawInfo();
 
     tb_present();
 }

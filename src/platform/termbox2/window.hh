@@ -12,7 +12,6 @@ namespace window
 {
 
 extern Arena* g_pFrameArena;
-extern bool g_bDrawHelpMenu;
 extern u16 g_firstIdx;
 
 bool init(Arena* pAlloc);

@@ -27,11 +27,7 @@ main(int argc, char** argv)
     FreeList alctr(SIZE_8M);
     defer( freeAll(&alctr) );
 
-#ifdef USE_NCURSES
-    app::g_eUIFrontend = app::UI_FRONTEND::NCURSES;
-#else
-    app::g_eUIBackend = app::UI_BACKEND::TERMBOX;
-#endif
+    app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
 
     if (argc > 1)
     {

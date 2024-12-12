@@ -25,9 +25,9 @@ enum class ERROR : u8
 };
 
 constexpr String mapERRORToString[] {
-    "OK",
+    "OK_",
     "UNKNOWN",
-    "EOF_",
+    "EOF_OF_FILE",
     "DONE",
     "FILE_OPENING",
     "AUDIO_STREAM_NOT_FOUND",
@@ -35,31 +35,9 @@ constexpr String mapERRORToString[] {
     "DECODING_CONTEXT_ALLOCATION",
     "CODEC_CONTEXT_PARAMETERS",
     "INITIALIZING_DECODER",
-    "AV_FRAME_ALLOC"
+    "FRAME_ALLOC",
+    "CODEC_OPEN",
 };
-
-// typedef enum
-// {
-//     /* 32 bits per pixel */
-// 
-//     CHAFA_PIXEL_RGBA8_PREMULTIPLIED,
-//     CHAFA_PIXEL_BGRA8_PREMULTIPLIED,
-//     CHAFA_PIXEL_ARGB8_PREMULTIPLIED,
-//     CHAFA_PIXEL_ABGR8_PREMULTIPLIED,
-// 
-//     CHAFA_PIXEL_RGBA8_UNASSOCIATED,
-//     CHAFA_PIXEL_BGRA8_UNASSOCIATED,
-//     CHAFA_PIXEL_ARGB8_UNASSOCIATED,
-//     CHAFA_PIXEL_ABGR8_UNASSOCIATED,
-// 
-//     /* 24 bits per pixel */
-// 
-//     CHAFA_PIXEL_RGB8,
-//     CHAFA_PIXEL_BGR8,
-// 
-//     CHAFA_PIXEL_MAX
-// }
-// ChafaPixelType;
 
 enum class PIXEL_FORMAT : int
 {

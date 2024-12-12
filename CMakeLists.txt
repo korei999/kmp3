@@ -47,7 +47,7 @@ add_executable(
     src/platform/termbox2/input.cc
 )
 
-option(OPT_NCURSES "ncurses support" ON)
+option(OPT_NCURSES "ncurses support" OFF)
 option(OPT_NOTCURSES "notcurses support" OFF)
 option(OPT_MPRIS "mpris support" ON)
 option(OPT_SIXEL "sixel support" OFF)
@@ -203,8 +203,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         endif()
     endif()
 
-    if (OPT_CHAFA AND OPT_NCURSES)
-        pkg_check_modules(CHAFA REQUIRED chafa glib-2.0 libswscale)
+    if (OPT_CHAFA)
+        pkg_check_modules(CHAFA REQUIRED chafa libswscale)
         if (${CHAFA_FOUND})
             include_directories(BEFORE ${CHAFA_INCLUDE_DIRS})
             target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES})

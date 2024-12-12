@@ -48,6 +48,10 @@ struct IMixer
     f32 volume = 0.5f;
     u64 currentTimeStamp {};
     u64 totalSamplesCount {};
+    /* TODO: */
+// #ifdef USE_CHAFA
+//     Opt<ffmpeg::Image> oCoverImg {};
+// #endif
 };
 
 ADT_NO_UB inline void MixerInit(IMixer* s) { s->pVTable->init(s); }

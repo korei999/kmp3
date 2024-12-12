@@ -78,8 +78,8 @@ inline const Key inl_aKeys[] {
     {{},               L'R',  (void*)app::cycleRepeatMethods,   {BOOL, {.b = false}}           },
     {{},               L'm',  (void*)app::toggleMute,           NONE                           },
     {{},               L't',  (void*)app::seekFromInput,        NONE                           },
-    {{},               L'i',  (void*)app::selectPrev,           NONE                           },
-    {{},               L'o',  (void*)app::selectNext,           NONE                           },
+    {{},               L'p',  (void*)app::selectPrev,           NONE                           },
+    {{},               L'n',  (void*)app::selectNext,           NONE                           },
 };
 
 inline void

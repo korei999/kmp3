@@ -31,7 +31,7 @@ constexpr u32 CHAR_L = L'┃';
 constexpr u32 CHAR_R = L'┃';
 constexpr u32 CHAR_VOL = L'▯';
 constexpr u32 CHAR_VOL_MUTED = L'▮';
-static const wchar_t* CURSOR_BLOCK = L"█";
+constexpr wchar_t CURSOR_BLOCK[] {L'█', L'\0'};
 
 inline constexpr String
 readModeToString(READ_MODE e)
@@ -178,5 +178,12 @@ seekFromInput(
 
     procSeekString(g_input.aBuff, utils::size(g_input.aBuff));
 }
+
+inline int
+getHorizontalSplitPos(int height)
+{
+    return std::round(f64(height) * (1.0 - app::g_pPlayer->statusToInfoWidthRatio));
+}
+
 
 } /* namespace common */
