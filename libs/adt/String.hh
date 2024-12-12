@@ -360,7 +360,6 @@ StringRemoveNLEnd(String* s)
 constexpr bool
 StringContains(String l, const String r)
 {
-
     if (l.size < r.size) return false;
 
     for (u32 i = 0; i < l.size; ++i)

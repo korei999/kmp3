@@ -42,7 +42,7 @@ main(int argc, char** argv)
             app::g_eUIFrontend = app::UI_FRONTEND::NCURSES;
             LOG_NOTIFY("setting NCURSES ui\n");
 #else
-            CERR("Program was built without ncurses support.\n");
+            CERR("{} was built without ncurses support.\n", argv[0]);
             return 1;
 #endif
         }
@@ -52,7 +52,7 @@ main(int argc, char** argv)
             app::g_eUIBackend = app::UI_BACKEND::NOTCURSES;
             LOG_NOTIFY("setting NOTCURSES ui\n");
 #else
-            CERR("Program was built without notcurses support.\n");
+            CERR("{} Program was built without notcurses support.\n", argv[0]);
             return 1;
 #endif
         }
