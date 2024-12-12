@@ -40,6 +40,7 @@ namespace window
 Arena* g_pFrameArena {};
 u16 g_firstIdx = 0;
 int g_timeStringSize {};
+f64 g_time {};
 
 bool
 init(Arena* pAlloc)
@@ -571,8 +572,11 @@ drawCoverImage()
     int width = tb_width();
     int split = common::getHorizontalSplitPos(height);
 
-    if (app::g_pPlayer->bSelectionChanged)
+    static f64 lastTime {};
+
+    if (app::g_pPlayer->bSelectionChanged && g_time > lastTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
+        lastTime = g_time;
         app::g_pPlayer->bSelectionChanged = false;
 
         auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
@@ -604,6 +608,8 @@ draw()
 {
     int height = tb_height();
     int width = tb_width();
+
+    g_time = utils::timeNowMS();
 
     /*if (height < 6 || width < 6) return;*/
 
