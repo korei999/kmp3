@@ -40,6 +40,8 @@ formatToPixelType(const ffmpeg::PIXEL_FORMAT eFormat)
         case ffmpeg::PIXEL_FORMAT::RGBA8_UNASSOCIATED:
         return CHAFA_PIXEL_RGBA8_PREMULTIPLIED;
     }
+
+    return -1;
 }
 
 [[nodiscard]] static int
@@ -55,6 +57,8 @@ getFormatChannelNumber(const ffmpeg::PIXEL_FORMAT eFormat)
 
         case ffmpeg::PIXEL_FORMAT::RGB8: return 3;
     }
+
+    return 0;
 }
 
 static void
@@ -118,7 +122,7 @@ detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode, ChafaPixelMod
     ChafaCanvasMode mode;
     ChafaPixelMode pixelMode;
     ChafaTermInfo* pTermInfo;
-    ChafaTermInfo* pFallbackInfo;
+    // ChafaTermInfo* pFallbackInfo;
     gchar** ppEnv;
 
     /* Examine the environment variables and guess what the terminal can do */
@@ -232,7 +236,7 @@ printImg(
     ChafaSymbolMap* pSymbolMap;
     ChafaCanvasConfig* pConfig;
     ChafaCanvas* pCanvas;
-    GString* pGString;
+    // GString* pGString;
 
     detectTerminal(&pTermInfo, &mode, &ePixelMode);
 
@@ -346,7 +350,7 @@ createCanvas(const int width, const int height)
 }
 #endif
 
-static void
+[[maybe_unused]] static void
 paintCanvas(
     ChafaCanvas *canvas,
     const u8* pBuff,

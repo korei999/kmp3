@@ -1,11 +1,11 @@
 #include "input.hh"
 
+#include "termbox2/termbox2.h"
+
 #include "app.hh"
 #include "window.hh"
 #include "keybinds.hh"
 #include "common.hh"
-
-#include "termbox2/termbox2.h"
 
 #include <cmath>
 
@@ -35,7 +35,7 @@ void
 procMouse(tb_event* pEv)
 {
     auto& pl = *app::g_pPlayer;
-    auto& mix = *app::g_pMixer;
+    // auto& mix = *app::g_pMixer;
     const long width = tb_width();
     const long height = tb_height();
     const int split = common::getHorizontalSplitPos(height);
@@ -55,7 +55,7 @@ procMouse(tb_event* pEv)
                 return;
             }
 
-            f64 target = f64(ev.x - xOff) / f64(width - xOff - 1);
+            f64 target = f64(ev.x - xOff) / f64((width - 2) - xOff);
             target *= audio::MixerGetMaxMS(app::g_pMixer);
             audio::MixerSeekMS(app::g_pMixer, target);
             return;

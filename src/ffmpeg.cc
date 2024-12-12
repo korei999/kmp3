@@ -22,7 +22,7 @@ extern "C"
 namespace ffmpeg
 {
 
-static PIXEL_FORMAT
+[[maybe_unused]] static PIXEL_FORMAT
 covertFormat(int format)
 {
     switch (format)
@@ -98,6 +98,7 @@ DecoderGetMetadataValue(Decoder* s, const String sKey)
     }
 }
 
+#ifdef USE_CHAFA
 static void
 DecoderGetAttachedPicture(Decoder* s)
 {
@@ -146,7 +147,6 @@ DecoderGetAttachedPicture(Decoder* s)
     if (err == AVERROR(EINVAL))
         LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
 
-#ifdef USE_CHAFA
     s->pSwsCtx = sws_getContext(
         s->pImgFrame->width, s->pImgFrame->height, (AVPixelFormat)s->pImgFrame->format,
         s->pImgFrame->width, s->pImgFrame->height, AV_PIX_FMT_RGB24,
@@ -170,19 +170,14 @@ DecoderGetAttachedPicture(Decoder* s)
 
     s->oCoverImg = Image {
         .pBuff = s->pConverted->data[0],
-        .width = s->pConverted->width,
-        .height = s->pConverted->height,
+        .width = u32(s->pConverted->width),
+        .height = u32(s->pConverted->height),
         .eFormat = covertFormat(s->pConverted->format)
     };
-#else
-    s->oCoverImg = Image {
-        .pBuff = s->pImgFrame->data[0],
-        .width = s->pImgFrame->width,
-        .height = s->pImgFrame->height,
-        .eFormat = covertFormat(s->pImgFrame->format)
-    };
-#endif
 }
+#else
+    #define DecoderGetAttachedPicture(...) (void)0
+#endif
 
 Opt<ffmpeg::Image>
 DecoderGetCoverImage(Decoder* s)
@@ -234,9 +229,7 @@ DecoderOpen(Decoder* s, String sPath)
 
     LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
 
-#ifdef USE_CHAFA
-    ffmpeg::DecoderGetAttachedPicture(s);
-#endif
+    DecoderGetAttachedPicture(s);
 
     return ERROR::OK_;
 }

@@ -28,7 +28,9 @@
     #pragma GCC diagnostic pop
 #endif
 
-#include "platform/chafa/chafa.hh"
+#ifdef USE_CHAFA
+    #include "platform/chafa/chafa.hh"
+#endif
 
 namespace platform
 {
@@ -141,8 +143,6 @@ procEvents()
     tb_event ev;
     tb_peek_event(&ev, defaults::UPDATE_RATE);
     auto height = tb_height();
-
-    const auto& pl = *app::g_pPlayer;
 
     switch (ev.type)
     {
@@ -385,54 +385,10 @@ drawVolume()
 }
 
 static void
-drawTime(const u16 split)
-{
-    const int width = tb_width();
-    const String str = common::allocTimeString(g_pFrameArena, width);
-    drawMBString(0, 4, str, split + 1);
-}
-
-static void
-drawTotal(Arena* pAlloc, const u16 split)
-{
-    const auto width = tb_width();
-    auto& pl = *app::g_pPlayer;
-
-    char* pBuff = (char*)zalloc(pAlloc, 1, width + 1);
-
-    int n = snprintf(pBuff, width, "total: %ld / %u", pl.selected, pl.aShortArgvs.size - 1);
-    if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
-    {
-        const char* sArg {};
-        if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
-        else if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
-
-        snprintf(pBuff + n, width - n, " (repeat %s)", sArg);
-    }
-
-    drawMBString(0, 1, pBuff, split + 1);
-}
-
-static void
-drawStatus()
-{
-    const auto width = tb_width();
-    const auto& pl = *app::g_pPlayer;
-    const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
-
-    drawTotal(g_pFrameArena, split);
-    VOLUME_COLOR volumeColor = drawVolume();
-    drawTime(split);
-    drawBox(0, 0, split, pl.statusAndInfoHeight + 1, volumeColor, TB_DEFAULT);
-}
-
-static void
 drawInfo()
 {
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
-    const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
-    /*const auto maxStringWidth = width - split - 1;*/
 
     /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
 
@@ -565,6 +521,7 @@ drawTimeSlider()
     }
 }
 
+#ifdef USE_CHAFA
 static void
 drawCoverImage()
 {
@@ -596,12 +553,13 @@ drawCoverImage()
 
             LOG_GOOD("hOff: {}, vOff: {}, split: {}\n", hOff, vOff, split);
 
-            /*tb_set_cursor(1, 1);*/
             platform::chafa::showImage(img, split - 1, width - 2, hOff, vOff);
-            /*tb_present();*/
         }
     }
 }
+#else
+    #define drawCoverImage(...) (void)0
+#endif
 
 void
 draw()
