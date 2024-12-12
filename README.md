@@ -9,7 +9,7 @@
 - Play each song in the directory: `kmp3 *`, or recursively: `kmp3 **/*`.
 - With no arguments, stdin with pipe can be used: `find /path -iname '*.mp3' | kmp3` or whatever the shell can do.
 - Navigate with vim-like keybinds.
-- Some mouse controls.
+- Mouse controls.
 - `h` / `l` seek back/forward.
 - `n` / `p` next/prev song.
 - `/` to search.
