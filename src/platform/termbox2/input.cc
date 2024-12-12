@@ -60,8 +60,8 @@ procMouse(tb_event* pEv)
             audio::MixerSeekMS(app::g_pMixer, target);
             return;
         }
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::seekRightMS(5000);
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::seekLeftMS(5000);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::seekRightMS(5000);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::seekLeftMS(5000);
 
         return;
     }
@@ -69,8 +69,8 @@ procMouse(tb_event* pEv)
     /* scroll ontop of volume */
     if (ev.y == split + 2)
     {
-        if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::volumeDown(0.1f);
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::volumeUp(0.1f);
+        if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::volumeDown(0.1f);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::volumeUp(0.1f);
         else if (ev.key == TB_KEY_MOUSE_LEFT && ev.x <= 10) app::toggleMute();
 
         return;

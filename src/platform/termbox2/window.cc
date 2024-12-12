@@ -488,7 +488,7 @@ drawBottomLine()
     {
         char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "selected: {} / {}", pl.selected, pl.aShortArgvs.size - 1);
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.size - 1);
         if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};

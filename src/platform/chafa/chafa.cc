@@ -273,11 +273,6 @@ printImg(
         /* offset */
         char aBuf[CHAFA_TERM_SEQ_LENGTH_MAX * 2] {};
         char *p0 = aBuf;
-        /*p0 = chafa_term_info_emit_clear(pTermInfo, p0);*/
-        p0 = chafa_term_info_emit_cursor_to_top_left(pTermInfo, p0);
-        /*p0 = chafa_term_info_emit_cursor_down(pTermInfo, p0, maxVOff);*/
-        /*p0 = chafa_term_info_emit_delete_rows(pTermInfo, p0, heightCells);*/
-
         p0 = chafa_term_info_emit_cursor_to_top_left(pTermInfo, p0);
         p0 = chafa_term_info_emit_cursor_down(pTermInfo, p0, maxVOff);
         p0 = chafa_term_info_emit_cursor_right(pTermInfo, p0, maxHOff);
