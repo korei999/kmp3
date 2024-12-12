@@ -67,11 +67,11 @@ procMouse(tb_event* pEv)
     }
 
     /* scroll ontop of volume */
-    if (ev.y == split + 2)
+    if (ev.y == split + 2 && ev.x <= 11)
     {
         if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::volumeDown(0.1f);
         else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::volumeUp(0.1f);
-        else if (ev.key == TB_KEY_MOUSE_LEFT && ev.x <= 10) app::toggleMute();
+        else if (ev.key == TB_KEY_MOUSE_LEFT) app::toggleMute();
 
         return;
     }
