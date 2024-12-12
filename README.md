@@ -1,4 +1,4 @@
-![kmp3_2](https://github.com/user-attachments/assets/65255025-0882-4065-9aac-9c36cb04d16a)
+![kmp3_3](https://github.com/user-attachments/assets/3f98f29d-ac64-4b70-92dd-1be593590616)
 
 ### Features
 - Plays most of the audio/video formats.
@@ -11,7 +11,7 @@
 - Navigate with vim-like keybinds.
 - Some mouse controls.
 - `h` / `l` seek back/forward.
-- `o` / `i` next/prev song.
+- `n` / `p` next/prev song.
 - `/` to search.
 - `9` / `0` change volume, or `(` / `)` for smaller steps.
 - `t` select time: `4:20`, `40` or `60%`.
@@ -24,7 +24,7 @@
 ### Dependencies
 `libpipewire-0.3 libavformat libavcodec libavutil libswresample`.\
 To enable mpris support: `libsystemd` or `basu`.\
-For image support: `ncursesw chafa glib-2.0 libswscale`, set TERM=xterm-direct for better quality.
+For image support: `chafa glib-2.0 libswscale`.
 
 ### Install
 ```
