@@ -431,7 +431,7 @@ drawInfo()
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
     const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
-    const auto maxStringWidth = width - split - 1;
+    /*const auto maxStringWidth = width - split - 1;*/
 
     /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
 
@@ -440,24 +440,24 @@ drawInfo()
     /* title */
     {
         int n = print::toBuffer(pBuff, width, "title: ");
-        drawMBString(0, 1, pBuff, maxStringWidth);
+        drawMBString(0, 1, pBuff, width - 1);
         memset(pBuff, 0, width + 1);
         if (pl.info.title.size > 0)
             print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
-        drawMBString(n, 1, pBuff, maxStringWidth - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT, true, split + 1, 1);
+        drawMBString(n, 1, pBuff, width - 1 - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
     }
 
     /* album */
     {
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
-        drawMBString(0, 2, pBuff, maxStringWidth);
+        drawMBString(0, 2, pBuff, width - 1);
         if (pl.info.album.size > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.album);
-            drawMBString(n, 2, pBuff, maxStringWidth - n - 1, TB_BOLD);
+            drawMBString(n, 2, pBuff, width - 1 - n - 1, TB_BOLD);
         }
     }
 
@@ -465,12 +465,12 @@ drawInfo()
     {
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
-        drawMBString(0, 3, pBuff, maxStringWidth);
+        drawMBString(0, 3, pBuff, width - 2);
         if (pl.info.artist.size > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.artist);
-            drawMBString(n, 3, pBuff, maxStringWidth - n - 1, TB_BOLD);
+            drawMBString(n, 3, pBuff, width - 1 - n - 1, TB_BOLD);
         }
     }
 }
