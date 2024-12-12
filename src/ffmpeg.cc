@@ -56,8 +56,7 @@ struct Decoder
 Decoder*
 DecoderAlloc(IAllocator* pAlloc)
 {
-    Decoder* s = (Decoder*)alloc(pAlloc, 1, sizeof(Decoder));
-    *s = {};
+    Decoder* s = (Decoder*)zalloc(pAlloc, 1, sizeof(Decoder));
     return s;
 }
 
