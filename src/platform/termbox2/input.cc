@@ -36,21 +36,22 @@ procMouse(tb_event* pEv)
 {
     auto& pl = *app::g_pPlayer;
     auto& mix = *app::g_pMixer;
-    const long listOff = pl.statusAndInfoHeight + 4;
-    const long sliderOff = pl.statusAndInfoHeight + 2;
-    const auto& ev = *pEv;
     const long width = tb_width();
     const long height = tb_height();
+    const int split = common::getHorizontalSplitPos(height);
+    const long listOff = split + 4;
+    const long sliderOff = split + 1;
+    const auto& ev = *pEv;
 
     /* click on slider */
     if (ev.y == sliderOff)
     {
-        constexpr long xOff = 2; /* offset from the icon */
+        const long xOff = window::g_timeStringSize + 2;
         if (ev.key == TB_KEY_MOUSE_LEFT)
         {
             if (ev.x <= xOff)
             {
-                if (ev.key == TB_KEY_MOUSE_LEFT) audio::MixerTogglePause(&mix);
+                if (ev.key == TB_KEY_MOUSE_LEFT) app::togglePause();
                 return;
             }
 
@@ -59,17 +60,18 @@ procMouse(tb_event* pEv)
             audio::MixerSeekMS(app::g_pMixer, target);
             return;
         }
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) audio::MixerSeekLeftMS(&mix, 5000);
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) audio::MixerSeekRightMS(&mix, 5000);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::seekRightMS(5000);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::seekLeftMS(5000);
 
         return;
     }
 
     /* scroll ontop of volume */
-    if (ev.y <= pl.statusAndInfoHeight && ev.x < std::round(f64(width) * pl.statusToInfoWidthRatio))
+    if (ev.y == split + 2)
     {
-        if (ev.key == TB_KEY_MOUSE_WHEEL_UP) audio::MixerVolumeUp(app::g_pMixer, 0.1f);
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) audio::MixerVolumeDown(app::g_pMixer, 0.1f);
+        if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::volumeDown(0.1f);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::volumeUp(0.1f);
+        else if (ev.key == TB_KEY_MOUSE_LEFT && ev.x <= 10) app::toggleMute();
 
         return;
     }

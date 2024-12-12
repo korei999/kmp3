@@ -120,13 +120,10 @@ detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode, ChafaPixelMod
     ChafaTermInfo* pTermInfo;
     ChafaTermInfo* pFallbackInfo;
     gchar** ppEnv;
-    auto* pDb = chafa_term_db_get_default();
-    defer( chafa_term_db_unref(pDb) );
 
     /* Examine the environment variables and guess what the terminal can do */
-
     ppEnv = g_get_environ();
-    pTermInfo = chafa_term_db_detect(pDb, ppEnv);
+    pTermInfo = chafa_term_db_detect(chafa_term_db_get_default(), ppEnv);
 
     /* See which control sequences were defined, and use that to pick the most
      * high-quality rendering possible */

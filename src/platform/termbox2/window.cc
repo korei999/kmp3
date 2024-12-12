@@ -7,6 +7,7 @@
 #include "input.hh"
 
 #include <cmath>
+#include <stdatomic.h>
 
 #ifdef __clang__
     #pragma clang diagnostic push
@@ -38,6 +39,7 @@ namespace window
 
 Arena* g_pFrameArena {};
 u16 g_firstIdx = 0;
+int g_timeStringSize {};
 
 bool
 init(Arena* pAlloc)
@@ -431,31 +433,31 @@ drawInfo()
     const u16 split = std::round(f64(width) * pl.statusToInfoWidthRatio);
     const auto maxStringWidth = width - split - 1;
 
-    drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);
+    /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
 
     char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
 
     /* title */
     {
         int n = print::toBuffer(pBuff, width, "title: ");
-        drawMBString(split + 1, 1, pBuff, maxStringWidth);
+        drawMBString(0, 1, pBuff, maxStringWidth);
         memset(pBuff, 0, width + 1);
         if (pl.info.title.size > 0)
             print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
-        drawMBString(split + 1 + n, 1, pBuff, maxStringWidth - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT, true, split + 1, 1);
+        drawMBString(n, 1, pBuff, maxStringWidth - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT, true, split + 1, 1);
     }
 
     /* album */
     {
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
-        drawMBString(split + 1, 3, pBuff, maxStringWidth);
+        drawMBString(0, 2, pBuff, maxStringWidth);
         if (pl.info.album.size > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.album);
-            drawMBString(split + 1 + n, 3, pBuff, maxStringWidth - n - 1, TB_BOLD);
+            drawMBString(n, 2, pBuff, maxStringWidth - n - 1, TB_BOLD);
         }
     }
 
@@ -463,12 +465,12 @@ drawInfo()
     {
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
-        drawMBString(split + 1, 4, pBuff, maxStringWidth);
+        drawMBString(0, 3, pBuff, maxStringWidth);
         if (pl.info.artist.size > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.artist);
-            drawMBString(split + 1 + n, 4, pBuff, maxStringWidth - n - 1, TB_BOLD);
+            drawMBString(n, 3, pBuff, maxStringWidth - n - 1, TB_BOLD);
         }
     }
 }
@@ -520,22 +522,45 @@ drawBottomLine()
 static void
 drawTimeSlider()
 {
-    const auto xOff = 2;
-    const auto width = tb_width();
-    const int height = tb_height();
-    const int split = common::getHorizontalSplitPos(height) + 1;
-    const auto& time = app::g_pMixer->currentTimeStamp;
-    const auto& maxTime = app::g_pMixer->totalSamplesCount;
-    const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - xOff);
+    const auto& mix = *app::g_pMixer;
 
-    if (app::g_pMixer->bPaused) tb_set_cell(1, split, '|', TB_WHITE|TB_BOLD, TB_DEFAULT);
-    else tb_set_cell(1, split, '>', TB_WHITE|TB_BOLD, TB_DEFAULT);
+    int height = tb_height();
+    int width = tb_width();
 
-    for (long i = xOff + 1; i < width - 1; ++i)
+    int split = std::round(f64(height) * (1.0 - app::g_pPlayer->statusToInfoWidthRatio));
+    int n = 0;
+
+    /* time */
     {
-        wchar_t wc = L'━';
-        if ((i - 1) == std::floor(timePlace + xOff)) wc = L'╋';
-        tb_set_cell(i, split, wc, TB_WHITE, TB_DEFAULT);
+        const String str = common::allocTimeString(g_pFrameArena, width);
+        drawMBString(0, split + 1, str, width - 2);
+        n += str.size;
+    }
+
+    /* play/pause indicator */
+    {
+        bool bPaused = atomic_load_explicit(&mix.bPaused, memory_order_relaxed);
+        const char* ntsIndicator = bPaused ? "II" : "I>";
+
+        drawMBString(1 + n, split + 1, ntsIndicator, width - 2, TB_BOLD);
+
+        n += strlen(ntsIndicator);
+    }
+    g_timeStringSize = n;
+    
+    /* time slider */
+    {
+        const auto& time = mix.currentTimeStamp;
+        const auto& maxTime = mix.totalSamplesCount;
+        const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - (n + 3));
+
+        for (long i = n + 3, t = 0; i < width - 2; ++i, ++t)
+        {
+            wchar_t wch = L'━';
+            if ((t - 0) == std::floor(timePlace)) wch = L'╋';
+
+            tb_set_cell(i, split + 1, wch, TB_DEFAULT, TB_DEFAULT);
+        }
     }
 }
 
@@ -553,6 +578,7 @@ drawCoverImage()
         auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCover)
         {
+            /* FIXME: horrible screen flash */
             tb_invalidate();
             auto& img = oCover.data;
 
@@ -568,7 +594,6 @@ drawCoverImage()
 
             /*tb_set_cursor(1, 1);*/
             platform::chafa::showImage(img, split - 1, width - 2, hOff, vOff);
-
             /*tb_present();*/
         }
     }
@@ -591,6 +616,7 @@ draw()
         drawSongList();
         drawBottomLine();
         drawVolume();
+        drawInfo();
     }
 
     tb_present();

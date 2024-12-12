@@ -13,6 +13,7 @@ namespace window
 
 extern Arena* g_pFrameArena;
 extern u16 g_firstIdx;
+extern int g_timeStringSize;
 
 bool init(Arena* pAlloc);
 void destroy();
