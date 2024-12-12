@@ -497,10 +497,11 @@ WinDraw(Win* s)
         auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCover)
         {
+            const auto& img = oCover.data;
             int y, x;
             getmaxyx(s->info.pCon, y, x);
 
-            platform::chafa::showImageNCurses(s->info.pCon, oCover.data, y + 1, x);
+            platform::chafa::showImageNCurses(s->info.pCon, img, y + 1, x);
         }
 #endif
 

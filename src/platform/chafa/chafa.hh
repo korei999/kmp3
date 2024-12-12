@@ -15,7 +15,14 @@ namespace chafa
 void showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, const int termWidth);
 #endif
 
-void showImage(const ffmpeg::Image img, const int termHeight, const int termWidth, const int hOff, const int vOff);
+void
+showImage(
+    const ffmpeg::Image img,
+    const int termHeight,
+    const int termWidth,
+    const int hOff,
+    const int vOff
+);
 
 } /* namespace chafa */
 } /* namespace platform */
