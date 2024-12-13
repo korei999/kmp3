@@ -169,33 +169,39 @@ procEvents()
 }
 
 static void
+clearArea(int x, int y, int width, int height)
+{
+    width = utils::min(width, tb_width());
+    height = utils::min(height, tb_height());
+
+    for (int j = y; j < height; ++j)
+        for (int i = x; i < width; ++i)
+            tb_set_cell(i, j, ' ', TB_DEFAULT, TB_DEFAULT);
+}
+
+static void
 drawBox(
-    const u16 x,
-    const u16 y,
-    const u16 width,
-    const u16 height,
-    const u32 fgColor = TB_WHITE,
-    const u32 bgColor = TB_DEFAULT,
-    const bool bCleanInside = false,
-    const u32 tl = common::CHAR_TL,
-    const u32 tr = common::CHAR_TR,
-    const u32 bl = common::CHAR_BL,
-    const u32 br = common::CHAR_BR,
-    const u32 t = common::CHAR_T,
-    const u32 b = common::CHAR_B,
-    const u32 l = common::CHAR_L,
-    const u32 r = common::CHAR_R
+    u16 x,
+    u16 y,
+    u16 width,
+    u16 height,
+    u32 fgColor = TB_WHITE,
+    u32 bgColor = TB_DEFAULT,
+    bool bCleanInside = false,
+    u32 tl = common::CHAR_TL,
+    u32 tr = common::CHAR_TR,
+    u32 bl = common::CHAR_BL,
+    u32 br = common::CHAR_BR,
+    u32 t = common::CHAR_T,
+    u32 b = common::CHAR_B,
+    u32 l = common::CHAR_L,
+    u32 r = common::CHAR_R
 )
 {
     const u16 termHeight = tb_height();
     const u16 termWidth = tb_width();
 
-    if (bCleanInside)
-    {
-        for (int j = y + 1; j < y + height && j < termWidth; ++j)
-            for (int i = x + 1; i < x + width; ++i)
-                tb_set_cell(i, j, L' ', TB_WHITE, TB_DEFAULT);
-    }
+    if (bCleanInside) clearArea(x + 1, y + 1, width - 1, height - 1);
 
     if (x < termWidth && y < termHeight) /* top-left */
         tb_set_cell(x, y, tl, fgColor, bgColor);
@@ -575,11 +581,11 @@ draw()
 
     if (height > 9 && width > 9)
     {
-        drawCoverImage();
         drawTimeSlider();
         drawSongList();
         drawBottomLine();
         drawVolume();
+        drawCoverImage();
         drawInfo();
     }
 
