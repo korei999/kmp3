@@ -373,7 +373,7 @@ setVolume(
 {
     f64 vol;
     CK(sd_bus_message_read_basic(value, 'd', &vol));
-    app::g_pMixer->volume = vol;
+    audio::MixerSetVolume(app::g_pMixer, vol);
 
     return sd_bus_reply_method_return(value, "");
 }

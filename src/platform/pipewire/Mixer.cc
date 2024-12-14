@@ -315,6 +315,8 @@ MixerTogglePause(Mixer* s)
 void
 MixerChangeSampleRate(Mixer* s, u64 sampleRate, bool bSave)
 {
+    sampleRate = utils::clamp(sampleRate, defaults::MIN_SAMPLE_RATE, defaults::MAX_SAMPLE_RATE);
+
     u8 aSetupBuff[512] {};
     spa_audio_info_raw rawInfo {
         .format = s->eformat,

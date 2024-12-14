@@ -31,7 +31,12 @@ main(int argc, char** argv)
 
     if (argc > 1)
     {
-        if (argv[1] == String("--termbox"))
+        if (argv[1] == String("--ansi"))
+        {
+            app::g_eUIFrontend = app::UI_FRONTEND::ANSI;
+            LOG_NOTIFY("setting HANDMADE ui\n");
+        }
+        else if (argv[1] == String("--termbox"))
         {
             app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
             LOG_NOTIFY("setting TERMBOX ui\n");

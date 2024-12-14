@@ -5,8 +5,6 @@
 
 #include <atomic>
 
-#include "adt/utils.hh"
-#include "defaults.hh"
 #include "ffmpeg.hh"
 
 using namespace adt;
@@ -73,8 +71,8 @@ inline void MixerVolumeDown(IMixer* s, const f32 step) { MixerSetVolume(s, s->vo
 inline void MixerVolumeUp(IMixer* s, const f32 step) { MixerSetVolume(s, s->volume + step); }
 inline f64 MixerGetCurrentMS(IMixer* s) { return (f64(s->currentTimeStamp) / f64(s->sampleRate) / f64(s->nChannels)) * 1000.0; }
 inline f64 MixerGetMaxMS(IMixer* s) { return (f64(s->totalSamplesCount) / f64(s->sampleRate) / f64(s->nChannels)) * 1000.0; }
-inline void MixerChangeSampleRateDown(IMixer* s, int ms, bool bSave) { MixerChangeSampleRate(s, utils::max(int(s->changedSampleRate) - ms, defaults::MIN_SAMPLE_RATE), bSave); }
-inline void MixerChangeSampleRateUp(IMixer* s, int ms, bool bSave) { MixerChangeSampleRate(s, utils::min(int(s->changedSampleRate) + ms, defaults::MAX_SAMPLE_RATE), bSave); }
+inline void MixerChangeSampleRateDown(IMixer* s, int ms, bool bSave) { MixerChangeSampleRate(s, s->changedSampleRate - ms, bSave); }
+inline void MixerChangeSampleRateUp(IMixer* s, int ms, bool bSave) { MixerChangeSampleRate(s, s->changedSampleRate + ms, bSave); }
 inline void MixerRestoreSampleRate(IMixer* s) { MixerChangeSampleRate(s, s->sampleRate, false); }
 
 struct DummyMixer

@@ -34,7 +34,7 @@ TextBuffPush(TextBuff* s, const String str)
 inline void
 TextBuffReset(TextBuff* s)
 {
-    memset(s->pData, 0, s->size);
+    /*memset(s->pData, 0, s->size);*/
     s->size = 0;
 }
 

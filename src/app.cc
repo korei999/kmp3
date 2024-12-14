@@ -1,6 +1,7 @@
 #include "app.hh"
 
 #include "adt/logs.hh"
+#include "platform/ansi/Win.hh"
 #include "platform/termbox2/window.hh"
 
 #ifdef USE_NCURSES
@@ -31,12 +32,21 @@ allocWindow(IAllocator* pAlloc)
 
     switch (app::g_eUIFrontend)
     {
+        case UI_FRONTEND::ANSI:
+        {
+            auto* pAnsiWin = (platform::ansi::Win*)alloc(pAlloc, 1, sizeof(platform::ansi::Win));
+            *pAnsiWin = platform::ansi::Win();
+            pRet = &pAnsiWin->super;
+        }
+        break;
+
         case UI_FRONTEND::TERMBOX:
         {
             auto* pTermboxWin = (platform::termbox2::Win*)alloc(pAlloc, 1, sizeof(platform::termbox2::Win));
             *pTermboxWin = platform::termbox2::Win();
             pRet = &pTermboxWin->super;
-        } break;
+        }
+        break;
 
         case UI_FRONTEND::NCURSES:
         {
@@ -48,7 +58,8 @@ allocWindow(IAllocator* pAlloc)
             CERR("UI_BACKEND::NCURSES: not available\n");
             exit(1);
 #endif
-        } break;
+        }
+        break;
 
         case UI_FRONTEND::NOTCURSES:
         {
@@ -60,7 +71,8 @@ allocWindow(IAllocator* pAlloc)
             CERR("UI_BACKEND::NCURSES: not available\n");
             exit(1);
 #endif
-        };
+        }
+        break;
     }
 
     return pRet;
