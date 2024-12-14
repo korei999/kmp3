@@ -79,6 +79,18 @@ min(auto& l, auto& r)
     return l < r ? l : r;
 }
 
+[[nodiscard]] constexpr auto
+maxVal(const auto& l, const auto& r)
+{
+    return l > r ? l : r;
+}
+
+[[nodiscard]] constexpr auto
+minVal(const auto& l, const auto& r)
+{
+    return l > r ? l : r;
+}
+
 [[nodiscard]] constexpr u64
 size(const auto& a)
 {
@@ -165,9 +177,9 @@ sleepS(f64 s)
 }
 
 constexpr void
-addNSToTimespec(timespec* const pTs, const long nsec)
+addNSToTimespec(timespec* const pTs, const time_t nsec)
 {
-    constexpr long nsecMax = 1000000000;
+    constexpr time_t nsecMax = 1000000000;
     /* overflow check */
     if (pTs->tv_nsec + nsec >= nsecMax)
     {

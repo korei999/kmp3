@@ -49,6 +49,7 @@ add_executable(
     src/platform/termbox2/window.cc
     src/platform/termbox2/input.cc
     src/platform/ansi/Win.cc
+    src/platform/ansi/draw.cc
 )
 
 option(OPT_NCURSES "ncurses support" OFF)

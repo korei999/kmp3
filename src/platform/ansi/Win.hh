@@ -2,17 +2,28 @@
 
 #include "IWindow.hh"
 #include "TextBuff.hh"
+#include "TermSize.hh"
+
+#include <termios.h>
+#include <threads.h>
 
 namespace platform
 {
 namespace ansi
 {
 
+extern TermSize g_termSize;
+
 struct Win
 {
     IWindow super {};
     Arena* pArena {};
     TextBuff textBuff {};
+    termios termOg {};
+    thrd_t thrdInput {};
+    mtx_t mtxDraw {};
+    mtx_t mtxWait {};
+    cnd_t cndWait {};
 
     Win();
 };

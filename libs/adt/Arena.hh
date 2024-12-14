@@ -69,7 +69,7 @@ _ArenaFindFittingBlock(Arena* s, u64 size)
     auto* it = s->pBlocks;
     while (it)
     {
-        if (it->size - it->nBytesOccupied > size)
+        if (size < it->size - it->nBytesOccupied)
             return it;
 
         it = it->pNext;
@@ -111,7 +111,7 @@ ArenaAlloc(Arena* s, u64 mCount, u64 mSize)
 
     if (!pBlock) pBlock = _ArenaPrependBlock(s, utils::max(s->defaultCapacity, realSize*2));
 
-    auto* pRet = pBlock->pLastAlloc + pBlock->lastAllocSize;
+    auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
 
     pBlock->pLastAlloc = pRet;
     pBlock->nBytesOccupied += realSize;
@@ -142,7 +142,7 @@ ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize)
     if (ptr == pBlock->pLastAlloc &&
         pBlock->pLastAlloc + realSize < pBlock->pMem + pBlock->size) /* bump case */
     {
-        if (pBlock->lastAllocSize >= requested) return ptr;
+        fprintf(stderr, "================ BUMP CASE: %llu ============\n", realSize);
 
         pBlock->nBytesOccupied -= pBlock->lastAllocSize;
         pBlock->nBytesOccupied += realSize;

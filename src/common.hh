@@ -62,7 +62,7 @@ allocTimeString(Arena* pArena, int width)
     return pBuff;
 }
 
-/* fix song list range after focus change */
+/* fix song list range on new focus */
 inline void
 fixFirstIdx(const u16 listHeight, u16* pFirstIdx)
 {

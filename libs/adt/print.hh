@@ -17,7 +17,7 @@ namespace adt
 namespace print
 {
 
-enum BASE : u8 { TWO = 2, EIGHT = 8, TEN = 10, SIXTEEN = 16 };
+enum class BASE : u8 { TWO = 2, EIGHT = 8, TEN = 10, SIXTEEN = 16 };
 
 struct FormatArgs
 {
@@ -203,11 +203,11 @@ intToBuffer(INT_T x, char* pDst, u32 dstSize, FormatArgs fmtArgs)
         return pDst;
     }
  
-    if (x < 0 && fmtArgs.eBase != 10)
+    if (x < 0 && int(fmtArgs.eBase) != 10)
     {
         x = -x;
     }
-    else if (x < 0 && fmtArgs.eBase == 10)
+    else if (x < 0 && int(fmtArgs.eBase) == 10)
     {
         bNegative = true;
         x = -x;
@@ -215,10 +215,10 @@ intToBuffer(INT_T x, char* pDst, u32 dstSize, FormatArgs fmtArgs)
  
     while (x != 0)
     {
-        int rem = x % fmtArgs.eBase;
+        int rem = x % int(fmtArgs.eBase);
         char c = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
         push(c);
-        x = x / fmtArgs.eBase;
+        x = x / int(fmtArgs.eBase);
     }
  
     if (fmtArgs.bAlwaysShowSign)
@@ -455,12 +455,12 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs)
     return nRead;
 }
 
-template<typename... ARGS_T>
+template<u32 SIZE = 512, typename... ARGS_T>
 constexpr u32
 toFILE(FILE* fp, const String fmt, const ARGS_T&... tArgs)
 {
-    /* TODO: set size / allow allocation maybe */
-    char aBuff[1024] {};
+    /* TODO: allow allocation? */
+    char aBuff[SIZE] {};
     Context ctx {fmt, aBuff, utils::size(aBuff) - 1};
     auto r = printArgs(ctx, tArgs...);
     fputs(aBuff, fp);

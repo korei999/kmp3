@@ -28,10 +28,13 @@ struct String;
 [[nodiscard]] inline bool operator!=(const String& l, const String& r);
 [[nodiscard]] constexpr s64 operator-(const String& l, const String& r);
 [[nodiscard]] constexpr u32 StringLastOf(String sv, char c);
+
+/* StringAlloc() inserts '\0' char */
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str, u32 size);
 [[nodiscard]] inline String StringAlloc(IAllocator* p, u32 size);
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str);
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const String s);
+
 inline void StringDestroy(IAllocator* p, String* s);
 [[nodiscard]] inline String StringCat(IAllocator* p, const String l, const String r);
 inline void StringAppend(String* l, const String r);

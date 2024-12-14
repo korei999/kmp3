@@ -1,5 +1,6 @@
 #include "chafa.hh"
 
+#include "adt/OsAllocator.hh"
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "defaults.hh"
@@ -216,8 +217,8 @@ writeOUT(const char* const pBuf, const u64 len)
     return result;
 }
 
-static void
-printImg(
+static GString*
+getString(
     Arena* pArena,
     const void* pPixels,
     const int pixWidth,
@@ -270,42 +271,40 @@ printImg(
 
     /* Build printable strings */
     auto* pGStr = chafa_canvas_print(pCanvas, pTermInfo);
-    defer( g_string_free(pGStr, true) );
 
-    int maxVOff = utils::max(vOff, 0);
-    int maxHOff = utils::max(hOff, 0);
+    // {
+    //     /* clear prev image */
+    //     TextBuff textBuff(pArena);
+    //     defer( TextBuffFlush(&textBuff) );
 
-    {
-        /* clear prev image */
-        TextBuff textBuff(pArena);
-        defer( TextBuffFlush(&textBuff) );
+    //     auto at = [&](int x, int y) {
+    //         char aBuff[128] {};
+    //         print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
+    //         TextBuffPush(&textBuff, aBuff);
+    //     };
 
-        auto at = [&](int x, int y) {
-            char aBuff[128] {};
-            print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
-            TextBuffPush(&textBuff, aBuff);
-        };
+    //     //auto clearLine = [&] {
+    //     //    TextBuffPush(&textBuff, "\x1b[K\r\n");
+    //     //};
 
-        //auto clearLine = [&] {
-        //    TextBuffPush(&textBuff, "\x1b[K\r\n");
-        //};
+    //     //at(0, 0);
+    //     //for (int i = 0; i < heightCells; ++i)
+    //     //    clearLine();
 
-        //at(0, 0);
-        //for (int i = 0; i < heightCells; ++i)
-        //    clearLine();
+    //     /* set centered position */
+    //     at(maxHOff, maxVOff);
+    // }
 
-        /* set centered position */
-        at(maxHOff, maxVOff);
-    }
-
-    fputs(pGStr->str, stdout);
-    fputc('\n', stdout);
+    // fputs(pGStr->str, stdout);
+    // fputc('\n', stdout);
 
     chafa_canvas_unref(pCanvas);
     chafa_canvas_config_unref(pConfig);
     chafa_symbol_map_unref(pSymbolMap);
 
     chafa_term_info_unref(pTermInfo);
+
+    return pGStr;
 }
 
 #ifdef USE_NCURSES
@@ -487,7 +486,7 @@ showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const in
         termWidth, termHeight, termSize.widthPixels, termSize.heightPixels
     );
 
-    printImg(
+    auto* pGStr = getString(
         pArena,
         img.pBuff,
         img.width,
@@ -501,6 +500,83 @@ showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const in
         hOff,
         vOff
     );
+    defer( g_string_free(pGStr, true) );
+
+    {
+        TextBuff textBuff(pArena);
+        defer( TextBuffFlush(&textBuff) );
+
+        auto at = [&](int x, int y) {
+            char aBuff[128] {};
+            u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
+            TextBuffPush(&textBuff, aBuff, n);
+        };
+
+        //auto clearLine = [&] {
+        //    TextBuffPush(&textBuff, "\x1b[K\r\n");
+        //};
+
+        //at(0, 0);
+        //for (int i = 0; i < heightCells; ++i)
+        //    clearLine();
+
+        /* set centered position */
+        int maxVOff = utils::max(vOff, 0);
+        int maxHOff = utils::max(hOff, 0);
+        at(maxHOff, maxVOff);
+    }
+
+    fputs(pGStr->str, stdout);
+    fputc('\n', stdout);
+}
+
+String
+getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termWidth)
+{
+    TermSize termSize {};
+    getTTYSize(&termSize);
+
+    f64 fontRatio = defaults::FONT_ASPECT_RATIO;
+    int cellWidth = -1, cellHeight = -1; /* Size of each character cell, in pixels */
+    int widthCells {}, heightCells {};         /* Size of output image, in cells */
+
+    if (termWidth > 0 && termHeight > 0 && termSize.widthPixels > 0 && termSize.heightPixels > 0)
+    {
+        cellWidth = termSize.widthPixels / termSize.widthCells;
+        cellHeight = termSize.heightPixels / termSize.heightCells;
+        fontRatio = f64(cellWidth) / f64(cellHeight);
+    }
+
+    /*widthCells = termSize.widthCells;*/
+    /*heightCells = termSize.heightCells;*/
+    widthCells = termWidth;
+    heightCells = termHeight;
+
+    chafa_calc_canvas_geometry(
+        img.width, img.height,
+        &widthCells, &heightCells,
+        fontRatio, true, false
+    );
+
+    auto* pGStr = getString(
+        pArena,
+        img.pBuff,
+        img.width,
+        img.height,
+        img.width * getFormatChannelNumber(img.eFormat),
+        (ChafaPixelType)formatToPixelType(img.eFormat),
+        widthCells,
+        heightCells,
+        cellWidth,
+        cellHeight,
+        0, 0
+    );
+    defer( g_string_free(pGStr, true) );
+
+    auto sRet = StringAlloc(&pArena->super, pGStr->str, pGStr->len);
+    assert(sRet.size == pGStr->len);
+    LOG_BAD("chafa: start: {}, end: {}, bytes: {}\n", (void*)sRet.pData, (void*)(sRet.pData + sRet.size), sRet.size);
+    return sRet;
 }
 
 } /* namespace chafa */

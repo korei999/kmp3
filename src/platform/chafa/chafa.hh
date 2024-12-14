@@ -26,5 +26,7 @@ showImage(
     const int vOff
 );
 
+[[nodiscard]] String getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termWidth);
+
 } /* namespace chafa */
 } /* namespace platform */

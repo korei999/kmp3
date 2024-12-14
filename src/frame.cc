@@ -38,15 +38,15 @@ mprisPollLoop([[maybe_unused]] void* pNull)
 void
 run()
 {
-    app::g_pWin = app::allocWindow(inl_pOsAlloc);
+    app::g_pWin = app::allocWindow(OsAllocatorGet());
     if (app::g_pWin == nullptr)
     {
         CERR("app::allocWindow(): failed\n");
         return;
     }
-    defer( free(inl_pOsAlloc, app::g_pWin) );
+    defer( free(OsAllocatorGet(), app::g_pWin) );
 
-    Arena arena(SIZE_1M);
+    Arena arena(SIZE_8M);
     defer( ArenaFreeAll(&arena) );
 
     if (WindowStart(app::g_pWin, &arena) == false)

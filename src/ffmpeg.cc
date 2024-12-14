@@ -187,8 +187,8 @@ DecoderGetCoverImage(Decoder* s)
 ERROR
 DecoderOpen(Decoder* s, String sPath)
 {
-    String sPathNullTerm = StringAlloc(inl_pOsAlloc, sPath); /* with null char */
-    defer( StringDestroy(inl_pOsAlloc, &sPathNullTerm) );
+    String sPathNullTerm = StringAlloc(OsAllocatorGet(), sPath); /* with null char */
+    defer( StringDestroy(OsAllocatorGet(), &sPathNullTerm) );
 
     int err = 0;
     defer( if (err < 0) DecoderClose(s) );
