@@ -559,7 +559,7 @@ drawCoverImage()
 
             LOG_GOOD("hOff: {}, vOff: {}, split: {}\n", hOff, vOff, split);
 
-            platform::chafa::showImage(img, split - 1, width - 2, hOff + 2, 1);
+            platform::chafa::showImage(g_pFrameArena, img, split - 1, width - 2, hOff + 2, 1);
         }
     }
 }
@@ -581,11 +581,12 @@ draw()
 
     if (height > 9 && width > 9)
     {
+        drawCoverImage();
+
         drawTimeSlider();
         drawSongList();
         drawBottomLine();
         drawVolume();
-        drawCoverImage();
         drawInfo();
     }
 

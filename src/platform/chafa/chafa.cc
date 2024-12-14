@@ -3,6 +3,7 @@
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "defaults.hh"
+#include "TextBuff.hh"
 
 #include <chafa/chafa.h>
 #include <cmath>
@@ -217,6 +218,7 @@ writeOUT(const char* const pBuf, const u64 len)
 
 static void
 printImg(
+    Arena* pArena,
     const void* pPixels,
     const int pixWidth,
     const int pixHeight,
@@ -267,33 +269,42 @@ printImg(
     chafa_canvas_draw_all_pixels(pCanvas, ePixelType, (u8*)pPixels, pixWidth, pixHeight, pixRowStride);
 
     /* Build printable strings */
-    gchar** gsa = chafa_canvas_print_rows_strv(pCanvas, pTermInfo);
-    defer( g_strfreev(gsa) );
+    auto* pGStr = chafa_canvas_print(pCanvas, pTermInfo);
+    defer( g_string_free(pGStr, true) );
 
     int maxVOff = utils::max(vOff, 0);
     int maxHOff = utils::max(hOff, 0);
 
     {
-        /* offset */
-        char aBuf[CHAFA_TERM_SEQ_LENGTH_MAX * 2] {};
-        char *p0 = aBuf;
-        p0 = chafa_term_info_emit_cursor_to_top_left(pTermInfo, p0);
-        p0 = chafa_term_info_emit_cursor_down(pTermInfo, p0, maxVOff);
-        p0 = chafa_term_info_emit_cursor_right(pTermInfo, p0, maxHOff);
+        /* clear prev image */
+        TextBuff textBuff(pArena);
+        defer( TextBuffFlush(&textBuff) );
 
-        writeOUT(aBuf, p0 - aBuf);
+        auto at = [&](int x, int y) {
+            char aBuff[128] {};
+            print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
+            TextBuffPush(&textBuff, aBuff);
+        };
+
+        //auto clearLine = [&] {
+        //    TextBuffPush(&textBuff, "\x1b[K\r\n");
+        //};
+
+        //at(0, 0);
+        //for (int i = 0; i < heightCells; ++i)
+        //    clearLine();
+
+        /* set centered position */
+        at(maxHOff, maxVOff);
     }
 
-    for (int i = 0; gsa[i] != nullptr; ++i)
-        fputs(gsa[0], stdout);
+    fputs(pGStr->str, stdout);
     fputc('\n', stdout);
 
     chafa_canvas_unref(pCanvas);
     chafa_canvas_config_unref(pConfig);
     chafa_symbol_map_unref(pSymbolMap);
 
-    chafa_term_info_unref(pTermInfo);
-    /* something refs... */
     chafa_term_info_unref(pTermInfo);
 }
 
@@ -445,7 +456,7 @@ showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, co
 #endif
 
 void
-showImage(const ffmpeg::Image img, const int termHeight, const int termWidth, const int hOff, const int vOff)
+showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const int termWidth, const int hOff, const int vOff)
 {
     TermSize termSize {};
     getTTYSize(&termSize);
@@ -477,6 +488,7 @@ showImage(const ffmpeg::Image img, const int termHeight, const int termWidth, co
     );
 
     printImg(
+        pArena,
         img.pBuff,
         img.width,
         img.height,

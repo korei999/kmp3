@@ -1,5 +1,6 @@
 #pragma once
 
+#include "adt/Arena.hh"
 #include "ffmpeg.hh"
 
 #ifdef USE_NCURSES
@@ -17,6 +18,7 @@ void showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeigh
 
 void
 showImage(
+    Arena* pArena,
     const ffmpeg::Image img,
     const int termHeight,
     const int termWidth,
