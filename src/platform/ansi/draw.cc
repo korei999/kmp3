@@ -60,9 +60,11 @@ drawCoverImage(Win* s)
             const int hOff = std::round(hdiff / 2.0);
             const int vOff = std::round(vdiff / 2.0);
 
-            String sImg = platform::chafa::getImageString(s->pArena, img, g_termSize.height - 2, g_termSize.width - 2);
-            TextBuffMove(&s->textBuff, 0, 0);
-            TextBuffClear(&s->textBuff);
+            TextBuffMove(&s->textBuff, 0, split + 1);
+            TextBuffClearUp(&s->textBuff);
+
+            String sImg = platform::chafa::getImageString(s->pArena, img, split - 2, g_termSize.width - 2);
+            TextBuffMove(&s->textBuff, hOff + 4, 0);
             TextBuffPush(&s->textBuff, sImg.pData, sImg.size);
         }
     }
@@ -87,21 +89,17 @@ drawSongList(Win* s)
         bool bSelected = songIdx == pl.selected ? true : false;
 
         char* pBuff = (char*)zalloc(s->pArena, width, 1);
+        TextBuffMove(pTB, width - 1, i + split);
+        TextBuffClearDown(pTB);
         TextBuffMove(pTB, 1, i + split + 1);
 
         int off = 0;
         if (h == pl.focused && bSelected)
-        {
             off = print::toBuffer(pBuff, width - 1, BOLD YELLOW REVERSE);
-        }
         else if (h == pl.focused)
-        {
             off = print::toBuffer(pBuff, width - 1, REVERSE);
-        }
         else if (bSelected)
-        {
             off = print::toBuffer(pBuff, width - 1, BOLD YELLOW);
-        }
 
         print::toBuffer(pBuff + off, width - 1 - off, "{}" NORM, sSong);
         TextBuffPush(pTB, pBuff);
@@ -119,9 +117,6 @@ update(Win* s)
     const int split = common::getHorizontalSplitPos(height);
 
     s_time = utils::timeNowMS();
-
-    TextBuffMove(pTB, 0, split);
-    TextBuffClear(pTB);
 
     drawCoverImage(s);
     drawSongList(s);

@@ -61,11 +61,15 @@ TextBuffMove(TextBuff* s, int x, int y)
 }
 
 inline void
-TextBuffClear(TextBuff* s)
+TextBuffClearDown(TextBuff* s)
 {
-    char aBuff[16] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[0J");
-    TextBuffPush(s, aBuff, n);
+    TextBuffPush(s, "\x1b[0J");
+}
+
+inline void
+TextBuffClearUp(TextBuff* s)
+{
+    TextBuffPush(s, "\x1b[1J");
 }
 
 inline void

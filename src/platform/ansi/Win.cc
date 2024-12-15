@@ -26,7 +26,7 @@ disableRawMode(Win* s)
 {
     TextBuffHideCursor(&s->textBuff, false);
     TextBuffMove(&s->textBuff, 0, 0);
-    TextBuffClear(&s->textBuff);
+    TextBuffClearDown(&s->textBuff);
     TextBuffPush(&s->textBuff, "\r\n", 2);
     TextBuffFlush(&s->textBuff);
 
@@ -110,7 +110,7 @@ WinStart(Win* s, Arena* pArena)
     enableRawMode(s);
     signal(SIGWINCH, sigwinchHandler);
 
-    TextBuffClear(&s->textBuff);
+    TextBuffClearDown(&s->textBuff);
     TextBuffHideCursor(&s->textBuff, true);
     TextBuffFlush(&s->textBuff);
 
