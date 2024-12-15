@@ -157,6 +157,8 @@ update(Win* s)
 
     s_time = utils::timeNowMS();
 
+    /*TextBuffClear(pTB);*/
+
     drawCoverImage(s);
     drawSongList(s);
     drawBottomLine(s);

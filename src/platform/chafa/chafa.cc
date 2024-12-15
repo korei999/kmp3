@@ -172,6 +172,8 @@ detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode, ChafaPixelMod
     *pMode = mode;
     *pPixelMode = pixelMode;
 
+    LOG("pixelMode: {}\n", (int)pixelMode);
+
     /* Cleanup */
     g_strfreev(ppEnv);
 }
@@ -266,6 +268,16 @@ getString(
 
     /* Build printable strings */
     auto* pGStr = chafa_canvas_print(pCanvas, pTermInfo);
+
+    // GString** ags {};
+    // gint len {};
+    // chafa_canvas_print_rows(pCanvas, pTermInfo, &ags, &len);
+    // fputs("\x1b[H", stdout);
+    // for (int i = 0; i < len; ++i)
+    // {
+    //     fwrite(ags[i]->str, 1, ags[i]->len, stdout);
+    //     fwrite("\r\n", 1, 2, stdout);
+    // }
 
     chafa_canvas_unref(pCanvas);
     chafa_canvas_config_unref(pConfig);

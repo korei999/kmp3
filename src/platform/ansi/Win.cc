@@ -25,7 +25,7 @@ disableRawMode(Win* s)
     TextBuffHideCursor(&s->textBuff, false);
     TextBuffMove(&s->textBuff, 0, 0);
     TextBuffClearDown(&s->textBuff);
-    TextBuffPush(&s->textBuff, "\r\n", 2);
+    TextBuffPush(&s->textBuff, "\n", 2);
     TextBuffFlush(&s->textBuff);
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &s->termOg) == -1)
@@ -39,10 +39,10 @@ enableRawMode(Win* s)
         LOG_DIE("tcgetattr\n");
 
     struct termios raw = s->termOg;
-    raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    raw.c_oflag &= ~(OPOST);
-    raw.c_cflag |= (CS8);
-    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+    /*raw.c_iflag &= ~(IXON);*/
+    /*raw.c_oflag &= ~(OPOST);*/
+    /*raw.c_cflag |= (CS8);*/
+    raw.c_lflag &= ~(ECHO | ICANON | ISIG);
     /*raw.c_cc[VMIN] = 0;*/
     /*raw.c_cc[VTIME] = 1;*/
 
@@ -56,11 +56,10 @@ readWChar([[maybe_unused]] Win* s)
     namespace c = common;
 
     wint_t wc = getwchar();
-    LOG_WARN("readWChar(): {}\n", wc);
 
     if (wc == keys::ESC) return c::READ_STATUS::DONE; /* esc */
     else if (wc == keys::CTRL_C) return c::READ_STATUS::DONE;
-    else if (wc == 13) return c::READ_STATUS::DONE; /* enter */
+    else if (wc == keys::ENTER) return c::READ_STATUS::DONE; /* enter */
     else if (wc == keys::CTRL_W)
     {
         if (c::g_input.idx > 0)
@@ -88,10 +87,6 @@ procInput(Win* s)
 {
     wint_t wc = getwchar();
 
-    LOG("wc: '{}' ({})\n", (wchar_t)wc, (int)wc);
-
-    if (wc == 13) wc = keys::ENTER;
-
     for (const auto& k : keybinds::inl_aKeys)
     {
         if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
@@ -108,6 +103,7 @@ sigwinchHandler(int sig)
     LOG_GOOD("term: {}\n", g_termSize);
 
     app::g_pPlayer->bSelectionChanged = true;
+    WinDraw(s);
 }
 
 bool

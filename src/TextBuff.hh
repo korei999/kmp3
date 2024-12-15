@@ -53,6 +53,12 @@ TextBuffFlush(TextBuff* s)
 }
 
 inline void
+TextBuffMoveTopLeft(TextBuff* s)
+{
+    TextBuffPush(s, "\x1b[H");
+}
+
+inline void
 TextBuffMove(TextBuff* s, int x, int y)
 {
     char aBuff[64] {};
@@ -70,6 +76,12 @@ inline void
 TextBuffClearUp(TextBuff* s)
 {
     TextBuffPush(s, "\x1b[1J");
+}
+
+inline void
+TextBuffClear(TextBuff* s)
+{
+    TextBuffPush(s, "\x1b[2J");
 }
 
 inline void
