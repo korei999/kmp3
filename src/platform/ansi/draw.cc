@@ -46,11 +46,15 @@ drawCoverImage(Win* s)
         app::g_pPlayer->bSelectionChanged = false;
         lastRedraw = s_time;
 
+        const int split = common::getHorizontalSplitPos(g_termSize.height);
+
+        TextBuffMove(&s->textBuff, 0, split + 1);
+        TextBuffClearUp(&s->textBuff);
+
         Opt<ffmpeg::Image> oCoverImg = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCoverImg)
         {
             const auto& img = oCoverImg.data;
-            int split = common::getHorizontalSplitPos(g_termSize.height);
 
             f64 scaleFactor = f64(split - 1) / f64(img.height);
             int scaledWidth = std::round(img.width * scaleFactor / defaults::FONT_ASPECT_RATIO);
@@ -59,9 +63,6 @@ drawCoverImage(Win* s)
             int vdiff = split - 1 - scaledHeight;
             const int hOff = std::round(hdiff / 2.0);
             const int vOff = std::round(vdiff / 2.0);
-
-            TextBuffMove(&s->textBuff, 0, split + 1);
-            TextBuffClearUp(&s->textBuff);
 
             String sImg = platform::chafa::getImageString(s->pArena, img, split - 2, g_termSize.width - 2);
             TextBuffMove(&s->textBuff, hOff + 4, 0);
