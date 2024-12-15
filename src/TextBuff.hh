@@ -67,3 +67,10 @@ TextBuffClear(TextBuff* s)
     u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[2J");
     TextBuffPush(s, aBuff, n);
 }
+
+inline void
+TextBuffHideCursor(TextBuff* s, bool bHide)
+{
+    if (bHide) TextBuffPush(s, "\x1b[?25l");
+    else TextBuffPush(s, "\x1b[?25h");
+}

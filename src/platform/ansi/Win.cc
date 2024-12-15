@@ -23,6 +23,7 @@ TermSize g_termSize {};
 static void
 disableRawMode(Win* s)
 {
+    TextBuffHideCursor(&s->textBuff, false);
     TextBuffCursorAt(&s->textBuff, 0, 0);
     TextBuffClear(&s->textBuff);
     TextBuffPush(&s->textBuff, "\r\n", 2);
@@ -109,6 +110,7 @@ WinStart(Win* s, Arena* pArena)
     signal(SIGWINCH, sigwinchHandler);
 
     TextBuffClear(&s->textBuff);
+    TextBuffHideCursor(&s->textBuff, true);
     TextBuffFlush(&s->textBuff);
 
     LOG_GOOD("ansi::WinStart()\n");

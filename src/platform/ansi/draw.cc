@@ -47,6 +47,15 @@ drawCoverImage(Win* s)
             TextBuffClear(&s->textBuff);
             TextBuffPush(&s->textBuff, sImg.pData, sImg.size);
             /*TextBuffPush(&s->textBuff, "\r\n");*/
+
+            // TextBuffCursorAt(&s->textBuff, 0, 0);
+            // for (int i = 0; i < 4; ++i)
+            // {
+            //     for (int j = 0; j < 10; ++j)
+            //         TextBuffPush(&s->textBuff, " ");
+
+            //     TextBuffPush(&s->textBuff, "\r\n");
+            // }
         }
     }
 }
