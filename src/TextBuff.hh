@@ -53,7 +53,7 @@ TextBuffFlush(TextBuff* s)
 }
 
 inline void
-TextBuffCursorAt(TextBuff* s, int x, int y)
+TextBuffMove(TextBuff* s, int x, int y)
 {
     char aBuff[64] {};
     u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
@@ -64,7 +64,7 @@ inline void
 TextBuffClear(TextBuff* s)
 {
     char aBuff[16] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[2J");
+    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[0J");
     TextBuffPush(s, aBuff, n);
 }
 

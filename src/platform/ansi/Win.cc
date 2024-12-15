@@ -2,6 +2,7 @@
 #include "draw.hh"
 
 #include "adt/guard.hh"
+#include "common.hh"
 #include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
@@ -24,7 +25,7 @@ static void
 disableRawMode(Win* s)
 {
     TextBuffHideCursor(&s->textBuff, false);
-    TextBuffCursorAt(&s->textBuff, 0, 0);
+    TextBuffMove(&s->textBuff, 0, 0);
     TextBuffClear(&s->textBuff);
     TextBuffPush(&s->textBuff, "\r\n", 2);
     TextBuffFlush(&s->textBuff);
@@ -134,6 +135,11 @@ WinDestroy(Win* s)
 void
 WinDraw(Win* s)
 {
+    common::fixFirstIdx(
+        g_termSize.height - common::getHorizontalSplitPos(g_termSize.height) - 4,
+        &s->firstIdx
+    );
+
     draw::update(s);
 
     guard::Mtx lock(&s->mtxWait);

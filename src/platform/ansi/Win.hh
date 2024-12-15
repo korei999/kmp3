@@ -24,6 +24,7 @@ struct Win
     mtx_t mtxDraw {};
     mtx_t mtxWait {};
     cnd_t cndWait {};
+    u16 firstIdx {};
 
     Win();
 };

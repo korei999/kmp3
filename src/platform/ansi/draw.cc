@@ -5,6 +5,26 @@
 #include "defaults.hh"
 #include "platform/chafa/chafa.hh"
 
+#define BOLD  "\x1b[1m"
+#define REVERSE  "\x1b[7m"
+
+#define NORM  "\x1b[0m"
+#define RED  "\x1b[31m"
+#define GREEN  "\x1b[32m"
+#define YELLOW  "\x1b[33m"
+#define BLUE  "\x1C[34m"
+#define MAGENTA  "\x1b[35m"
+#define CYAN  "\x1b[36m"
+#define WHITE  "\x1b[37m"
+
+#define BG_RED  "\x1b[41m"
+#define BG_GREEN  "\x1b[42m"
+#define BG_YELLOW  "\x1b[43m"
+#define BG_BLUE  "\x1C[44m"
+#define BG_MAGENTA  "\x1b[45m"
+#define BG_CYAN  "\x1b[46m"
+#define BG_WHITE  "\x1b[47m"
+
 using namespace adt;
 
 namespace platform
@@ -40,42 +60,71 @@ drawCoverImage(Win* s)
             const int hOff = std::round(hdiff / 2.0);
             const int vOff = std::round(vdiff / 2.0);
 
-            /*platform::chafa::showImage(s->pArena, img, g_termSize.height, g_termSize.width, 0, 0);*/
-
             String sImg = platform::chafa::getImageString(s->pArena, img, g_termSize.height - 2, g_termSize.width - 2);
-            TextBuffCursorAt(&s->textBuff, 0, 0);
+            TextBuffMove(&s->textBuff, 0, 0);
             TextBuffClear(&s->textBuff);
             TextBuffPush(&s->textBuff, sImg.pData, sImg.size);
-            /*TextBuffPush(&s->textBuff, "\r\n");*/
-
-            // TextBuffCursorAt(&s->textBuff, 0, 0);
-            // for (int i = 0; i < 4; ++i)
-            // {
-            //     for (int j = 0; j < 10; ++j)
-            //         TextBuffPush(&s->textBuff, " ");
-
-            //     TextBuffPush(&s->textBuff, "\r\n");
-            // }
         }
     }
+}
+
+static void
+drawSongList(Win* s)
+{
+    const auto& pl = *app::g_pPlayer;
+    auto* pTB = &s->textBuff;
+    const int width = g_termSize.width;
+    const int height = g_termSize.height;
+    const int split = common::getHorizontalSplitPos(height);
+    const u16 listHeight = height - split - 2;
+
+    for (u16 h = s->firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
+    {
+        const u16 songIdx = pl.aSongIdxs[h];
+        const String sSong = pl.aShortArgvs[songIdx];
+        const u32 maxLen = width - 2;
+
+        bool bSelected = songIdx == pl.selected ? true : false;
+
+        char* pBuff = (char*)zalloc(s->pArena, width, 1);
+        TextBuffMove(pTB, 1, i + split + 1);
+
+        int off = 0;
+        if (h == pl.focused && bSelected)
+        {
+            off = print::toBuffer(pBuff, width - 1, BOLD YELLOW REVERSE);
+        }
+        else if (h == pl.focused)
+        {
+            off = print::toBuffer(pBuff, width - 1, REVERSE);
+        }
+        else if (bSelected)
+        {
+            off = print::toBuffer(pBuff, width - 1, BOLD YELLOW);
+        }
+
+        print::toBuffer(pBuff + off, width - 1 - off, "{}" NORM, sSong);
+        TextBuffPush(pTB, pBuff);
+    }
+
+    /*drawBox(0, split, width - 1, listHeight, TB_BLUE, TB_DEFAULT);*/
 }
 
 void
 update(Win* s)
 {
     auto* pTB = &s->textBuff;
-    int width = g_termSize.width;
-    int height = g_termSize.height;
+    const int width = g_termSize.width;
+    const int height = g_termSize.height;
+    const int split = common::getHorizontalSplitPos(height);
 
     s_time = utils::timeNowMS();
 
-    /*TextBuffCursorAt(pTB, 0, 0);*/
-    /*TextBuffClear(pTB);*/
+    TextBuffMove(pTB, 0, split);
+    TextBuffClear(pTB);
 
     drawCoverImage(s);
-
-    TextBuffCursorAt(pTB, width / 2, height / 2);
-    TextBuffPush(pTB, "HELLO BIDEN");
+    drawSongList(s);
 
     /* NOTE: careful with multithreading/signals + shared frame arena */
     TextBuffFlush(pTB);

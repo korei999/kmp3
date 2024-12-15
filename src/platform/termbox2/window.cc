@@ -154,7 +154,6 @@ procEvents()
 
         case TB_EVENT_KEY:
         input::procKey(&ev);
-        common::fixFirstIdx(height - common::getHorizontalSplitPos(height) - 7, &g_firstIdx);
         break;
 
         case TB_EVENT_RESIZE:
@@ -163,9 +162,10 @@ procEvents()
 
         case TB_EVENT_MOUSE:
         input::procMouse(&ev);
-        common::fixFirstIdx(height - common::getHorizontalSplitPos(height) - 7, &g_firstIdx);
         break;
     }
+
+    common::fixFirstIdx(height - common::getHorizontalSplitPos(height) - 7, &g_firstIdx);
 }
 
 static void
