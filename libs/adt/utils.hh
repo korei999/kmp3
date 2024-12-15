@@ -88,7 +88,7 @@ maxVal(const auto& l, const auto& r)
 [[nodiscard]] constexpr auto
 minVal(const auto& l, const auto& r)
 {
-    return l > r ? l : r;
+    return l < r ? l : r;
 }
 
 [[nodiscard]] constexpr u64

@@ -83,16 +83,12 @@ inputPoll(void* pArg)
 static void
 sigwinchHandler(int sig)
 {
+    auto* s = (Win*)app::g_pWin;
+
     g_termSize = getTermSize();
     LOG_GOOD("term: {}\n", g_termSize);
 
-    auto* s = (Win*)app::g_pWin;
-
-    TextBuffClear(&s->textBuff);
-    TextBuffFlush(&s->textBuff);
-
     app::g_pPlayer->bSelectionChanged = true;
-
     cnd_signal(&s->cndWait);
 }
 
@@ -138,15 +134,13 @@ WinDraw(Win* s)
 {
     draw::update(s);
 
-    {
-        guard::Mtx lock(&s->mtxWait);
+    guard::Mtx lock(&s->mtxWait);
 
-        timespec ts;
-        timespec_get(&ts, TIME_UTC);
-        utils::addNSToTimespec(&ts, defaults::UPDATE_RATE * 1000000);
+    timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    utils::addNSToTimespec(&ts, defaults::UPDATE_RATE * 1000000);
 
-        cnd_timedwait(&s->cndWait, &s->mtxWait, &ts);
-    }
+    cnd_timedwait(&s->cndWait, &s->mtxWait, &ts);
 }
 
 void

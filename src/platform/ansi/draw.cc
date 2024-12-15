@@ -43,7 +43,8 @@ drawCoverImage(Win* s)
             /*platform::chafa::showImage(s->pArena, img, g_termSize.height, g_termSize.width, 0, 0);*/
 
             String sImg = platform::chafa::getImageString(s->pArena, img, g_termSize.height - 2, g_termSize.width - 2);
-            /*TextBuffCursorAt(&s->textBuff, 0, 0);*/
+            TextBuffCursorAt(&s->textBuff, 0, 0);
+            TextBuffClear(&s->textBuff);
             TextBuffPush(&s->textBuff, sImg.pData, sImg.size);
             /*TextBuffPush(&s->textBuff, "\r\n");*/
         }
@@ -53,21 +54,23 @@ drawCoverImage(Win* s)
 void
 update(Win* s)
 {
-    s_time = utils::timeNowMS();
-
     auto* pTB = &s->textBuff;
     int width = g_termSize.width;
     int height = g_termSize.height;
 
+    s_time = utils::timeNowMS();
+
     /*TextBuffCursorAt(pTB, 0, 0);*/
     /*TextBuffClear(pTB);*/
 
-    /*TextBuffCursorAt(pTB, width / 2, height / 2);*/
-    /*TextBuffPush(pTB, "HELLO BIDEN");*/
-
     drawCoverImage(s);
 
-    TextBuffFlush(&s->textBuff);
+    TextBuffCursorAt(pTB, width / 2, height / 2);
+    TextBuffPush(pTB, "HELLO BIDEN");
+
+    /* NOTE: careful with multithreading/signals + shared frame arena */
+    TextBuffFlush(pTB);
+    TextBuffReset(pTB);
 }
 
 } /* namespace draw */

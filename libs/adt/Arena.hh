@@ -38,7 +38,7 @@ struct Arena
 [[nodiscard]] inline void* ArenaAlloc(Arena* s, u64 mCount, u64 mSize);
 [[nodiscard]] inline void* ArenaZalloc(Arena* s, u64 mCount, u64 mSize);
 [[nodiscard]] inline void* ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize);
-inline void ArenaFree(Arena* s, void* ptr);
+inline void ArenaFree(Arena* s, void* ptr); /* noop */
 inline void ArenaFreeAll(Arena* s);
 inline void ArenaReset(Arena* s);
 
@@ -101,6 +101,8 @@ _ArenaPrependBlock(Arena* s, u64 size)
 inline void*
 ArenaAlloc(Arena* s, u64 mCount, u64 mSize)
 {
+    assert(s != nullptr && "[Arena]: nullptr self passed");
+
     u64 realSize = align8(mCount * mSize);
     auto* pBlock = _ArenaFindFittingBlock(s, realSize);
 
@@ -112,9 +114,10 @@ ArenaAlloc(Arena* s, u64 mCount, u64 mSize)
     if (!pBlock) pBlock = _ArenaPrependBlock(s, utils::max(s->defaultCapacity, realSize*2));
 
     auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
+    assert(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize);
 
-    pBlock->pLastAlloc = pRet;
     pBlock->nBytesOccupied += realSize;
+    pBlock->pLastAlloc = pRet;
     pBlock->lastAllocSize = realSize;
 
     return pRet;
@@ -123,14 +126,18 @@ ArenaAlloc(Arena* s, u64 mCount, u64 mSize)
 inline void*
 ArenaZalloc(Arena* s, u64 mCount, u64 mSize)
 {
+    assert(s != nullptr && "[Arena]: nullptr self passed");
+
     auto* p = ArenaAlloc(s, mCount, mSize);
-    memset(p, 0, mCount * mSize);
+    memset(p, 0, align8(mCount * mSize));
     return p;
 }
 
 inline void*
 ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize)
 {
+    assert(s != nullptr && "[Arena]: nullptr self passed");
+
     if (!ptr) return ArenaAlloc(s, mCount, mSize);
 
     u64 requested = mSize * mCount;
@@ -142,8 +149,6 @@ ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize)
     if (ptr == pBlock->pLastAlloc &&
         pBlock->pLastAlloc + realSize < pBlock->pMem + pBlock->size) /* bump case */
     {
-        fprintf(stderr, "================ BUMP CASE: %llu ============\n", realSize);
-
         pBlock->nBytesOccupied -= pBlock->lastAllocSize;
         pBlock->nBytesOccupied += realSize;
         pBlock->lastAllocSize = realSize;
@@ -163,14 +168,16 @@ ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize)
 }
 
 inline void
-ArenaFree([[maybe_unused]] Arena* s, [[maybe_unused]] void* ptr)
+ArenaFree(Arena*, void*)
 {
-    //
+    /* noop */
 }
 
 inline void
 ArenaFreeAll(Arena* s)
 {
+    assert(s != nullptr && "[Arena]: nullptr self passed");
+
     auto* it = s->pBlocks;
     while (it)
     {
@@ -184,6 +191,8 @@ ArenaFreeAll(Arena* s)
 inline void
 ArenaReset(Arena* s)
 {
+    assert(s != nullptr && "[Arena]: nullptr self passed");
+
     auto* it = s->pBlocks;
     while (it)
     {
