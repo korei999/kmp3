@@ -146,3 +146,9 @@ TextBuffMovePushWideString(TextBuff* s, int x, int y, const wchar_t* pwBuff, con
     TextBuffMove(s, x, y);
     TextBuffPushWideString(s, pwBuff, wBuffSize);
 }
+
+inline void
+TextBuffClearKittyImages(TextBuff* s)
+{
+    TextBuffPush(s, "\x1b_Ga=d,d=A\x1b\\");
+}

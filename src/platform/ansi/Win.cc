@@ -23,8 +23,9 @@ static void
 disableRawMode(Win* s)
 {
     TextBuffHideCursor(&s->textBuff, false);
-    TextBuffMove(&s->textBuff, 0, 0);
-    TextBuffClearDown(&s->textBuff);
+    TextBuffClear(&s->textBuff);
+    TextBuffClearKittyImages(&s->textBuff);
+    TextBuffMoveTopLeft(&s->textBuff);
     TextBuffPush(&s->textBuff, "\n", 2);
     TextBuffFlush(&s->textBuff);
 
@@ -157,7 +158,7 @@ WinSeekFromInput(Win* s)
     common::seekFromInput(
         +[](void* pArg) { return readWChar((Win*)pArg); },
         s,
-        +[](void* pArg) { WinDraw((Win*)pArg); },
+        +[](void* pArg) { draw::update((Win*)pArg); },
         s
     );
 }
@@ -169,7 +170,7 @@ WinSubStringSearch(Win* s)
         s->pArena,
         +[](void* pArg) { return readWChar((Win*)pArg); },
         s,
-        +[](void* pArg) { WinDraw((Win*)pArg); },
+        +[](void* pArg) { draw::update((Win*)pArg); },
         s,
         &s->firstIdx
     );

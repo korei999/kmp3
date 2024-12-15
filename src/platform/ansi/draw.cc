@@ -40,6 +40,7 @@ static void
 drawCoverImage(Win* s)
 {
     static f64 lastRedraw {};
+    static u32 prevWidth {};
 
     if (app::g_pPlayer->bSelectionChanged && s_time > lastRedraw + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
@@ -50,6 +51,7 @@ drawCoverImage(Win* s)
 
         TextBuffMove(&s->textBuff, g_termSize.width - 1, split);
         TextBuffClearUp(&s->textBuff);
+        TextBuffClearKittyImages(&s->textBuff);
 
         Opt<ffmpeg::Image> oCoverImg = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCoverImg)
