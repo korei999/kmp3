@@ -1,6 +1,5 @@
 #include "chafa.hh"
 
-#include "adt/OsAllocator.hh"
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "defaults.hh"
@@ -239,17 +238,14 @@ getString(
     ChafaSymbolMap* pSymbolMap;
     ChafaCanvasConfig* pConfig;
     ChafaCanvas* pCanvas;
-    // GString* pGString;
 
     detectTerminal(&pTermInfo, &mode, &ePixelMode);
 
     /* Specify the symbols we want */
-
     pSymbolMap = chafa_symbol_map_new();
     chafa_symbol_map_add_by_tags(pSymbolMap, CHAFA_SYMBOL_TAG_BLOCK);
 
     /* Set up a configuration with the symbols and the canvas size in characters */
-
     pConfig = chafa_canvas_config_new();
     chafa_canvas_config_set_canvas_mode(pConfig, mode);
     chafa_canvas_config_set_pixel_mode(pConfig, ePixelMode);
@@ -263,7 +259,6 @@ getString(
     }
 
     /* Create canvas */
-
     pCanvas = chafa_canvas_new(pConfig);
 
     /* Draw pixels to the canvas */
@@ -272,36 +267,9 @@ getString(
     /* Build printable strings */
     auto* pGStr = chafa_canvas_print(pCanvas, pTermInfo);
 
-    // {
-    //     /* clear prev image */
-    //     TextBuff textBuff(pArena);
-    //     defer( TextBuffFlush(&textBuff) );
-
-    //     auto at = [&](int x, int y) {
-    //         char aBuff[128] {};
-    //         print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
-    //         TextBuffPush(&textBuff, aBuff);
-    //     };
-
-    //     //auto clearLine = [&] {
-    //     //    TextBuffPush(&textBuff, "\x1b[K\r\n");
-    //     //};
-
-    //     //at(0, 0);
-    //     //for (int i = 0; i < heightCells; ++i)
-    //     //    clearLine();
-
-    //     /* set centered position */
-    //     at(maxHOff, maxVOff);
-    // }
-
-    // fputs(pGStr->str, stdout);
-    // fputc('\n', stdout);
-
     chafa_canvas_unref(pCanvas);
     chafa_canvas_config_unref(pConfig);
     chafa_symbol_map_unref(pSymbolMap);
-
     chafa_term_info_unref(pTermInfo);
 
     return pGStr;
@@ -558,6 +526,8 @@ getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termW
         fontRatio, true, false
     );
 
+    LOG_BAD("formatSize: {}\n", getFormatChannelNumber(img.eFormat));
+
     auto* pGStr = getString(
         pArena,
         img.pBuff,
@@ -575,7 +545,6 @@ getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termW
 
     auto sRet = StringAlloc(&pArena->super, pGStr->str, pGStr->len);
     assert(sRet.size == pGStr->len);
-    LOG_BAD("chafa: start: {}, end: {}, bytes: {}\n", (void*)sRet.pData, (void*)(sRet.pData + sRet.size), sRet.size);
     return sRet;
 }
 

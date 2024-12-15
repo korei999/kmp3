@@ -154,7 +154,7 @@ PlayerSelectFocused(Player* s)
 {
     if (VecSize(&s->aSongIdxs) <= s->focused)
     {
-        LOG_WARN("PlayerSelectFocused(): out of range selection");
+        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", VecSize(&s->aSongIdxs));
         return;
     }
 

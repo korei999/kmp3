@@ -1,6 +1,5 @@
 #include "draw.hh"
 
-#include "adt/logs.hh"
 #include "app.hh"
 #include "common.hh"
 #include "defaults.hh"
@@ -65,8 +64,11 @@ drawCoverImage(Win* s)
             const int hOff = std::round(hdiff / 2.0);
             const int vOff = std::round(vdiff / 2.0);
 
-            String sImg = platform::chafa::getImageString(s->pArena, img, split - 2, g_termSize.width - 2);
-            TextBuffMove(&s->textBuff, hOff + 4, 0);
+            const String sImg = platform::chafa::getImageString(
+                s->pArena, img, split - 3, g_termSize.width - 2
+            );
+
+            TextBuffMove(&s->textBuff, 1, 1);
             TextBuffPush(&s->textBuff, sImg.pData, sImg.size);
         }
     }
@@ -82,15 +84,15 @@ drawSongList(Win* s)
     const int split = common::getHorizontalSplitPos(height);
     const u16 listHeight = height - split - 2;
 
+    TextBuffMove(pTB, width - 1, split);
+    TextBuffClearDown(pTB);
+
     for (u16 h = s->firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
     {
         const u16 songIdx = pl.aSongIdxs[h];
         const String sSong = pl.aShortArgvs[songIdx];
 
         bool bSelected = songIdx == pl.selected ? true : false;
-
-        TextBuffMove(pTB, width - 1, i + split);
-        TextBuffClearDown(pTB);
 
         if (h == pl.focused && bSelected)
             TextBuffPush(pTB, BOLD YELLOW REVERSE);
@@ -102,6 +104,47 @@ drawSongList(Win* s)
         TextBuffMovePushGlyphs(pTB, 1, i + split + 1, sSong, width - 2);
         TextBuffPush(pTB, NORM);
     }
+}
+
+static void
+drawBottomLine(Win* s)
+{
+    namespace c = common;
+
+    const auto& pl = *app::g_pPlayer;
+    auto* pTB = &s->textBuff;
+    int height = g_termSize.height;
+    int width = g_termSize.width;
+
+    /* selected / focused */
+    {
+        char* pBuff = (char*)zalloc(s->pArena, 1, width + 1);
+
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.size - 1);
+        if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
+        {
+            const char* sArg {};
+            if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
+            else if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
+
+            n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
+        }
+
+        TextBuffMovePush(pTB, width - n - 2, height - 1, pBuff, width - 2); }
+
+    if (
+        c::g_input.eCurrMode != READ_MODE::NONE ||
+        (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
+    )
+    {
+        const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
+        TextBuffMovePushGlyphs(pTB, 1, height - 1, sReadMode, width - 2);
+        TextBuffMovePushWideString(pTB, sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff) - 2);
+
+        if (c::g_input.eCurrMode != READ_MODE::NONE) TextBuffHideCursor(pTB, false);
+        else TextBuffHideCursor(pTB, true);
+    }
+    else TextBuffHideCursor(pTB, true);
 }
 
 void
@@ -116,6 +159,7 @@ update(Win* s)
 
     drawCoverImage(s);
     drawSongList(s);
+    drawBottomLine(s);
 
     /* NOTE: careful with multithreading/signals + shared frame arena */
     TextBuffFlush(pTB);

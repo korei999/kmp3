@@ -119,3 +119,18 @@ TextBuffMovePushGlyphs(TextBuff* s, int x, int y, const String str, const u32 nC
     TextBuffMove(s, x, y);
     TextBuffPushGlyphs(s, str, nColumns);
 }
+
+inline void
+TextBuffPushWideString(TextBuff* s, const wchar_t* pwBuff, const u32 wBuffSize)
+{
+    char* pBuff = (char*)zalloc(s->pAlloc, wBuffSize, sizeof(wchar_t));
+    wcstombs(pBuff, pwBuff, wBuffSize);
+    TextBuffPush(s, pBuff);
+}
+
+inline void
+TextBuffMovePushWideString(TextBuff* s, int x, int y, const wchar_t* pwBuff, const u32 wBuffSize)
+{
+    TextBuffMove(s, x, y);
+    TextBuffPushWideString(s, pwBuff, wBuffSize);
+}

@@ -5,7 +5,6 @@
 #include "TermSize.hh"
 
 #include <termios.h>
-#include <threads.h>
 
 namespace platform
 {
@@ -20,10 +19,6 @@ struct Win
     Arena* pArena {};
     TextBuff textBuff {};
     termios termOg {};
-    thrd_t thrdInput {};
-    mtx_t mtxDraw {};
-    mtx_t mtxWait {};
-    cnd_t cndWait {};
     u16 firstIdx {};
 
     Win();
@@ -32,7 +27,7 @@ struct Win
 bool WinStart(Win* s, Arena* pArena);
 void WinDestroy(Win* s);
 void WinDraw(Win* s);
-inline void WinProcEvents(Win* s) { /* noop */ }
+void WinProcEvents(Win* s);
 void WinSeekFromInput(Win* s);
 void WinSubStringSearch(Win* s);
 

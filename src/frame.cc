@@ -71,7 +71,7 @@ run()
         WindowDraw(app::g_pWin);
         WindowProcEvents(app::g_pWin);
 
-        ArenaReset(&arena);
+        ArenaReset(&arena, false);
     }
     while (app::g_bRunning);
 }

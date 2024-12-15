@@ -559,10 +559,10 @@ drawCoverImage()
 
             LOG_GOOD("hOff: {}, vOff: {}, split: {}\n", hOff, vOff, split);
 
-            /*platform::chafa::showImage(g_pFrameArena, img, split - 1, width - 2, hOff + 2, 1);*/
             String sImg = platform::chafa::getImageString(g_pFrameArena, img, split - 1, width - 2);
 
             tb_set_cursor(hOff + 2, 0);
+            /*platform::chafa::showImage(g_pFrameArena, img, split - 1, width - 2, hOff + 2, 1);*/
             tb_send(sImg.pData, sImg.size);
             tb_hide_cursor();
         }

@@ -1,11 +1,9 @@
 #include "Win.hh"
 #include "draw.hh"
 
-#include "adt/guard.hh"
 #include "common.hh"
 #include "adt/logs.hh"
 #include "app.hh"
-#include "defaults.hh"
 #include "keybinds.hh"
 
 #include <csignal>
@@ -52,34 +50,53 @@ enableRawMode(Win* s)
         LOG_DIE("tcsetattr\n");
 }
 
+static common::READ_STATUS
+readWChar([[maybe_unused]] Win* s)
+{
+    namespace c = common;
+
+    wint_t wc = getwchar();
+    LOG_WARN("readWChar(): {}\n", wc);
+
+    if (wc == keys::ESC) return c::READ_STATUS::DONE; /* esc */
+    else if (wc == keys::CTRL_C) return c::READ_STATUS::DONE;
+    else if (wc == 13) return c::READ_STATUS::DONE; /* enter */
+    else if (wc == keys::CTRL_W)
+    {
+        if (c::g_input.idx > 0)
+        {
+            c::g_input.idx = 0;
+            c::g_input.zeroOutBuff();
+        }
+    }
+    else if (wc == 127) /* backspace */
+    {
+        if (c::g_input.idx > 0)
+            c::g_input.aBuff[--c::g_input.idx] = L'\0';
+    }
+    else if (wc)
+    {
+        if (c::g_input.idx < utils::size(c::g_input.aBuff) - 1)
+            c::g_input.aBuff[c::g_input.idx++] = wc;
+    }
+
+    return c::READ_STATUS::OK_;
+}
+
 static void
 procInput(Win* s)
 {
-    char c {};
-    if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN)
-        LOG_DIE("read\n");
+    wint_t wc = getwchar();
 
-    if (iscntrl(c)) LOG("{}\n", (int)c);
-    else LOG("{} ('{}')\r\n", (int)c, c);
+    LOG("wc: '{}' ({})\n", (wchar_t)wc, (int)wc);
 
-    if (c == 13) c = keys::ENTER;
+    if (wc == 13) wc = keys::ENTER;
 
     for (const auto& k : keybinds::inl_aKeys)
     {
-        if ((k.key > 0 && k.key == c) || (k.ch > 0 && k.ch == (u32)c))
+        if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
             keybinds::resolveKey(k.pfn, k.arg);
     }
-
-    cnd_signal(&s->cndWait);
-}
-
-static int
-inputPoll(void* pArg)
-{
-    while (app::g_bRunning)
-        procInput((Win*)pArg);
-
-    return thrd_success;
 }
 
 static void
@@ -91,7 +108,6 @@ sigwinchHandler(int sig)
     LOG_GOOD("term: {}\n", g_termSize);
 
     app::g_pPlayer->bSelectionChanged = true;
-    cnd_signal(&s->cndWait);
 }
 
 bool
@@ -101,11 +117,6 @@ WinStart(Win* s, Arena* pArena)
     s->textBuff = TextBuff(pArena);
 
     g_termSize = getTermSize();
-
-    mtx_init(&s->mtxDraw, mtx_plain);
-    mtx_init(&s->mtxWait, mtx_plain);
-    cnd_init(&s->cndWait);
-    thrd_create(&s->thrdInput, inputPoll, s);
 
     enableRawMode(s);
     signal(SIGWINCH, sigwinchHandler);
@@ -122,11 +133,6 @@ WinStart(Win* s, Arena* pArena)
 void
 WinDestroy(Win* s)
 {
-    thrd_join(s->thrdInput, {});
-    mtx_destroy(&s->mtxDraw);
-    mtx_destroy(&s->mtxWait);
-    cnd_destroy(&s->cndWait);
-
     disableRawMode(s);
 
     LOG_NOTIFY("ansi::WinDestroy()\n");
@@ -135,32 +141,42 @@ WinDestroy(Win* s)
 void
 WinDraw(Win* s)
 {
+    draw::update(s);
+}
+
+void
+WinProcEvents(Win* s)
+{
+    procInput(s);
+
     common::fixFirstIdx(
         g_termSize.height - common::getHorizontalSplitPos(g_termSize.height) - 4,
         &s->firstIdx
     );
-
-    draw::update(s);
-
-    guard::Mtx lock(&s->mtxWait);
-
-    timespec ts;
-    timespec_get(&ts, TIME_UTC);
-    utils::addNSToTimespec(&ts, defaults::UPDATE_RATE * 1000000);
-
-    cnd_timedwait(&s->cndWait, &s->mtxWait, &ts);
 }
 
 void
 WinSeekFromInput(Win* s)
 {
-    LOG("ansi::WinSeekFromInput(): TODO\n");
+    common::seekFromInput(
+        +[](void* pArg) { return readWChar((Win*)pArg); },
+        s,
+        +[](void* pArg) { WinDraw((Win*)pArg); },
+        s
+    );
 }
 
 void
 WinSubStringSearch(Win* s)
 {
-    LOG("ansi::WinSubStringSearch(): TODO\n");
+    common::subStringSearch(
+        s->pArena,
+        +[](void* pArg) { return readWChar((Win*)pArg); },
+        s,
+        +[](void* pArg) { WinDraw((Win*)pArg); },
+        s,
+        &s->firstIdx
+    );
 }
 
 } /* namespace ansi */
