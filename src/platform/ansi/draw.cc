@@ -1,29 +1,30 @@
 #include "draw.hh"
 
+#include "adt/logs.hh"
 #include "app.hh"
 #include "common.hh"
 #include "defaults.hh"
 #include "platform/chafa/chafa.hh"
 
-#define BOLD  "\x1b[1m"
-#define REVERSE  "\x1b[7m"
+#define NORM "\x1b[0m"
+#define BOLD "\x1b[1m"
+#define REVERSE "\x1b[7m"
 
-#define NORM  "\x1b[0m"
-#define RED  "\x1b[31m"
-#define GREEN  "\x1b[32m"
-#define YELLOW  "\x1b[33m"
-#define BLUE  "\x1C[34m"
-#define MAGENTA  "\x1b[35m"
-#define CYAN  "\x1b[36m"
-#define WHITE  "\x1b[37m"
+#define RED "\x1b[31m"
+#define GREEN "\x1b[32m"
+#define YELLOW "\x1b[33m"
+#define BLUE "\x1C[34m"
+#define MAGENTA "\x1b[35m"
+#define CYAN "\x1b[36m"
+#define WHITE "\x1b[37m"
 
-#define BG_RED  "\x1b[41m"
-#define BG_GREEN  "\x1b[42m"
-#define BG_YELLOW  "\x1b[43m"
-#define BG_BLUE  "\x1C[44m"
-#define BG_MAGENTA  "\x1b[45m"
-#define BG_CYAN  "\x1b[46m"
-#define BG_WHITE  "\x1b[47m"
+#define BG_RED "\x1b[41m"
+#define BG_GREEN "\x1b[42m"
+#define BG_YELLOW "\x1b[43m"
+#define BG_BLUE "\x1C[44m"
+#define BG_MAGENTA "\x1b[45m"
+#define BG_CYAN "\x1b[46m"
+#define BG_WHITE "\x1b[47m"
 
 using namespace adt;
 
@@ -48,7 +49,7 @@ drawCoverImage(Win* s)
 
         const int split = common::getHorizontalSplitPos(g_termSize.height);
 
-        TextBuffMove(&s->textBuff, 0, split + 1);
+        TextBuffMove(&s->textBuff, g_termSize.width - 1, split);
         TextBuffClearUp(&s->textBuff);
 
         Opt<ffmpeg::Image> oCoverImg = audio::MixerGetCoverImage(app::g_pMixer);
@@ -85,28 +86,22 @@ drawSongList(Win* s)
     {
         const u16 songIdx = pl.aSongIdxs[h];
         const String sSong = pl.aShortArgvs[songIdx];
-        const u32 maxLen = width - 2;
 
         bool bSelected = songIdx == pl.selected ? true : false;
 
-        char* pBuff = (char*)zalloc(s->pArena, width, 1);
         TextBuffMove(pTB, width - 1, i + split);
         TextBuffClearDown(pTB);
-        TextBuffMove(pTB, 1, i + split + 1);
 
-        int off = 0;
         if (h == pl.focused && bSelected)
-            off = print::toBuffer(pBuff, width - 1, BOLD YELLOW REVERSE);
+            TextBuffPush(pTB, BOLD YELLOW REVERSE);
         else if (h == pl.focused)
-            off = print::toBuffer(pBuff, width - 1, REVERSE);
+            TextBuffPush(pTB, REVERSE);
         else if (bSelected)
-            off = print::toBuffer(pBuff, width - 1, BOLD YELLOW);
+            TextBuffPush(pTB, BOLD YELLOW);
 
-        print::toBuffer(pBuff + off, width - 1 - off, "{}" NORM, sSong);
-        TextBuffPush(pTB, pBuff);
+        TextBuffMovePushGlyphs(pTB, 1, i + split + 1, sSong, width - 2);
+        TextBuffPush(pTB, NORM);
     }
-
-    /*drawBox(0, split, width - 1, listHeight, TB_BLUE, TB_DEFAULT);*/
 }
 
 void

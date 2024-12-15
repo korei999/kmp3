@@ -375,6 +375,19 @@ StringContains(String l, const String r)
     return false;
 }
 
+inline u32
+nGlyphs(const String str)
+{
+    u32 n = 0;
+    for (u32 i = 0; i < str.size; )
+    {
+        i+= mblen(&str[i], str.size - i);
+        ++n;
+    }
+
+    return n;
+}
+
 template<>
 constexpr u64
 hash::func(String& str)
