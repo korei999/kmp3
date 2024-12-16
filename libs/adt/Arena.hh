@@ -40,7 +40,7 @@ struct Arena
 [[nodiscard]] inline void* ArenaRealloc(Arena* s, void* ptr, u64 mCount, u64 mSize);
 inline void ArenaFree(Arena* s, void* ptr); /* noop */
 inline void ArenaFreeAll(Arena* s);
-inline void ArenaReset(Arena* s, bool bZeroOut);
+inline void ArenaReset(Arena* s);
 
 [[nodiscard]] inline void* alloc(Arena* s, u64 mCount, u64 mSize) { return ArenaAlloc(s, mCount, mSize); }
 [[nodiscard]] inline void* zalloc(Arena* s, u64 mCount, u64 mSize) { return ArenaZalloc(s, mCount, mSize); }
@@ -189,15 +189,13 @@ ArenaFreeAll(Arena* s)
 }
 
 inline void
-ArenaReset(Arena* s, bool bZeroOut)
+ArenaReset(Arena* s)
 {
     assert(s != nullptr && "[Arena]: nullptr self passed");
 
     auto* it = s->pBlocks;
     while (it)
     {
-        if (bZeroOut) memset(it->pMem, 0, it->size);
-
         it->nBytesOccupied = 0;
         it->lastAllocSize = 0;
         it->pLastAlloc = it->pMem;

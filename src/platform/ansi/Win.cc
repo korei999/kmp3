@@ -1,4 +1,5 @@
 #include "Win.hh"
+#include "defaults.hh"
 #include "draw.hh"
 
 #include "common.hh"
@@ -11,6 +12,8 @@
 #include <sys/ioctl.h>
 
 #define CTRL_KEY(k) ((k) & 0b11111)
+#define MOUSE_ENABLE  "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
+#define MOUSE_DISABLE   "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
 
 namespace platform
 {
@@ -22,13 +25,6 @@ TermSize g_termSize {};
 static void
 disableRawMode(Win* s)
 {
-    TextBuffHideCursor(&s->textBuff, false);
-    TextBuffClear(&s->textBuff);
-    TextBuffClearKittyImages(&s->textBuff);
-    TextBuffMoveTopLeft(&s->textBuff);
-    TextBuffPush(&s->textBuff, "\n", 2);
-    TextBuffFlush(&s->textBuff);
-
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &s->termOg) == -1)
         LOG_DIE("tcsetattr\n");
 }
@@ -44,19 +40,41 @@ enableRawMode(Win* s)
     /*raw.c_oflag &= ~(OPOST);*/
     /*raw.c_cflag |= (CS8);*/
     raw.c_lflag &= ~(ECHO | ICANON | ISIG);
-    /*raw.c_cc[VMIN] = 0;*/
+    raw.c_cc[VMIN] = 0; /* disable blocking on read() */
     /*raw.c_cc[VTIME] = 1;*/
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
         LOG_DIE("tcsetattr\n");
 }
 
+static int
+readFromStdin([[maybe_unused]] Win* s, const int timeoutMS)
+{
+    char aBuff[128] {};
+    fd_set fds {};
+    FD_SET(STDIN_FILENO, &fds);
+
+    timeval tv;
+    tv.tv_sec = timeoutMS / 1000;
+    tv.tv_usec = (timeoutMS - (tv.tv_sec * 1000)) * 1000;
+
+    select(1, &fds, {}, {}, &tv);
+
+    ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
+    LOG("nRead: {}, ({}): '{}'\n", nRead, *(int*)aBuff, aBuff);
+
+    wchar_t wc {};
+    mbtowc(&wc, aBuff, sizeof(aBuff));
+
+    return wc;
+}
+
 static common::READ_STATUS
-readWChar([[maybe_unused]] Win* s)
+readWChar(Win* s)
 {
     namespace c = common;
 
-    wint_t wc = getwchar();
+    int wc = readFromStdin(s, defaults::READ_TIMEOUT);
 
     if (wc == keys::ESC) return c::READ_STATUS::DONE; /* esc */
     else if (wc == keys::CTRL_C) return c::READ_STATUS::DONE;
@@ -86,7 +104,7 @@ readWChar([[maybe_unused]] Win* s)
 static void
 procInput(Win* s)
 {
-    wint_t wc = getwchar();
+    int wc = readFromStdin(s, defaults::UPDATE_RATE);
 
     for (const auto& k : keybinds::inl_aKeys)
     {
@@ -120,6 +138,7 @@ WinStart(Win* s, Arena* pArena)
 
     TextBuffClearDown(&s->textBuff);
     TextBuffHideCursor(&s->textBuff, true);
+    TextBuffPush(&s->textBuff, MOUSE_ENABLE);
     TextBuffFlush(&s->textBuff);
 
     LOG_GOOD("ansi::WinStart()\n");
@@ -130,6 +149,14 @@ WinStart(Win* s, Arena* pArena)
 void
 WinDestroy(Win* s)
 {
+    TextBuffHideCursor(&s->textBuff, false);
+    TextBuffClear(&s->textBuff);
+    TextBuffClearKittyImages(&s->textBuff);
+    TextBuffPush(&s->textBuff, MOUSE_DISABLE);
+    TextBuffMoveTopLeft(&s->textBuff);
+    TextBuffPush(&s->textBuff, "\n", 2);
+    TextBuffFlush(&s->textBuff);
+
     disableRawMode(s);
 
     LOG_NOTIFY("ansi::WinDestroy()\n");
