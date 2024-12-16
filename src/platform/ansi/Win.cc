@@ -59,7 +59,7 @@ readFromStdin([[maybe_unused]] Win* s, const int timeoutMS)
 
     select(1, &fds, {}, {}, &tv);
     ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
-    LOG("nRead: {}, ({}): '{}'\n", nRead, *(int*)aBuff, aBuff);
+    LOG("nRead: {}, ({}, {}): '{}'\n", nRead, *(u64*)aBuff, *(u64*)(aBuff + 8), aBuff);
 
     wchar_t wc {};
     mbtowc(&wc, aBuff, sizeof(aBuff));
@@ -172,7 +172,7 @@ WinProcEvents(Win* s)
     procInput(s);
 
     common::fixFirstIdx(
-        g_termSize.height - common::getHorizontalSplitPos(g_termSize.height) - 4,
+        g_termSize.height - app::g_pPlayer->imgHeight - 5,
         &s->firstIdx
     );
 }

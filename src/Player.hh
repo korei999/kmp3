@@ -56,7 +56,7 @@ struct Player
     struct {
         //
     } bottomBar {};
-    u8 statusAndInfoHeight {};
+    u8 imgHeight {};
     f64 statusToInfoWidthRatio {};
     VecBase<String> aShortArgvs {}; /* only the name of the file, without full path */
     VecBase<u16> aSongIdxs {}; /* index buffer for aShortArgvs */

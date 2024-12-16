@@ -37,6 +37,26 @@ namespace draw
 static f64 s_time {};
 
 static void
+clearArea(Win* s, int x, int y, int width, int height)
+{
+    const int w = utils::minVal(g_termSize.width, width);
+    const int h = utils::minVal(g_termSize.height, height);
+
+    for (int i = y; i < h; ++i)
+        for (int j = x; j < w; ++j)
+            TextBuffMovePush(&s->textBuff, j, i, " ");
+}
+
+static void
+clearLine(Win* s, int x, int y, int width)
+{
+    const int w = utils::minVal(g_termSize.width, width);
+
+    for (int i = y; i < w; ++i)
+        TextBuffMovePush(&s->textBuff, i, y, " ");
+}
+
+static void
 drawCoverImage(Win* s)
 {
     static f64 lastRedraw {};
@@ -47,11 +67,10 @@ drawCoverImage(Win* s)
         app::g_pPlayer->bSelectionChanged = false;
         lastRedraw = s_time;
 
-        const int split = common::getHorizontalSplitPos(g_termSize.height);
+        const int split = app::g_pPlayer->imgHeight;
 
-        TextBuffMove(&s->textBuff, g_termSize.width - 1, split);
-        TextBuffClearUp(&s->textBuff);
-        TextBuffClearKittyImages(&s->textBuff);
+        clearArea(s, 0, 0, g_termSize.width, split + 1);
+        /*TextBuffClearKittyImages(&s->textBuff);*/
 
         Opt<ffmpeg::Image> oCoverImg = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCoverImg)
@@ -67,7 +86,7 @@ drawCoverImage(Win* s)
             const int vOff = std::round(vdiff / 2.0);
 
             const String sImg = platform::chafa::getImageString(
-                s->pArena, img, split - 3, g_termSize.width - 2
+                s->pArena, img, split, g_termSize.width - 2
             );
 
             TextBuffMove(&s->textBuff, 1, 1);
@@ -83,11 +102,11 @@ drawSongList(Win* s)
     auto* pTB = &s->textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
-    const int split = common::getHorizontalSplitPos(height);
+    /*const int split = common::getHorizontalSplitPos(height);*/
+    const int split = pl.imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
-    TextBuffMove(pTB, width - 1, split);
-    TextBuffClearDown(pTB);
+    clearArea(s, 0, split, width, height);
 
     for (u16 h = s->firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
     {
@@ -158,8 +177,6 @@ update(Win* s)
     const int split = common::getHorizontalSplitPos(height);
 
     s_time = utils::timeNowMS();
-
-    /*TextBuffClear(pTB);*/
 
     drawCoverImage(s);
     drawSongList(s);

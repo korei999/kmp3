@@ -59,10 +59,43 @@ TextBuffMoveTopLeft(TextBuff* s)
 }
 
 inline void
+TextBuffUp(TextBuff* s, int steps)
+{
+    char aBuff[32] {};
+    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}A", steps);
+    TextBuffPush(s, aBuff, n);
+}
+
+inline void
+TextBuffDown(TextBuff* s, int steps)
+{
+    char aBuff[32] {};
+    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}B", steps);
+    TextBuffPush(s, aBuff, n);
+}
+
+inline void
+TextBuffForward(TextBuff* s, int steps)
+{
+    char aBuff[32] {};
+    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}C", steps);
+    TextBuffPush(s, aBuff, n);
+}
+
+inline void
+TextBuffBack(TextBuff* s, int steps)
+{
+    char aBuff[32] {};
+    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}D", steps);
+    TextBuffPush(s, aBuff, n);
+}
+
+inline void
 TextBuffMove(TextBuff* s, int x, int y)
 {
     char aBuff[64] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
+    /*u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);*/
+    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{};{}H", y + 1, x + 1);
     TextBuffPush(s, aBuff, n);
 }
 
