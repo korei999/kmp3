@@ -12,8 +12,10 @@
 #include <sys/ioctl.h>
 
 #define CTRL_KEY(k) ((k) & 0b11111)
-#define MOUSE_ENABLE  "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
-#define MOUSE_DISABLE   "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
+#define MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
+#define MOUSE_DISABLE "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
+#define KEYPAD_ENABLE "\033[?1h\033="
+#define KEYPAD_DISABLE "\033[?1l\033>"
 
 namespace platform
 {
@@ -36,9 +38,6 @@ enableRawMode(Win* s)
         LOG_DIE("tcgetattr\n");
 
     struct termios raw = s->termOg;
-    /*raw.c_iflag &= ~(IXON);*/
-    /*raw.c_oflag &= ~(OPOST);*/
-    /*raw.c_cflag |= (CS8);*/
     raw.c_lflag &= ~(ECHO | ICANON | ISIG);
     raw.c_cc[VMIN] = 0; /* disable blocking on read() */
     /*raw.c_cc[VTIME] = 1;*/
@@ -59,7 +58,6 @@ readFromStdin([[maybe_unused]] Win* s, const int timeoutMS)
     tv.tv_usec = (timeoutMS - (tv.tv_sec * 1000)) * 1000;
 
     select(1, &fds, {}, {}, &tv);
-
     ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
     LOG("nRead: {}, ({}): '{}'\n", nRead, *(int*)aBuff, aBuff);
 
@@ -138,7 +136,7 @@ WinStart(Win* s, Arena* pArena)
 
     TextBuffClearDown(&s->textBuff);
     TextBuffHideCursor(&s->textBuff, true);
-    TextBuffPush(&s->textBuff, MOUSE_ENABLE);
+    TextBuffPush(&s->textBuff, MOUSE_ENABLE KEYPAD_ENABLE);
     TextBuffFlush(&s->textBuff);
 
     LOG_GOOD("ansi::WinStart()\n");
@@ -152,7 +150,7 @@ WinDestroy(Win* s)
     TextBuffHideCursor(&s->textBuff, false);
     TextBuffClear(&s->textBuff);
     TextBuffClearKittyImages(&s->textBuff);
-    TextBuffPush(&s->textBuff, MOUSE_DISABLE);
+    TextBuffPush(&s->textBuff, MOUSE_DISABLE KEYPAD_DISABLE);
     TextBuffMoveTopLeft(&s->textBuff);
     TextBuffPush(&s->textBuff, "\n", 2);
     TextBuffFlush(&s->textBuff);

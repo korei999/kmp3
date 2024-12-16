@@ -538,7 +538,7 @@ getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termW
         fontRatio, true, false
     );
 
-    LOG_BAD("formatSize: {}\n", getFormatChannelNumber(img.eFormat));
+    LOG_GOOD("formatSize: {}\n", getFormatChannelNumber(img.eFormat));
 
     auto* pGStr = getString(
         pArena,
