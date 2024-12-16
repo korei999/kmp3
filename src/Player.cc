@@ -23,6 +23,22 @@ constexpr String aAcceptedFileEndings[] {
     ".mkv",
 };
 
+static void
+allocMetaData(Player* s)
+{
+    s->info.title = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "title").data);
+    s->info.album = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "album").data);
+    s->info.artist = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "artist").data);
+}
+
+static void
+freeMetaData(Player* s)
+{
+    StringDestroy(s->pAlloc, &s->info.title);
+    StringDestroy(s->pAlloc, &s->info.album);
+    StringDestroy(s->pAlloc, &s->info.artist);
+}
+
 bool
 PlayerAcceptedFormat(const String s)
 {
@@ -135,12 +151,10 @@ PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pBuff, u32 size)
 static void
 updateInfo(Player* s)
 {
-    PlayerResetData(s);
-
+    /* it's save to free nullptr */
+    freeMetaData(s);
     /* clone string to avoid data races with ffmpeg */
-    s->info.title = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "title").data);
-    s->info.album = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "album").data);
-    s->info.artist = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "artist").data);
+    allocMetaData(s);
 
     s->bSelectionChanged = true;
 
@@ -237,14 +251,6 @@ PlayerSelectPrev(Player* s)
     s->selected = s->aSongIdxs[currIdx];
     audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
     updateInfo(s);
-}
-
-void
-PlayerResetData(Player* s)
-{
-    StringDestroy(s->pAlloc, &s->info.title);
-    StringDestroy(s->pAlloc, &s->info.album);
-    StringDestroy(s->pAlloc, &s->info.artist);
 }
 
 void

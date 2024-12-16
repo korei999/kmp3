@@ -24,8 +24,8 @@ main(int argc, char** argv)
     close(STDERR_FILENO); /* hide mpg123 and other errors */
 #endif
 
-    FreeList alctr(SIZE_8M);
-    defer( freeAll(&alctr) );
+    FreeList allo(SIZE_8M);
+    defer( freeAll(&allo) );
 
     app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
 
@@ -63,7 +63,7 @@ main(int argc, char** argv)
         }
     }
 
-    Vec<String> aInput(&alctr.super, argc);
+    Vec<String> aInput(&allo.super, argc);
     if (argc < 2) /* use stdin instead */
     {
         int flags = fcntl(0, F_GETFL, 0);
@@ -75,7 +75,7 @@ main(int argc, char** argv)
 
         while ((nread = getline(&line, &len, stdin)) != -1)
         {
-            String s = StringAlloc(&alctr.super, line, nread);
+            String s = StringAlloc(&allo.super, line, nread);
             StringRemoveNLEnd(&s);
             VecPush(&aInput, s);
         }
@@ -84,7 +84,7 @@ main(int argc, char** argv)
 
         /* make fake `argv` so core code works as usual */
         argc = VecSize(&aInput) + 1;
-        argv = (char**)zalloc(&alctr, argc, sizeof(argv));
+        argv = (char**)zalloc(&allo, argc, sizeof(argv));
 
         for (int i = 1; i < argc; ++i)
             argv[i] = aInput[i - 1].pData;
@@ -94,9 +94,9 @@ main(int argc, char** argv)
     app::g_argv = argv;
 
     for (int i = 0; i < argc; ++i)
-        VecPush(&app::g_aArgs, &alctr.super, {app::g_argv[i]});
+        VecPush(&app::g_aArgs, &allo.super, {app::g_argv[i]});
 
-    Player player(&alctr.super, argc, argv);
+    Player player(&allo.super, argc, argv);
     app::g_pPlayer = &player;
     defer( PlayerDestroy(&player) );
 
@@ -123,7 +123,7 @@ main(int argc, char** argv)
     player.eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.bSelectionChanged = true;
 
-    platform::pipewire::Mixer mixer(&alctr.super);
+    platform::pipewire::Mixer mixer(&allo.super);
     platform::pipewire::MixerInit(&mixer);
     defer( platform::pipewire::MixerDestroy(&mixer) );
 

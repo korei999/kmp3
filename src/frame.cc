@@ -1,7 +1,6 @@
 #include "frame.hh"
 
 #include "adt/Arena.hh"
-#include "adt/OsAllocator.hh"
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "app.hh"
@@ -38,13 +37,12 @@ mprisPollLoop([[maybe_unused]] void* pNull)
 void
 run()
 {
-    app::g_pWin = app::allocWindow(OsAllocatorGet());
+    app::g_pWin = app::allocWindow(app::g_pPlayer->pAlloc);
     if (app::g_pWin == nullptr)
     {
         CERR("app::allocWindow(): failed\n");
         return;
     }
-    defer( free(OsAllocatorGet(), app::g_pWin) );
 
     Arena arena(SIZE_8M);
     defer( ArenaFreeAll(&arena) );
