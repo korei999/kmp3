@@ -42,9 +42,10 @@ clearArea(Win* s, int x, int y, int width, int height)
     const int w = utils::minVal(g_termSize.width, width);
     const int h = utils::minVal(g_termSize.height, height);
 
+    const char space = ' ';
     for (int i = y; i < h; ++i)
         for (int j = x; j < w; ++j)
-            TextBuffMovePush(&s->textBuff, j, i, " ");
+            TextBuffMovePush(&s->textBuff, j, i, &space, 1);
 }
 
 static void
