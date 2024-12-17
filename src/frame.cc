@@ -45,14 +45,14 @@ run()
     }
 
     Arena arena(SIZE_8M);
-    defer( ArenaFreeAll(&arena) );
+    defer( arena.freeAll() );
 
-    if (WindowStart(app::g_pWin, &arena) == false)
+    if (app::g_pWin->start(&arena) == false)
     {
         CERR("failed to start window\n");
         return;
     }
-    defer( WindowDestroy(app::g_pWin) );
+    defer( app::g_pWin->destroy() );
 
     app::g_pPlayer->focused = 0;
     PlayerSelectFocused(app::g_pPlayer);
@@ -66,10 +66,10 @@ run()
 
     do
     {
-        WindowDraw(app::g_pWin);
-        WindowProcEvents(app::g_pWin);
+        app::g_pWin->draw();
+        app::g_pWin->procEvents();
 
-        ArenaReset(&arena);
+        arena.reset();
     }
     while (app::g_bRunning);
 }

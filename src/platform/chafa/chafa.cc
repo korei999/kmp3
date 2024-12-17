@@ -484,12 +484,12 @@ showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const in
 
     {
         TextBuff textBuff(pArena);
-        defer( TextBuffFlush(&textBuff) );
+        defer( textBuff.flush() );
 
         auto at = [&](int x, int y) {
             char aBuff[128] {};
             u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
-            TextBuffPush(&textBuff, aBuff, n);
+            textBuff.push(aBuff, n);
         };
 
         //auto clearLine = [&] {

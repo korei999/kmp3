@@ -76,31 +76,37 @@ struct ThreadPoolLock
     cnd_t cnd;
 
     ThreadPoolLock() = default;
-    ThreadPoolLock(INIT_FLAG e) { if (e == INIT_FLAG::INIT) ThreadPoolLockInit(this); }
+    ThreadPoolLock(INIT_FLAG e) { if (e == INIT_FLAG::INIT) init(); }
+
+    void init();
+
+    void wait();
+
+    void destroy();
 };
 
 inline void
-ThreadPoolLockInit(ThreadPoolLock* s)
+ThreadPoolLock::init()
 {
-    atomic_store_explicit(&s->bSignaled, false, memory_order_relaxed);
-    mtx_init(&s->mtx, mtx_plain);
-    cnd_init(&s->cnd);
+    atomic_store_explicit(&this->bSignaled, false, memory_order_relaxed);
+    mtx_init(&this->mtx, mtx_plain);
+    cnd_init(&this->cnd);
 }
 
 inline void
-ThreadPoolLockWait(ThreadPoolLock* s)
+ThreadPoolLock::wait()
 {
-    guard::Mtx lock(&s->mtx);
-    cnd_wait(&s->cnd, &s->mtx);
+    guard::Mtx lock(&this->mtx);
+    cnd_wait(&this->cnd, &this->mtx);
     /* notify thread pool's spinlock that we have woken up */
-    atomic_store_explicit(&s->bSignaled, true, memory_order_relaxed);
+    atomic_store_explicit(&this->bSignaled, true, memory_order_relaxed);
 }
 
 inline void
-ThreadPoolLockDestroy(ThreadPoolLock* s)
+ThreadPoolLock::destroy()
 {
-    mtx_destroy(&s->mtx);
-    cnd_destroy(&s->cnd);
+    mtx_destroy(&this->mtx);
+    cnd_destroy(&this->cnd);
 }
 
 struct ThreadTask
@@ -125,17 +131,24 @@ struct ThreadPool
 
     ThreadPool() = default;
     ThreadPool(IAllocator* pAlloc, u32 _nThreads = ADT_GET_NCORES());
-};
 
-inline void ThreadPoolStart(ThreadPool* s);
-inline bool ThreadPoolBusy(ThreadPool* s);
-inline void ThreadPoolSubmit(ThreadPool* s, ThreadTask task);
-inline void ThreadPoolSubmit(ThreadPool* s, thrd_start_t pfnTask, void* pArgs);
-/* Signal ThreadPoolLock after completion.
- * If ThreadPoolLockWait was never called for this pTpLock, the task will spinlock forever,
- * unless pTpLock->bSignaled is manually set to true; */
-inline void ThreadPoolSubmitSignal(ThreadPool* s, thrd_start_t pfnTask, void* pArgs, ThreadPoolLock* pTpLock);
-inline void ThreadPoolWait(ThreadPool* s); /* wait for all active tasks to finish, without joining */
+    void destroy();
+
+    void start();
+
+    bool busy();
+
+    void submit(ThreadTask task);
+
+    void submit(thrd_start_t pfnTask, void* pArgs);
+
+    /* Signal ThreadPoolLock after completion.
+     * If ThreadPoolLockWait was never called for this pTpLock, the task will spinlock forever,
+     * unless pTpLock->bSignaled is manually set to true; */
+    void submitSignal(thrd_start_t pfnTask, void* pArgs, ThreadPoolLock* pTpLock);
+
+    void wait(); /* wait for all active tasks to finish, without joining */
+};
 
 inline
 ThreadPool::ThreadPool(IAllocator* _pAlloc, u32 _nThreads)
@@ -148,7 +161,7 @@ ThreadPool::ThreadPool(IAllocator* _pAlloc, u32 _nThreads)
       bStarted(false)
 {
     assert(_nThreads != 0 && "can't have thread pool with zero threads");
-    VecSetSize(&aThreads, _pAlloc, _nThreads);
+    aThreads.setSize(_pAlloc, _nThreads);
 
     cnd_init(&cndQ);
     mtx_init(&mtxQ, mtx_plain);
@@ -175,7 +188,7 @@ _ThreadPoolLoop(void* p)
 
             if (s->bDone) return thrd_success;
 
-            task = *QueuePopFront(&s->qTasks);
+            task = *s->qTasks.popFront();
             /* increment before unlocking mtxQ to avoid 0 tasks and 0 q possibility */
             atomic_fetch_add_explicit(&s->nActiveTasks, 1, memory_order_relaxed);
         }
@@ -185,12 +198,12 @@ _ThreadPoolLoop(void* p)
 
         if (task.eWait == WAIT_FLAG::WAIT)
         {
-            /* keep signaling until it's truly awakaned */
+            /* keep signaling until it's truly awakened */
             while (atomic_load_explicit(&task.pLock->bSignaled, memory_order_relaxed) == false)
                 cnd_signal(&task.pLock->cnd);
         }
 
-        if (!ThreadPoolBusy(s))
+        if (!s->busy())
             cnd_signal(&s->cndWait);
     }
 
@@ -198,18 +211,18 @@ _ThreadPoolLoop(void* p)
 }
 
 inline void
-ThreadPoolStart(ThreadPool* s)
+ThreadPool::start()
 {
-    s->bStarted = true;
-    atomic_store_explicit(&s->bDone, false, memory_order_relaxed);
+    this->bStarted = true;
+    atomic_store_explicit(&this->bDone, false, memory_order_relaxed);
 
 #ifndef NDEBUG
-    fprintf(stderr, "[ThreadPool]: staring %d threads\n", VecSize(&s->aThreads));
+    fprintf(stderr, "[ThreadPool]: staring %d threads\n", this->aThreads.getSize());
 #endif
 
-    for (auto& thread : s->aThreads)
+    for (auto& thread : this->aThreads)
     {
-        [[maybe_unused]] int t = thrd_create(&thread, _ThreadPoolLoop, s);
+        [[maybe_unused]] int t = thrd_create(&thread, _ThreadPoolLoop, this);
 #ifndef NDEBUG
         assert(t == 0 && "failed to create thread");
 #endif
@@ -217,51 +230,51 @@ ThreadPoolStart(ThreadPool* s)
 }
 
 inline bool
-ThreadPoolBusy(ThreadPool* s)
+ThreadPool::busy()
 {
     bool ret;
     {
-        guard::Mtx lock(&s->mtxQ);
-        ret = !utils::empty(&s->qTasks) || s->nActiveTasks > 0;
+        guard::Mtx lock(&this->mtxQ);
+        ret = !utils::empty(&this->qTasks) || this->nActiveTasks > 0;
     }
 
     return ret;
 }
 
 inline void
-ThreadPoolSubmit(ThreadPool* s, ThreadTask task)
+ThreadPool::submit(ThreadTask task)
 {
     {
-        guard::Mtx lock(&s->mtxQ);
-        QueuePushBack(&s->qTasks, s->pAlloc, task);
+        guard::Mtx lock(&this->mtxQ);
+        this->qTasks.pushBack(this->pAlloc, task);
     }
 
-    cnd_signal(&s->cndQ);
+    cnd_signal(&this->cndQ);
 }
 
 inline void
-ThreadPoolSubmit(ThreadPool* s, thrd_start_t pfnTask, void* pArgs)
+ThreadPool::submit(thrd_start_t pfnTask, void* pArgs)
 {
-    assert(s->bStarted && "[ThreadPool]: never called ThreadPoolStart()");
+    assert(this->bStarted && "[ThreadPool]: never called ThreadPoolStart()");
 
-    ThreadPoolSubmit(s, {pfnTask, pArgs});
+    this->submit({pfnTask, pArgs});
 }
 
 inline void
-ThreadPoolSubmitSignal(ThreadPool* s, thrd_start_t pfnTask, void* pArgs, ThreadPoolLock* pTpLock)
+ThreadPool::submitSignal(thrd_start_t pfnTask, void* pArgs, ThreadPoolLock* pTpLock)
 {
-    ThreadPoolSubmit(s, {pfnTask, pArgs, WAIT_FLAG::WAIT, pTpLock});
+    this->submit({pfnTask, pArgs, WAIT_FLAG::WAIT, pTpLock});
 }
 
 inline void
-ThreadPoolWait(ThreadPool* s)
+ThreadPool::wait()
 {
-    assert(s->bStarted && "[ThreadPool]: never called ThreadPoolStart()");
+    assert(this->bStarted && "[ThreadPool]: never called ThreadPoolStart()");
 
-    while (ThreadPoolBusy(s))
+    while (this->busy())
     {
-        guard::Mtx lock(&s->mtxWait);
-        cnd_wait(&s->cndWait, &s->mtxWait);
+        guard::Mtx lock(&this->mtxWait);
+        cnd_wait(&this->cndWait, &this->mtxWait);
     }
 }
 
@@ -289,16 +302,16 @@ _ThreadPoolStop(ThreadPool* s)
 }
 
 inline void
-ThreadPoolDestroy(ThreadPool* s)
+ThreadPool::destroy()
 {
-    _ThreadPoolStop(s);
+    _ThreadPoolStop(this);
 
-    VecDestroy(&s->aThreads, s->pAlloc);
-    QueueDestroy(&s->qTasks, s->pAlloc);
-    cnd_destroy(&s->cndQ);
-    mtx_destroy(&s->mtxQ);
-    cnd_destroy(&s->cndWait);
-    mtx_destroy(&s->mtxWait);
+    this->aThreads.destroy(this->pAlloc);
+    this->qTasks.destroy(this->pAlloc);
+    cnd_destroy(&this->cndQ);
+    mtx_destroy(&this->mtxQ);
+    cnd_destroy(&this->cndWait);
+    mtx_destroy(&this->mtxWait);
 }
 
 } /* namespace adt */

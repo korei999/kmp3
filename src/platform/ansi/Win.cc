@@ -120,24 +120,24 @@ sigwinchHandler(int sig)
     LOG_GOOD("term: {}\n", g_termSize);
 
     app::g_pPlayer->bSelectionChanged = true;
-    WinDraw(s);
+    s->draw();
 }
 
 bool
-WinStart(Win* s, Arena* pArena)
+Win::start(Arena* pArena)
 {
-    s->pArena = pArena;
-    s->textBuff = TextBuff(pArena);
+    this->pArena = pArena;
+    this->textBuff = TextBuff(pArena);
 
     g_termSize = getTermSize();
 
-    enableRawMode(s);
+    enableRawMode(this);
     signal(SIGWINCH, sigwinchHandler);
 
-    TextBuffClearDown(&s->textBuff);
-    TextBuffHideCursor(&s->textBuff, true);
-    TextBuffPush(&s->textBuff, MOUSE_ENABLE KEYPAD_ENABLE);
-    TextBuffFlush(&s->textBuff);
+    this->textBuff.clear();
+    this->textBuff.hideCursor(true);
+    this->textBuff.push(MOUSE_ENABLE KEYPAD_ENABLE);
+    this->textBuff.flush();
 
     LOG_GOOD("ansi::WinStart()\n");
 
@@ -145,59 +145,59 @@ WinStart(Win* s, Arena* pArena)
 }
 
 void
-WinDestroy(Win* s)
+Win::destroy()
 {
-    TextBuffHideCursor(&s->textBuff, false);
-    TextBuffClear(&s->textBuff);
-    TextBuffClearKittyImages(&s->textBuff);
-    TextBuffPush(&s->textBuff, MOUSE_DISABLE KEYPAD_DISABLE);
-    TextBuffMoveTopLeft(&s->textBuff);
-    TextBuffPush(&s->textBuff, "\n", 2);
-    TextBuffFlush(&s->textBuff);
+    this->textBuff.hideCursor(false);
+    this->textBuff.clear();
+    this->textBuff.clearKittyImages();
+    this->textBuff.push(MOUSE_DISABLE KEYPAD_DISABLE);
+    this->textBuff.moveTopLeft();
+    this->textBuff.push("\n", 2);
+    this->textBuff.flush();
 
-    disableRawMode(s);
+    disableRawMode(this);
 
     LOG_NOTIFY("ansi::WinDestroy()\n");
 }
 
 void
-WinDraw(Win* s)
+Win::draw()
 {
-    draw::update(s);
+    draw::update(this);
 }
 
 void
-WinProcEvents(Win* s)
+Win::procEvents()
 {
-    procInput(s);
+    procInput(this);
 
     common::fixFirstIdx(
         g_termSize.height - app::g_pPlayer->imgHeight - 5,
-        &s->firstIdx
+        &this->firstIdx
     );
 }
 
 void
-WinSeekFromInput(Win* s)
+Win::seekFromInput()
 {
     common::seekFromInput(
         +[](void* pArg) { return readWChar((Win*)pArg); },
-        s,
+        this,
         +[](void* pArg) { draw::update((Win*)pArg); },
-        s
+        this
     );
 }
 
 void
-WinSubStringSearch(Win* s)
+Win::subStringSearch()
 {
     common::subStringSearch(
-        s->pArena,
+        this->pArena,
         +[](void* pArg) { return readWChar((Win*)pArg); },
-        s,
+        this,
         +[](void* pArg) { draw::update((Win*)pArg); },
-        s,
-        &s->firstIdx
+        this,
+        &this->firstIdx
     );
 }
 

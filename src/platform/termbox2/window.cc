@@ -383,7 +383,7 @@ drawVolume()
         tb_set_cell(i, split, wc, col, TB_DEFAULT);
     }
 
-    char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
+    char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
     snprintf(pBuff, width, fmt.pData, int(std::round(vol * 100.0f)));
     drawMBString(0, split, pBuff, split + 1, col);
 
@@ -398,7 +398,7 @@ drawInfo()
 
     /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
 
-    char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
+    char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
 
     /* title */
     {
@@ -449,7 +449,7 @@ drawBottomLine()
 
     /* selected / focused */
     {
-        char* pBuff = (char*)zalloc(g_pFrameArena, 1, width + 1);
+        char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
 
         int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.size - 1);
         if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
@@ -466,15 +466,15 @@ drawBottomLine()
     }
 
     if (
-        c::g_input.eCurrMode != READ_MODE::NONE ||
-        (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
+        c::g_input.eCurrMode != WINDOW_READ_MODE::NONE ||
+        (c::g_input.eCurrMode == WINDOW_READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
     )
     {
         const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
         drawWideString(sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff), width - 2);
         drawMBString(1, height - 1, sReadMode, width - 2);
 
-        if (c::g_input.eCurrMode != READ_MODE::NONE)
+        if (c::g_input.eCurrMode != WINDOW_READ_MODE::NONE)
         {
             u32 wlen = wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff));
             drawWideString(sReadMode.size + wlen + 1, height - 1, common::CURSOR_BLOCK, 1, 3);
@@ -547,7 +547,7 @@ drawCoverImage()
         {
             /* FIXME: horrible screen flash */
             tb_invalidate();
-            auto& img = oCover.data;
+            auto& img = oCover.getData();
 
             f64 scaleFactor = f64(split - 1) / f64(img.height);
             int scaledWidth = std::round(img.width * scaleFactor / defaults::FONT_ASPECT_RATIO);

@@ -15,133 +15,176 @@ struct TextBuff
 
     TextBuff() = default;
     TextBuff(Arena* _pAlloc) : pAlloc(_pAlloc) {}
+
+
+    void push(const char* pBuff, const u32 buffSize);
+
+    void push(const String sBuff);
+
+    void reset();
+
+    void flush();
+
+    void moveTopLeft();
+
+    void up(int steps);
+
+    void down(int steps);
+
+    void forward(int steps);
+
+    void back(int steps);
+
+    void move(int x, int y);
+
+    void clearDown();
+
+    void clearUp();
+
+    void clear();
+
+    void hideCursor(bool bHide);
+
+    void movePush(int x, int y, const String str);
+
+    void movePush(int x, int y, const char* pBuff, const u32 size);
+
+    void pushGlyphs(const String str, const u32 nColumns);
+
+    void movePushGlyphs(int x, int y, const String str, const u32 nColumns);
+
+    void pushWideString(const wchar_t* pwBuff, const u32 wBuffSize);
+
+    void movePushWideString(int x, int y, const wchar_t* pwBuff, const u32 wBuffSize);
+
+    void clearKittyImages();
 };
 
 inline void
-TextBuffPush(TextBuff* s, const char* pBuff, const u32 buffSize)
+TextBuff::push(const char* pBuff, const u32 buffSize)
 {
-    if (buffSize + s->size >= s->capacity)
+    if (buffSize + this->size >= this->capacity)
     {
-        const u32 newCap = utils::maxVal(buffSize + s->size, s->capacity*2);
-        s->pData = (char*)realloc(s->pAlloc, s->pData, newCap, 1);
-        s->capacity = newCap;
+        const u32 newCap = utils::maxVal(buffSize + this->size, this->capacity*2);
+        this->pData = (char*)this->pAlloc->realloc(this->pData, newCap, 1);
+        this->capacity = newCap;
     }
 
-    strncpy(s->pData + s->size, pBuff, buffSize);
-    s->size += buffSize;
+    strncpy(this->pData + this->size, pBuff, buffSize);
+    this->size += buffSize;
 }
 
 inline void
-TextBuffPush(TextBuff* s, const String sBuff)
+TextBuff::push(const String sBuff)
 {
-    TextBuffPush(s, sBuff.pData, sBuff.size);
+    this->push(sBuff.pData, sBuff.size);
 }
 
 inline void
-TextBuffReset(TextBuff* s)
+TextBuff::reset()
 {
-    s->pData = {};
-    s->size = {};
-    s->capacity = {};
+    this->pData = {};
+    this->size = {};
+    this->capacity = {};
 }
 
 inline void
-TextBuffFlush(TextBuff* s)
+TextBuff::flush()
 {
-    write(STDOUT_FILENO, s->pData, s->size);
+    write(STDOUT_FILENO, this->pData, this->size);
     fflush(stdout);
 }
 
 inline void
-TextBuffMoveTopLeft(TextBuff* s)
+TextBuff::moveTopLeft()
 {
-    TextBuffPush(s, "\x1b[H");
+    this->push("\x1b[H");
 }
 
 inline void
-TextBuffUp(TextBuff* s, int steps)
+TextBuff::up(int steps)
 {
     char aBuff[32] {};
     u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}A", steps);
-    TextBuffPush(s, aBuff, n);
+    this->push(aBuff, n);
 }
 
 inline void
-TextBuffDown(TextBuff* s, int steps)
+TextBuff::down(int steps)
 {
     char aBuff[32] {};
     u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}B", steps);
-    TextBuffPush(s, aBuff, n);
+    this->push(aBuff, n);
 }
 
 inline void
-TextBuffForward(TextBuff* s, int steps)
+TextBuff::forward(int steps)
 {
     char aBuff[32] {};
     u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}C", steps);
-    TextBuffPush(s, aBuff, n);
+    this->push(aBuff, n);
 }
 
 inline void
-TextBuffBack(TextBuff* s, int steps)
+TextBuff::back(int steps)
 {
     char aBuff[32] {};
     u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}D", steps);
-    TextBuffPush(s, aBuff, n);
+    this->push(aBuff, n);
 }
 
 inline void
-TextBuffMove(TextBuff* s, int x, int y)
+TextBuff::move(int x, int y)
 {
     char aBuff[64] {};
     /*u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);*/
     u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{};{}H", y + 1, x + 1);
-    TextBuffPush(s, aBuff, n);
+    this->push(aBuff, n);
 }
 
 inline void
-TextBuffClearDown(TextBuff* s)
+TextBuff::clearDown()
 {
-    TextBuffPush(s, "\x1b[0J");
+    this->push("\x1b[0J");
 }
 
 inline void
-TextBuffClearUp(TextBuff* s)
+TextBuff::clearUp()
 {
-    TextBuffPush(s, "\x1b[1J");
+    this->push("\x1b[1J");
 }
 
 inline void
-TextBuffClear(TextBuff* s)
+TextBuff::clear()
 {
-    TextBuffPush(s, "\x1b[2J");
+    this->push("\x1b[2J");
 }
 
 inline void
-TextBuffHideCursor(TextBuff* s, bool bHide)
+TextBuff::hideCursor(bool bHide)
 {
-    if (bHide) TextBuffPush(s, "\x1b[?25l");
-    else TextBuffPush(s, "\x1b[?25h");
+    if (bHide) this->push("\x1b[?25l");
+    else this->push("\x1b[?25h");
 }
 
 inline void
-TextBuffMovePush(TextBuff* s, int x, int y, const String str)
+TextBuff::movePush(int x, int y, const String str)
 {
-    TextBuffMove(s, x, y);
-    TextBuffPush(s, str);
+    this->move(x, y);
+    this->push(str);
 }
 
 inline void
-TextBuffMovePush(TextBuff* s, int x, int y, const char* pBuff, const u32 size)
+TextBuff::movePush(int x, int y, const char* pBuff, const u32 size)
 {
-    TextBuffMove(s, x, y);
-    TextBuffPush(s, pBuff, size);
+    this->move(x, y);
+    this->push(pBuff, size);
 }
 
 inline void
-TextBuffPushGlyphs(TextBuff* s, const String str, const u32 nColumns)
+TextBuff::pushGlyphs(const String str, const u32 nColumns)
 {
-    char* pBuff = (char*)zalloc(s->pAlloc, str.size*2, 1);
+    char* pBuff = (char*)this->pAlloc->zalloc(str.size*2, 1);
     u32 off = 0;
 
     u32 totalWidth = 0;
@@ -155,33 +198,33 @@ TextBuffPushGlyphs(TextBuff* s, const String str, const u32 nColumns)
         off += wctomb(pBuff + off, wc);
     }
 
-    TextBuffPush(s, pBuff);
+    this->push(pBuff);
 }
 
 inline void
-TextBuffMovePushGlyphs(TextBuff* s, int x, int y, const String str, const u32 nColumns)
+TextBuff::movePushGlyphs(int x, int y, const String str, const u32 nColumns)
 {
-    TextBuffMove(s, x, y);
-    TextBuffPushGlyphs(s, str, nColumns);
+    this->move(x, y);
+    this->pushGlyphs(str, nColumns);
 }
 
 inline void
-TextBuffPushWideString(TextBuff* s, const wchar_t* pwBuff, const u32 wBuffSize)
+TextBuff::pushWideString(const wchar_t* pwBuff, const u32 wBuffSize)
 {
-    char* pBuff = (char*)zalloc(s->pAlloc, wBuffSize, sizeof(wchar_t));
+    char* pBuff = (char*)this->pAlloc->zalloc(wBuffSize, sizeof(wchar_t));
     wcstombs(pBuff, pwBuff, wBuffSize);
-    TextBuffPush(s, pBuff);
+    this->push(pBuff);
 }
 
 inline void
-TextBuffMovePushWideString(TextBuff* s, int x, int y, const wchar_t* pwBuff, const u32 wBuffSize)
+TextBuff::movePushWideString(int x, int y, const wchar_t* pwBuff, const u32 wBuffSize)
 {
-    TextBuffMove(s, x, y);
-    TextBuffPushWideString(s, pwBuff, wBuffSize);
+    this->move(x, y);
+    this->pushWideString(pwBuff, wBuffSize);
 }
 
 inline void
-TextBuffClearKittyImages(TextBuff* s)
+TextBuff::clearKittyImages()
 {
-    TextBuffPush(s, "\x1b_Ga=d,d=A\x1b\\");
+    this->push("\x1b_Ga=d,d=A\x1b\\");
 }

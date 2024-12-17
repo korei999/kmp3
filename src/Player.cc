@@ -34,9 +34,9 @@ allocMetaData(Player* s)
 static void
 freeMetaData(Player* s)
 {
-    StringDestroy(s->pAlloc, &s->info.title);
-    StringDestroy(s->pAlloc, &s->info.album);
-    StringDestroy(s->pAlloc, &s->info.artist);
+    s->info.title.destroy(s->pAlloc);
+    s->info.album.destroy(s->pAlloc);
+    s->info.artist.destroy(s->pAlloc);
 }
 
 bool
@@ -86,7 +86,7 @@ PlayerFindSongIdxFromSelected(Player* s)
     {
         if (idx == s->selected)
         {
-            res = VecIdx(&s->aSongIdxs, &idx);
+            res = s->aSongIdxs.idx(&idx);
             break;
         }
     }
@@ -108,11 +108,11 @@ PlayerFocusSelected(Player* s)
 void
 PlayerSetDefaultIdxs(Player* s)
 {
-    VecSetSize(&s->aSongIdxs, s->pAlloc, 0);
+    s->aSongIdxs.setSize(s->pAlloc, 0);
 
     for (int i = 1; i < app::g_argc; ++i)
         if (PlayerAcceptedFormat(app::g_aArgs[i]))
-            VecPush(&s->aSongIdxs, s->pAlloc, u16(i));
+            s->aSongIdxs.push(s->pAlloc, u16(i));
 }
 
 void
@@ -125,26 +125,26 @@ PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pBuff, u32 size)
     }
 
     Arr<wchar_t, 64> aUpperRight {};
-    for (u32 i = 0; i < size && i < ArrCap(&aUpperRight) && pBuff[i]; ++i)
-        ArrPush(&aUpperRight, wchar_t(towupper(pBuff[i])));
+    for (u32 i = 0; i < size && i < aUpperRight.getCap() && pBuff[i]; ++i)
+        aUpperRight.push(wchar_t(towupper(pBuff[i])));
 
     Vec<wchar_t> aSongToUpper(&pAlloc->super, s->longestStringSize + 1);
-    VecSetSize(&aSongToUpper, s->longestStringSize + 1);
+    aSongToUpper.setSize(s->longestStringSize + 1);
 
-    VecSetSize(&s->aSongIdxs, s->pAlloc, 0);
+    s->aSongIdxs.setSize(s->pAlloc, 0);
     /* 0'th is the name of the program 'argv[0]' */
-    for (u32 i = 1; i < VecSize(&s->aShortArgvs); ++i)
+    for (u32 i = 1; i < s->aShortArgvs.getSize(); ++i)
     {
         const auto& song = s->aShortArgvs[i];
         if (!PlayerAcceptedFormat(song)) continue;
 
-        VecZeroOut(&aSongToUpper);
-        mbstowcs(VecData(&aSongToUpper), song.pData, song.size);
+        aSongToUpper.zeroOut();
+        mbstowcs(aSongToUpper.data(), song.pData, song.size);
         for (auto& wc : aSongToUpper)
             wc = towupper(wc);
 
-        if (wcsstr(VecData(&aSongToUpper), aUpperRight.aData) != nullptr)
-            VecPush(&s->aSongIdxs, s->pAlloc, u16(i));
+        if (wcsstr(aSongToUpper.data(), aUpperRight.aData) != nullptr)
+            s->aSongIdxs.push(s->pAlloc, u16(i));
     }
 }
 
@@ -166,9 +166,9 @@ updateInfo(Player* s)
 void
 PlayerSelectFocused(Player* s)
 {
-    if (VecSize(&s->aSongIdxs) <= s->focused)
+    if (s->aSongIdxs.getSize() <= s->focused)
     {
-        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", VecSize(&s->aSongIdxs));
+        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", s->aSongIdxs.getSize());
         return;
     }
 
@@ -200,7 +200,7 @@ PlayerOnSongEnd(Player* s)
     {
         currIdx -= 1;
     }
-    else if (currIdx >= VecSize(&s->aSongIdxs))
+    else if (currIdx >= s->aSongIdxs.getSize())
     {
         if (s->eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST)
         {
@@ -238,7 +238,7 @@ PlayerCycleRepeatMethods(Player* s, bool bForward)
 void
 PlayerSelectNext(Player* s)
 {
-    long currIdx = (PlayerFindSongIdxFromSelected(s) + 1) % VecSize(&s->aSongIdxs);
+    long currIdx = (PlayerFindSongIdxFromSelected(s) + 1) % s->aSongIdxs.getSize();
     s->selected = s->aSongIdxs[currIdx];
     audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
     updateInfo(s);
@@ -247,7 +247,7 @@ PlayerSelectNext(Player* s)
 void
 PlayerSelectPrev(Player* s)
 {
-    long currIdx = (PlayerFindSongIdxFromSelected(s) + (VecSize(&s->aSongIdxs) - 1)) % VecSize(&s->aSongIdxs);
+    long currIdx = (PlayerFindSongIdxFromSelected(s) + (s->aSongIdxs.getSize()) - 1) % s->aSongIdxs.getSize();
     s->selected = s->aSongIdxs[currIdx];
     audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
     updateInfo(s);

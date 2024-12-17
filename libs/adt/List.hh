@@ -21,40 +21,11 @@ template<typename T>
 constexpr ListNode<T>*
 ListNodeAlloc(IAllocator* pA, const T& x)
 {
-    auto* pNew = (ListNode<T>*)alloc(pA, 1, sizeof(ListNode<T>));
+    auto* pNew = (ListNode<T>*)pA->alloc(1, sizeof(ListNode<T>));
     pNew->data = x;
 
     return pNew;
 }
-
-template<typename T> struct ListBase;
-
-template<typename T>
-constexpr void ListDestroy(ListBase<T>* s, IAllocator* pA);
-
-template<typename T>
-constexpr ListNode<T>* ListPushFront(ListBase<T>* s, ListNode<T>* pNew);
-
-template<typename T>
-constexpr ListNode<T>* ListPushBack(ListBase<T>* s, ListNode<T>* pNew);
-
-template<typename T>
-constexpr ListNode<T>* ListPushFront(ListBase<T>* s, IAllocator* pA, const T& x);
-
-template<typename T>
-constexpr ListNode<T>* ListPushBack(ListBase<T>* s, IAllocator* pA, const T& x);
-
-template<typename T>
-constexpr void ListRemove(ListBase<T>* s, ListNode<T>* p);
-
-template<typename T>
-constexpr void ListInsertAfter(ListBase<T>* s, ListNode<T>* pAfter, ListNode<T>* p);
-
-template<typename T>
-constexpr void ListInsertBefore(ListBase<T>* s, ListNode<T>* pBefore, ListNode<T>* p);
-
-template<typename T, auto FN_CMP = utils::compare<T>>
-constexpr void ListSort(ListBase<T>* s);
 
 template<typename T>
 struct ListBase
@@ -91,96 +62,116 @@ struct ListBase
     const It end() const { return nullptr; }
     const It rbegin() const { return {this->pLast}; }
     const It rend() const { return nullptr; }
+
+    constexpr void destroy(IAllocator* pA);
+
+    constexpr ListNode<T>* pushFront(ListNode<T>* pNew);
+
+    constexpr ListNode<T>* pushBack(ListNode<T>* pNew);
+
+    constexpr ListNode<T>* pushFront(IAllocator* pA, const T& x);
+
+    constexpr ListNode<T>* pushBack(IAllocator* pA, const T& x);
+
+    constexpr void remove(ListNode<T>* p);
+
+    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p);
+
+    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p);
+
+    template<auto FN_CMP = utils::compare<T>>
+    constexpr void sort();
+
 };
 
 template<typename T>
 constexpr void
-ListDestroy(ListBase<T>* s, IAllocator* pA)
+ListBase<T>::destroy(IAllocator* pA)
 {
-    ADT_LIST_FOREACH_SAFE(s, it, tmp)
-        free(pA, it);
+    ADT_LIST_FOREACH_SAFE(this, it, tmp)
+        pA->free(it);
 
-    s->pFirst = s->pLast = nullptr;
-    s->size = 0;
+    this->pFirst = this->pLast = nullptr;
+    this->size = 0;
 }
 
 template<typename T>
 constexpr ListNode<T>*
-ListPushFront(ListBase<T>* s, ListNode<T>* pNew)
+ListBase<T>::pushFront(ListNode<T>* pNew)
 {
-    if (!s->pFirst)
+    if (!this->pFirst)
     {
         pNew->pNext = pNew->pPrev = nullptr;
-        s->pLast = s->pFirst = pNew;
+        this->pLast = this->pFirst = pNew;
     }
     else
     {
         pNew->pPrev = nullptr;
-        pNew->pNext = s->pFirst;
-        s->pFirst->pPrev = pNew;
-        s->pFirst = pNew;
+        pNew->pNext = this->pFirst;
+        this->pFirst->pPrev = pNew;
+        this->pFirst = pNew;
     }
 
-    ++s->size;
+    ++this->size;
     return pNew;
 }
 
 template<typename T>
 constexpr ListNode<T>*
-ListPushBack(ListBase<T>* s, ListNode<T>* pNew)
+ListBase<T>::pushBack(ListNode<T>* pNew)
 {
-    if (!s->pFirst)
+    if (!this->pFirst)
     {
         pNew->pNext = pNew->pPrev = nullptr;
-        s->pLast = s->pFirst = pNew;
+        this->pLast = this->pFirst = pNew;
     }
     else
     {
         pNew->pNext = nullptr;
-        pNew->pPrev = s->pLast;
-        s->pLast->pNext = pNew;
-        s->pLast = pNew;
+        pNew->pPrev = this->pLast;
+        this->pLast->pNext = pNew;
+        this->pLast = pNew;
     }
 
-    ++s->size;
+    ++this->size;
     return pNew;
 }
 
 template<typename T>
 constexpr ListNode<T>*
-ListPushFront(ListBase<T>* s, IAllocator* pA, const T& x)
+ListBase<T>::pushFront(IAllocator* pA, const T& x)
 {
     auto* pNew = ListNodeAlloc(pA, x);
-    return ListPushFront(s, pNew);
+    return this->pushFront(pNew);
 }
 
 template<typename T>
 constexpr ListNode<T>*
-ListPushBack(ListBase<T>* s, IAllocator* pA, const T& x)
+ListBase<T>::pushBack(IAllocator* pA, const T& x)
 {
     auto* pNew = ListNodeAlloc(pA, x);
-    return ListPushBack(s, pNew);
+    return this->pushBack(pNew);
 }
 
 template<typename T>
 constexpr void
-ListRemove(ListBase<T>* s, ListNode<T>* p)
+ListBase<T>::remove(ListNode<T>* p)
 {
-    assert(p && s->size > 0);
+    assert(p && this->size > 0);
 
-    if (p == s->pFirst && p == s->pLast)
+    if (p == this->pFirst && p == this->pLast)
     {
-        s->pFirst = s->pLast = nullptr;
+        this->pFirst = this->pLast = nullptr;
     }
-    else if (p == s->pFirst)
+    else if (p == this->pFirst)
     {
-        s->pFirst = s->pFirst->pNext;
-        s->pFirst->pPrev = nullptr;
+        this->pFirst = this->pFirst->pNext;
+        this->pFirst->pPrev = nullptr;
     }
-    else if (p == s->pLast)
+    else if (p == this->pLast)
     {
-        s->pLast = s->pLast->pPrev;
-        s->pLast->pNext = nullptr;
+        this->pLast = this->pLast->pPrev;
+        this->pLast->pNext = nullptr;
     }
     else 
     {
@@ -188,12 +179,12 @@ ListRemove(ListBase<T>* s, ListNode<T>* p)
         p->pNext->pPrev = p->pPrev;
     }
 
-    --s->size;
+    --this->size;
 }
 
 template<typename T>
 constexpr void
-ListInsertAfter(ListBase<T>* s, ListNode<T>* pAfter, ListNode<T>* p)
+ListBase<T>::insertAfter(ListNode<T>* pAfter, ListNode<T>* p)
 {
     p->pPrev = pAfter;
     p->pNext = pAfter->pNext;
@@ -202,14 +193,14 @@ ListInsertAfter(ListBase<T>* s, ListNode<T>* pAfter, ListNode<T>* p)
 
     pAfter->pNext = p;
 
-    if (pAfter == s->pLast) s->pLast = p;
+    if (pAfter == this->pLast) this->pLast = p;
 
-    ++s->size;
+    ++this->size;
 }
 
 template<typename T>
 constexpr void
-ListInsertBefore(ListBase<T>* s, ListNode<T>* pBefore, ListNode<T>* p)
+ListBase<T>::insertBefore(ListNode<T>* pBefore, ListNode<T>* p)
 {
     p->pNext = pBefore;
     p->pPrev = pBefore->pPrev;
@@ -218,21 +209,22 @@ ListInsertBefore(ListBase<T>* s, ListNode<T>* pBefore, ListNode<T>* p)
 
     pBefore->pPrev = p;
 
-    if (pBefore == s->pFirst) s->pFirst = p;
+    if (pBefore == this->pFirst) this->pFirst = p;
 
-    ++s->size;
+    ++this->size;
 }
 
 /* https://www.chiark.greenend.org.uk/~sgtatham/algorithms/listsort.c */
-template<typename T, auto FN_CMP>
+template<typename T>
+template<auto FN_CMP>
 constexpr void
-ListSort(ListBase<T>* s)
+ListBase<T>::sort()
 {
     ListNode<T>* p, * q, * e, * tail;
     long inSize, nMerges, pSize, qSize, i;
-    ListNode<T>* list = s->pFirst;
+    ListNode<T>* list = this->pFirst;
 
-    if (!s->pFirst) return;
+    if (!this->pFirst) return;
 
     inSize = 1;
 
@@ -307,8 +299,8 @@ ListSort(ListBase<T>* s)
         inSize *= 2;
     }
 
-    s->pFirst = list;
-    s->pLast = tail;
+    this->pFirst = list;
+    this->pLast = tail;
 }
 
 template<typename T>
@@ -329,15 +321,22 @@ struct List
     const ListBase<T>::It end() const { return base.end(); }
     const ListBase<T>::It rbegin() const { return base.rbegin(); }
     const ListBase<T>::It rend() const { return base.rend(); }
-};
 
-template<typename T> constexpr ListNode<T>* ListPushFront(List<T>* s, const T& x) { return ListPushFront(&s->base, s->pAlloc, x); }
-template<typename T> constexpr ListNode<T>* ListPushBack(List<T>* s, const T& x) { return ListPushBack(&s->base, s->pAlloc, x); }
-template<typename T> constexpr void ListRemove(List<T>* s, ListNode<T>* p) { ListRemove(&s->base, p); free(s->pAlloc, p); }
-template<typename T> constexpr void ListDestroy(List<T>* s) { ListDestroy(&s->base, s->pAlloc); }
-template<typename T> constexpr void ListInsertAfter(List<T>* s, ListNode<T>* pAfter, ListNode<T>* p) { ListInsertAfter(&s->base, pAfter, p); }
-template<typename T> constexpr void ListInsertBefore(List<T>* s, ListNode<T>* pBefore, ListNode<T>* p) { ListInsertBefore(&s->base, pBefore, p); }
-template<typename T, auto FN_CMP = utils::compare<T>> constexpr void ListSort(List<T>* s) { ListSort<T, FN_CMP>(&s->base); }
+    constexpr ListNode<T>* pushFront(const T& x) { return base.pushFront(pAlloc, x); }
+
+    constexpr ListNode<T>* pushBack(const T& x) { return base.pushBack(pAlloc, x); }
+
+    constexpr void remove(ListNode<T>* p) { base.remove(p); pAlloc->free(p); }
+
+    constexpr void destroy() { base.destroy(pAlloc); }
+
+    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p) { base.insertAfter(pAfter, p); }
+
+    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p) { base.insertBefore(pBefore, p); }
+
+    template<auto FN_CMP = utils::compare<T>>
+    constexpr void sort() { base.template sort<FN_CMP>(); }
+};
 
 namespace utils
 {

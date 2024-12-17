@@ -56,7 +56,7 @@ struct Decoder
 Decoder*
 DecoderAlloc(IAllocator* pAlloc)
 {
-    Decoder* s = (Decoder*)zalloc(pAlloc, 1, sizeof(Decoder));
+    Decoder* s = (Decoder*)pAlloc->zalloc(1, sizeof(Decoder));
     return s;
 }
 
@@ -188,7 +188,7 @@ ERROR
 DecoderOpen(Decoder* s, String sPath)
 {
     String sPathNullTerm = StringAlloc(OsAllocatorGet(), sPath); /* with null char */
-    defer( StringDestroy(OsAllocatorGet(), &sPathNullTerm) );
+    defer( sPathNullTerm.destroy(OsAllocatorGet()) );
 
     int err = 0;
     defer( if (err < 0) DecoderClose(s) );

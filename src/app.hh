@@ -45,7 +45,7 @@ inline PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward) { return PlayerCyc
 inline void selectPrev() { PlayerSelectPrev(g_pPlayer); }
 inline void selectNext() { PlayerSelectNext(g_pPlayer); }
 inline void toggleMute() { utils::toggle(&g_pMixer->bMuted); }
-inline void seekFromInput() { WindowSeekFromInput(g_pWin); }
-inline void subStringSearch() { WindowSubStringSearch(g_pWin); }
+inline void seekFromInput() { g_pWin->seekFromInput(); }
+inline void subStringSearch() { g_pWin->subStringSearch(); }
 
 } /* namespace app */

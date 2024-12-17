@@ -11,8 +11,8 @@ namespace common
 struct InputBuff {
     wchar_t aBuff[64] {};
     u32 idx = 0;
-    READ_MODE eCurrMode {};
-    READ_MODE eLastUsedMode {};
+    WINDOW_READ_MODE eCurrMode {};
+    WINDOW_READ_MODE eLastUsedMode {};
 
     void zeroOutBuff() { memset(aBuff, 0, sizeof(aBuff)); }
 };
@@ -34,7 +34,7 @@ constexpr u32 CHAR_VOL_MUTED = L'▮';
 constexpr wchar_t CURSOR_BLOCK[] {L'█', L'\0'};
 
 inline constexpr String
-readModeToString(READ_MODE e)
+readModeToString(WINDOW_READ_MODE e)
 {
     constexpr String map[] {"", "searching: ", "time: "};
     return map[int(e)];
@@ -44,7 +44,7 @@ inline String
 allocTimeString(Arena* pArena, int width)
 {
     auto& mixer = *app::g_pMixer;
-    char* pBuff = (char*)zalloc(pArena, 1, width + 1);
+    char* pBuff = (char*)pArena->zalloc(1, width + 1);
 
     u64 t = std::round(f64(mixer.currentTimeStamp) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
     u64 totalT = std::round(f64(mixer.totalSamplesCount) / f64(mixer.nChannels) / f64(mixer.changedSampleRate));
@@ -103,8 +103,8 @@ procSeekString(const wchar_t* pBuff, u32 size)
         else if (iswdigit(buff[i]))
         {
             Arr<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
-            if (i < ArrCap(pTargetArray) - 1)
-                ArrPush(pTargetArray, char(buff[i]));
+            if (i < pTargetArray->getCap() - 1)
+                pTargetArray->push(char(buff[i]));
         }
     }
 
@@ -138,8 +138,8 @@ subStringSearch(
 {
     auto& pl = *app::g_pPlayer;
 
-    g_input.eLastUsedMode = g_input.eCurrMode = READ_MODE::SEARCH;
-    defer( g_input.eCurrMode = READ_MODE::NONE );
+    g_input.eLastUsedMode = g_input.eCurrMode = WINDOW_READ_MODE::SEARCH;
+    defer( g_input.eCurrMode = WINDOW_READ_MODE::NONE );
 
     g_input.zeroOutBuff();
     g_input.idx = 0;
@@ -153,7 +153,7 @@ subStringSearch(
     } while (pfnRead(pReadArg) != READ_STATUS::DONE);
 
     /* fix focused if it ends up out of the list range */
-    if (pl.focused >= (VecSize(&pl.aSongIdxs)))
+    if (pl.focused >= pl.aSongIdxs.getSize())
         pl.focused = *pFirstIdx;
 }
 
@@ -165,8 +165,8 @@ seekFromInput(
     void* pDrawArg
 )
 {
-    g_input.eLastUsedMode = g_input.eCurrMode = READ_MODE::SEEK;
-    defer( g_input.eCurrMode = READ_MODE::NONE );
+    g_input.eLastUsedMode = g_input.eCurrMode = WINDOW_READ_MODE::SEEK;
+    defer( g_input.eCurrMode = WINDOW_READ_MODE::NONE );
 
     g_input.zeroOutBuff();
     g_input.idx = 0;

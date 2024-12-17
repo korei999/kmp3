@@ -13,71 +13,6 @@ namespace adt
 #define ADT_VEC_FOREACH_I_REV(A, I) for (u32 I = (A)->size - 1; I != -1U ; --I)
 
 /* Dynamic array (aka Vector) */
-template<typename T> struct VecBase;
-
-template<typename T> inline u32
-VecPush(VecBase<T>* s, IAllocator* p, const T& data);
-
-template<typename T>
-[[nodiscard]] inline T& VecLast(VecBase<T>* s);
-
-template<typename T>
-[[nodiscard]] inline const T& VecLast(const VecBase<T>* s);
-
-template<typename T>
-[[nodiscard]] inline T& VecFirst(VecBase<T>* s);
-
-template<typename T>
-[[nodiscard]] inline const T& VecFirst(const VecBase<T>* s);
-
-template<typename T>
-inline T* VecPop(VecBase<T>* s);
-
-template<typename T>
-inline void VecSetSize(VecBase<T>* s, IAllocator* p, u32 size);
-
-template<typename T>
-inline void VecSetCap(VecBase<T>* s, IAllocator* p, u32 cap);
-
-template<typename T>
-inline void VecSwapWithLast(VecBase<T>* s, u32 i);
-
-template<typename T>
-inline void VecPopAsLast(VecBase<T>* s, u32 i);
-
-template<typename T>
-[[nodiscard]] inline u32 VecIdx(const VecBase<T>* s, const T* x);
-
-template<typename T>
-[[nodiscard]] inline u32 VecLastI(const VecBase<T>* s);
-
-template<typename T>
-[[nodiscard]] inline T& VecAt(VecBase<T>* s, u32 at);
-
-template<typename T>
-[[nodiscard]] inline const T& VecAt(const VecBase<T>* s, u32 at);
-
-template<typename T>
-inline void VecDestroy(VecBase<T>* s, IAllocator* p);
-
-template<typename T>
-[[nodiscard]] inline u32 VecSize(const VecBase<T>* s);
-
-template<typename T>
-inline u32 VecCap(const VecBase<T>* s);
-
-template<typename T>
-[[nodiscard]] inline T* VecData(VecBase<T>* s);
-
-template<typename T>
-inline void VecZeroOut(VecBase<T>* s);
-
-template<typename T>
-[[nodiscard]] inline VecBase<T> VecClone(const VecBase<T>* s, IAllocator* pAlloc);
-
-template<typename T>
-inline void _VecGrow(VecBase<T>* s, IAllocator* p, u32 newCapacity);
-
 template<typename T>
 struct VecBase
 {
@@ -87,12 +22,56 @@ struct VecBase
 
     VecBase() = default;
     VecBase(IAllocator* p, u32 prealloc = 1)
-        : pData((T*)alloc(p, prealloc, sizeof(T))),
+        : pData((T*)p->alloc(prealloc, sizeof(T))),
           size(0),
           capacity(prealloc) {}
 
     T& operator[](u32 i)             { assert(i < size && "[Vec] out of size"); return pData[i]; }
     const T& operator[](u32 i) const { assert(i < size && "[Vec] out of size"); return pData[i]; }
+
+    u32 push(IAllocator* p, const T& data);
+
+    [[nodiscard]] inline T& last();
+
+    [[nodiscard]] inline const T& last() const;
+
+    [[nodiscard]] inline T& first();
+
+    [[nodiscard]] inline const T& first() const;
+
+    inline T* pop();
+
+    inline void setSize(IAllocator* p, u32 size);
+
+    inline void setCap(IAllocator* p, u32 cap);
+
+    inline void swapWithLast(u32 i);
+
+    inline void popAsLast(u32 i);
+
+    [[nodiscard]] inline u32 idx(const T* x) const;
+
+    [[nodiscard]] inline u32 lastI() const;
+
+    [[nodiscard]] inline T& at(u32 i);
+
+    [[nodiscard]] inline const T& at(u32 i) const;
+
+    inline void destroy(IAllocator* p);
+
+    [[nodiscard]] inline u32 getSize() const;
+
+    [[nodiscard]] inline u32 getCap() const;
+
+    [[nodiscard]] inline T*& data();
+
+    [[nodiscard]] inline T* const& data() const;
+
+    inline void zeroOut();
+
+    [[nodiscard]] inline VecBase<T> clone(IAllocator* pAlloc) const;
+
+    inline void _grow(IAllocator* p, u32 newCapacity);
 
     struct It
     {
@@ -126,9 +105,11 @@ struct VecBase
 
 template<typename T>
 inline u32
-VecPush(VecBase<T>* s, IAllocator* p, const T& data)
+VecBase<T>::push(IAllocator* p, const T& data)
 {
-    if (s->size >= s->capacity) _VecGrow(s, p, utils::max(s->capacity * 2U, u32(SIZE_MIN)));
+    auto* s = this;
+
+    if (s->size >= s->capacity) s->_grow(p, utils::max(s->capacity * 2U, u32(SIZE_MIN)));
 
     s->pData[s->size++] = data;
     return s->size - 1;
@@ -136,54 +117,56 @@ VecPush(VecBase<T>* s, IAllocator* p, const T& data)
 
 template<typename T>
 [[nodiscard]] inline T&
-VecLast(VecBase<T>* s)
+VecBase<T>::last()
 {
-    return s->pData[s->size - 1];
+    return this->pData[this->size - 1];
 }
 
 template<typename T>
 [[nodiscard]] inline const T&
-VecLast(const VecBase<T>* s)
+VecBase<T>::last() const
 {
-    return s->pData[s->size - 1];
+    return this->pData[this->size - 1];
 }
 
 template<typename T>
 [[nodiscard]] inline T&
-VecFirst(VecBase<T>* s)
+VecBase<T>::first()
 {
-    return s->pData[0];
+    return this->pData[0];
 }
 
 template<typename T>
 [[nodiscard]] inline const T&
-VecFirst(const VecBase<T>* s)
+VecBase<T>::first() const
 {
-    return s->pData[0];
+    return this->pData[0];
 }
 
 template<typename T>
 inline T*
-VecPop(VecBase<T>* s)
+VecBase<T>::pop()
 {
-    assert(s->size > 0 && "[Vec]: pop from empty");
-    return &s->pData[--s->size];
+    assert(this->size > 0 && "[Vec]: pop from empty");
+    return &this->pData[--this->size];
 }
 
 template<typename T>
 inline void
-VecSetSize(VecBase<T>* s, IAllocator* p, u32 size)
+VecBase<T>::setSize(IAllocator* p, u32 size)
 {
-    if (s->capacity < size) _VecGrow(s, p, size);
+    if (this->capacity < size) this->_grow(p, size);
 
-    s->size = size;
+    this->size = size;
 }
 
 template<typename T>
 inline void
-VecSetCap(VecBase<T>* s, IAllocator* p, u32 cap)
+VecBase<T>::setCap(IAllocator* p, u32 cap)
 {
-    s->pData = (T*)realloc(p, s->pData, cap, sizeof(T));
+    auto* s = this;
+
+    s->pData = (T*)p->realloc(s->pData, cap, sizeof(T));
     s->capacity = cap;
 
     if (s->size > cap) s->size = cap;
@@ -191,103 +174,110 @@ VecSetCap(VecBase<T>* s, IAllocator* p, u32 cap)
 
 template<typename T>
 inline void
-VecSwapWithLast(VecBase<T>* s, u32 i)
+VecBase<T>::swapWithLast(u32 i)
 {
-    utils::swap(&s->pData[i], &s->pData[s->size - 1]);
+    utils::swap(&this->pData[i], &this->pData[this->size - 1]);
 }
 
 template<typename T>
 inline void
-VecPopAsLast(VecBase<T>* s, u32 i)
+VecBase<T>::popAsLast(u32 i)
 {
-    s->pData[i] = s->pData[--s->size];
+    this->pData[i] = this->pData[--this->size];
 }
 
 template<typename T>
 [[nodiscard]] inline u32
-VecIdx(const VecBase<T>* s, const T* x)
+VecBase<T>::idx(const T* x) const
 {
-    u32 r = u32(x - s->pData);
-    assert(r < s->capacity);
+    u32 r = u32(x - this->pData);
+    assert(r < this->capacity);
     return r;
 }
 
 template<typename T>
 [[nodiscard]] inline u32
-VecLastI(const VecBase<T>* s)
+VecBase<T>::lastI() const
 {
-    return VecIdx(s, &VecLast(s));
+    return this->idx(this->last());
 }
 
 template<typename T>
 [[nodiscard]] inline T&
-VecAt(VecBase<T>* s, u32 at)
+VecBase<T>::at(u32 i)
 {
-    assert(at < s->size && "[Vec]: out of size");
-    return s->pData[at];
+    assert(i < this->size && "[Vec]: out of size");
+    return this->pData[i];
 }
 
 template<typename T>
 [[nodiscard]] inline const T&
-VecAt(const VecBase<T>* s, u32 at)
+VecBase<T>::at(u32 i) const
 {
-    assert(at < s->size && "[Vec]: out of size");
-    return s->pData[at];
+    assert(i < this->size && "[Vec]: out of size");
+    return this->pData[i];
 }
 
 template<typename T>
 inline void
-VecDestroy(VecBase<T>* s, IAllocator* p)
+VecBase<T>::destroy(IAllocator* p)
 {
-    free(p, s->pData);
+    p->free(this->pData);
 }
 
 template<typename T>
 [[nodiscard]] inline u32
-VecSize(const VecBase<T>* s)
+VecBase<T>::getSize() const
 {
-    return s->size;
+    return this->size;
 }
 
 template<typename T>
 inline u32
-VecCap(const VecBase<T>* s)
+VecBase<T>::getCap() const
 {
-    return s->capacity;
+    return this->capacity;
 }
 
 template<typename T>
-[[nodiscard]] inline T*
-VecData(VecBase<T>* s)
+[[nodiscard]] inline T*&
+VecBase<T>::data()
 {
-    return s->pData;
+    return this->pData;
+}
+
+template<typename T>
+[[nodiscard]] inline T* const&
+VecBase<T>::data() const
+{
+    return this->pData;
 }
 
 template<typename T>
 inline void
-VecZeroOut(VecBase<T>* s)
+VecBase<T>::zeroOut()
 {
-    memset(s->pData, 0, s->size * sizeof(T));
+    memset(this->pData, 0, this->size * sizeof(T));
 }
 
 template<typename T>
 [[nodiscard]] inline VecBase<T>
-VecClone(const VecBase<T>* s, IAllocator* pAlloc)
+VecBase<T>::clone(IAllocator* pAlloc) const
 {
-    auto nVec = VecBase<T>(pAlloc, s->capacity);
-    memcpy(nVec.pData, s->pData, s->size * sizeof(T));
-    nVec.size = s->size;
+    auto nVec = VecBase<T>(pAlloc, this->getCap());
+    memcpy(nVec.pData, this->data(), this->getSize() * sizeof(T));
+    nVec.size = this->getSize();
 
     return nVec;
 }
 
 template<typename T>
 inline void
-_VecGrow(VecBase<T>* s, IAllocator* p, u32 newCapacity)
+VecBase<T>::_grow(IAllocator* p, u32 newCapacity)
 {
     assert(newCapacity * sizeof(T) > 0);
-    s->capacity = newCapacity;
-    s->pData = (T*)realloc(p, s->pData, newCapacity, sizeof(T));
+    this->capacity = newCapacity;
+    this->pData = (T*)p->realloc(this->pData, newCapacity, sizeof(T));
 }
 
 template<typename T>
@@ -311,75 +301,57 @@ struct Vec
     const VecBase<T>::It end() const { return base.end(); }
     const VecBase<T>::It rbegin() const { return base.rbegin(); }
     const VecBase<T>::It rend() const { return rend(); }
+
+    inline u32 push(const T& data) { return this->base.push(this->pAlloc, data); }
+
+    [[nodiscard]] inline T& VecLast() { return this->base.last(); }
+
+    [[nodiscard]] inline const T& last() const { return this->base.last(); }
+
+    [[nodiscard]] inline T& first() { return this->base.first(); }
+
+    [[nodiscard]] inline const T& first() const { return this->base.first(); }
+
+    inline T* pop() { return this->base.pop(); }
+
+    inline void setSize(u32 size) { this->base.setSize(this->pAlloc, size); }
+
+    inline void setCap(u32 cap) { this->base.setCap(this->pAlloc, cap); }
+
+    inline void swapWithLast(u32 i) { this->base.swapWithLast(i); }
+
+    inline void popAsLast(u32 i) { this->base.popAsLast(i); }
+
+    [[nodiscard]] inline u32 idx(const T* x) const { return this->base.idx(x); }
+
+    [[nodiscard]] inline u32 lastI() const { return this->base.lastI(); }
+
+    [[nodiscard]] inline T& at(u32 i) { return this->base.at(i); }
+
+    [[nodiscard]] inline const T& at(u32 i) const { return this->base.at(i); }
+
+    inline void destroy() { this->base.destroy(this->pAlloc); }
+
+    [[nodiscard]] inline u32 getSize() const { return this->base.getSize(); }
+
+    [[nodiscard]] inline u32 getCap() const { return this->base.getCap(); }
+
+    [[nodiscard]] inline T*& data() { return this->base.data(); }
+
+    [[nodiscard]] inline const T*& data() const { return this->base.data(); }
+
+    inline void zeroOut() { this->base.zeroOut(); }
+
+    [[nodiscard]] inline Vec<T>
+    clone(IAllocator* pAlloc)
+    {
+        auto base = this->base.clone(pAlloc);
+        Vec<T> nVec;
+        nVec.base = base;
+        nVec.pAlloc = pAlloc;
+        return nVec;
+    }
 };
-
-template<typename T>
-inline u32 VecPush(Vec<T>* s, const T& data) { return VecPush<T>(&s->base, s->pAlloc, data); }
-
-template<typename T>
-[[nodiscard]] inline T& VecLast(Vec<T>* s) { return VecLast<T>(&s->base); }
-
-template<typename T>
-[[nodiscard]] inline const T& VecLast(Vec<T>* s) { return VecLast<T>(&s->base); }
-
-template<typename T>
-[[nodiscard]] inline T& VecFirst(Vec<T>* s) { return VecFirst<T>(&s->base); }
-
-template<typename T>
-[[nodiscard]] inline const T& VecFirst(const Vec<T>* s) { return VecFirst<T>(&s->base); }
-
-template<typename T>
-inline T* VecPop(Vec<T>* s) { return VecPop<T>(&s->base); }
-
-template<typename T>
-inline void VecSetSize(Vec<T>* s, u32 size) { VecSetSize<T>(&s->base, s->pAlloc, size); }
-
-template<typename T>
-inline void VecSetCap(Vec<T>* s, u32 cap) { VecSetCap<T>(&s->base, s->pAlloc, cap); }
-
-template<typename T>
-inline void VecSwapWithLast(Vec<T>* s, u32 i) { VecSwapWithLast<T>(&s->base, i); }
-
-template<typename T>
-inline void VecPopAsLast(Vec<T>* s, u32 i) { VecPopAsLast<T>(&s->base, i); }
-
-template<typename T>
-[[nodiscard]] inline u32 VecIdx(const Vec<T>* s, const T* x) { return VecIdx<T>(&s->base, x); }
-
-template<typename T>
-[[nodiscard]] inline u32 VecLastI(const Vec<T>* s) { return VecLastI<T>(&s->base); }
-
-template<typename T>
-[[nodiscard]] inline T& VecAt(Vec<T>* s, u32 at) { return VecAt<T>(&s->base, at); }
-
-template<typename T>
-[[nodiscard]] inline const T& VecAt(const Vec<T>* s, u32 at) { return VecAt<T>(&s->base, at); }
-
-template<typename T>
-inline void VecDestroy(Vec<T>* s) { VecDestroy<T>(&s->base, s->pAlloc); }
-
-template<typename T>
-inline u32 VecSize(const Vec<T>* s) { return VecSize<T>(&s->base); }
-
-template<typename T>
-inline u32 VecCap(const Vec<T>* s) { return VecCap<T>(&s->base); }
-
-template<typename T>
-[[nodiscard]] inline T* VecData(Vec<T>* s) { return VecData<T>(&s->base); }
-
-template<typename T>
-inline void VecZeroOut(Vec<T>* s) { VecZeroOut<T>(&s->base); }
-
-template<typename T>
-[[nodiscard]] inline Vec<T>
-VecClone(const Vec<T>* s, IAllocator* pAlloc)
-{
-    auto base = VecClone(&s->base, pAlloc);
-    Vec<T> nVec;
-    nVec.base = base;
-    nVec.pAlloc = pAlloc;
-    return nVec;
-}
 
 namespace utils
 {

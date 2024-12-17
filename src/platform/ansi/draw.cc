@@ -45,7 +45,7 @@ clearArea(Win* s, int x, int y, int width, int height)
     const char space = ' ';
     for (int i = y; i < h; ++i)
         for (int j = x; j < w; ++j)
-            TextBuffMovePush(&s->textBuff, j, i, &space, 1);
+            s->textBuff.movePush(j, i, &space, 1);
 }
 
 static void
@@ -54,7 +54,7 @@ clearLine(Win* s, int x, int y, int width)
     const int w = utils::minVal(g_termSize.width, width);
 
     for (int i = y; i < w; ++i)
-        TextBuffMovePush(&s->textBuff, i, y, " ");
+        s->textBuff.movePush(i, y, " ");
 }
 
 static void
@@ -76,7 +76,7 @@ drawCoverImage(Win* s)
         Opt<ffmpeg::Image> oCoverImg = audio::MixerGetCoverImage(app::g_pMixer);
         if (oCoverImg)
         {
-            const auto& img = oCoverImg.data;
+            const auto& img = oCoverImg.getData();
 
             f64 scaleFactor = f64(split - 1) / f64(img.height);
             int scaledWidth = std::round(img.width * scaleFactor / defaults::FONT_ASPECT_RATIO);
@@ -90,8 +90,8 @@ drawCoverImage(Win* s)
                 s->pArena, img, split, g_termSize.width - 2
             );
 
-            TextBuffMove(&s->textBuff, 1, 1);
-            TextBuffPush(&s->textBuff, sImg.pData, sImg.size);
+            s->textBuff.move(1, 1);
+            s->textBuff.push(sImg.pData, sImg.size);
         }
     }
 }
@@ -117,14 +117,14 @@ drawSongList(Win* s)
         bool bSelected = songIdx == pl.selected ? true : false;
 
         if (h == pl.focused && bSelected)
-            TextBuffPush(pTB, BOLD YELLOW REVERSE);
+            pTB->push(BOLD YELLOW REVERSE);
         else if (h == pl.focused)
-            TextBuffPush(pTB, REVERSE);
+            pTB->push(REVERSE);
         else if (bSelected)
-            TextBuffPush(pTB, BOLD YELLOW);
+            pTB->push(BOLD YELLOW);
 
-        TextBuffMovePushGlyphs(pTB, 1, i + split + 1, sSong, width - 2);
-        TextBuffPush(pTB, NORM);
+        pTB->movePushGlyphs(1, i + split + 1, sSong, width - 2);
+        pTB->push(NORM);
     }
 }
 
@@ -140,7 +140,7 @@ drawBottomLine(Win* s)
 
     /* selected / focused */
     {
-        char* pBuff = (char*)zalloc(s->pArena, 1, width + 1);
+        char* pBuff = (char*)s->pArena->zalloc(1, width + 1);
 
         int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.size - 1);
         if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
@@ -152,21 +152,21 @@ drawBottomLine(Win* s)
             n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
         }
 
-        TextBuffMovePush(pTB, width - n - 2, height - 1, pBuff, width - 2); }
+        pTB->movePush(width - n - 2, height - 1, pBuff, width - 2); }
 
     if (
-        c::g_input.eCurrMode != READ_MODE::NONE ||
-        (c::g_input.eCurrMode == READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
+        c::g_input.eCurrMode != WINDOW_READ_MODE::NONE ||
+        (c::g_input.eCurrMode == WINDOW_READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
     )
     {
         const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
-        TextBuffMovePushGlyphs(pTB, 1, height - 1, sReadMode, width - 2);
-        TextBuffMovePushWideString(pTB, sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff) - 2);
+        pTB->movePushGlyphs(1, height - 1, sReadMode, width - 2);
+        pTB->movePushWideString(sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff) - 2);
 
-        if (c::g_input.eCurrMode != READ_MODE::NONE) TextBuffHideCursor(pTB, false);
-        else TextBuffHideCursor(pTB, true);
+        if (c::g_input.eCurrMode != WINDOW_READ_MODE::NONE) pTB->hideCursor(false);
+        else pTB->hideCursor(true);
     }
-    else TextBuffHideCursor(pTB, true);
+    else pTB->hideCursor(true);
 }
 
 void
@@ -184,8 +184,8 @@ update(Win* s)
     drawBottomLine(s);
 
     /* NOTE: careful with multithreading/signals + shared frame arena */
-    TextBuffFlush(pTB);
-    TextBuffReset(pTB);
+    pTB->flush();
+    pTB->reset();
 }
 
 } /* namespace draw */

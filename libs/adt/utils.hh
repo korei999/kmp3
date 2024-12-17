@@ -177,9 +177,9 @@ sleepS(f64 s)
 }
 
 constexpr void
-addNSToTimespec(timespec* const pTs, const time_t nsec)
+addNSToTimespec(timespec* const pTs, const long nsec)
 {
-    constexpr time_t nsecMax = 1000000000;
+    constexpr long nsecMax = 1000000000;
     /* overflow check */
     if (pTs->tv_nsec + nsec >= nsecMax)
     {

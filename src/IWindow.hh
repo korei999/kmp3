@@ -4,7 +4,7 @@
 
 using namespace adt;
 
-enum class READ_MODE : u8 { NONE, SEARCH, SEEK };
+enum class WINDOW_READ_MODE : u8 { NONE, SEARCH, SEEK };
 
 struct IWindow;
 
@@ -20,37 +20,37 @@ struct WindowVTable
 
 struct IWindow
 {
-    const WindowVTable* vTable {};
-};
+    const WindowVTable* pVTable {};
 
-ADT_NO_UB inline bool WindowStart(IWindow* s, Arena* pArena) { return s->vTable->start(s, pArena); }
-ADT_NO_UB inline void WindowDestroy(IWindow* s) { s->vTable->destroy(s); }
-ADT_NO_UB inline void WindowDraw(IWindow* s) { s->vTable->draw(s); }
-ADT_NO_UB inline void WindowProcEvents(IWindow* s) { s->vTable->procEvents(s); }
-ADT_NO_UB inline void WindowSeekFromInput(IWindow* s) { s->vTable->seekFromInput(s); }
-ADT_NO_UB inline void WindowSubStringSearch(IWindow* s) { s->vTable->subStringSearch(s); }
+    ADT_NO_UB bool start(Arena* pArena) { return pVTable->start(this, pArena); }
+    ADT_NO_UB void destroy() { pVTable->destroy(this); }
+    ADT_NO_UB void draw() { pVTable->draw(this); }
+    ADT_NO_UB void procEvents() { pVTable->procEvents(this); }
+    ADT_NO_UB void seekFromInput() { pVTable->seekFromInput(this); }
+    ADT_NO_UB void subStringSearch() { pVTable->subStringSearch(this); }
+};
 
 struct DummyWindow
 {
     IWindow super {};
 
     DummyWindow();
+
+    bool start(Arena* pArena) { return true; };
+    void destroy() {};
+    void draw() {};
+    void procEvents() {};
+    void seekFromInput() {};
+    void subStringSearch() {};
 };
 
-inline bool DummyStart(DummyWindow* ,Arena*) { return true; }
-inline void DummyDestroy(DummyWindow*) {}
-inline void DummyDraw(DummyWindow*) {}
-inline void DummyProcEvents(DummyWindow*) {}
-inline void DummySeekFromInput(DummyWindow*) {}
-inline void DummySubStringSearch(DummyWindow*) {}
-
 inline const WindowVTable inl_DummyWindowVTable {
-    .start = decltype(WindowVTable::start)(DummyStart),
-    .destroy = decltype(WindowVTable::destroy)(DummyDestroy),
-    .draw = decltype(WindowVTable::draw)(DummyDraw),
-    .procEvents = decltype(WindowVTable::procEvents)(DummyProcEvents),
-    .seekFromInput = decltype(WindowVTable::seekFromInput)(DummySeekFromInput),
-    .subStringSearch = decltype(WindowVTable::subStringSearch)(DummySubStringSearch),
+    .start = decltype(WindowVTable::start)(+[](DummyWindow*, Arena*) {}),
+    .destroy = decltype(WindowVTable::destroy)(+[](DummyWindow*) {}),
+    .draw = decltype(WindowVTable::draw)(+[](DummyWindow*) {}),
+    .procEvents = decltype(WindowVTable::procEvents)(+[](DummyWindow*) {}),
+    .seekFromInput = decltype(WindowVTable::seekFromInput)(+[](DummyWindow*) {}),
+    .subStringSearch = decltype(WindowVTable::subStringSearch)(+[](DummyWindow*) {}),
 };
 
 inline
