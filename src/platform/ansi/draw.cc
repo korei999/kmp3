@@ -42,14 +42,11 @@ clearArea(Win* s, int x, int y, int width, int height)
     const int w = utils::minVal(g_termSize.width, width);
     const int h = utils::minVal(g_termSize.height, height);
 
-    u32 size = (w + 1) * h;
-    char* pBuff = (char*)s->pArena->zalloc(size + 1, 1);
-    memset(pBuff, ' ', size);
+    char* pBuff = (char*)s->pArena->alloc(w + 1, 1);
+    memset(pBuff, ' ', w);
 
-    for (int i = 0; i < h - 1; ++i)
-        pBuff[w * i] = '\n';
-
-    s->textBuff.movePush(x, y, pBuff, size);
+    for (int i = y; i < h; ++i)
+        s->textBuff.movePush(x, i, pBuff, w);
 }
 
 static void
