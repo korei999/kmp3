@@ -33,6 +33,26 @@ struct MixerVTable
     void (*setVolume)(IMixer* s, const f32 volume);
 };
 
+template<typename MIXER_T>
+constexpr MixerVTable
+MixerVTableGenerate()
+{
+    return MixerVTable {
+        .init = decltype(MixerVTable::init)(methodPointer(&MIXER_T::init)),
+        .destroy = decltype(MixerVTable::destroy)(methodPointer(&MIXER_T::destroy)),
+        .play = decltype(MixerVTable::play)(methodPointer(&MIXER_T::play)),
+        .pause = decltype(MixerVTable::pause)(methodPointer(&MIXER_T::pause)),
+        .togglePause = decltype(MixerVTable::togglePause)(methodPointer(&MIXER_T::togglePause)),
+        .changeSampleRate = decltype(MixerVTable::changeSampleRate)(methodPointer(&MIXER_T::changeSampleRate)),
+        .seekMS = decltype(MixerVTable::seekMS)(methodPointer(&MIXER_T::seekMS)),
+        .seekLeftMS = decltype(MixerVTable::seekLeftMS)(methodPointer(&MIXER_T::seekLeftMS)),
+        .seekRightMS = decltype(MixerVTable::seekRightMS)(methodPointer(&MIXER_T::seekRightMS)),
+        .getMetadata = decltype(MixerVTable::getMetadata)(methodPointer(&MIXER_T::getMetadata)),
+        .getCoverImage = decltype(MixerVTable::getCoverImage)(methodPointer(&MIXER_T::getCoverImage)),
+        .setVolume = decltype(MixerVTable::setVolume)(methodPointer(&MIXER_T::setVolume)),
+    };
+}
+
 struct IMixer
 {
     const MixerVTable* pVTable {};
@@ -76,22 +96,22 @@ struct DummyMixer
     IMixer super;
 
     constexpr DummyMixer();
+
+    void init() {}
+    void destroy() {}
+    void play(String sPath) {}
+    void pause(bool bPause) {}
+    void togglePause() {}
+    void changeSampleRate(u64 sampleRate, bool bSave) {}
+    void seekMS(s64 ms) {}
+    void seekLeftMS(s64 ms) {}
+    void seekRightMS(s64 ms) {}
+    Opt<String> getMetadata(const String sKey) { return {}; }
+    Opt<ffmpeg::Image> getCoverImage() { return {}; }
+    void setVolume(const f32 volume) {}
 };
 
-inline const MixerVTable inl_DummyMixerVTable {
-    .init = decltype(MixerVTable::init)(+[]{}),
-    .destroy = decltype(MixerVTable::destroy)(+[]{}),
-    .play = decltype(MixerVTable::play)(+[]{}),
-    .pause = decltype(MixerVTable::pause)(+[]{}),
-    .togglePause = decltype(MixerVTable::togglePause)(+[]{}),
-    .changeSampleRate = decltype(MixerVTable::changeSampleRate)(+[]{}),
-    .seekMS = decltype(MixerVTable::seekMS)(+[]{}),
-    .seekLeftMS = decltype(MixerVTable::seekMS)(+[]{}),
-    .seekRightMS = decltype(MixerVTable::seekMS)(+[]{}),
-    .getMetadata = decltype(MixerVTable::getMetadata)(+[]{}),
-    .getCoverImage = decltype(MixerVTable::getCoverImage)(+[]{}),
-    .setVolume = decltype(MixerVTable::setVolume)(+[]{}),
-};
+inline const MixerVTable inl_DummyMixerVTable = MixerVTableGenerate<DummyMixer>();
 
 constexpr
 DummyMixer::DummyMixer()

@@ -61,20 +61,7 @@ struct Mixer
     void setVolume(const f32 volume);
 };
 
-inline const audio::MixerVTable inl_MixerVTable {
-    .init = decltype(audio::MixerVTable::init)(+[](Mixer* s) { s->init(); }),
-    .destroy = decltype(audio::MixerVTable::destroy)(+[](Mixer* s) { s->destroy(); }),
-    .play = decltype(audio::MixerVTable::play)(+[](Mixer* s, String sPath) { s->play(sPath); }),
-    .pause = decltype(audio::MixerVTable::pause)(+[](Mixer* s, bool bPause) { s->pause(bPause); }),
-    .togglePause = decltype(audio::MixerVTable::togglePause)(+[](Mixer* s) { s->togglePause(); }),
-    .changeSampleRate = decltype(audio::MixerVTable::changeSampleRate)(+[](Mixer* s, u64 sampleRate, bool bSave) { s->changeSampleRate(sampleRate, bSave); }),
-    .seekMS = decltype(audio::MixerVTable::seekMS)(+[](Mixer* s, s64 ms) { s->seekMS(ms); }),
-    .seekLeftMS = decltype(audio::MixerVTable::seekLeftMS)(+[](Mixer* s, s64 ms) { s->seekLeftMS(ms); }),
-    .seekRightMS = decltype(audio::MixerVTable::seekRightMS)(+[](Mixer* s, s64 ms) { s->seekRightMS(ms); }),
-    .getMetadata = decltype(audio::MixerVTable::getMetadata)(+[](Mixer* s, const String sKey) { return s->getMetadata(sKey); }),
-    .getCoverImage = decltype(audio::MixerVTable::getCoverImage)(+[](Mixer* s) { return s->getCoverImage(); }),
-    .setVolume = decltype(audio::MixerVTable::setVolume)(+[](Mixer* s, const f32 volume) { s->setVolume(volume); }),
-};
+inline const audio::MixerVTable inl_MixerVTable = audio::MixerVTableGenerate<Mixer>();
 
 inline
 Mixer::Mixer(IAllocator* pA) : super(&inl_MixerVTable), pDecoder(ffmpeg::DecoderAlloc(pA)) {}
