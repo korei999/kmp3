@@ -20,6 +20,7 @@ struct Win
     TextBuff textBuff {};
     termios termOg {};
     u16 firstIdx {};
+    bool bRedraw = true;
 
     Win();
 

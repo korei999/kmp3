@@ -107,7 +107,10 @@ procInput(Win* s)
     for (const auto& k : keybinds::inl_aKeys)
     {
         if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
+        {
             keybinds::resolveKey(k.pfn, k.arg);
+            s->bRedraw = true;
+        }
     }
 }
 
@@ -119,7 +122,10 @@ sigwinchHandler(int sig)
     g_termSize = getTermSize();
     LOG_GOOD("term: {}\n", g_termSize);
 
+    s->textBuff.clear();
     app::g_pPlayer->bSelectionChanged = true;
+    s->bRedraw = true;
+
     s->draw();
 }
 
@@ -183,7 +189,7 @@ Win::seekFromInput()
     common::seekFromInput(
         +[](void* pArg) { return readWChar((Win*)pArg); },
         this,
-        +[](void* pArg) { draw::update((Win*)pArg); },
+        +[](void* pArg) { ((Win*)pArg)->bRedraw = true; draw::update((Win*)pArg); },
         this
     );
 }
@@ -195,7 +201,7 @@ Win::subStringSearch()
         this->pArena,
         +[](void* pArg) { return readWChar((Win*)pArg); },
         this,
-        +[](void* pArg) { draw::update((Win*)pArg); },
+        +[](void* pArg) { ((Win*)pArg)->bRedraw = true; draw::update((Win*)pArg); },
         this,
         &this->firstIdx
     );

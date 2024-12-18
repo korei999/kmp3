@@ -29,6 +29,8 @@ struct TextBuff
     void clearDown();
     void clearUp();
     void clear();
+    void clearLine(int arg);
+    void moveClearLine(int x, int y, int arg);
     void hideCursor(bool bHide);
     void movePush(int x, int y, const String str);
     void movePush(int x, int y, const char* pBuff, const u32 size);
@@ -137,6 +139,21 @@ inline void
 TextBuff::clear()
 {
     this->push("\x1b[2J");
+}
+
+inline void
+TextBuff::clearLine(int arg)
+{
+    char aBuff[32] {};
+    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}K", arg);
+    this->push(aBuff, n);
+}
+
+inline void
+TextBuff::moveClearLine(int x, int y, int arg)
+{
+    this->move(x, y);
+    this->clearLine(arg);
 }
 
 inline void

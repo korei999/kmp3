@@ -42,10 +42,11 @@ clearArea(Win* s, int x, int y, int width, int height)
     const int w = utils::minVal(g_termSize.width, width);
     const int h = utils::minVal(g_termSize.height, height);
 
-    const char space = ' ';
+    char* pBuff = (char*)s->pArena->alloc(w + 1, 1);
+    memset(pBuff, ' ', w);
+
     for (int i = y; i < h; ++i)
-        for (int j = x; j < w; ++j)
-            s->textBuff.movePush(j, i, &space, 1);
+        s->textBuff.movePush(x, i, pBuff, w);
 }
 
 static void
@@ -70,8 +71,8 @@ drawCoverImage(Win* s)
 
         const int split = app::g_pPlayer->imgHeight;
 
+        s->textBuff.clearKittyImages();
         clearArea(s, 0, 0, g_termSize.width, split + 1);
-        /*TextBuffClearKittyImages(&s->textBuff);*/
 
         Opt<ffmpeg::Image> oCoverImg = app::g_pMixer->getCoverImage();
         if (oCoverImg)
@@ -100,31 +101,37 @@ static void
 drawSongList(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
-    auto* pTB = &s->textBuff;
+    auto& tb = s->textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
-    /*const int split = common::getHorizontalSplitPos(height);*/
     const int split = pl.imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
-    clearArea(s, 0, split, width, height);
-
-    for (u16 h = s->firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
+    for (u16 h = s->firstIdx, i = 0; i < listHeight - 1; ++h, ++i)
     {
-        const u16 songIdx = pl.aSongIdxs[h];
-        const String sSong = pl.aShortArgvs[songIdx];
+        if (h < pl.aSongIdxs.getSize())
+        {
+            const u16 songIdx = pl.aSongIdxs[h];
+            const String sSong = pl.aShortArgvs[songIdx];
 
-        bool bSelected = songIdx == pl.selected ? true : false;
+            bool bSelected = songIdx == pl.selected ? true : false;
 
-        if (h == pl.focused && bSelected)
-            pTB->push(BOLD YELLOW REVERSE);
-        else if (h == pl.focused)
-            pTB->push(REVERSE);
-        else if (bSelected)
-            pTB->push(BOLD YELLOW);
+            if (h == pl.focused && bSelected)
+                tb.push(BOLD YELLOW REVERSE);
+            else if (h == pl.focused)
+                tb.push(REVERSE);
+            else if (bSelected)
+                tb.push(BOLD YELLOW);
 
-        pTB->movePushGlyphs(1, i + split + 1, sSong, width - 2);
-        pTB->push(NORM);
+            tb.move(0, i + split + 1);
+            tb.clearLine(0);
+            tb.movePushGlyphs(1, i + split + 1, sSong, width - 2);
+            tb.push(NORM);
+        }
+        else
+        {
+            tb.moveClearLine(0, i + split + 1, 0);
+        }
     }
 }
 
@@ -134,9 +141,11 @@ drawBottomLine(Win* s)
     namespace c = common;
 
     const auto& pl = *app::g_pPlayer;
-    auto* pTB = &s->textBuff;
+    auto& tb = s->textBuff;
     int height = g_termSize.height;
     int width = g_termSize.width;
+
+    tb.moveClearLine(0, height - 1, 0);
 
     /* selected / focused */
     {
@@ -152,7 +161,7 @@ drawBottomLine(Win* s)
             n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
         }
 
-        pTB->movePush(width - n - 2, height - 1, pBuff, width - 2); }
+        tb.movePush(width - n - 2, height - 1, pBuff, width - 2); }
 
     if (
         c::g_input.eCurrMode != WINDOW_READ_MODE::NONE ||
@@ -160,13 +169,13 @@ drawBottomLine(Win* s)
     )
     {
         const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
-        pTB->movePushGlyphs(1, height - 1, sReadMode, width - 2);
-        pTB->movePushWideString(sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff) - 2);
+        tb.movePushGlyphs(1, height - 1, sReadMode, width - 2);
+        tb.movePushWideString(sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff) - 2);
 
-        if (c::g_input.eCurrMode != WINDOW_READ_MODE::NONE) pTB->hideCursor(false);
-        else pTB->hideCursor(true);
+        if (c::g_input.eCurrMode != WINDOW_READ_MODE::NONE) tb.hideCursor(false);
+        else tb.hideCursor(true);
     }
-    else pTB->hideCursor(true);
+    else tb.hideCursor(true);
 }
 
 void
@@ -179,12 +188,18 @@ update(Win* s)
 
     s_time = utils::timeNowMS();
 
-    drawCoverImage(s);
-    drawSongList(s);
-    drawBottomLine(s);
+    if (s->bRedraw)
+    {
+        s->bRedraw = false;
+
+        drawCoverImage(s);
+        drawSongList(s);
+        drawBottomLine(s);
+
+        pTB->flush();
+    }
 
     /* NOTE: careful with multithreading/signals + shared frame arena */
-    pTB->flush();
     pTB->reset();
 }
 
