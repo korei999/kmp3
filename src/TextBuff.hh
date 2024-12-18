@@ -118,7 +118,6 @@ inline void
 TextBuff::move(int x, int y)
 {
     char aBuff[64] {};
-    /*u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);*/
     u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{};{}H", y + 1, x + 1);
     this->push(aBuff, n);
 }

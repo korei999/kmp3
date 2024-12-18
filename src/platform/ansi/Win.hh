@@ -21,6 +21,7 @@ struct Win
     termios termOg {};
     u16 firstIdx {};
     bool bRedraw = true;
+    int prevImgWidth = 0;
 
     Win();
 

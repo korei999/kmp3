@@ -72,7 +72,7 @@ drawCoverImage(Win* s)
         const int split = app::g_pPlayer->imgHeight;
 
         s->textBuff.clearKittyImages();
-        clearArea(s, 0, 0, g_termSize.width, split + 1);
+        clearArea(s, 1, 1, s->prevImgWidth, split + 1);
 
         Opt<ffmpeg::Image> oCoverImg = app::g_pMixer->getCoverImage();
         if (oCoverImg)
@@ -86,6 +86,8 @@ drawCoverImage(Win* s)
             int vdiff = split - 1 - scaledHeight;
             const int hOff = std::round(hdiff / 2.0);
             const int vOff = std::round(vdiff / 2.0);
+
+            s->prevImgWidth = scaledWidth + 3;
 
             const String sImg = platform::chafa::getImageString(
                 s->pArena, img, split, g_termSize.width - 2
@@ -181,14 +183,18 @@ drawBottomLine(Win* s)
 void
 update(Win* s)
 {
-    auto* pTB = &s->textBuff;
+    auto& tb = s->textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
-    const int split = common::getHorizontalSplitPos(height);
 
     s_time = utils::timeNowMS();
 
-    if (s->bRedraw)
+    /* NOTE: careful with shared frame arena */
+    defer( tb.reset() );
+
+    if (width <= 10 || height <= 10) return;
+
+    if (s->bRedraw || app::g_pPlayer->bSelectionChanged)
     {
         s->bRedraw = false;
 
@@ -196,11 +202,8 @@ update(Win* s)
         drawSongList(s);
         drawBottomLine(s);
 
-        pTB->flush();
+        tb.flush();
     }
-
-    /* NOTE: careful with multithreading/signals + shared frame arena */
-    pTB->reset();
 }
 
 } /* namespace draw */
