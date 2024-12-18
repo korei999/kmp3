@@ -54,4 +54,17 @@ struct IAllocator
     ADT_NO_UB constexpr void freeAll() { pVTable->freeAll(this); }
 };
 
+template<typename ALLOC_T>
+constexpr AllocatorVTable
+AllocatorVTableGenerate()
+{
+    return AllocatorVTable {
+        .alloc = decltype(AllocatorVTable::alloc)(methodPointer(&ALLOC_T::alloc)),
+        .zalloc = decltype(AllocatorVTable::zalloc)(methodPointer(&ALLOC_T::zalloc)),
+        .realloc = decltype(AllocatorVTable::realloc)(methodPointer(&ALLOC_T::realloc)),
+        .free = decltype(AllocatorVTable::free)(methodPointer(&ALLOC_T::free)),
+        .freeAll = decltype(AllocatorVTable::freeAll)(methodPointer(&ALLOC_T::freeAll)),
+    };
+}
+
 } /* namespace adt */

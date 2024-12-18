@@ -142,23 +142,7 @@ ChunkAllocator::freeAll()
     this->pBlocks = nullptr;
 }
 
-inline const AllocatorVTable inl_ChunkAllocatorVTable {
-    .alloc = decltype(AllocatorVTable::alloc)(+[](ChunkAllocator* s, u64 mCount, u64 mSize) {
-        return s->alloc(mCount, mSize);
-    }),
-    .zalloc = decltype(AllocatorVTable::zalloc)(+[](ChunkAllocator* s, u64 mCount, u64 mSize) {
-        return s->zalloc(mCount, mSize);
-    }),
-    .realloc = decltype(AllocatorVTable::realloc)(+[](ChunkAllocator* s, void* ptr, u64 mCount, u64 mSize) {
-        return s->realloc(ptr, mCount, mSize);
-    }),
-    .free = decltype(AllocatorVTable::free)(+[](ChunkAllocator* s, void* ptr) {
-        return s->free(ptr);
-    }),
-    .freeAll = decltype(AllocatorVTable::freeAll)(+[](ChunkAllocator* s) {
-        return s->freeAll();
-    }),
-};
+inline const AllocatorVTable inl_ChunkAllocatorVTable = AllocatorVTableGenerate<ChunkAllocator>();
 
 inline
 ChunkAllocator::ChunkAllocator(u64 chunkSize, u64 blockSize)

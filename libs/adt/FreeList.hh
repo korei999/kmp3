@@ -412,13 +412,7 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
     return pRet;
 }
 
-inline const AllocatorVTable inl_FreeListVTable {
-    .alloc = decltype(AllocatorVTable::alloc)(+[](FreeList* s, u64 mCount, u64 mSize) { return s->alloc(mCount, mSize); } ),
-    .zalloc = decltype(AllocatorVTable::zalloc)(+[](FreeList* s, u64 mCount, u64 mSize) { return s->zalloc(mCount, mSize); } ),
-    .realloc = decltype(AllocatorVTable::realloc)(+[](FreeList* s, void* ptr, u64 mCount, u64 mSize) { return s->realloc(ptr, mCount, mSize); } ),
-    .free = decltype(AllocatorVTable::free)(+[](FreeList* s, void* ptr) { return s->free(ptr); } ),
-    .freeAll = decltype(AllocatorVTable::freeAll)(+[](FreeList* s) { return s->freeAll(); } ),
-};
+inline const AllocatorVTable inl_FreeListVTable = AllocatorVTableGenerate<FreeList>();
 
 inline FreeList::FreeList(u64 _blockSize)
     : super(&inl_FreeListVTable),

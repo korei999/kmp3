@@ -95,23 +95,7 @@ FixedAllocator::reset()
     this->size = 0;
 }
 
-inline const AllocatorVTable inl_FixedAllocatorVTable {
-    .alloc = decltype(AllocatorVTable::alloc)(+[](FixedAllocator* s, u64 mCount, u64 mSize) {
-        return s->alloc(mCount, mSize);
-    }),
-    .zalloc = decltype(AllocatorVTable::zalloc)(+[](FixedAllocator* s, u64 mCount, u64 mSize) {
-        return s->zalloc(mCount, mSize);
-    }),
-    .realloc = decltype(AllocatorVTable::realloc)(+[](FixedAllocator* s, void* ptr, u64 mCount, u64 mSize) {
-        return s->realloc(ptr, mCount, mSize);
-    }),
-    .free = decltype(AllocatorVTable::free)(+[](FixedAllocator* s, void* ptr) {
-        return s->free(ptr);
-    }),
-    .freeAll = decltype(AllocatorVTable::freeAll)(+[](FixedAllocator* s) {
-        return s->freeAll();
-    }),
-};
+inline const AllocatorVTable inl_FixedAllocatorVTable = AllocatorVTableGenerate<FixedAllocator>();
 
 constexpr FixedAllocator::FixedAllocator(void* pMemory, u64 capacity)
     : super {&inl_FixedAllocatorVTable},

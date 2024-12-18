@@ -188,23 +188,7 @@ Arena::reset()
     }
 }
 
-inline const AllocatorVTable inl_ArenaVTable {
-    .alloc = decltype(AllocatorVTable::alloc)(+[](Arena* s, u64 mCount, u64 mSize) {
-        return s->alloc(mCount, mSize);
-    }),
-    .zalloc = decltype(AllocatorVTable::zalloc)(+[](Arena* s, u64 mCount, u64 mSize) {
-        return s->zalloc(mCount, mSize);
-    }),
-    .realloc = decltype(AllocatorVTable::realloc)(+[](Arena* s, void* ptr, u64 mCount, u64 mSize) {
-        return s->realloc(ptr, mCount, mSize);
-    }),
-    .free = decltype(AllocatorVTable::free)(+[](Arena* s, void* ptr) {
-        return s->free(ptr);
-    }),
-    .freeAll = decltype(AllocatorVTable::freeAll)(+[](Arena* s) {
-        return s->freeAll();
-    }),
-};
+inline const AllocatorVTable inl_ArenaVTable = AllocatorVTableGenerate<Arena>();
 
 inline Arena::Arena(u64 capacity)
     : super(&inl_ArenaVTable),

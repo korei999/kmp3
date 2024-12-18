@@ -65,23 +65,7 @@ MutexArena::freeAll()
     mtx_destroy(&this->mtx);
 }
 
-inline const AllocatorVTable inl_AtomicArenaAllocatorVTable {
-    .alloc = decltype(AllocatorVTable::alloc)(+[](MutexArena* s, u64 mCount, u64 mSize) {
-        return s->alloc(mCount, mSize);
-    }),
-    .zalloc = decltype(AllocatorVTable::zalloc)(+[](MutexArena* s, u64 mCount, u64 mSize) {
-        return s->zalloc(mCount, mSize);
-    }),
-    .realloc = decltype(AllocatorVTable::realloc)(+[](MutexArena* s, void* ptr, u64 mCount, u64 mSize) {
-        return s->realloc(ptr, mCount, mSize);
-    }),
-    .free = decltype(AllocatorVTable::free)(+[](MutexArena* s, void* ptr) {
-        return s->free(ptr);
-    }),
-    .freeAll = decltype(AllocatorVTable::freeAll)(+[](MutexArena* s) {
-        return s->freeAll();
-    }),
-};
+inline const AllocatorVTable inl_AtomicArenaAllocatorVTable = AllocatorVTableGenerate<MutexArena>();
 
 inline
 MutexArena::MutexArena(u32 blockCap)

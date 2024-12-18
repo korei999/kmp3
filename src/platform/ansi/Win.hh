@@ -31,14 +31,7 @@ struct Win
     void subStringSearch();
 };
 
-inline const WindowVTable inl_WinWindowVTable {
-    .start = decltype(WindowVTable::start)(+[](Win* s, Arena* pArena) { return s->start(pArena); }),
-    .destroy = decltype(WindowVTable::destroy)(+[](Win* s) { s->destroy(); }),
-    .draw = decltype(WindowVTable::draw)(+[](Win* s) { s->draw(); }),
-    .procEvents = decltype(WindowVTable::procEvents)(+[](Win* s) { s->procEvents(); }),
-    .seekFromInput = decltype(WindowVTable::seekFromInput)(+[](Win* s) { s->seekFromInput(); }),
-    .subStringSearch = decltype(WindowVTable::subStringSearch)(+[](Win* s) { s->subStringSearch(); }),
-};
+inline const WindowVTable inl_WinWindowVTable = WindowVTableGenerate<Win>();
 
 inline
 Win::Win() : super(&inl_WinWindowVTable) {}

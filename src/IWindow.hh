@@ -30,6 +30,20 @@ struct IWindow
     ADT_NO_UB void subStringSearch() { pVTable->subStringSearch(this); }
 };
 
+template<typename WINDOW_T>
+constexpr WindowVTable
+WindowVTableGenerate()
+{
+    return WindowVTable {
+        .start = decltype(WindowVTable::start)(methodPointer(&WINDOW_T::start)),
+        .destroy = decltype(WindowVTable::destroy)(methodPointer(&WINDOW_T::destroy)),
+        .draw = decltype(WindowVTable::draw)(methodPointer(&WINDOW_T::draw)),
+        .procEvents = decltype(WindowVTable::procEvents)(methodPointer(&WINDOW_T::procEvents)),
+        .seekFromInput = decltype(WindowVTable::seekFromInput)(methodPointer(&WINDOW_T::seekFromInput)),
+        .subStringSearch = decltype(WindowVTable::subStringSearch)(methodPointer(&WINDOW_T::subStringSearch)),
+    };
+}
+
 struct DummyWindow
 {
     IWindow super {};
@@ -44,14 +58,7 @@ struct DummyWindow
     void subStringSearch() {};
 };
 
-inline const WindowVTable inl_DummyWindowVTable {
-    .start = decltype(WindowVTable::start)(+[](DummyWindow*, Arena*) {}),
-    .destroy = decltype(WindowVTable::destroy)(+[](DummyWindow*) {}),
-    .draw = decltype(WindowVTable::draw)(+[](DummyWindow*) {}),
-    .procEvents = decltype(WindowVTable::procEvents)(+[](DummyWindow*) {}),
-    .seekFromInput = decltype(WindowVTable::seekFromInput)(+[](DummyWindow*) {}),
-    .subStringSearch = decltype(WindowVTable::subStringSearch)(+[](DummyWindow*) {}),
-};
+inline const WindowVTable inl_DummyWindowVTable = WindowVTableGenerate<DummyWindow>();
 
 inline
 DummyWindow::DummyWindow() : super(&inl_DummyWindowVTable) {}

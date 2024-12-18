@@ -67,23 +67,7 @@ OsAllocator::freeAll()
     assert(false && "[OsAllocator]: no 'freeAll()' method");
 }
 
-inline const AllocatorVTable inl_OsAllocatorVTable {
-    .alloc = decltype(AllocatorVTable::alloc)(+[](OsAllocator* s, u64 mCount, u64 mSize) {
-        return s->alloc(mCount, mSize);
-    }),
-    .zalloc = decltype(AllocatorVTable::zalloc)(+[](OsAllocator* s, u64 mCount, u64 mSize) {
-        return s->zalloc(mCount, mSize);
-    }),
-    .realloc = decltype(AllocatorVTable::realloc)(+[](OsAllocator* s, void* ptr, u64 mCount, u64 mSize) {
-        return s->realloc(ptr, mCount, mSize);
-    }),
-    .free = decltype(AllocatorVTable::free)(+[](OsAllocator* s, void* ptr) {
-        return s->free(ptr);
-    }),
-    .freeAll = decltype(AllocatorVTable::freeAll)(+[](OsAllocator* s) {
-        return s->freeAll();
-    }),
-};
+inline const AllocatorVTable inl_OsAllocatorVTable = AllocatorVTableGenerate<OsAllocator>();
 
 inline OsAllocator::OsAllocator(u64) : super(&inl_OsAllocatorVTable) {}
 
