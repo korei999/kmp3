@@ -27,7 +27,7 @@ struct ThrdLoopLockGuard
     ~ThrdLoopLockGuard() { pw_thread_loop_unlock(p); }
 };
 
-static void MixerRunThread(Mixer* s, int argc, char** argv);
+static void runThread(Mixer* s, int argc, char** argv);
 static void onProcess(void* data);
 
 static const pw_stream_events s_streamEvents {
@@ -97,7 +97,7 @@ Mixer::init()
 
     mtx_init(&this->mtxDecoder, mtx_plain);
 
-    MixerRunThread(this, app::g_argc, app::g_argv);
+    runThread(this, app::g_argc, app::g_argv);
 }
 
 void
@@ -161,7 +161,7 @@ Mixer::play(String sPath)
 }
 
 static void
-MixerRunThread(Mixer* s, int argc, char** argv)
+runThread(Mixer* s, int argc, char** argv)
 {
     pw_init(&argc, &argv);
 
@@ -344,13 +344,13 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 }
 
 void
-Mixer::seekMS(u64 ms)
+Mixer::seekMS(s64 ms)
 {
     guard::Mtx lock(&this->mtxDecoder);
     if (!this->bDecodes) return;
 
-    u64 maxMs = this->super.getMaxMS();
-    ms = utils::clamp(ms, 0ULL, maxMs);
+    s64 maxMs = this->super.getMaxMS();
+    ms = utils::clamp(ms, 0LL, maxMs);
     ffmpeg::DecoderSeekMS(this->pDecoder, ms);
 
     this->super.currentTimeStamp = f64(ms)/1000.0 * this->super.sampleRate * this->super.nChannels;
@@ -360,14 +360,14 @@ Mixer::seekMS(u64 ms)
 }
 
 void
-Mixer::seekLeftMS(u64 ms)
+Mixer::seekLeftMS(s64 ms)
 {
     u64 currMs = this->super.getCurrentMS();
     this->seekMS(currMs - ms);
 }
 
 void
-Mixer::seekRightMS(u64 ms)
+Mixer::seekRightMS(s64 ms)
 {
     u64 currMs = this->super.getCurrentMS();
     this->seekMS(currMs + ms);

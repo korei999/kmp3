@@ -16,47 +16,26 @@ struct TextBuff
     TextBuff() = default;
     TextBuff(Arena* _pAlloc) : pAlloc(_pAlloc) {}
 
-
     void push(const char* pBuff, const u32 buffSize);
-
     void push(const String sBuff);
-
     void reset();
-
     void flush();
-
     void moveTopLeft();
-
     void up(int steps);
-
     void down(int steps);
-
     void forward(int steps);
-
     void back(int steps);
-
     void move(int x, int y);
-
     void clearDown();
-
     void clearUp();
-
     void clear();
-
     void hideCursor(bool bHide);
-
     void movePush(int x, int y, const String str);
-
     void movePush(int x, int y, const char* pBuff, const u32 size);
-
     void pushGlyphs(const String str, const u32 nColumns);
-
     void movePushGlyphs(int x, int y, const String str, const u32 nColumns);
-
     void pushWideString(const wchar_t* pwBuff, const u32 wBuffSize);
-
     void movePushWideString(int x, int y, const wchar_t* pwBuff, const u32 wBuffSize);
-
     void clearKittyImages();
 };
 

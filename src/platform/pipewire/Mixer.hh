@@ -53,9 +53,9 @@ struct Mixer
     void pause(bool bPause);
     void togglePause();
     void changeSampleRate(u64 sampleRate, bool bSave);
-    void seekMS(u64 ms);
-    void seekLeftMS(u64 ms);
-    void seekRightMS(u64 ms);
+    void seekMS(s64 ms);
+    void seekLeftMS(s64 ms);
+    void seekRightMS(s64 ms);
     [[nodiscard]] Opt<String> getMetadata(const String sKey);
     [[nodiscard]] Opt<ffmpeg::Image> getCoverImage();
     void setVolume(const f32 volume);
@@ -68,9 +68,9 @@ inline const audio::MixerVTable inl_MixerVTable {
     .pause = decltype(audio::MixerVTable::pause)(+[](Mixer* s, bool bPause) { s->pause(bPause); }),
     .togglePause = decltype(audio::MixerVTable::togglePause)(+[](Mixer* s) { s->togglePause(); }),
     .changeSampleRate = decltype(audio::MixerVTable::changeSampleRate)(+[](Mixer* s, u64 sampleRate, bool bSave) { s->changeSampleRate(sampleRate, bSave); }),
-    .seekMS = decltype(audio::MixerVTable::seekMS)(+[](Mixer* s, u64 ms) { s->seekMS(ms); }),
-    .seekLeftMS = decltype(audio::MixerVTable::seekLeftMS)(+[](Mixer* s, u64 ms) { s->seekLeftMS(ms); }),
-    .seekRightMS = decltype(audio::MixerVTable::seekRightMS)(+[](Mixer* s, u64 ms) { s->seekRightMS(ms); }),
+    .seekMS = decltype(audio::MixerVTable::seekMS)(+[](Mixer* s, s64 ms) { s->seekMS(ms); }),
+    .seekLeftMS = decltype(audio::MixerVTable::seekLeftMS)(+[](Mixer* s, s64 ms) { s->seekLeftMS(ms); }),
+    .seekRightMS = decltype(audio::MixerVTable::seekRightMS)(+[](Mixer* s, s64 ms) { s->seekRightMS(ms); }),
     .getMetadata = decltype(audio::MixerVTable::getMetadata)(+[](Mixer* s, const String sKey) { return s->getMetadata(sKey); }),
     .getCoverImage = decltype(audio::MixerVTable::getCoverImage)(+[](Mixer* s) { return s->getCoverImage(); }),
     .setVolume = decltype(audio::MixerVTable::setVolume)(+[](Mixer* s, const f32 volume) { s->setVolume(volume); }),

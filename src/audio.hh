@@ -25,9 +25,9 @@ struct MixerVTable
     void (*pause)(IMixer* s, bool bPause);
     void (*togglePause)(IMixer* s);
     void (*changeSampleRate)(IMixer* s, u64 sampleRate, bool bSave);
-    void (*seekMS)(IMixer* s, u64 ms);
-    void (*seekLeftMS)(IMixer* s, u64 ms);
-    void (*seekRightMS)(IMixer* s, u64 ms);
+    void (*seekMS)(IMixer* s, s64 ms);
+    void (*seekLeftMS)(IMixer* s, s64 ms);
+    void (*seekRightMS)(IMixer* s, s64 ms);
     Opt<String> (*getMetadata)(IMixer* s, const String sKey);
     Opt<ffmpeg::Image> (*getCoverImage)(IMixer* s);
     void (*setVolume)(IMixer* s, const f32 volume);
