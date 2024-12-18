@@ -55,9 +55,9 @@ struct IMixer
     ADT_NO_UB void pause(bool bPause) { pVTable->pause(this, bPause); }
     ADT_NO_UB void togglePause() { pVTable->togglePause(this); }
     ADT_NO_UB void changeSampleRate(u64 sampleRate, bool bSave) { pVTable->changeSampleRate(this, sampleRate, bSave); }
-    ADT_NO_UB void seekMS(u64 ms) { pVTable->seekMS(this, ms); }
-    ADT_NO_UB void seekLeftMS(u64 ms) { pVTable->seekLeftMS(this, ms); }
-    ADT_NO_UB void seekRightMS(u64 ms) { pVTable->seekRightMS(this, ms); }
+    ADT_NO_UB void seekMS(s64 ms) { pVTable->seekMS(this, ms); }
+    ADT_NO_UB void seekLeftMS(s64 ms) { pVTable->seekLeftMS(this, ms); }
+    ADT_NO_UB void seekRightMS(s64 ms) { pVTable->seekRightMS(this, ms); }
     [[nodiscard]] ADT_NO_UB Opt<String> getMetadata(const String sKey) { return pVTable->getMetadata(this, sKey); }
     [[nodiscard]] ADT_NO_UB Opt<ffmpeg::Image> getCoverImage() { return pVTable->getCoverImage(this); }
     ADT_NO_UB void setVolume(const f32 volume) { pVTable->setVolume(this, volume); }
