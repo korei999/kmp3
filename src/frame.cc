@@ -55,7 +55,7 @@ run()
     defer( app::g_pWin->destroy() );
 
     app::g_pPlayer->focused = 0;
-    PlayerSelectFocused(app::g_pPlayer);
+    app::g_pPlayer->selectFocused();
 
 #ifdef USE_MPRIS
     mpris::init();

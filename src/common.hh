@@ -112,9 +112,9 @@ procSeekString(const wchar_t* pBuff, u32 size)
 
     if (bPercent)
     {
-        long maxMS = audio::MixerGetMaxMS(app::g_pMixer);
+        long maxMS = app::g_pMixer->getMaxMS();
 
-        audio::MixerSeekMS(app::g_pMixer, maxMS * (f64(atoll(aMinutesBuff.aData)) / 100.0));
+        app::g_pMixer->seekMS(maxMS * (f64(atoll(aMinutesBuff.aData)) / 100.0));
     }
     else
     {
@@ -122,7 +122,7 @@ procSeekString(const wchar_t* pBuff, u32 size)
         if (aSecondsBuff.size == 0) sec = atoll(aMinutesBuff.aData);
         else sec = atoll(aSecondsBuff.aData) + atoll(aMinutesBuff.aData)*60;
 
-        audio::MixerSeekMS(app::g_pMixer, sec * 1000);
+        app::g_pMixer->seekMS(sec * 1000);
     }
 }
 
@@ -146,7 +146,7 @@ subStringSearch(
 
     do
     {
-        PlayerSubStringSearch(&pl, pArena, g_input.aBuff, utils::size(g_input.aBuff));
+        pl.subStringSearch(pArena, g_input.aBuff, utils::size(g_input.aBuff));
         *pFirstIdx = 0;
         pfnDraw(pDrawArg);
 

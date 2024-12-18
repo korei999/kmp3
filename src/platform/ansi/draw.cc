@@ -73,7 +73,7 @@ drawCoverImage(Win* s)
         clearArea(s, 0, 0, g_termSize.width, split + 1);
         /*TextBuffClearKittyImages(&s->textBuff);*/
 
-        Opt<ffmpeg::Image> oCoverImg = audio::MixerGetCoverImage(app::g_pMixer);
+        Opt<ffmpeg::Image> oCoverImg = app::g_pMixer->getCoverImage();
         if (oCoverImg)
         {
             const auto& img = oCoverImg.getData();

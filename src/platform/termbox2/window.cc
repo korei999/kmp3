@@ -542,7 +542,7 @@ drawCoverImage()
         lastTime = g_time;
         app::g_pPlayer->bSelectionChanged = false;
 
-        auto oCover = audio::MixerGetCoverImage(app::g_pMixer);
+        auto oCover = app::g_pMixer->getCoverImage();
         if (oCover)
         {
             /* FIXME: horrible screen flash */

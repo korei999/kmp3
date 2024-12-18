@@ -98,16 +98,16 @@ main(int argc, char** argv)
 
     Player player(&freeList.super, argc, argv);
     app::g_pPlayer = &player;
-    defer( PlayerDestroy(&player) );
+    defer( player.destroy() );
 
-    PlayerSetDefaultIdxs(&player);
+    player.setDefaultIdxs();
 
     u32 nAccepted = 0;
     u32 longsetSize = 0;
     for (int i = 0; i < argc; ++i)
     {
         player.aShortArgvs.push(player.pAlloc, file::getPathEnding(app::g_aArgs[i]));
-        if (PlayerAcceptedFormat(player.aShortArgvs.last()))
+        if (player.acceptedFormat(player.aShortArgvs.last()))
             ++nAccepted;
 
         if (app::g_aArgs[i].size > longsetSize)
@@ -120,11 +120,11 @@ main(int argc, char** argv)
     player.bSelectionChanged = true;
 
     platform::pipewire::Mixer mixer(&freeList.super);
-    platform::pipewire::MixerInit(&mixer);
-    defer( platform::pipewire::MixerDestroy(&mixer) );
+    mixer.init();
+    defer( mixer.destroy() );
 
-    mixer.base.volume = defaults::VOLUME;
-    app::g_pMixer = &mixer.base;
+    mixer.super.volume = defaults::VOLUME;
+    app::g_pMixer = &mixer.super;
 
 #ifdef USE_MPRIS
     mpris::initLocks();

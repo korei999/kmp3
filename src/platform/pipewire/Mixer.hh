@@ -30,7 +30,7 @@ namespace pipewire
 
 struct Mixer
 {
-    audio::IMixer base {};
+    audio::IMixer super {};
     u8 nChannels = 2;
     enum spa_audio_format eformat {};
     std::atomic<bool> bDecodes = false;
@@ -40,62 +40,44 @@ struct Mixer
     pw_thread_loop* pThrdLoop {};
     pw_stream* pStream {};
     u32 nLastFrames {};
-
     mtx_t mtxDecoder {};
-
-    thrd_t threadLoop {};
+    
+    /* */
 
     Mixer() = default;
     Mixer(IAllocator* pA);
-};
 
-void MixerInit(Mixer* s);
-void MixerDestroy(Mixer* s);
-void MixerPlay(Mixer* s, String sPath);
-void MixerPause(Mixer* s, bool bPause);
-void MixerTogglePause(Mixer* s);
-void MixerChangeSampleRate(Mixer* s, u64 sampleRate, bool bSave);
-void MixerSeekMS(Mixer* s, long ms);
-void MixerSeekLeftMS(Mixer* s, long ms);
-void MixerSeekRightMS(Mixer* s, long ms);
-Opt<String> MixerGetMetadata(Mixer* s, const String sKey);
-Opt<ffmpeg::Image> MixerGetCover(Mixer* s);
-void MixerSetVolume(Mixer* s, const f32 volume);
+    void init();
+    void destroy();
+    void play(String sPath);
+    void pause(bool bPause);
+    void togglePause();
+    void changeSampleRate(u64 sampleRate, bool bSave);
+    void seekMS(u64 ms);
+    void seekLeftMS(u64 ms);
+    void seekRightMS(u64 ms);
+    [[nodiscard]] Opt<String> getMetadata(const String sKey);
+    [[nodiscard]] Opt<ffmpeg::Image> getCoverImage();
+    void setVolume(const f32 volume);
+};
 
 inline const audio::MixerVTable inl_MixerVTable {
-    .init = decltype(audio::MixerVTable::init)(MixerInit),
-    .destroy = decltype(audio::MixerVTable::destroy)(MixerDestroy),
-    .play = decltype(audio::MixerVTable::play)(MixerPlay),
-    .pause = decltype(audio::MixerVTable::pause)(MixerPause),
-    .togglePause = decltype(audio::MixerVTable::togglePause)(MixerTogglePause),
-    .changeSampleRate = decltype(audio::MixerVTable::changeSampleRate)(MixerChangeSampleRate),
-    .seekMS = decltype(audio::MixerVTable::seekMS)(MixerSeekMS),
-    .seekLeftMS = decltype(audio::MixerVTable::seekLeftMS)(MixerSeekLeftMS),
-    .seekRightMS = decltype(audio::MixerVTable::seekRightMS)(MixerSeekRightMS),
-    .getMetadata = decltype(audio::MixerVTable::getMetadata)(MixerGetMetadata),
-    .getCover = decltype(audio::MixerVTable::getCover)(MixerGetCover),
-    .setVolume = decltype(audio::MixerVTable::setVolume)(MixerSetVolume),
+    .init = decltype(audio::MixerVTable::init)(+[](Mixer* s) { s->init(); }),
+    .destroy = decltype(audio::MixerVTable::destroy)(+[](Mixer* s) { s->destroy(); }),
+    .play = decltype(audio::MixerVTable::play)(+[](Mixer* s, String sPath) { s->play(sPath); }),
+    .pause = decltype(audio::MixerVTable::pause)(+[](Mixer* s, bool bPause) { s->pause(bPause); }),
+    .togglePause = decltype(audio::MixerVTable::togglePause)(+[](Mixer* s) { s->togglePause(); }),
+    .changeSampleRate = decltype(audio::MixerVTable::changeSampleRate)(+[](Mixer* s, u64 sampleRate, bool bSave) { s->changeSampleRate(sampleRate, bSave); }),
+    .seekMS = decltype(audio::MixerVTable::seekMS)(+[](Mixer* s, u64 ms) { s->seekMS(ms); }),
+    .seekLeftMS = decltype(audio::MixerVTable::seekLeftMS)(+[](Mixer* s, u64 ms) { s->seekLeftMS(ms); }),
+    .seekRightMS = decltype(audio::MixerVTable::seekRightMS)(+[](Mixer* s, u64 ms) { s->seekRightMS(ms); }),
+    .getMetadata = decltype(audio::MixerVTable::getMetadata)(+[](Mixer* s, const String sKey) { return s->getMetadata(sKey); }),
+    .getCoverImage = decltype(audio::MixerVTable::getCoverImage)(+[](Mixer* s) { return s->getCoverImage(); }),
+    .setVolume = decltype(audio::MixerVTable::setVolume)(+[](Mixer* s, const f32 volume) { s->setVolume(volume); }),
 };
 
-inline Mixer::Mixer(IAllocator* pA) : base(&inl_MixerVTable), pDecoder(ffmpeg::DecoderAlloc(pA)) {}
+inline
+Mixer::Mixer(IAllocator* pA) : super(&inl_MixerVTable), pDecoder(ffmpeg::DecoderAlloc(pA)) {}
 
 } /* namespace pipewire */
 } /* namespace platform */
-
-namespace audio
-{
-
-inline void MixerInit(platform::pipewire::Mixer* s) { platform::pipewire::MixerInit(s); }
-inline void MixerDestroy(platform::pipewire::Mixer* s) { platform::pipewire::MixerDestroy(s); }
-inline void MixerPlay(platform::pipewire::Mixer* s, String sPath) { platform::pipewire::MixerPlay(s, sPath); }
-inline void MixerPause(platform::pipewire::Mixer* s, bool bPause) { platform::pipewire::MixerPause(s, bPause); }
-inline void MixerTogglePause(platform::pipewire::Mixer* s) { platform::pipewire::MixerTogglePause(s); }
-inline void MixerChangeSampleRate(platform::pipewire::Mixer* s, int sampleRate, bool bSave) { platform::pipewire::MixerChangeSampleRate(s, sampleRate, bSave); }
-inline void MixerSeekMS(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekMS(s, ms); }
-inline void MixerSeekMSLeft(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekLeftMS(s, ms); }
-inline void MixerSeekMSRight(platform::pipewire::Mixer* s, long ms) { platform::pipewire::MixerSeekRightMS(s, ms); }
-inline Opt<String> MixerGetMetadata(platform::pipewire::Mixer* s, const String sKey) { return platform::pipewire::MixerGetMetadata(s, sKey); }
-inline f64 MixerGetCurrentMS(platform::pipewire::Mixer* s) { return audio::MixerGetCurrentMS(&s->base); }
-inline f64 MixerGetMaxMS(platform::pipewire::Mixer* s) { return audio::MixerGetMaxMS(&s->base); }
-
-} /* namespace audio */

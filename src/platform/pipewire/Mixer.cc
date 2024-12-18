@@ -85,79 +85,79 @@ formatByteSize(enum spa_audio_format eFormat)
 }
 
 void
-MixerInit(Mixer* s)
+Mixer::init()
 {
-    s->base.bRunning = true;
-    s->base.bMuted = false;
-    s->base.volume = 0.1f;
+    this->super.bRunning = true;
+    this->super.bMuted = false;
+    this->super.volume = 0.1f;
 
-    s->base.sampleRate = 48000;
-    s->nChannels = 2;
-    s->eformat = SPA_AUDIO_FORMAT_F32;
+    this->super.sampleRate = 48000;
+    this->nChannels = 2;
+    this->eformat = SPA_AUDIO_FORMAT_F32;
 
-    mtx_init(&s->mtxDecoder, mtx_plain);
+    mtx_init(&this->mtxDecoder, mtx_plain);
 
-    MixerRunThread(s, app::g_argc, app::g_argv);
+    MixerRunThread(this, app::g_argc, app::g_argv);
 }
 
 void
-MixerDestroy(Mixer* s)
+Mixer::destroy()
 {
     {
-        ThrdLoopLockGuard tLock(s->pThrdLoop);
-        pw_stream_set_active(s->pStream, true);
+        ThrdLoopLockGuard tLock(this->pThrdLoop);
+        pw_stream_set_active(this->pStream, true);
     }
 
-    pw_thread_loop_stop(s->pThrdLoop);
+    pw_thread_loop_stop(this->pThrdLoop);
     LOG_NOTIFY("pw_thread_loop_stop()\n");
 
-    s->base.bRunning = false;
+    this->super.bRunning = false;
 
-    if (s->bDecodes) ffmpeg::DecoderClose(s->pDecoder);
+    if (this->bDecodes) ffmpeg::DecoderClose(this->pDecoder);
 
-    pw_stream_destroy(s->pStream);
-    pw_thread_loop_destroy(s->pThrdLoop);
+    pw_stream_destroy(this->pStream);
+    pw_thread_loop_destroy(this->pThrdLoop);
     pw_deinit();
 
-    mtx_destroy(&s->mtxDecoder);
+    mtx_destroy(&this->mtxDecoder);
     LOG_NOTIFY("MixerDestroy()\n");
 }
 
 void
-MixerPlay(Mixer* s, String sPath)
+Mixer::play(String sPath)
 {
-    const f64 prevSpeed = f64(s->base.changedSampleRate) / f64(s->base.sampleRate);
+    const f64 prevSpeed = f64(this->super.changedSampleRate) / f64(this->super.sampleRate);
 
-    MixerPause(s, true);
+    this->pause(true);
 
     {
-        guard::Mtx lockDec(&s->mtxDecoder);
+        guard::Mtx lockDec(&this->mtxDecoder);
 
-        s->sPath = sPath;
+        this->sPath = sPath;
 
-        if (s->bDecodes)
+        if (this->bDecodes)
         {
-            ffmpeg::DecoderClose(s->pDecoder);
+            ffmpeg::DecoderClose(this->pDecoder);
         }
 
-        auto err = ffmpeg::DecoderOpen(s->pDecoder, sPath);
+        auto err = ffmpeg::DecoderOpen(this->pDecoder, sPath);
         if (err != ffmpeg::ERROR::OK_)
         {
             LOG_WARN("DecoderOpen\n");
             return;
         }
-        s->bDecodes = true;
+        this->bDecodes = true;
     }
 
-    s->base.nChannels = ffmpeg::DecoderGetChannelsCount(s->pDecoder);
-    MixerChangeSampleRate(s, ffmpeg::DecoderGetSampleRate(s->pDecoder), true);
+    this->super.nChannels = ffmpeg::DecoderGetChannelsCount(this->pDecoder);
+    this->changeSampleRate(ffmpeg::DecoderGetSampleRate(this->pDecoder), true);
 
     if (!math::eq(prevSpeed, 1.0))
-        audio::MixerChangeSampleRate(s, f64(s->base.sampleRate) * prevSpeed, false);
+        this->changeSampleRate(f64(this->super.sampleRate) * prevSpeed, false);
 
-    MixerPause(s, false);
+    this->pause(false);
 
-    s->base.bUpdateMpris = true; /* mark to update in frame::run() */ 
+    this->super.bUpdateMpris = true; /* mark to update in frame::run() */
 }
 
 static void
@@ -188,7 +188,7 @@ MixerRunThread(Mixer* s, int argc, char** argv)
     spa_audio_info_raw rawInfo {
         .format = s->eformat,
         .flags {},
-        .rate = s->base.sampleRate,
+        .rate = s->super.sampleRate,
         .channels = s->nChannels,
         .position {}
     };
@@ -219,13 +219,13 @@ writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten, u64*
         err = ffmpeg::DecoderWriteToBuffer(s->pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, s->nChannels, pSamplesWritten, pPcmPos);
         if (err == ffmpeg::ERROR::END_OF_FILE)
         {
-            MixerPause(s, true);
+            s->pause(true);
             ffmpeg::DecoderClose(s->pDecoder);
             s->bDecodes = false;
         }
     }
 
-    if (err == ffmpeg::ERROR::END_OF_FILE) PlayerOnSongEnd(app::g_pPlayer);
+    if (err == ffmpeg::ERROR::END_OF_FILE) app::g_pPlayer->onSongEnd();
 }
 
 static void
@@ -260,7 +260,7 @@ onProcess(void* pData)
     static long nDecodedSamples = 0;
     static long nWrites = 0;
 
-    f32 vol = s->base.bMuted ? 0.0f : std::pow(s->base.volume, 3);
+    f32 vol = s->super.bMuted ? 0.0f : std::pow(s->super.volume, 3);
 
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
@@ -273,19 +273,19 @@ onProcess(void* pData)
         if (nWrites >= nDecodedSamples)
         {
             /* ask to fill the buffer when it's empty */
-            writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples, &s->base.currentTimeStamp);
+            writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples, &s->super.currentTimeStamp);
             nWrites = 0;
         }
     }
 
     if (nDecodedSamples == 0)
     {
-        s->base.currentTimeStamp = 0;
-        s->base.totalSamplesCount = 0;
+        s->super.currentTimeStamp = 0;
+        s->super.totalSamplesCount = 0;
     }
     else
     {
-        s->base.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
+        s->super.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
     }
 
     pBuffData.chunk->offset = 0;
@@ -296,33 +296,33 @@ onProcess(void* pData)
 }
 
 void
-MixerPause(Mixer* s, bool bPause)
+Mixer::pause(bool bPause)
 {
-    ThrdLoopLockGuard lock(s->pThrdLoop);
-    pw_stream_set_active(s->pStream, !bPause);
-    s->base.bPaused = bPause;
+    ThrdLoopLockGuard lock(this->pThrdLoop);
+    pw_stream_set_active(this->pStream, !bPause);
+    this->super.bPaused = bPause;
 
-    LOG_NOTIFY("bPaused: {}\n", s->base.bPaused);
+    LOG_NOTIFY("bPaused: {}\n", this->super.bPaused);
     mpris::playbackStatusChanged();
 }
 
 void
-MixerTogglePause(Mixer* s)
+Mixer::togglePause()
 {
-    MixerPause(s, !s->base.bPaused);
+    this->pause(!this->super.bPaused);
 }
 
 void
-MixerChangeSampleRate(Mixer* s, u64 sampleRate, bool bSave)
+Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 {
     sampleRate = utils::clamp(sampleRate, defaults::MIN_SAMPLE_RATE, defaults::MAX_SAMPLE_RATE);
 
     u8 aSetupBuff[512] {};
     spa_audio_info_raw rawInfo {
-        .format = s->eformat,
+        .format = this->eformat,
         .flags {},
         .rate = static_cast<u32>(sampleRate),
-        .channels = s->nChannels,
+        .channels = this->nChannels,
         .position {}
     };
 
@@ -332,63 +332,63 @@ MixerChangeSampleRate(Mixer* s, u64 sampleRate, bool bSave)
     const spa_pod* aParams[1] {};
     aParams[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
 
-    ThrdLoopLockGuard lock(s->pThrdLoop);
-    pw_stream_update_params(s->pStream, aParams, utils::size(aParams));
+    ThrdLoopLockGuard lock(this->pThrdLoop);
+    pw_stream_update_params(this->pStream, aParams, utils::size(aParams));
     /* update won't apply without this */
-    pw_stream_set_active(s->pStream, s->base.bPaused);
-    pw_stream_set_active(s->pStream, !s->base.bPaused);
+    pw_stream_set_active(this->pStream, this->super.bPaused);
+    pw_stream_set_active(this->pStream, !this->super.bPaused);
 
-    if (bSave) s->base.sampleRate = sampleRate;
+    if (bSave) this->super.sampleRate = sampleRate;
 
-    s->base.changedSampleRate = sampleRate;
+    this->super.changedSampleRate = sampleRate;
 }
 
 void
-MixerSeekMS(Mixer* s, long ms)
+Mixer::seekMS(u64 ms)
 {
-    guard::Mtx lock(&s->mtxDecoder);
-    if (!s->bDecodes) return;
+    guard::Mtx lock(&this->mtxDecoder);
+    if (!this->bDecodes) return;
 
-    long maxMs = audio::MixerGetMaxMS(s);
-    ms = utils::clamp(ms, 0L, maxMs);
-    ffmpeg::DecoderSeekMS(s->pDecoder, ms);
+    u64 maxMs = this->super.getMaxMS();
+    ms = utils::clamp(ms, 0ULL, maxMs);
+    ffmpeg::DecoderSeekMS(this->pDecoder, ms);
 
-    s->base.currentTimeStamp = f64(ms)/1000.0 * s->base.sampleRate * s->base.nChannels;
-    s->base.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->pDecoder);
+    this->super.currentTimeStamp = f64(ms)/1000.0 * this->super.sampleRate * this->super.nChannels;
+    this->super.totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(this->pDecoder);
 
     mpris::seeked();
 }
 
 void
-MixerSeekLeftMS(Mixer* s, long ms)
+Mixer::seekLeftMS(u64 ms)
 {
-    long currMs = audio::MixerGetCurrentMS(s);
-    MixerSeekMS(s, currMs - ms);
+    u64 currMs = this->super.getCurrentMS();
+    this->seekMS(currMs - ms);
 }
 
 void
-MixerSeekRightMS(Mixer* s, long ms)
+Mixer::seekRightMS(u64 ms)
 {
-    long currMs = audio::MixerGetCurrentMS(s);
-    MixerSeekMS(s, currMs + ms);
+    u64 currMs = this->super.getCurrentMS();
+    this->seekMS(currMs + ms);
 }
 
 Opt<String>
-MixerGetMetadata(Mixer* s, const String sKey)
+Mixer::getMetadata(const String sKey)
 {
-    return ffmpeg::DecoderGetMetadataValue(s->pDecoder, sKey);
+    return ffmpeg::DecoderGetMetadataValue(this->pDecoder, sKey);
 }
 
 Opt<ffmpeg::Image>
-MixerGetCover(Mixer* s)
+Mixer::getCoverImage()
 {
-    return ffmpeg::DecoderGetCoverImage(s->pDecoder);
+    return ffmpeg::DecoderGetCoverImage(this->pDecoder);
 }
 
 void
-MixerSetVolume(Mixer* s, const f32 volume)
+Mixer::setVolume(const f32 volume)
 {
-    s->base.volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
+    this->super.volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
     mpris::volumeChanged();
 }
 

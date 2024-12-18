@@ -56,8 +56,8 @@ procMouse(tb_event* pEv)
             }
 
             f64 target = f64(ev.x - xOff) / f64((width - 2) - xOff);
-            target *= audio::MixerGetMaxMS(app::g_pMixer);
-            audio::MixerSeekMS(app::g_pMixer, target);
+            target *= app::g_pMixer->getMaxMS();
+            app::g_pMixer->seekMS(target);
             return;
         }
         else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::seekRightMS(5000);
@@ -87,16 +87,16 @@ procMouse(tb_event* pEv)
     );
 
     if (ev.key == TB_KEY_MOUSE_LEFT)
-        PlayerFocus(&pl, target);
+        pl.focus(target);
     if (ev.key == TB_KEY_MOUSE_RIGHT)
     {
-        PlayerFocus(&pl, target);
-        PlayerSelectFocused(&pl);
+        pl.focus(target);
+        pl.selectFocused();
     }
     else if (ev.key == TB_KEY_MOUSE_WHEEL_UP)
-        PlayerFocus(&pl, pl.focused - 22);
+        pl.focus(pl.focused - 22);
     else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN)
-        PlayerFocus(&pl, pl.focused + 22);
+        pl.focus(pl.focused + 22);
 }
 
 void

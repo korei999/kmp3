@@ -131,7 +131,7 @@ togglePause(
 )
 {
     LOG("mpris::togglePause\n");
-    audio::MixerTogglePause(app::g_pMixer);
+    app::g_pMixer->togglePause();
     return sd_bus_reply_method_return(m, "");
 }
 
@@ -142,7 +142,7 @@ next(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    PlayerSelectNext(app::g_pPlayer);
+    app::g_pPlayer->selectNext();
     return sd_bus_reply_method_return(m, "");
 }
 
@@ -153,7 +153,7 @@ prev(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    PlayerSelectPrev(app::g_pPlayer);
+    app::g_pPlayer->selectPrev();
     return sd_bus_reply_method_return(m, "");
 }
 
@@ -165,7 +165,7 @@ pause(
 )
 {
     LOG("mpris::pause\n");
-    audio::MixerPause(app::g_pMixer, true);
+    app::g_pMixer->pause(true);
     return sd_bus_reply_method_return(m, "");
 }
 
@@ -188,7 +188,7 @@ resume(
 )
 {
     LOG("mpris::resume\n");
-    audio::MixerPause(app::g_pMixer, false);
+    app::g_pMixer->pause(false);
     return sd_bus_reply_method_return(m, "");
 }
 
@@ -203,8 +203,8 @@ seek(
     CK(sd_bus_message_read_basic(m, 'x', &val));
     f64 fval = f64(val);
     fval /= 1000.0;
-    fval += audio::MixerGetCurrentMS(app::g_pMixer);
-    audio::MixerSeekMS(app::g_pMixer, fval);
+    fval += app::g_pMixer->getCurrentMS();
+    app::g_pMixer->seekMS(fval);
 
     return sd_bus_reply_method_return(m, "");
 }
@@ -225,7 +225,7 @@ seekAbs(
 	CK(sd_bus_message_read_basic(m, 'x', &val));
 
 	if (strncmp(aBuff, pPath, utils::size(aBuff)) == 0)
-        audio::MixerSeekMS(app::g_pMixer, val / 1000);
+        app::g_pMixer->seekMS(val / 1000);
 
 	return sd_bus_reply_method_return(m, "");
 }
@@ -317,7 +317,7 @@ getLoopStatus(
 {
     return sd_bus_message_append_basic(
         reply, 's',
-        PlayerRepeatMethodToString(app::g_pPlayer->eReapetMethod).pData
+        repeatMethodToString(app::g_pPlayer->eReapetMethod).pData
     );
 }
 
@@ -373,7 +373,7 @@ setVolume(
 {
     f64 vol;
     CK(sd_bus_message_read_basic(value, 'd', &vol));
-    audio::MixerSetVolume(app::g_pMixer, vol);
+    app::g_pMixer->setVolume(vol);
 
     return sd_bus_reply_method_return(value, "");
 }
@@ -389,7 +389,7 @@ position(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    long t = audio::MixerGetCurrentMS(app::g_pMixer);
+    long t = app::g_pMixer->getCurrentMS();
     t *= 1000;
 
     return sd_bus_message_append_basic(reply, 'x', &t);
@@ -477,7 +477,7 @@ metadata(
         CK(msgAppendDictSAS(reply, "xesam:artist", pl.info.artist.pData));
 
     {
-        long duration = audio::MixerGetMaxMS(app::g_pMixer) * 1000;
+        long duration = app::g_pMixer->getMaxMS() * 1000;
         CK(msgAppendDictSX(reply, "mpris:length", duration));
     }
 
@@ -657,7 +657,7 @@ seeked()
     guard::Mtx lock(&g_mtx);
 
     if (!s_pBus) return;
-    s64 pos = audio::MixerGetCurrentMS(app::g_pMixer) * 1000;
+    s64 pos = app::g_pMixer->getCurrentMS() * 1000;
     sd_bus_emit_signal(s_pBus, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", "Seeked", "x", pos);
 }
 

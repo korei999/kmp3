@@ -26,9 +26,9 @@ constexpr String aAcceptedFileEndings[] {
 static void
 allocMetaData(Player* s)
 {
-    s->info.title = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "title").data);
-    s->info.album = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "album").data);
-    s->info.artist = StringAlloc(s->pAlloc, audio::MixerGetMetadata(app::g_pMixer, "artist").data);
+    s->info.title = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("title").data);
+    s->info.album = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("album").data);
+    s->info.artist = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("artist").data);
 }
 
 static void
@@ -40,7 +40,7 @@ freeMetaData(Player* s)
 }
 
 bool
-PlayerAcceptedFormat(const String s)
+Player::acceptedFormat(const String s)
 {
     for (const auto ending : aAcceptedFileEndings)
         if (StringEndsWith(s, ending))
@@ -50,77 +50,77 @@ PlayerAcceptedFormat(const String s)
 }
 
 void
-PlayerFocusNext(Player* s)
+Player::focusNext()
 {
-    long ns = s->focused + 1;
-    if (ns >= long(s->aSongIdxs.size)) ns = 0;
-    s->focused = ns;
+    long ns = this->focused + 1;
+    if (ns >= long(this->aSongIdxs.size)) ns = 0;
+    this->focused = ns;
 }
 
 void
-PlayerFocusPrev(Player* s)
+Player::focusPrev()
 {
-    long ns = s->focused - 1;
-    if (ns < 0) ns = s->aSongIdxs.size - 1;
-    s->focused = ns;
+    long ns = this->focused - 1;
+    if (ns < 0) ns = this->aSongIdxs.size - 1;
+    this->focused = ns;
 }
 
 void
-PlayerFocus(Player* s, long i)
+Player::focus(long i)
 {
-    s->focused = utils::clamp(i, 0L, long(s->aSongIdxs.size - 1));
+    this->focused = utils::clamp(i, 0L, long(this->aSongIdxs.size - 1));
 }
 
 void
-PlayerFocusLast(Player* s)
+Player::focusLast()
 {
-    PlayerFocus(s, s->aSongIdxs.size - 1);
+    this->focus(this->aSongIdxs.size - 1);
 }
 
 u16
-PlayerFindSongIdxFromSelected(Player* s)
+Player::findSongIdxFromSelected()
 {
     u16 res = NPOS16;
 
-    for (const auto& idx : s->aSongIdxs)
+    for (const auto& idx : this->aSongIdxs)
     {
-        if (idx == s->selected)
+        if (idx == this->selected)
         {
-            res = s->aSongIdxs.idx(&idx);
+            res = this->aSongIdxs.idx(&idx);
             break;
         }
     }
 
     if (res == NPOS16)
     {
-        PlayerSetDefaultIdxs(s);
-        return PlayerFindSongIdxFromSelected(s);
+        this->setDefaultIdxs();
+        return this->findSongIdxFromSelected();
     }
     else return res;
 }
 
 void
-PlayerFocusSelected(Player* s)
+Player::focusSelected()
 {
-    s->focused = PlayerFindSongIdxFromSelected(s);
+    this->focused = this->findSongIdxFromSelected();
 }
 
 void
-PlayerSetDefaultIdxs(Player* s)
+Player::setDefaultIdxs()
 {
-    s->aSongIdxs.setSize(s->pAlloc, 0);
+    this->aSongIdxs.setSize(this->pAlloc, 0);
 
     for (int i = 1; i < app::g_argc; ++i)
-        if (PlayerAcceptedFormat(app::g_aArgs[i]))
-            s->aSongIdxs.push(s->pAlloc, u16(i));
+        if (this->acceptedFormat(app::g_aArgs[i]))
+            this->aSongIdxs.push(this->pAlloc, u16(i));
 }
 
 void
-PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pBuff, u32 size)
+Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
 {
     if (pBuff && wcsnlen(pBuff, size) == 0)
     {
-        PlayerSetDefaultIdxs(s);
+        this->setDefaultIdxs();
         return;
     }
 
@@ -128,15 +128,15 @@ PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pBuff, u32 size)
     for (u32 i = 0; i < size && i < aUpperRight.getCap() && pBuff[i]; ++i)
         aUpperRight.push(wchar_t(towupper(pBuff[i])));
 
-    Vec<wchar_t> aSongToUpper(&pAlloc->super, s->longestStringSize + 1);
-    aSongToUpper.setSize(s->longestStringSize + 1);
+    Vec<wchar_t> aSongToUpper(&pAlloc->super, this->longestStringSize + 1);
+    aSongToUpper.setSize(this->longestStringSize + 1);
 
-    s->aSongIdxs.setSize(s->pAlloc, 0);
+    this->aSongIdxs.setSize(this->pAlloc, 0);
     /* 0'th is the name of the program 'argv[0]' */
-    for (u32 i = 1; i < s->aShortArgvs.getSize(); ++i)
+    for (u32 i = 1; i < this->aShortArgvs.getSize(); ++i)
     {
-        const auto& song = s->aShortArgvs[i];
-        if (!PlayerAcceptedFormat(song)) continue;
+        const auto& song = this->aShortArgvs[i];
+        if (!this->acceptedFormat(song)) continue;
 
         aSongToUpper.zeroOut();
         mbstowcs(aSongToUpper.data(), song.pData, song.size);
@@ -144,7 +144,7 @@ PlayerSubStringSearch(Player* s, Arena* pAlloc, wchar_t* pBuff, u32 size)
             wc = towupper(wc);
 
         if (wcsstr(aSongToUpper.data(), aUpperRight.aData) != nullptr)
-            s->aSongIdxs.push(s->pAlloc, u16(i));
+            this->aSongIdxs.push(this->pAlloc, u16(i));
     }
 }
 
@@ -164,45 +164,45 @@ updateInfo(Player* s)
 }
 
 void
-PlayerSelectFocused(Player* s)
+Player::selectFocused()
 {
-    if (s->aSongIdxs.getSize() <= s->focused)
+    if (this->aSongIdxs.getSize() <= this->focused)
     {
-        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", s->aSongIdxs.getSize());
+        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", this->aSongIdxs.getSize());
         return;
     }
 
-    s->selected = s->aSongIdxs[s->focused];
-    const String& sPath = app::g_aArgs[s->selected];
-    LOG_NOTIFY("selected({}): {}\n", s->selected, sPath);
+    this->selected = this->aSongIdxs[this->focused];
+    const String& sPath = app::g_aArgs[this->selected];
+    LOG_NOTIFY("selected({}): {}\n", this->selected, sPath);
 
-    audio::MixerPlay(app::g_pMixer, sPath);
-    updateInfo(s);
+    app::g_pMixer->play(sPath);
+    updateInfo(this);
 }
 
 void
 PlayerPause([[maybe_unused]] Player* s, bool bPause)
 {
-    audio::MixerPause(app::g_pMixer, bPause);
+    app::g_pMixer->pause(bPause);
 }
 
 void
-PlayerTogglePause([[maybe_unused]] Player* s)
+Player::togglePause()
 {
-    audio::MixerTogglePause(app::g_pMixer);
+    app::g_pMixer->togglePause();
 }
 
 void
-PlayerOnSongEnd(Player* s)
+Player::onSongEnd()
 {
-    long currIdx = PlayerFindSongIdxFromSelected(s) + 1;
-    if (s->eReapetMethod == PLAYER_REPEAT_METHOD::TRACK)
+    long currIdx = this->findSongIdxFromSelected() + 1;
+    if (this->eReapetMethod == PLAYER_REPEAT_METHOD::TRACK)
     {
         currIdx -= 1;
     }
-    else if (currIdx >= s->aSongIdxs.getSize())
+    else if (currIdx >= this->aSongIdxs.getSize())
     {
-        if (s->eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST)
+        if (this->eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST)
         {
             currIdx = 0;
         }
@@ -213,22 +213,22 @@ PlayerOnSongEnd(Player* s)
         }
     }
 
-    s->selected = s->aSongIdxs[currIdx];
+    this->selected = this->aSongIdxs[currIdx];
 
-    audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
-    updateInfo(s);
+    app::g_pMixer->play(app::g_aArgs[this->selected]);
+    updateInfo(this);
 }
 
 PLAYER_REPEAT_METHOD
-PlayerCycleRepeatMethods(Player* s, bool bForward)
+Player::cycleRepeatMethods(bool bForward)
 {
     using enum PLAYER_REPEAT_METHOD;
 
     int rm;
-    if (bForward) rm = ((int(s->eReapetMethod) + 1) % int(ESIZE));
-    else rm = ((int(s->eReapetMethod) + (int(ESIZE) - 1)) % int(ESIZE));
+    if (bForward) rm = ((int(this->eReapetMethod) + 1) % int(ESIZE));
+    else rm = ((int(this->eReapetMethod) + (int(ESIZE) - 1)) % int(ESIZE));
 
-    s->eReapetMethod = PLAYER_REPEAT_METHOD(rm);
+    this->eReapetMethod = PLAYER_REPEAT_METHOD(rm);
 
     mpris::loopStatusChanged();
 
@@ -236,25 +236,25 @@ PlayerCycleRepeatMethods(Player* s, bool bForward)
 }
 
 void
-PlayerSelectNext(Player* s)
+Player::selectNext()
 {
-    long currIdx = (PlayerFindSongIdxFromSelected(s) + 1) % s->aSongIdxs.getSize();
-    s->selected = s->aSongIdxs[currIdx];
-    audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
-    updateInfo(s);
+    long currIdx = (this->findSongIdxFromSelected() + 1) % this->aSongIdxs.getSize();
+    this->selected = this->aSongIdxs[currIdx];
+    app::g_pMixer->play(app::g_aArgs[this->selected]);
+    updateInfo(this);
 }
 
 void
-PlayerSelectPrev(Player* s)
+Player::selectPrev()
 {
-    long currIdx = (PlayerFindSongIdxFromSelected(s) + (s->aSongIdxs.getSize()) - 1) % s->aSongIdxs.getSize();
-    s->selected = s->aSongIdxs[currIdx];
-    audio::MixerPlay(app::g_pMixer, app::g_aArgs[s->selected]);
-    updateInfo(s);
+    long currIdx = (this->findSongIdxFromSelected() + (this->aSongIdxs.getSize()) - 1) % this->aSongIdxs.getSize();
+    this->selected = this->aSongIdxs[currIdx];
+    app::g_pMixer->play(app::g_aArgs[this->selected]);
+    updateInfo(this);
 }
 
 void
-PlayerDestroy([[maybe_unused]] Player* s)
+Player::destroy()
 {
     //
 }
