@@ -19,18 +19,18 @@ struct Track;
 
 struct MixerVTable
 {
-    void (*init)(IMixer* s);
-    void (*destroy)(IMixer*);
-    void (*play)(IMixer*, String);
-    void (*pause)(IMixer* s, bool bPause);
-    void (*togglePause)(IMixer* s);
-    void (*changeSampleRate)(IMixer* s, u64 sampleRate, bool bSave);
-    void (*seekMS)(IMixer* s, s64 ms);
-    void (*seekLeftMS)(IMixer* s, s64 ms);
-    void (*seekRightMS)(IMixer* s, s64 ms);
-    Opt<String> (*getMetadata)(IMixer* s, const String sKey);
-    Opt<ffmpeg::Image> (*getCoverImage)(IMixer* s);
-    void (*setVolume)(IMixer* s, const f32 volume);
+    void (IMixer::* init)();
+    void (IMixer::* destroy)();
+    void (IMixer::* play)(String);
+    void (IMixer::* pause)(bool bPause);
+    void (IMixer::* togglePause)();
+    void (IMixer::* changeSampleRate)(u64 sampleRate, bool bSave);
+    void (IMixer::* seekMS)(s64 ms);
+    void (IMixer::* seekLeftMS)(s64 ms);
+    void (IMixer::* seekRightMS)(s64 ms);
+    Opt<String> (IMixer::* getMetadata)(const String sKey);
+    Opt<ffmpeg::Image> (IMixer::* getCoverImage)();
+    void (IMixer::* setVolume)(const f32 volume);
 };
 
 struct IMixer
@@ -49,18 +49,18 @@ struct IMixer
     u64 currentTimeStamp {};
     u64 totalSamplesCount {};
 
-    ADT_NO_UB void init() { pVTable->init(this); }
-    ADT_NO_UB void destroy() { pVTable->destroy(this); }
-    ADT_NO_UB void play(String sPath) { pVTable->play(this, sPath); }
-    ADT_NO_UB void pause(bool bPause) { pVTable->pause(this, bPause); }
-    ADT_NO_UB void togglePause() { pVTable->togglePause(this); }
-    ADT_NO_UB void changeSampleRate(u64 sampleRate, bool bSave) { pVTable->changeSampleRate(this, sampleRate, bSave); }
-    ADT_NO_UB void seekMS(u64 ms) { pVTable->seekMS(this, ms); }
-    ADT_NO_UB void seekLeftMS(u64 ms) { pVTable->seekLeftMS(this, ms); }
-    ADT_NO_UB void seekRightMS(u64 ms) { pVTable->seekRightMS(this, ms); }
-    [[nodiscard]] ADT_NO_UB Opt<String> getMetadata(const String sKey) { return pVTable->getMetadata(this, sKey); }
-    [[nodiscard]] ADT_NO_UB Opt<ffmpeg::Image> getCoverImage() { return pVTable->getCoverImage(this); }
-    ADT_NO_UB void setVolume(const f32 volume) { pVTable->setVolume(this, volume); }
+    ADT_NO_UB void init() { (this->*pVTable->init)(); }
+    ADT_NO_UB void destroy() { (this->*pVTable->destroy)(); }
+    ADT_NO_UB void play(String sPath) { (this->*pVTable->play)(sPath); }
+    ADT_NO_UB void pause(bool bPause) { (this->*pVTable->pause)(bPause); }
+    ADT_NO_UB void togglePause() { (this->*pVTable->togglePause)(); }
+    ADT_NO_UB void changeSampleRate(u64 sampleRate, bool bSave) { (this->*pVTable->changeSampleRate)(sampleRate, bSave); }
+    ADT_NO_UB void seekMS(u64 ms) { (this->*pVTable->seekMS)(ms); }
+    ADT_NO_UB void seekLeftMS(u64 ms) { (this->*pVTable->seekLeftMS)(ms); }
+    ADT_NO_UB void seekRightMS(u64 ms) { (this->*pVTable->seekRightMS)(ms); }
+    [[nodiscard]] ADT_NO_UB Opt<String> getMetadata(const String sKey) { return (this->*pVTable->getMetadata)(sKey); }
+    [[nodiscard]] ADT_NO_UB Opt<ffmpeg::Image> getCoverImage() { return (this->*pVTable->getCoverImage)(); }
+    ADT_NO_UB void setVolume(const f32 volume) { (this->*pVTable->setVolume)(volume); }
 
     void volumeDown(const f32 step) { setVolume(volume - step); }
     void volumeUp(const f32 step) { setVolume(volume + step); }
@@ -76,21 +76,34 @@ struct DummyMixer
     IMixer super;
 
     constexpr DummyMixer();
+
+    void init() {}
+    void destroy() {}
+    void play(String sPath) {}
+    void pause(bool bPause) {}
+    void togglePause() {}
+    void changeSampleRate(u64 sampleRate, bool bSave) {}
+    void seekMS(u64 ms) {}
+    void seekLeftMS(u64 ms) {}
+    void seekRightMS(u64 ms) {}
+    Opt<String> getMetadata(const String sKey) { return {}; }
+    Opt<ffmpeg::Image> getCoverImage() { return {}; }
+    void setVolume(const f32 volume) {}
 };
 
 inline const MixerVTable inl_DummyMixerVTable {
-    .init = decltype(MixerVTable::init)(+[]{}),
-    .destroy = decltype(MixerVTable::destroy)(+[]{}),
-    .play = decltype(MixerVTable::play)(+[]{}),
-    .pause = decltype(MixerVTable::pause)(+[]{}),
-    .togglePause = decltype(MixerVTable::togglePause)(+[]{}),
-    .changeSampleRate = decltype(MixerVTable::changeSampleRate)(+[]{}),
-    .seekMS = decltype(MixerVTable::seekMS)(+[]{}),
-    .seekLeftMS = decltype(MixerVTable::seekMS)(+[]{}),
-    .seekRightMS = decltype(MixerVTable::seekMS)(+[]{}),
-    .getMetadata = decltype(MixerVTable::getMetadata)(+[]{}),
-    .getCoverImage = decltype(MixerVTable::getCoverImage)(+[]{}),
-    .setVolume = decltype(MixerVTable::setVolume)(+[]{}),
+    .init = decltype(MixerVTable::init)(&DummyMixer::init),
+    .destroy = decltype(MixerVTable::destroy)(&DummyMixer::destroy),
+    .play = decltype(MixerVTable::play)(&DummyMixer::play),
+    .pause = decltype(MixerVTable::pause)(&DummyMixer::pause),
+    .togglePause = decltype(MixerVTable::togglePause)(&DummyMixer::togglePause),
+    .changeSampleRate = decltype(MixerVTable::changeSampleRate)(&DummyMixer::changeSampleRate),
+    .seekMS = decltype(MixerVTable::seekMS)(&DummyMixer::seekMS),
+    .seekLeftMS = decltype(MixerVTable::seekMS)(&DummyMixer::seekLeftMS),
+    .seekRightMS = decltype(MixerVTable::seekMS)(&DummyMixer::seekRightMS),
+    .getMetadata = decltype(MixerVTable::getMetadata)(&DummyMixer::getMetadata),
+    .getCoverImage = decltype(MixerVTable::getCoverImage)(&DummyMixer::getCoverImage),
+    .setVolume = decltype(MixerVTable::setVolume)(&DummyMixer::setVolume),
 };
 
 constexpr
