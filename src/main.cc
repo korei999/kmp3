@@ -27,7 +27,7 @@ main(int argc, char** argv)
     FreeList freeList(SIZE_8M);
     defer( freeList.freeAll() );
 
-    app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
+    app::g_eUIFrontend = app::UI_FRONTEND::ANSI;
 
     if (argc > 1)
     {
