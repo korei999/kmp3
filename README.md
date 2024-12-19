@@ -1,4 +1,4 @@
-![kmp3_3](https://github.com/user-attachments/assets/3f98f29d-ac64-4b70-92dd-1be593590616)
+![kmp3_5](https://github.com/user-attachments/assets/dc2560dd-7667-481a-9e74-1f7fcaaa0c6e)
 
 ### Features
 - Plays most of the audio/video formats.
@@ -9,7 +9,6 @@
 - Play each song in the directory: `kmp3 *`, or recursively: `kmp3 **/*`.
 - With no arguments, stdin with pipe can be used: `find /path -iname '*.mp3' | kmp3` or whatever the shell can do.
 - Navigate with vim-like keybinds.
-- Mouse controls.
 - `h` / `l` seek back/forward.
 - `n` / `p` next/prev song.
 - `/` to search.
