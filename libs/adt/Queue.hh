@@ -28,23 +28,18 @@ struct QueueBase
     T& operator[](int i)             { assert(i < cap && "[Queue]: out of capacity"); return pData[i]; }
     const T& operator[](int i) const { assert(i < cap && "[Queue]: out of capacity"); return pData[i]; }
 
-    [[nodiscard]] inline int nextI(int i) const { return (i + 1) >= this->cap ? 0 : (i + 1); }
-    [[nodiscard]] inline int prevI(int i) const { return (i - 1) < 0 ? this->cap - 1 : (i - 1); }
-    [[nodiscard]] inline int firstI() const { return utils::empty(this) ? -1 : this->first; }
-    [[nodiscard]] inline int lastI() const { return utils::empty(this) ? 0 : this->last - 1; }
+    [[nodiscard]] int nextI(int i) const { return (i + 1) >= this->cap ? 0 : (i + 1); }
+    [[nodiscard]] int prevI(int i) const { return (i - 1) < 0 ? this->cap - 1 : (i - 1); }
+    [[nodiscard]] int firstI() const { return empty() ? -1 : this->first; }
+    [[nodiscard]] int lastI() const { return empty() ? 0 : this->last - 1; }
 
+    bool empty() const { return size == 0; }
     void destroy(IAllocator* p);
-
     T* pushFront(IAllocator* p, const T& val);
-
     T* pushBack(IAllocator* p, const T& val);
-
     void resize(IAllocator* p, u32 size);
-
     T* popFront();
-
     T* popBack();
-
     u32 idx(const T* pItem) const;
 
     struct It
@@ -188,6 +183,15 @@ struct Queue
     T& operator[](u32 i) { return base[i]; }
     const T& operator[](u32 i) const { return base[i]; }
 
+    bool empty() const { return base.empty(); }
+    void destroy() { base.destroy(pAlloc); }
+    T* pushFront(const T& val) { return base.pushFront(pAlloc, val); }
+    T* pushBack(const T& val) { return base.pushBack(pAlloc, val); }
+    void resize(u32 size) { base.resize(pAlloc, size); }
+    T* popFront() { return base.popFront(); }
+    T* popBack() { return base.popBack(); }
+    u32 idx(const T* pItem) { return base.idx(pItem); }
+
     QueueBase<T>::It begin() { return base.begin(); }
     QueueBase<T>::It end() { return base.end(); }
     QueueBase<T>::It rbegin() { return base.rbegin(); }
@@ -197,29 +201,7 @@ struct Queue
     const QueueBase<T>::It end() const { return base.end(); }
     const QueueBase<T>::It rbegin() const { return base.rbegin(); }
     const QueueBase<T>::It rend() const { return base.rend(); }
-
-    void destroy() { base.destroy(pAlloc); }
-
-    T* pushFront(const T& val) { return base.pushFront(pAlloc, val); }
-
-    T* pushBack(const T& val) { return base.pushBack(pAlloc, val); }
-
-    void resize(u32 size) { base.resize(pAlloc, size); }
-
-    T* popFront() { return base.popFront(); }
-
-    T* popBack() { return base.popBack(); }
-
-    u32 idx(const T* pItem) { return base.idx(pItem); }
 };
-
-namespace utils
-{
-
-template<typename T> [[nodiscard]] inline bool empty(const QueueBase<T>* s) { return s->size == 0; }
-template<typename T> [[nodiscard]] inline bool empty(const Queue<T>* s) { return empty(&s->base); }
-
-} /* namespace utils */
 
 namespace print
 {
@@ -228,7 +210,7 @@ template<typename T>
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const QueueBase<T>& x)
 {
-    if (utils::empty(&x))
+    if (x.empty())
     {
         ctx.fmt = "{}";
         ctx.fmtIdx = 0;
@@ -239,9 +221,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const QueueBas
     u32 nRead = 0;
     for (const auto& it : x)
     {
-        const char* fmt;
-        if constexpr (std::is_floating_point_v<T>) fmt = (x.idx(&it) == x.last - 1U ? "{:.3}" : "{:.3}, ");
-        else fmt = (x.idx(&it) == x.last - 1U ? "{}" : "{}, ");
+        const char* fmt = (x.idx(&it) == x.last - 1U ? "{}" : "{}, ");
 
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, it);
     }

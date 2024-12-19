@@ -45,7 +45,8 @@ struct MapResult
         return this->pData != nullptr;
     }
 
-    constexpr const KeyVal<K, V>&
+    constexpr
+    const KeyVal<K, V>&
     getData() const
     {
         assert(eStatus != MAP_RESULT_STATUS::NOT_FOUND && "[Map]: not found");
@@ -63,36 +64,22 @@ struct MapBase
     MapBase() = default;
     MapBase(IAllocator* pAllocator, u32 prealloc = SIZE_MIN);
 
+    [[nodiscard]] bool empty() const { return nOccupied == 0; }
     [[nodiscard]] u32 idx(KeyVal<K, V>* p) const;
-
     [[nodiscard]] u32 idx(MapResult<K, V> res) const;
-
     [[nodiscard]] u32 firstI() const;
-
     [[nodiscard]] u32 nextI(u32 i) const;
-
     [[nodiscard]] f32 loadFactor() const;
-
     MapResult<K, V> insert(IAllocator* p, const K& key, const V& val);
-
     [[nodiscard]] MapResult<K, V> search(const K& key);
-
     void remove(u32 i);
-
     void remove(const K& key);
-
     [[nodiscard]] MapResult<K, V> tryInsert(IAllocator* p, const K& key, const V& val);
-
     void destroy(IAllocator* p);
-
     [[nodiscard]] u32 getCap() const;
-
     [[nodiscard]] u32 getSize() const;
-
     void rehash(IAllocator* p, u32 size);
-
     MapResult<K, V> insertHashed(const K& key, const V& val, u64 hash);
-
     [[nodiscard]] MapResult<K, V> searchHashed(const K& key, u64 keyHash);
 
     struct It
@@ -328,35 +315,25 @@ struct Map
     Map(IAllocator* _pAlloc, u32 prealloc = SIZE_MIN)
         : base(_pAlloc, prealloc), pAlloc(_pAlloc) {}
 
+    [[nodiscard]] bool empty() const { return base.empty(); }
+    [[nodiscard]] u32 idx(MapResult<K, V> res) const { return base.idx(res); }
+    [[nodiscard]] u32 firstI() const { return base.firstI(); }
+    [[nodiscard]] u32 nextI(u32 i) const { return base.nextI(i); }
+    [[nodiscard]] f32 loadFactor() const { return base.loadFactor(); }
+    MapResult<K, V> insert(const K& key, const V& val) { return base.insert(pAlloc, key, val); }
+    [[nodiscard]] MapResult<K, V> search(const K& key) { return base.search(key); }
+    void remove(u32 i) { base.remove(i); }
+    void remove(const K& key) { base.remove(key); }
+    [[nodiscard]] MapResult<K, V> tryInsert(const K& key, const V& val) { return base.tryInsert(pAlloc, key, val); }
+    void destroy() { base.destroy(pAlloc); }
+    [[nodiscard]] u32 getCap() const { return base.getCap(); }
+    [[nodiscard]] u32 getSize() const { return base.getSize(); }
+
     MapBase<K, V>::It begin() { return base.begin(); }
     MapBase<K, V>::It end() { return base.end(); }
 
     const MapBase<K, V>::It begin() const { return base.begin(); }
     const MapBase<K, V>::It end() const { return base.end(); }
-
-    [[nodiscard]] inline u32 idx(MapResult<K, V> res) const { return base.idx(res); }
-
-    [[nodiscard]] inline u32 firstI() const { return base.firstI(); }
-
-    [[nodiscard]] inline u32 nextI(u32 i) const { return base.nextI(i); }
-
-    [[nodiscard]] inline f32 loadFactor() const { return base.loadFactor(); }
-
-    inline MapResult<K, V> insert(const K& key, const V& val) { return base.insert(pAlloc, key, val); }
-
-    [[nodiscard]] inline MapResult<K, V> search(const K& key) { return base.search(key); }
-
-    inline void remove(u32 i) { base.remove(i); }
-
-    inline void remove(const K& key) { base.remove(key); }
-
-    [[nodiscard]] inline MapResult<K, V> tryInsert(const K& key, const V& val) { return base.tryInsert(pAlloc, key, val); }
-
-    inline void destroy() { base.destroy(pAlloc); }
-
-    [[nodiscard]] inline u32 getCap() const { return base.getCap(); }
-
-    [[nodiscard]] inline u32 getSize() const { return base.getSize(); }
 };
 
 namespace print

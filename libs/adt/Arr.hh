@@ -51,28 +51,19 @@ struct Arr
     constexpr const It rbegin() const { return {&this->aData[this->size - 1]}; }
     constexpr const It rend() const { return {this->aData - 1}; }
 
+    constexpr bool empty() const { return size == 0; }
+
     constexpr u32 push(const T& x);
-
     constexpr u32 fakePush();
-
     constexpr T* pop();
-
     constexpr void fakePop();
-
     constexpr u32 getCap() const;
-
     constexpr u32 getSize() const;
-
     constexpr void setSize(u32 newSize);
-
     constexpr u32 idx(const T* p);
-
     constexpr T& first();
-
     constexpr const T& first() const;
-
     constexpr T& last();
-
     constexpr const T& last() const;
 };
 
@@ -176,18 +167,6 @@ constexpr Arr<T, CAP>::Arr(std::initializer_list<T> list)
     for (auto& e : list) this->push(e);
 }
 
-namespace utils
-{
-
-template<typename T, u32 CAP>
-[[nodiscard]] constexpr bool
-empty(const Arr<T, CAP>* s)
-{
-    return s->size == 0;
-}
-
-} /* namespace utils */
-
 namespace sort
 {
 
@@ -218,7 +197,7 @@ template<typename T, u32 CAP>
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Arr<T, CAP>& x)
 {
-    if (utils::empty(&x))
+    if (x.empty())
     {
         ctx.fmt = "{}";
         ctx.fmtIdx = 0;
@@ -229,10 +208,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Arr<T, C
     u32 nRead = 0;
     for (u32 i = 0; i < x.size; ++i)
     {
-        const char* fmt;
-        if constexpr (std::is_floating_point_v<T>) fmt = i == x.size - 1 ? "{:.3}" : "{:.3}, ";
-        else fmt = i == x.size - 1 ? "{}" : "{}, ";
-
+        const char* fmt = i == x.size - 1 ? "{}" : "{}, ";
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, x[i]);
     }
 

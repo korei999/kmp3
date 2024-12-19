@@ -79,9 +79,7 @@ struct ThreadPoolLock
     ThreadPoolLock(INIT_FLAG e) { if (e == INIT_FLAG::INIT) init(); }
 
     void init();
-
     void wait();
-
     void destroy();
 };
 
@@ -133,20 +131,14 @@ struct ThreadPool
     ThreadPool(IAllocator* pAlloc, u32 _nThreads = ADT_GET_NCORES());
 
     void destroy();
-
     void start();
-
     bool busy();
-
     void submit(ThreadTask task);
-
     void submit(thrd_start_t pfnTask, void* pArgs);
-
     /* Signal ThreadPoolLock after completion.
-     * If ThreadPoolLockWait was never called for this pTpLock, the task will spinlock forever,
-     * unless pTpLock->bSignaled is manually set to true; */
+     * If `ThreadPoolLock::wait()` was never called for this `pTpLock`, the task will spinlock forever,
+     * unless `pTpLock->bSignaled` is manually set to true; */
     void submitSignal(thrd_start_t pfnTask, void* pArgs, ThreadPoolLock* pTpLock);
-
     void wait(); /* wait for all active tasks to finish, without joining */
 };
 
@@ -183,7 +175,7 @@ _ThreadPoolLoop(void* p)
         {
             guard::Mtx lock(&s->mtxQ);
 
-            while (utils::empty(&s->qTasks) && !s->bDone)
+            while (s->qTasks.empty() && !s->bDone)
                 cnd_wait(&s->cndQ, &s->mtxQ);
 
             if (s->bDone) return thrd_success;
@@ -235,7 +227,7 @@ ThreadPool::busy()
     bool ret;
     {
         guard::Mtx lock(&this->mtxQ);
-        ret = !utils::empty(&this->qTasks) || this->nActiveTasks > 0;
+        ret = !this->qTasks.empty() || this->nActiveTasks > 0;
     }
 
     return ret;

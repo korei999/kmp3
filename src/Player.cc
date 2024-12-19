@@ -23,22 +23,6 @@ constexpr String aAcceptedFileEndings[] {
     ".mkv",
 };
 
-static void
-allocMetaData(Player* s)
-{
-    s->info.title = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("title").data);
-    s->info.album = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("album").data);
-    s->info.artist = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("artist").data);
-}
-
-static void
-freeMetaData(Player* s)
-{
-    s->info.title.destroy(s->pAlloc);
-    s->info.album.destroy(s->pAlloc);
-    s->info.artist.destroy(s->pAlloc);
-}
-
 bool
 Player::acceptedFormat(const String s)
 {
@@ -151,15 +135,22 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
 static void
 updateInfo(Player* s)
 {
-    /* it's save to free nullptr */
-    freeMetaData(s);
-    /* clone string to avoid data races with ffmpeg */
-    allocMetaData(s);
+    String sTitle = s->info.title;
+    String sAlbum = s->info.album;
+    String sArtist = s->info.artist;
+
+    s->info.title = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("title").data);
+    s->info.album = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("album").data);
+    s->info.artist = StringAlloc(s->pAlloc, app::g_pMixer->getMetadata("artist").data);
+
+    sTitle.destroy(s->pAlloc);
+    sAlbum.destroy(s->pAlloc);
+    sArtist.destroy(s->pAlloc);
 
     s->bSelectionChanged = true;
 
 #ifndef NDEBUG
-    LOG_GOOD("freeList.size: {}\n", _FreeListGetBytesAllocated((FreeList*)s->pAlloc));
+    LOG_GOOD("freeList.size: {}\n", _FreeListNBytesAllocated((FreeList*)s->pAlloc));
 #endif
 }
 

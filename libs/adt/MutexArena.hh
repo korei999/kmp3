@@ -15,11 +15,11 @@ struct MutexArena
     MutexArena() = default;
     MutexArena(u32 blockCap);
 
-    [[nodiscard]] inline void* alloc(u64 mCount, u64 mSize);
-    [[nodiscard]] inline void* zalloc(u64 mCount, u64 mSize);
-    [[nodiscard]] inline void* realloc(void* ptr, u64 mCount, u64 mSize);
-    inline void free(void* ptr);
-    inline void freeAll();
+    [[nodiscard]] void* alloc(u64 mCount, u64 mSize);
+    [[nodiscard]] void* zalloc(u64 mCount, u64 mSize);
+    [[nodiscard]] void* realloc(void* ptr, u64 mCount, u64 mSize);
+    void free(void* ptr);
+    void freeAll();
 };
 
 inline void*

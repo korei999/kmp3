@@ -100,7 +100,14 @@ drawCoverImage(Win* s)
 }
 
 static void
-drawSongList(Win* s)
+info(Win* s)
+{
+    int hOff = s->prevImgWidth + 1;
+    const auto& pl = *app::g_pPlayer;
+}
+
+static void
+list(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
     auto& tb = s->textBuff;
@@ -138,7 +145,7 @@ drawSongList(Win* s)
 }
 
 static void
-drawBottomLine(Win* s)
+bottomLine(Win* s)
 {
     namespace c = common;
 
@@ -163,16 +170,22 @@ drawBottomLine(Win* s)
             n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
         }
 
-        tb.movePush(width - n - 2, height - 1, pBuff, width - 2); }
+        tb.movePush(width - n - 1, height - 1, pBuff, width - 1); }
 
     if (
         c::g_input.eCurrMode != WINDOW_READ_MODE::NONE ||
-        (c::g_input.eCurrMode == WINDOW_READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
+        (c::g_input.eCurrMode == WINDOW_READ_MODE::NONE &&
+         wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
     )
     {
         const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
-        tb.movePushGlyphs(1, height - 1, sReadMode, width - 2);
-        tb.movePushWideString(sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff) - 2);
+        tb.movePushGlyphs(1, height - 1, sReadMode, width - 1);
+        tb.movePushWideString(
+            sReadMode.size + 1,
+            height - 1,
+            c::g_input.aBuff,
+            utils::size(c::g_input.aBuff) - 2
+        );
 
         if (c::g_input.eCurrMode != WINDOW_READ_MODE::NONE) tb.hideCursor(false);
         else tb.hideCursor(true);
@@ -199,8 +212,9 @@ update(Win* s)
         s->bRedraw = false;
 
         drawCoverImage(s);
-        drawSongList(s);
-        drawBottomLine(s);
+        info(s);
+        list(s);
+        bottomLine(s);
 
         tb.flush();
     }

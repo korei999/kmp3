@@ -34,6 +34,18 @@ struct ListBase
     ListNode<T>* pLast {};
     u32 size {};
 
+    [[nodiscard]] constexpr bool empty() const { return size == 0; }
+    constexpr void destroy(IAllocator* pA);
+    constexpr ListNode<T>* pushFront(ListNode<T>* pNew);
+    constexpr ListNode<T>* pushBack(ListNode<T>* pNew);
+    constexpr ListNode<T>* pushFront(IAllocator* pA, const T& x);
+    constexpr ListNode<T>* pushBack(IAllocator* pA, const T& x);
+    constexpr void remove(ListNode<T>* p);
+    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p);
+    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p);
+    template<auto FN_CMP = utils::compare<T>>
+    constexpr void sort();
+
     struct It
     {
         ListNode<T>* s = nullptr;
@@ -62,26 +74,6 @@ struct ListBase
     const It end() const { return nullptr; }
     const It rbegin() const { return {this->pLast}; }
     const It rend() const { return nullptr; }
-
-    constexpr void destroy(IAllocator* pA);
-
-    constexpr ListNode<T>* pushFront(ListNode<T>* pNew);
-
-    constexpr ListNode<T>* pushBack(ListNode<T>* pNew);
-
-    constexpr ListNode<T>* pushFront(IAllocator* pA, const T& x);
-
-    constexpr ListNode<T>* pushBack(IAllocator* pA, const T& x);
-
-    constexpr void remove(ListNode<T>* p);
-
-    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p);
-
-    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p);
-
-    template<auto FN_CMP = utils::compare<T>>
-    constexpr void sort();
-
 };
 
 template<typename T>
@@ -312,6 +304,16 @@ struct List
     List() = default;
     List(IAllocator* pA) : pAlloc(pA) {}
 
+    [[nodiscard]] constexpr bool empty() const { return base.empty(); }
+    constexpr ListNode<T>* pushFront(const T& x) { return base.pushFront(pAlloc, x); }
+    constexpr ListNode<T>* pushBack(const T& x) { return base.pushBack(pAlloc, x); }
+    constexpr void remove(ListNode<T>* p) { base.remove(p); pAlloc->free(p); }
+    constexpr void destroy() { base.destroy(pAlloc); }
+    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p) { base.insertAfter(pAfter, p); }
+    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p) { base.insertBefore(pBefore, p); }
+    template<auto FN_CMP = utils::compare<T>>
+    constexpr void sort() { base.template sort<FN_CMP>(); }
+
     ListBase<T>::It begin() { return base.begin(); }
     ListBase<T>::It end() { return base.end(); }
     ListBase<T>::It rbegin() { return base.rbegin(); }
@@ -321,30 +323,7 @@ struct List
     const ListBase<T>::It end() const { return base.end(); }
     const ListBase<T>::It rbegin() const { return base.rbegin(); }
     const ListBase<T>::It rend() const { return base.rend(); }
-
-    constexpr ListNode<T>* pushFront(const T& x) { return base.pushFront(pAlloc, x); }
-
-    constexpr ListNode<T>* pushBack(const T& x) { return base.pushBack(pAlloc, x); }
-
-    constexpr void remove(ListNode<T>* p) { base.remove(p); pAlloc->free(p); }
-
-    constexpr void destroy() { base.destroy(pAlloc); }
-
-    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p) { base.insertAfter(pAfter, p); }
-
-    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p) { base.insertBefore(pBefore, p); }
-
-    template<auto FN_CMP = utils::compare<T>>
-    constexpr void sort() { base.template sort<FN_CMP>(); }
 };
-
-namespace utils
-{
-
-template<typename T> [[nodiscard]] inline bool empty(const ListBase<T>* s) { return s->size == 0; }
-template<typename T> [[nodiscard]] inline bool empty(const List<T>* s) { return empty(&s->base); }
-
-} /* namespace utils */
 
 namespace print
 {
@@ -353,7 +332,7 @@ template<typename T>
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const ListBase<T>& x)
 {
-    if (utils::empty(&x))
+    if (x.empty())
     {
         ctx.fmt = "{}";
         ctx.fmtIdx = 0;
@@ -364,10 +343,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const ListBase
     u32 nRead = 0;
     ADT_LIST_FOREACH(&x, it)
     {
-        const char* fmt;
-        if constexpr (std::is_floating_point_v<T>) fmt = it == x.pLast ? "{:.3}" : "{:.3}, ";
-        else fmt = it == x.pLast ? "{}" : "{}, ";
-
+        const char* fmt = it == x.pLast ? "{}" : "{}, ";
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, it->data);
     }
 
