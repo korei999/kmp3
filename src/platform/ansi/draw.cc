@@ -351,7 +351,7 @@ update(Win* s)
         coverImage(s);
         info(s);
         volume(s);
-        /*list(s);*/
+        list(s);
         bottomLine(s);
     }
 
