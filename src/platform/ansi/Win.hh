@@ -25,6 +25,8 @@ struct Win
     bool bClear = false;
     int prevImgWidth = 0;
     mtx_t mtxUpdate {};
+    f64 time {};
+    f64 lastResizeTime {};
 
     Win();
 

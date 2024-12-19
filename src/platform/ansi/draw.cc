@@ -36,8 +36,6 @@ namespace ansi
 namespace draw
 {
 
-static f64 s_time {};
-
 static void
 clearArea(Win* s, int x, int y, int width, int height)
 {
@@ -54,13 +52,11 @@ clearArea(Win* s, int x, int y, int width, int height)
 static void
 coverImage(Win* s)
 {
-    static f64 lastRedraw {};
     static u32 prevWidth {};
 
-    if (app::g_pPlayer->bSelectionChanged && s_time > lastRedraw + defaults::IMAGE_UPDATE_RATE_LIMIT)
+    if (app::g_pPlayer->bSelectionChanged && s->time > s->lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
         app::g_pPlayer->bSelectionChanged = false;
-        lastRedraw = s_time;
 
         const int split = app::g_pPlayer->imgHeight;
 
@@ -227,7 +223,7 @@ update(Win* s)
     const int width = g_termSize.width;
     const int height = g_termSize.height;
 
-    s_time = utils::timeNowMS();
+    s->time = utils::timeNowMS();
 
     defer(
         tb.flush();

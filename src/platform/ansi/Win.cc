@@ -127,6 +127,7 @@ sigwinchHandler(int sig)
     app::g_pPlayer->bSelectionChanged = true;
     s->bRedraw = true;
     s->bClear = true;
+    s->lastResizeTime = utils::timeNowMS();
 }
 
 bool
