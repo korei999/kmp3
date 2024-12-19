@@ -1,10 +1,10 @@
 #include "Win.hh"
-#include "defaults.hh"
-#include "draw.hh"
 
-#include "common.hh"
 #include "adt/logs.hh"
 #include "app.hh"
+#include "common.hh"
+#include "defaults.hh"
+#include "draw.hh"
 #include "keybinds.hh"
 
 #include <csignal>
@@ -122,11 +122,11 @@ sigwinchHandler(int sig)
     g_termSize = getTermSize();
     LOG_GOOD("term: {}\n", g_termSize);
 
-    s->textBuff.clear();
+    /* NOTE: don't allocate / write to the buffer from here.
+     * Marking things to be redrawn instead. */
     app::g_pPlayer->bSelectionChanged = true;
     s->bRedraw = true;
-
-    s->draw();
+    s->bClear = true;
 }
 
 bool
@@ -134,8 +134,9 @@ Win::start(Arena* pArena)
 {
     this->pArena = pArena;
     this->textBuff = TextBuff(pArena);
-
     g_termSize = getTermSize();
+
+    mtx_init(&this->mtxUpdate, mtx_plain);
 
     enableRawMode(this);
     signal(SIGWINCH, sigwinchHandler);
@@ -162,8 +163,9 @@ Win::destroy()
     this->textBuff.flush();
 
     disableRawMode(this);
+    mtx_destroy(&this->mtxUpdate);
 
-    LOG_NOTIFY("ansi::WinDestroy()\n");
+    LOG_GOOD("ansi::WinDestroy()\n");
 }
 
 void

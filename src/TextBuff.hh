@@ -6,6 +6,18 @@
 
 using namespace adt;
 
+/*
+Erases part of the line.
+If n is 0 (or missing), clear from cursor to the end of the line.
+If n is 1, clear from cursor to beginning of the line.
+If n is 2, clear entire line. Cursor position does not change. 
+*/
+
+enum class TEXT_BUFF_ARG : u8
+{
+    TO_END, TO_BEGINNING, EVERYTHING
+};
+
 struct TextBuff
 {
     Arena* pAlloc {};
@@ -29,8 +41,8 @@ struct TextBuff
     void clearDown();
     void clearUp();
     void clear();
-    void clearLine(int arg);
-    void moveClearLine(int x, int y, int arg);
+    void clearLine(TEXT_BUFF_ARG eArg);
+    void moveClearLine(int x, int y, TEXT_BUFF_ARG eArg);
     void hideCursor(bool bHide);
     void movePush(int x, int y, const String str);
     void movePush(int x, int y, const char* pBuff, const u32 size);
@@ -72,8 +84,11 @@ TextBuff::reset()
 inline void
 TextBuff::flush()
 {
-    write(STDOUT_FILENO, this->pData, this->size);
-    fflush(stdout);
+    if (this->size > 0)
+    {
+        write(STDOUT_FILENO, this->pData, this->size);
+        fflush(stdout);
+    }
 }
 
 inline void
@@ -141,18 +156,18 @@ TextBuff::clear()
 }
 
 inline void
-TextBuff::clearLine(int arg)
+TextBuff::clearLine(TEXT_BUFF_ARG eArg)
 {
     char aBuff[32] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}K", arg);
+    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}K", int(eArg));
     this->push(aBuff, n);
 }
 
 inline void
-TextBuff::moveClearLine(int x, int y, int arg)
+TextBuff::moveClearLine(int x, int y, TEXT_BUFF_ARG eArg)
 {
     this->move(x, y);
-    this->clearLine(arg);
+    this->clearLine(eArg);
 }
 
 inline void
@@ -179,6 +194,8 @@ TextBuff::movePush(int x, int y, const char* pBuff, const u32 size)
 inline void
 TextBuff::pushGlyphs(const String str, const u32 nColumns)
 {
+    if (!str.pData) return;
+
     char* pBuff = (char*)this->pAlloc->zalloc(str.size*2, 1);
     u32 off = 0;
 

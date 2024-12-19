@@ -1,5 +1,6 @@
 #include "draw.hh"
 
+#include "adt/guard.hh"
 #include "app.hh"
 #include "common.hh"
 #include "defaults.hh"
@@ -7,12 +8,13 @@
 
 #define NORM "\x1b[0m"
 #define BOLD "\x1b[1m"
+#define ITALIC "\x1b[3m"
 #define REVERSE "\x1b[7m"
 
 #define RED "\x1b[31m"
 #define GREEN "\x1b[32m"
 #define YELLOW "\x1b[33m"
-#define BLUE "\x1C[34m"
+#define BLUE "\x1b[34m"
 #define MAGENTA "\x1b[35m"
 #define CYAN "\x1b[36m"
 #define WHITE "\x1b[37m"
@@ -20,7 +22,7 @@
 #define BG_RED "\x1b[41m"
 #define BG_GREEN "\x1b[42m"
 #define BG_YELLOW "\x1b[43m"
-#define BG_BLUE "\x1C[44m"
+#define BG_BLUE "\x1b[44m"
 #define BG_MAGENTA "\x1b[45m"
 #define BG_CYAN "\x1b[46m"
 #define BG_WHITE "\x1b[47m"
@@ -50,16 +52,7 @@ clearArea(Win* s, int x, int y, int width, int height)
 }
 
 static void
-clearLine(Win* s, int x, int y, int width)
-{
-    const int w = utils::minVal(g_termSize.width, width);
-
-    for (int i = y; i < w; ++i)
-        s->textBuff.movePush(i, y, " ");
-}
-
-static void
-drawCoverImage(Win* s)
+coverImage(Win* s)
 {
     static f64 lastRedraw {};
     static u32 prevWidth {};
@@ -102,8 +95,40 @@ drawCoverImage(Win* s)
 static void
 info(Win* s)
 {
-    int hOff = s->prevImgWidth + 1;
     const auto& pl = *app::g_pPlayer;
+    auto& tb = s->textBuff;
+    const int hOff = s->prevImgWidth + 1;
+    const int width = g_termSize.width;
+
+    char* pBuff = (char*)s->pArena->alloc(width + 1, 1);
+
+    auto drawLine = [&](
+        const int y,
+        const String sPrefix,
+        const String sLine,
+        const String sColor)
+    {
+        tb.moveClearLine(hOff - 1, y, TEXT_BUFF_ARG::TO_END);
+
+        memset(pBuff, 0, width + 1);
+        u32 n = print::toBuffer(pBuff, width, sPrefix);
+        tb.push(NORM);
+        tb.movePushGlyphs(hOff, y, pBuff, width - hOff - 1);
+
+        if (sLine.size > 0)
+        {
+            memset(pBuff, 0, width + 1);
+            print::toBuffer(pBuff, width, "{}", sLine);
+            tb.push(sColor);
+            tb.movePushGlyphs(hOff + n, y, pBuff, width - hOff - 1 - n);
+        }
+
+        tb.push(NORM);
+    };
+
+    drawLine(1, "title: ", pl.info.title, BOLD ITALIC YELLOW);
+    drawLine(2, "album: ", pl.info.album, BOLD);
+    drawLine(3, "artist: ", pl.info.artist, BOLD);
 }
 
 static void
@@ -133,13 +158,13 @@ list(Win* s)
                 tb.push(BOLD YELLOW);
 
             tb.move(0, i + split + 1);
-            tb.clearLine(0);
+            tb.clearLine(TEXT_BUFF_ARG::EVERYTHING);
             tb.movePushGlyphs(1, i + split + 1, sSong, width - 2);
             tb.push(NORM);
         }
         else
         {
-            tb.moveClearLine(0, i + split + 1, 0);
+            tb.moveClearLine(0, i + split + 1, TEXT_BUFF_ARG::EVERYTHING);
         }
     }
 }
@@ -154,7 +179,7 @@ bottomLine(Win* s)
     int height = g_termSize.height;
     int width = g_termSize.width;
 
-    tb.moveClearLine(0, height - 1, 0);
+    tb.moveClearLine(0, height - 1, TEXT_BUFF_ARG::EVERYTHING);
 
     /* selected / focused */
     {
@@ -196,27 +221,39 @@ bottomLine(Win* s)
 void
 update(Win* s)
 {
+    guard::Mtx lock(&s->mtxUpdate);
+
     auto& tb = s->textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
 
     s_time = utils::timeNowMS();
 
-    /* NOTE: careful with shared frame arena */
-    defer( tb.reset() );
+    defer(
+        tb.flush();
+        tb.reset();
+    );
 
-    if (width <= 10 || height <= 10) return;
+    if (width <= 40 || height <= 15)
+    {
+        tb.clear();
+        return;
+    }
+
+    if (s->bClear)
+    {
+        s->bClear = false;
+        tb.clear();
+    }
 
     if (s->bRedraw || app::g_pPlayer->bSelectionChanged)
     {
         s->bRedraw = false;
 
-        drawCoverImage(s);
+        coverImage(s);
         info(s);
         list(s);
         bottomLine(s);
-
-        tb.flush();
     }
 }
 

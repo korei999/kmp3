@@ -5,6 +5,7 @@
 #include "TermSize.hh"
 
 #include <termios.h>
+#include <threads.h>
 
 namespace platform
 {
@@ -21,7 +22,9 @@ struct Win
     termios termOg {};
     u16 firstIdx {};
     bool bRedraw = true;
+    bool bClear = false;
     int prevImgWidth = 0;
+    mtx_t mtxUpdate {};
 
     Win();
 

@@ -43,8 +43,17 @@ debug()
 {
     _clean
 
-    # if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
     if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Debug "$@"
+    then
+        cmake --build build/ -j -v
+    fi
+}
+
+debugGCC()
+{
+    _clean
+
+    if CC=gcc CXX=g++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Debug "$@"
     then
         cmake --build build/ -j -v
     fi
@@ -56,6 +65,17 @@ asan()
 
     # if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
     if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan "$@"
+    then
+        cmake --build build/ -j -v
+    fi
+}
+
+asanGCC()
+{
+    _clean
+
+    # if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
+    if CC=gcc CXX=g++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan "$@"
     then
         cmake --build build/ -j -v
     fi
@@ -100,7 +120,9 @@ case "$1" in
     default) default "${@:2}" ;;
     run) run "${@:2}" ;;
     debug) debug "${@:2}" ;;
+    debugGCC) debugGCC "${@:2}" ;;
     asan) asan "${@:2}" ;;
+    asanGCC) asanGCC "${@:2}" ;;
     release) release "${@:2}";;
     releaseGCC) releaseGCC "${@:2}";;
     install) _install ;;
