@@ -50,7 +50,7 @@ struct DummyWindow
 
     DummyWindow();
 
-    bool start(Arena* pArena) { return true; };
+    bool start(Arena*) { return true; };
     void destroy() {};
     void draw() {};
     void procEvents() {};

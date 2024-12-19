@@ -199,28 +199,8 @@ detectCanvasMode()
 }
 #endif
 
-static bool
-writeOUT(const char* const pBuf, const u64 len)
-{
-    bool result = true;
-
-    if (len == 0)
-        return true;
-
-    for (u64 nWritten = 0; nWritten < len;)
-    {
-        gsize n_written = fwrite(pBuf + nWritten, 1, len - nWritten, stdout);
-        nWritten += n_written;
-        if (nWritten < len && n_written == 0 && errno != EINTR)
-            result = false;
-    }
-
-    return result;
-}
-
 static GString*
 getString(
-    Arena* pArena,
     const void* pPixels,
     const int pixWidth,
     const int pixHeight,
@@ -229,9 +209,7 @@ getString(
     const int widthCells,
     const int heightCells,
     const int cellWidth,
-    const int cellHeight,
-    const int hOff,
-    const int vOff
+    const int cellHeight
 )
 {
     ChafaTermInfo* pTermInfo;
@@ -457,7 +435,6 @@ showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const in
     );
 
     auto* pGStr = getString(
-        pArena,
         img.pBuff,
         img.width,
         img.height,
@@ -466,9 +443,7 @@ showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const in
         widthCells,
         heightCells,
         cellWidth,
-        cellHeight,
-        hOff,
-        vOff
+        cellHeight
     );
     defer( g_string_free(pGStr, true) );
 
@@ -531,7 +506,6 @@ getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termW
     LOG_GOOD("formatSize: {}\n", getFormatChannelNumber(img.eFormat));
 
     auto* pGStr = getString(
-        pArena,
         img.pBuff,
         img.width,
         img.height,
@@ -540,8 +514,7 @@ getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termW
         widthCells,
         heightCells,
         cellWidth,
-        cellHeight,
-        0, 0
+        cellHeight
     );
     defer( g_string_free(pGStr, true) );
 

@@ -58,7 +58,7 @@ readFromStdin([[maybe_unused]] Win* s, const int timeoutMS)
     tv.tv_usec = (timeoutMS - (tv.tv_sec * 1000)) * 1000;
 
     select(1, &fds, {}, {}, &tv);
-    ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
+    [[maybe_unused]] ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
     LOG("nRead: {}, ({}, {}): '{}'\n", nRead, *(u64*)aBuff, *(u64*)(aBuff + 8), aBuff);
 
     wchar_t wc {};
@@ -115,7 +115,7 @@ procInput(Win* s)
 }
 
 static void
-sigwinchHandler(int sig)
+sigwinchHandler([[maybe_unused]] int sig)
 {
     auto* s = (Win*)app::g_pWin;
 

@@ -1,7 +1,6 @@
 #include "draw.hh"
 
 #include "adt/guard.hh"
-#include "adt/logs.hh"
 #include "app.hh"
 #include "common.hh"
 #include "defaults.hh"
@@ -54,8 +53,6 @@ clearArea(Win* s, int x, int y, int width, int height)
 static void
 coverImage(Win* s)
 {
-    static u32 prevWidth {};
-
     if (app::g_pPlayer->bSelectionChanged && s->time > s->lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
         app::g_pPlayer->bSelectionChanged = false;
@@ -126,7 +123,6 @@ volume(Win* s)
 {
     auto& tb = s->textBuff;
     const auto width = g_termSize.width;
-    const auto height = g_termSize.height;
     const int off = s->prevImgWidth + 2;
     const f32 vol = app::g_pMixer->volume;
     const bool bMuted = app::g_pMixer->bMuted;
@@ -172,7 +168,7 @@ volume(Win* s)
         }
 
         tb.push(col);
-        tb.movePushWideString(i, 6, &wc, sizeof(wc));
+        tb.movePushWideString(i, 6, &wc, 3);
     }
 }
 
@@ -281,6 +277,7 @@ bottomLine(Win* s)
     int width = g_termSize.width;
 
     tb.moveClearLine(0, height - 1, TEXT_BUFF_ARG::EVERYTHING);
+    tb.push(NORM);
 
     /* selected / focused */
     {
@@ -354,7 +351,7 @@ update(Win* s)
         coverImage(s);
         info(s);
         volume(s);
-        list(s);
+        /*list(s);*/
         bottomLine(s);
     }
 

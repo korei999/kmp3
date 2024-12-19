@@ -17,7 +17,7 @@ struct TermSize
     int pixHeight {};
 };
 
-[[nodiscard]] static TermSize
+[[nodiscard]] inline TermSize
 getTermSize()
 {
     TermSize term;

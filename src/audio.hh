@@ -99,16 +99,16 @@ struct DummyMixer
 
     void init() {}
     void destroy() {}
-    void play(String sPath) {}
-    void pause(bool bPause) {}
+    void play(String) {}
+    void pause(bool) {}
     void togglePause() {}
-    void changeSampleRate(u64 sampleRate, bool bSave) {}
-    void seekMS(s64 ms) {}
-    void seekLeftMS(s64 ms) {}
-    void seekRightMS(s64 ms) {}
-    Opt<String> getMetadata(const String sKey) { return {}; }
+    void changeSampleRate(u64, bool) {}
+    void seekMS(s64) {}
+    void seekLeftMS(s64) {}
+    void seekRightMS(s64) {}
+    Opt<String> getMetadata(const String) { return {}; }
     Opt<ffmpeg::Image> getCoverImage() { return {}; }
-    void setVolume(const f32 volume) {}
+    void setVolume(const f32) {}
 };
 
 inline const MixerVTable inl_DummyMixerVTable = MixerVTableGenerate<DummyMixer>();

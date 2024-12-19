@@ -551,13 +551,13 @@ drawCoverImage()
 
             f64 scaleFactor = f64(split - 1) / f64(img.height);
             int scaledWidth = std::round(img.width * scaleFactor / defaults::FONT_ASPECT_RATIO);
-            int scaledHeight = std::round(img.height * scaleFactor);
+            /*int scaledHeight = std::round(img.height * scaleFactor);*/
             int hdiff = width - 2 - scaledWidth;
-            int vdiff = split - 1 - scaledHeight;
+            /*int vdiff = split - 1 - scaledHeight;*/
             const int hOff = std::round(hdiff / 2.0);
-            const int vOff = std::round(vdiff / 2.0);
+            /*const int vOff = std::round(vdiff / 2.0);*/
 
-            LOG_GOOD("hOff: {}, vOff: {}, split: {}\n", hOff, vOff, split);
+            LOG_GOOD("hOff: {}, split: {}\n", hOff, split);
 
             const auto chafaImg = platform::chafa::getImageString(g_pFrameArena, img, split - 1, width - 2);
 
