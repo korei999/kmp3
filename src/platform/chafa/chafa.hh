@@ -12,6 +12,13 @@ namespace platform
 namespace chafa
 {
 
+struct Image
+{
+    String s {};
+    int width {};
+    int height {};
+};
+
 #ifdef USE_NCURSES
 void showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, const int termWidth);
 #endif
@@ -26,7 +33,7 @@ showImage(
     const int vOff
 );
 
-[[nodiscard]] String getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termWidth);
+[[nodiscard]] Image getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termWidth);
 
 } /* namespace chafa */
 } /* namespace platform */

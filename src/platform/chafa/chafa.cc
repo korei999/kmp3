@@ -269,16 +269,6 @@ getString(
     /* Build printable strings */
     auto* pGStr = chafa_canvas_print(pCanvas, pTermInfo);
 
-    // GString** ags {};
-    // gint len {};
-    // chafa_canvas_print_rows(pCanvas, pTermInfo, &ags, &len);
-    // fputs("\x1b[H", stdout);
-    // for (int i = 0; i < len; ++i)
-    // {
-    //     fwrite(ags[i]->str, 1, ags[i]->len, stdout);
-    //     fwrite("\r\n", 1, 2, stdout);
-    // }
-
     chafa_canvas_unref(pCanvas);
     chafa_canvas_config_unref(pConfig);
     chafa_symbol_map_unref(pSymbolMap);
@@ -510,7 +500,7 @@ showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const in
     fputc('\n', stdout);
 }
 
-String
+Image
 getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termWidth)
 {
     TermSize termSize {};
@@ -557,7 +547,11 @@ getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termW
 
     auto sRet = StringAlloc(&pArena->super, pGStr->str, pGStr->len);
     assert(sRet.size == pGStr->len);
-    return sRet;
+    return {
+        .s = sRet,
+        .width = widthCells,
+        .height = heightCells,
+    };
 }
 
 } /* namespace chafa */

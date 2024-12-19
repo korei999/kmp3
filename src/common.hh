@@ -33,14 +33,14 @@ constexpr u32 CHAR_VOL = L'▯';
 constexpr u32 CHAR_VOL_MUTED = L'▮';
 constexpr wchar_t CURSOR_BLOCK[] {L'█', L'\0'};
 
-inline constexpr String
+[[nodiscard]] inline constexpr String
 readModeToString(WINDOW_READ_MODE e)
 {
     constexpr String map[] {"", "searching: ", "time: "};
     return map[int(e)];
 }
 
-inline String
+[[nodiscard]] inline String
 allocTimeString(Arena* pArena, int width)
 {
     auto& mixer = *app::g_pMixer;
