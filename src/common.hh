@@ -1,3 +1,5 @@
+#pragma once
+
 #include "adt/Arr.hh"
 #include "adt/defer.hh"
 #include "app.hh"

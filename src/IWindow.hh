@@ -22,6 +22,8 @@ struct IWindow
 {
     const WindowVTable* pVTable {};
 
+    /* */
+
     ADT_NO_UB bool start(Arena* pArena) { return pVTable->start(this, pArena); }
     ADT_NO_UB void destroy() { pVTable->destroy(this); }
     ADT_NO_UB void draw() { pVTable->draw(this); }
@@ -48,7 +50,11 @@ struct DummyWindow
 {
     IWindow super {};
 
+    /* */
+
     DummyWindow();
+
+    /* */
 
     bool start(Arena*) { return true; };
     void destroy() {};
