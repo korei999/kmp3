@@ -20,13 +20,17 @@ enum class TEXT_BUFF_ARG : u8
 
 struct TextBuff
 {
-    Arena* pAlloc {};
-    char* pData {};
-    u32 size {};
-    u32 capacity {};
+    Arena* m_pAlloc {};
+    char* m_pData {};
+    u32 m_size {};
+    u32 m_capacity {};
+
+    /* */
 
     TextBuff() = default;
-    TextBuff(Arena* _pAlloc) : pAlloc(_pAlloc) {}
+    TextBuff(Arena* _pAlloc) : m_pAlloc(_pAlloc) {}
+
+    /* */
 
     void push(const char* pBuff, const u32 buffSize);
     void push(const String sBuff);
@@ -56,37 +60,37 @@ struct TextBuff
 inline void
 TextBuff::push(const char* pBuff, const u32 buffSize)
 {
-    if (buffSize + this->size >= this->capacity)
+    if (buffSize + this->m_size >= this->m_capacity)
     {
-        const u32 newCap = utils::maxVal(buffSize + this->size, this->capacity*2);
-        this->pData = (char*)this->pAlloc->realloc(this->pData, newCap, 1);
-        this->capacity = newCap;
+        const u32 newCap = utils::maxVal(buffSize + this->m_size, this->m_capacity*2);
+        this->m_pData = (char*)this->m_pAlloc->realloc(this->m_pData, newCap, 1);
+        this->m_capacity = newCap;
     }
 
-    strncpy(this->pData + this->size, pBuff, buffSize);
-    this->size += buffSize;
+    strncpy(this->m_pData + this->m_size, pBuff, buffSize);
+    this->m_size += buffSize;
 }
 
 inline void
 TextBuff::push(const String sBuff)
 {
-    this->push(sBuff.pData, sBuff.size);
+    push(sBuff.data(), sBuff.getSize());
 }
 
 inline void
 TextBuff::reset()
 {
-    this->pData = {};
-    this->size = {};
-    this->capacity = {};
+    m_pData = {};
+    m_size = {};
+    m_capacity = {};
 }
 
 inline void
 TextBuff::flush()
 {
-    if (this->size > 0)
+    if (this->m_size > 0)
     {
-        write(STDOUT_FILENO, this->pData, this->size);
+        write(STDOUT_FILENO, this->m_pData, this->m_size);
         fflush(stdout);
     }
 }
@@ -194,16 +198,16 @@ TextBuff::movePush(int x, int y, const char* pBuff, const u32 size)
 inline void
 TextBuff::pushGlyphs(const String str, const u32 nColumns)
 {
-    if (!str.pData) return;
+    if (!str.data()) return;
 
-    char* pBuff = (char*)this->pAlloc->zalloc(str.size*2, 1);
+    char* pBuff = (char*)this->m_pAlloc->zalloc(str.getSize()*2, 1);
     u32 off = 0;
 
     u32 totalWidth = 0;
-    for (u32 i = 0; i < str.size && totalWidth < nColumns; )
+    for (u32 i = 0; i < str.getSize() && totalWidth < nColumns; )
     {
         wchar_t wc {};
-        int wclen = mbtowc(&wc, &str[i], str.size - i);
+        int wclen = mbtowc(&wc, &str[i], str.getSize() - i);
         totalWidth += wcwidth(wc);
         i += wclen;
 
@@ -223,7 +227,7 @@ TextBuff::movePushGlyphs(int x, int y, const String str, const u32 nColumns)
 inline void
 TextBuff::pushWideString(const wchar_t* pwBuff, const u32 wBuffSize)
 {
-    char* pBuff = (char*)this->pAlloc->zalloc(wBuffSize, sizeof(wchar_t));
+    char* pBuff = (char*)this->m_pAlloc->zalloc(wBuffSize, sizeof(wchar_t));
     wcstombs(pBuff, pwBuff, wBuffSize);
     this->push(pBuff);
 }

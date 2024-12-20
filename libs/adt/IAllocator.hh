@@ -47,6 +47,8 @@ struct IAllocator
 {
     const AllocatorVTable* pVTable {};
 
+    /* */
+
     [[nodiscard]] ADT_NO_UB constexpr void* alloc(u64 mCount, u64 mSize) { return pVTable->alloc(this, mCount, mSize); }
     [[nodiscard]] ADT_NO_UB constexpr void* zalloc(u64 mCount, u64 mSize) { return pVTable->zalloc(this, mCount, mSize); }
     [[nodiscard]] ADT_NO_UB constexpr void* realloc(void* p, u64 mCount, u64 mSize) { return pVTable->realloc(this, p, mCount, mSize); }

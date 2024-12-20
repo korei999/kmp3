@@ -300,7 +300,7 @@ playbackStatus(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    const char* s = app::g_pMixer->bPaused ? "Paused" : "Playing";
+    const char* s = app::g_pMixer->m_bPaused ? "Paused" : "Playing";
     return sd_bus_message_append_basic(reply, 's', s);
 }
 
@@ -317,7 +317,7 @@ getLoopStatus(
 {
     return sd_bus_message_append_basic(
         reply, 's',
-        repeatMethodToString(app::g_pPlayer->eReapetMethod).pData
+        repeatMethodToString(app::g_pPlayer->eReapetMethod).data()
     );
 }
 
@@ -356,7 +356,7 @@ getVolume(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 vol = app::g_pMixer->volume;
+    f64 vol = app::g_pMixer->m_volume;
     return sd_bus_message_append_basic(reply, 'd', &vol);
 }
 
@@ -406,7 +406,7 @@ rate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = f64(app::g_pMixer->changedSampleRate) / f64(app::g_pMixer->sampleRate);
+    f64 mul = f64(app::g_pMixer->m_changedSampleRate) / f64(app::g_pMixer->m_sampleRate);
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -421,7 +421,7 @@ minRate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = (f64)defaults::MIN_SAMPLE_RATE / (f64)app::g_pMixer->sampleRate;
+    f64 mul = (f64)defaults::MIN_SAMPLE_RATE / (f64)app::g_pMixer->m_sampleRate;
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -436,7 +436,7 @@ maxRate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = (f64)defaults::MAX_SAMPLE_RATE / (f64)app::g_pMixer->sampleRate;
+    f64 mul = (f64)defaults::MAX_SAMPLE_RATE / (f64)app::g_pMixer->m_sampleRate;
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -469,12 +469,12 @@ metadata(
     CK(sd_bus_message_open_container(reply, 'a', "{sv}"));
     const auto& pl = *app::g_pPlayer;
 
-    if (pl.info.title.size > 0)
-        CK(msgAppendDictSS(reply, "xesam:title", pl.info.title.pData));
-    if (pl.info.album.size > 0)
-        CK(msgAppendDictSS(reply, "xesam:album", pl.info.album.pData));
-    if (pl.info.artist.size > 0)
-        CK(msgAppendDictSAS(reply, "xesam:artist", pl.info.artist.pData));
+    if (pl.info.title.getSize() > 0)
+        CK(msgAppendDictSS(reply, "xesam:title", pl.info.title.data()));
+    if (pl.info.album.getSize() > 0)
+        CK(msgAppendDictSS(reply, "xesam:album", pl.info.album.data()));
+    if (pl.info.artist.getSize() > 0)
+        CK(msgAppendDictSAS(reply, "xesam:artist", pl.info.artist.data()));
 
     {
         long duration = app::g_pMixer->getMaxMS() * 1000;

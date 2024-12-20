@@ -87,7 +87,7 @@ main(int argc, char** argv)
         argv = (char**)freeList.zalloc(argc, sizeof(argv));
 
         for (int i = 1; i < argc; ++i)
-            argv[i] = aInput[i - 1].pData;
+            argv[i] = aInput[i - 1].data();
     }
 
     app::g_argc = argc;
@@ -110,8 +110,8 @@ main(int argc, char** argv)
         if (player.acceptedFormat(player.aShortArgvs.last()))
             ++nAccepted;
 
-        if (app::g_aArgs[i].size > longsetSize)
-            longsetSize = app::g_aArgs[i].size;
+        if (app::g_aArgs[i].getSize() > longsetSize)
+            longsetSize = app::g_aArgs[i].getSize();
     }
     player.longestStringSize = longsetSize;
     player.imgHeight = 10;
@@ -123,7 +123,7 @@ main(int argc, char** argv)
     mixer.init();
     defer( mixer.destroy() );
 
-    mixer.super.volume = defaults::VOLUME;
+    mixer.super.m_volume = defaults::VOLUME;
     app::g_pMixer = &mixer.super;
 
 #ifdef USE_MPRIS

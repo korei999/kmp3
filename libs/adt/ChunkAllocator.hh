@@ -27,12 +27,19 @@ struct ChunkAllocatorBlock
 struct ChunkAllocator
 {
     IAllocator super {};
-    u64 blockCap = 0; 
-    u64 chunkSize = 0;
-    ChunkAllocatorBlock* pBlocks = nullptr;
+
+    /* */
+
+    u64 m_blockCap = 0; 
+    u64 m_chunkSize = 0;
+    ChunkAllocatorBlock* m_pBlocks = nullptr;
+
+    /* */
 
     ChunkAllocator() = default;
     ChunkAllocator(u64 chunkSize, u64 blockSize);
+
+    /* */
 
     [[nodiscard]] void* alloc(u64 mCount, u64 mSize);
     [[nodiscard]] void* zalloc(u64 mCount, u64 mSize);
@@ -44,18 +51,18 @@ struct ChunkAllocator
 inline ChunkAllocatorBlock*
 _ChunkAllocatorNewBlock(ChunkAllocator* s)
 {
-    u64 total = s->blockCap + sizeof(ChunkAllocatorBlock);
+    u64 total = s->m_blockCap + sizeof(ChunkAllocatorBlock);
     auto* r = (ChunkAllocatorBlock*)::calloc(1, total);
     assert(r != nullptr && "[ChunkAllocator]: calloc failed");
     r->head = (ChunkAllocatorNode*)r->pMem;
 
-    u32 chunks = s->blockCap / s->chunkSize;
+    u32 chunks = s->m_blockCap / s->m_chunkSize;
 
     auto* head = r->head;
     ChunkAllocatorNode* p = head;
     for (u64 i = 0; i < chunks - 1; i++)
     {
-        p->next = (ChunkAllocatorNode*)((u8*)p + s->chunkSize);
+        p->next = (ChunkAllocatorNode*)((u8*)p + s->m_chunkSize);
         p = p->next;
     }
     p->next = nullptr;
@@ -66,11 +73,11 @@ _ChunkAllocatorNewBlock(ChunkAllocator* s)
 inline void*
 ChunkAllocator::alloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignored1)
 {
-    ChunkAllocatorBlock* pBlock = this->pBlocks;
+    ChunkAllocatorBlock* pBlock = m_pBlocks;
     ChunkAllocatorBlock* pPrev = nullptr;
     while (pBlock)
     {
-        if (this->blockCap - pBlock->used >= this->chunkSize) break;
+        if (m_blockCap - pBlock->used >= m_chunkSize) break;
         else
         {
             pPrev = pBlock;
@@ -86,7 +93,7 @@ ChunkAllocator::alloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignore
 
     auto* head = pBlock->head;
     pBlock->head = head->next;
-    pBlock->used += this->chunkSize;
+    pBlock->used += m_chunkSize;
 
     return head->pNodeMem;
 }
@@ -94,8 +101,8 @@ ChunkAllocator::alloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignore
 inline void*
 ChunkAllocator::zalloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignored1)
 {
-    auto* p = this->alloc(ignored0, ignored1);
-    memset(p, 0, this->chunkSize);
+    auto* p = alloc(ignored0, ignored1);
+    memset(p, 0, m_chunkSize);
     return p;
 }
 
@@ -113,10 +120,10 @@ ChunkAllocator::free(void* p)
 
     auto* node = (ChunkAllocatorNode*)((u8*)p - sizeof(ChunkAllocatorNode));
 
-    auto* pBlock = this->pBlocks;
+    auto* pBlock = m_pBlocks;
     while (pBlock)
     {
-        if ((u8*)p > (u8*)pBlock->pMem && ((u8*)pBlock + this->blockCap) > (u8*)p)
+        if ((u8*)p > (u8*)pBlock->pMem && ((u8*)pBlock + m_blockCap) > (u8*)p)
             break;
 
         pBlock = pBlock->next;
@@ -126,20 +133,20 @@ ChunkAllocator::free(void* p)
     
     node->next = pBlock->head;
     pBlock->head = node;
-    pBlock->used -= this->chunkSize;
+    pBlock->used -= m_chunkSize;
 }
 
 inline void
 ChunkAllocator::freeAll()
 {
-    ChunkAllocatorBlock* p = this->pBlocks, * next = nullptr;
+    ChunkAllocatorBlock* p = m_pBlocks, * next = nullptr;
     while (p)
     {
         next = p->next;
         ::free(p);
         p = next;
     }
-    this->pBlocks = nullptr;
+    m_pBlocks = nullptr;
 }
 
 inline const AllocatorVTable inl_ChunkAllocatorVTable = AllocatorVTableGenerate<ChunkAllocator>();
@@ -147,8 +154,8 @@ inline const AllocatorVTable inl_ChunkAllocatorVTable = AllocatorVTableGenerate<
 inline
 ChunkAllocator::ChunkAllocator(u64 chunkSize, u64 blockSize)
     : super {&inl_ChunkAllocatorVTable},
-      blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
-      chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
-      pBlocks {_ChunkAllocatorNewBlock(this)} {}
+      m_blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
+      m_chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
+      m_pBlocks {_ChunkAllocatorNewBlock(this)} {}
 
 } /* namespace adt */

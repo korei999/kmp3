@@ -102,7 +102,7 @@ info(Win* s)
         tb.push(NORM);
         tb.movePushGlyphs(hOff, y, pBuff, width - hOff - 1);
 
-        if (sLine.size > 0)
+        if (sLine.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", sLine);
@@ -124,13 +124,13 @@ volume(Win* s)
     auto& tb = s->textBuff;
     const auto width = g_termSize.width;
     const int off = s->prevImgWidth + 2;
-    const f32 vol = app::g_pMixer->volume;
-    const bool bMuted = app::g_pMixer->bMuted;
+    const f32 vol = app::g_pMixer->m_volume;
+    const bool bMuted = app::g_pMixer->m_bMuted;
     constexpr String fmt = "volume: %3d";
-    const int maxVolumeBars = (width - off - fmt.size - 2) * vol * 1.0f/defaults::MAX_VOLUME;
+    const int maxVolumeBars = (width - off - fmt.getSize() - 2) * vol * 1.0f/defaults::MAX_VOLUME;
 
     auto volumeColor = [&](int i) -> String {
-        f32 col = f32(i) / (f32(width - off - fmt.size - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
+        f32 col = f32(i) / (f32(width - off - fmt.getSize() - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
 
         if (col <= 0.33f) return GREEN;
         else if (col > 0.33f && col <= 0.66f) return GREEN;
@@ -144,7 +144,7 @@ volume(Win* s)
     tb.moveClearLine(off - 1, 6, TEXT_BUFF_ARG::TO_END);
 
     char* pBuff = (char*)s->pArena->zalloc(1, width + 1);
-    u32 n = snprintf(pBuff, width, fmt.pData, int(std::round(app::g_pMixer->volume * 100.0)));
+    u32 n = snprintf(pBuff, width, fmt.data(), int(std::round(app::g_pMixer->m_volume * 100.0)));
     tb.push(col);
     tb.push(BOLD);
     tb.movePushGlyphs(off, 6, {pBuff, n}, width - off);
@@ -202,7 +202,7 @@ timeSlider(Win* s)
 
     /* play/pause indicator */
     {
-        bool bPaused = mix.bPaused.load(memory_order_relaxed);
+        bool bPaused = mix.m_bPaused.load(memory_order_relaxed);
         const char* ntsIndicator = bPaused ? "II" : "I>";
 
         tb.movePush(xOff, yOff, ntsIndicator);
@@ -213,8 +213,8 @@ timeSlider(Win* s)
     /* time slider */
     {
         const int wMax = width - xOff - n;
-        const auto& time = mix.currentTimeStamp;
-        const auto& maxTime = mix.totalSamplesCount;
+        const auto& time = mix.m_currentTimeStamp;
+        const auto& maxTime = mix.m_totalSamplesCount;
         const f64 timePlace = (f64(time) / f64(maxTime)) * (wMax - n - 1);
 
         for (long i = n + 1, t = 0; i < wMax; ++i, ++t)
@@ -283,7 +283,7 @@ bottomLine(Win* s)
     {
         char* pBuff = (char*)s->pArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.size - 1);
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.getSize() - 1);
         if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
@@ -304,7 +304,7 @@ bottomLine(Win* s)
         const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
         tb.movePushGlyphs(1, height - 1, sReadMode, width - 1);
         tb.movePushWideString(
-            sReadMode.size + 1,
+            sReadMode.getSize() + 1,
             height - 1,
             c::g_input.aBuff,
             utils::size(c::g_input.aBuff) - 2

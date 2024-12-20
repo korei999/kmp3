@@ -83,7 +83,7 @@ Opt<String>
 DecoderGetMetadataValue(Decoder* s, const String sKey)
 {
     char aBuff[64] {};
-    strncpy(aBuff, sKey.pData, utils::min(u64(sKey.size), utils::size(aBuff) - 1));
+    strncpy(aBuff, sKey.data(), utils::min(u64(sKey.getSize()), utils::size(aBuff) - 1));
 
     AVDictionaryEntry* pTag {};
     pTag = av_dict_get(s->pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
@@ -193,7 +193,7 @@ DecoderOpen(Decoder* s, String sPath)
     int err = 0;
     defer( if (err < 0) DecoderClose(s) );
 
-    err = avformat_open_input(&s->pFormatCtx, sPathNullTerm.pData, {}, {});
+    err = avformat_open_input(&s->pFormatCtx, sPathNullTerm.data(), {}, {});
     if (err != 0) return ERROR::FILE_OPENING;
 
     err = avformat_find_stream_info(s->pFormatCtx, {});

@@ -12,8 +12,14 @@ namespace file
 
 struct Buff
 {
-    u8* pData {};
-    u64 size {};
+    u8* m_pData {};
+    u64 m_size {};
+
+    /* */
+
+    u8* data() { return m_pData; }
+    const u8* data() const { return m_pData; }
+    u64 getSize() { return m_size; }
 };
 
 template<typename BUFF_T = String>
@@ -21,7 +27,7 @@ template<typename BUFF_T = String>
 inline Opt<BUFF_T>
 load(IAllocator* pAlloc, String sPath)
 {
-    FILE* pf = fopen(sPath.pData, "rb");
+    FILE* pf = fopen(sPath.data(), "rb");
     if (!pf)
     {
         LOG_WARN("Error opening '{}' file\n", sPath);
@@ -35,9 +41,9 @@ load(IAllocator* pAlloc, String sPath)
     s64 size = ftell(pf) + 1;
     rewind(pf);
 
-    ret.pData = (char*)pAlloc->alloc(size, sizeof(char));
-    ret.size = size - 1;
-    fread(ret.pData, 1, ret.size, pf);
+    ret.m_pData = (char*)pAlloc->alloc(size, sizeof(char));
+    ret.m_size = size - 1;
+    fread(ret.data(), 1, ret.getSize(), pf);
 
     return {ret, true};
 }
@@ -47,7 +53,7 @@ constexpr String
 getPathEnding(String sPath)
 {
     u32 lastSlash = StringLastOf(sPath, '/');
-    return String(&sPath[lastSlash + 1], &sPath[sPath.size - 1] - &sPath[lastSlash]);
+    return String(&sPath[lastSlash + 1], &sPath[sPath.m_size - 1] - &sPath[lastSlash]);
 }
 
 [[nodiscard]]

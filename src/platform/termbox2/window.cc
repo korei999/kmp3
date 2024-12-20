@@ -274,7 +274,7 @@ drawMBString(
     // }
 
     wchar_t wc {};
-    for (; it < str.size; ++max)
+    for (; it < str.getSize(); ++max)
     {
         if (max >= maxLenMod - 2)
         {
@@ -293,7 +293,7 @@ drawMBString(
             // else break;
         }
 
-        int charLen = mbtowc(&wc, &str[it], str.size - it);
+        int charLen = mbtowc(&wc, &str[it], str.getSize() - it);
         if (charLen < 0) break;
 
         it += charLen;
@@ -310,7 +310,7 @@ drawSongList()
     const int split = common::getHorizontalSplitPos(height) + 3;
     const u16 listHeight = height - split - 2;
 
-    for (u16 h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.size; ++h, ++i)
+    for (u16 h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.getSize(); ++h, ++i)
     {
         const u16 songIdx = pl.aSongIdxs[h];
         const String sSong = pl.aShortArgvs[songIdx];
@@ -349,13 +349,13 @@ drawVolume()
     const auto width = tb_width();
     const auto height = tb_height();
     int split = common::getHorizontalSplitPos(height) + 2;
-    const f32 vol = app::g_pMixer->volume;
-    const bool bMuted = app::g_pMixer->bMuted;
+    const f32 vol = app::g_pMixer->m_volume;
+    const bool bMuted = app::g_pMixer->m_bMuted;
     constexpr String fmt = "volume: %3d";
-    const int maxVolumeBars = (split - fmt.size - 2) * vol * 1.0f/defaults::MAX_VOLUME;
+    const int maxVolumeBars = (split - fmt.getSize() - 2) * vol * 1.0f/defaults::MAX_VOLUME;
 
     auto volumeColor = [&](int i) -> VOLUME_COLOR {
-        f32 col = f32(i) / (f32(split - fmt.size - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
+        f32 col = f32(i) / (f32(split - fmt.getSize() - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
 
         if (col <= 0.33f) return TB_GREEN;
         else if (col > 0.33f && col <= 0.66f) return TB_GREEN;
@@ -365,7 +365,7 @@ drawVolume()
 
     const auto col = bMuted ? TB_BLUE : volumeColor(maxVolumeBars - 1) | TB_BOLD;
 
-    for (int i = fmt.size + 2, nTimes = 0; i < split && nTimes < maxVolumeBars; ++i, ++nTimes)
+    for (int i = fmt.getSize() + 2, nTimes = 0; i < split && nTimes < maxVolumeBars; ++i, ++nTimes)
     {
         VOLUME_COLOR col;
         wchar_t wc;
@@ -384,7 +384,7 @@ drawVolume()
     }
 
     char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
-    snprintf(pBuff, width, fmt.pData, int(std::round(vol * 100.0f)));
+    snprintf(pBuff, width, fmt.data(), int(std::round(vol * 100.0f)));
     drawMBString(0, split, pBuff, split + 1, col);
 
     return col;
@@ -405,7 +405,7 @@ drawInfo()
         int n = print::toBuffer(pBuff, width, "title: ");
         drawMBString(0, 1, pBuff, width - 1);
         memset(pBuff, 0, width + 1);
-        if (pl.info.title.size > 0)
+        if (pl.info.title.getSize() > 0)
             print::toBuffer(pBuff, width, "{}", pl.info.title);
         else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
         drawMBString(n, 1, pBuff, width - 1 - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
@@ -416,7 +416,7 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
         drawMBString(0, 2, pBuff, width - 1);
-        if (pl.info.album.size > 0)
+        if (pl.info.album.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.album);
@@ -429,7 +429,7 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
         drawMBString(0, 3, pBuff, width - 2);
-        if (pl.info.artist.size > 0)
+        if (pl.info.artist.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.info.artist);
@@ -451,7 +451,7 @@ drawBottomLine()
     {
         char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.size - 1);
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.getSize() - 1);
         if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
@@ -471,13 +471,13 @@ drawBottomLine()
     )
     {
         const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
-        drawWideString(sReadMode.size + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff), width - 2);
+        drawWideString(sReadMode.getSize() + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff), width - 2);
         drawMBString(1, height - 1, sReadMode, width - 2);
 
         if (c::g_input.eCurrMode != WINDOW_READ_MODE::NONE)
         {
             u32 wlen = wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff));
-            drawWideString(sReadMode.size + wlen + 1, height - 1, common::CURSOR_BLOCK, 1, 3);
+            drawWideString(sReadMode.getSize() + wlen + 1, height - 1, common::CURSOR_BLOCK, 1, 3);
         }
     }
 }
@@ -497,12 +497,12 @@ drawTimeSlider()
     {
         const String str = common::allocTimeString(g_pFrameArena, width);
         drawMBString(0, split + 1, str, width - 2);
-        n += str.size;
+        n += str.getSize();
     }
 
     /* play/pause indicator */
     {
-        bool bPaused = atomic_load_explicit(&mix.bPaused, memory_order_relaxed);
+        bool bPaused = atomic_load_explicit(&mix.m_bPaused, memory_order_relaxed);
         const char* ntsIndicator = bPaused ? "II" : "I>";
 
         drawMBString(1 + n, split + 1, ntsIndicator, width - 2, TB_BOLD);
@@ -513,8 +513,8 @@ drawTimeSlider()
     
     /* time slider */
     {
-        const auto& time = mix.currentTimeStamp;
-        const auto& maxTime = mix.totalSamplesCount;
+        const auto& time = mix.m_currentTimeStamp;
+        const auto& maxTime = mix.m_totalSamplesCount;
         const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - (n + 3));
 
         for (long i = n + 3, t = 0; i < width - 2; ++i, ++t)
@@ -563,7 +563,7 @@ drawCoverImage()
 
             tb_set_cursor(hOff + 2, 0);
             /*platform::chafa::showImage(g_pFrameArena, img, split - 1, width - 2, hOff + 2, 1);*/
-            tb_send(chafaImg.s.pData, chafaImg.s.size);
+            tb_send(chafaImg.s.data(), chafaImg.s.getSize());
             tb_hide_cursor();
         }
     }

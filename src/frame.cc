@@ -20,9 +20,9 @@ mprisPollLoop([[maybe_unused]] void* pNull)
     while (app::g_bRunning)
     {
         mpris::proc();
-        if (app::g_pMixer->bUpdateMpris)
+        if (app::g_pMixer->m_bUpdateMpris)
         {
-            app::g_pMixer->bUpdateMpris = false;
+            app::g_pMixer->m_bUpdateMpris = false;
             mpris::destroy();
             mpris::init();
         }

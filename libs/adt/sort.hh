@@ -74,7 +74,7 @@ sorted(const auto* a, const u32 size, const ORDER eOrder = INC)
 constexpr bool
 sorted(const auto& a, const ORDER eOrder = INC)
 {
-    return sorted(a.pData, a.size, eOrder);
+    return sorted(a.data(), a.getSize(), eOrder);
 }
 
 template<typename T, decltype(utils::compare<T>) FN_CMP = utils::compare>
@@ -96,9 +96,9 @@ template<template<typename> typename CON_T, typename T, decltype(utils::compare<
 constexpr void
 insertion(CON_T<T>* a)
 {
-    if (a->size <= 1) return;
+    if (a->getSize() <= 1) return;
 
-    insertion<T, FN_CMP>(a->pData, 0, a->size - 1);
+    insertion<T, FN_CMP>(a->data(), 0, a->getSize() - 1);
 }
 
 constexpr void
@@ -172,8 +172,8 @@ template<template<typename> typename CON_T, typename T, decltype(utils::compare<
 constexpr void
 quick(CON_T<T>* pArrayContainer)
 {
-    if (pArrayContainer->size <= 1) return;
-    quick<T, FN_CMP>(pArrayContainer->pData, 0, pArrayContainer->size - 1);
+    if (pArrayContainer->getSize() <= 1) return;
+    quick<T, FN_CMP>(pArrayContainer->data(), 0, pArrayContainer->getSize() - 1);
 }
 
 } /* namespace sort */

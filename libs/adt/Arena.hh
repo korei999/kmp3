@@ -28,11 +28,18 @@ struct ArenaBlock
 struct Arena
 {
     IAllocator super {};
-    u64 defaultCapacity {};
-    ArenaBlock* pBlocks {};
+
+    /* */
+
+    u64 m_defaultCapacity {};
+    ArenaBlock* m_pBlocks {};
+
+    /* */
 
     Arena() = default;
     Arena(u64 capacity);
+
+    /* */
 
     [[nodiscard]] void* alloc(u64 mCount, u64 mSize);
     [[nodiscard]] void* zalloc(u64 mCount, u64 mSize);
@@ -45,7 +52,7 @@ struct Arena
 [[nodiscard]] inline ArenaBlock*
 _ArenaFindBlockFromPtr(Arena* s, u8* ptr)
 {
-    auto* it = s->pBlocks;
+    auto* it = s->m_pBlocks;
     while (it)
     {
         if (ptr >= it->pMem && ptr < &it->pMem[it->size])
@@ -60,7 +67,7 @@ _ArenaFindBlockFromPtr(Arena* s, u8* ptr)
 [[nodiscard]] inline ArenaBlock*
 _ArenaFindFittingBlock(Arena* s, u64 size)
 {
-    auto* it = s->pBlocks;
+    auto* it = s->m_pBlocks;
     while (it)
     {
         if (size < it->size - it->nBytesOccupied)
@@ -86,8 +93,8 @@ _ArenaAllocBlock(u64 size)
 _ArenaPrependBlock(Arena* s, u64 size)
 {
     auto* pNew = _ArenaAllocBlock(size);
-    pNew->pNext = s->pBlocks;
-    s->pBlocks = pNew;
+    pNew->pNext = s->m_pBlocks;
+    s->m_pBlocks = pNew;
 
     return pNew;
 }
@@ -99,11 +106,11 @@ Arena::alloc(u64 mCount, u64 mSize)
     auto* pBlock = _ArenaFindFittingBlock(this, realSize);
 
 #if defined ADT_DBG_MEMORY
-    if (this->defaultCapacity <= realSize)
-        fprintf(stderr, "[Arena]: allocating more than defaultCapacity (%llu, %llu)\n", this->defaultCapacity, realSize);
+    if (this->m_defaultCapacity <= realSize)
+        fprintf(stderr, "[Arena]: allocating more than defaultCapacity (%llu, %llu)\n", this->m_defaultCapacity, realSize);
 #endif
 
-    if (!pBlock) pBlock = _ArenaPrependBlock(this, utils::max(this->defaultCapacity, realSize*2));
+    if (!pBlock) pBlock = _ArenaPrependBlock(this, utils::max(this->m_defaultCapacity, realSize*2));
 
     auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
     assert(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize);
@@ -164,20 +171,20 @@ Arena::free(void*)
 inline void
 Arena::freeAll()
 {
-    auto* it = this->pBlocks;
+    auto* it = this->m_pBlocks;
     while (it)
     {
         auto* next = it->pNext;
         ::free(it);
         it = next;
     }
-    this->pBlocks = nullptr;
+    this->m_pBlocks = nullptr;
 }
 
 inline void
 Arena::reset()
 {
-    auto* it = this->pBlocks;
+    auto* it = this->m_pBlocks;
     while (it)
     {
         it->nBytesOccupied = 0;
@@ -192,7 +199,7 @@ inline const AllocatorVTable inl_ArenaVTable = AllocatorVTableGenerate<Arena>();
 
 inline Arena::Arena(u64 capacity)
     : super(&inl_ArenaVTable),
-      defaultCapacity(align8(capacity)),
-      pBlocks(_ArenaAllocBlock(this->defaultCapacity)) {}
+      m_defaultCapacity(align8(capacity)),
+      m_pBlocks(_ArenaAllocBlock(this->m_defaultCapacity)) {}
 
 } /* namespace adt */

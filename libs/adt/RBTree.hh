@@ -46,15 +46,18 @@ enum class RB_COLOR : u8 { BLACK, RED };
 enum class RB_ORDER : u8 { PRE, IN, POST };
 
 template<typename T>
-class RBNode
+struct RBNode
 {
     static constexpr u64 COLOR_MASK = 1ULL;
     RBNode* m_left {};
     RBNode* m_right {};
     RBNode* m_parentColor {}; /* NOTE: color is stored as the least significant bit */
+    T m_data {};
 
-public:
-    T data {};
+    /* */
+
+    T& data() { return m_data; }
+    const T& data() const { return m_data; }
 
     RBNode*& left() { return m_left; }
     RBNode* const& left() const { return m_left; }
@@ -116,17 +119,11 @@ struct RBTreeBase
     u64 size = 0;
 
     RBNode<T>* getRoot();
-
     bool empty();
-
     RBNode<T>* remove(RBNode<T>* elm);
-
     void removeAndFree(IAllocator* p, RBNode<T>* elm);
-
     RBNode<T>* insert(RBNode<T>* elm, bool bAllowDuplicates);
-
     RBNode<T>* insert(IAllocator* pA, const T& data, bool bAllowDuplicates);
-
     void destroy(IAllocator* pA);
 };
 
@@ -464,7 +461,7 @@ RBTreeBase<T>::insert(RBNode<T>* elm, bool bAllowDuplicates)
     while (tmp)
     {
         parent = tmp;
-        comp = utils::compare(elm->data, parent->data);
+        comp = utils::compare(elm->m_data, parent->m_data);
 
         if (comp == 0)
         {
@@ -503,7 +500,7 @@ inline RBNode<T>*
 RBNodeAlloc(IAllocator* pA, const T& data)
 {
     auto* r = (RBNode<T>*)pA->alloc(1, sizeof(RBNode<T>));
-    r->data = data;
+    r->m_data = data;
     return r;
 }
 
@@ -594,7 +591,7 @@ RBSearch(RBNode<T>* p, const T& data)
     auto it = p;
     while (it)
     {
-        s64 cmp = utils::compare(data, it->data);
+        s64 cmp = utils::compare(data, it->m_data);
         if (cmp == 0) return it;
         else if (cmp < 0) it = it->left();
         else it = it->right();
@@ -634,7 +631,7 @@ RBPrintNodes(
         RBPrintNodes(pA, pNode->left(), pF, sCat, true);
         RBPrintNodes(pA, pNode->right(), pF, sCat, false);
 
-        pA->free(sCat.pData);
+        pA->free(sCat.m_pData);
     }
 }
 
@@ -661,21 +658,13 @@ struct RBTree
     RBTree(IAllocator* p) : pAlloc(p) {}
 
     RBNode<T>* getRoot() { return base.getRoot(); }
-
     bool empty() { return base.empty(); }
-
     RBNode<T>* remove(RBNode<T>* elm) { return base.remove(elm); }
-
     RBNode<T>* remove(const T& x) { return base.remove(RBSearch<T>(getRoot(), x)); }
-
     void removeAndFree(RBNode<T>* elm) { base.removeAndFree(pAlloc, elm); }
-
     void removeAndFree(const T& x) { base.removeAndFree(pAlloc, RBSearch<T>(getRoot(), x)); }
-
     RBNode<T>* insert(RBNode<T>* elm, bool bAllowDuplicates) { return base.insert(elm, bAllowDuplicates); }
-
     RBNode<T>* insert(const T& data, bool bAllowDuplicates) { return base.insert(pAlloc, data, bAllowDuplicates); }
-
     void destroy() { base.destroy(pAlloc); }
 };
 
@@ -688,7 +677,7 @@ formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const RBNode<
 {
     char aBuff[128] {};
     const String sCol = node.color() == RB_COLOR::BLACK ? ADT_LOGS_COL_BLUE : ADT_LOGS_COL_RED;
-    print::toBuffer(aBuff, utils::size(aBuff), "{}{}" ADT_LOGS_COL_NORM, sCol, node.data);
+    print::toBuffer(aBuff, utils::size(aBuff), "{}{}" ADT_LOGS_COL_NORM, sCol, node.m_data);
 
     return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
 }

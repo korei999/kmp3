@@ -57,14 +57,18 @@ struct MapResult
 template<typename K, typename V>
 struct MapBase
 {
-    VecBase<MapBucket<K, V>> aBuckets {};
-    f32 maxLoadFactor {};
-    u32 nOccupied {};
+    VecBase<MapBucket<K, V>> m_aBuckets {};
+    f32 m_maxLoadFactor {};
+    u32 m_nOccupied {};
+
+    /* */
 
     MapBase() = default;
     MapBase(IAllocator* pAllocator, u32 prealloc = SIZE_MIN);
 
-    [[nodiscard]] bool empty() const { return nOccupied == 0; }
+    /* */
+
+    [[nodiscard]] bool empty() const { return m_nOccupied == 0; }
     [[nodiscard]] u32 idx(KeyVal<K, V>* p) const;
     [[nodiscard]] u32 idx(MapResult<K, V> res) const;
     [[nodiscard]] u32 firstI() const;
@@ -82,6 +86,8 @@ struct MapBase
     MapResult<K, V> insertHashed(const K& key, const V& val, u64 hash);
     [[nodiscard]] MapResult<K, V> searchHashed(const K& key, u64 keyHash);
 
+    /* */
+
     struct It
     {
         MapBase* s {};
@@ -89,8 +95,8 @@ struct MapBase
 
         It(MapBase* _s, u32 _i) : s(_s), i(_i) {}
 
-        KeyVal<K, V>& operator*() { return *(KeyVal<K, V>*)&s->aBuckets[i]; }
-        KeyVal<K, V>* operator->() { return (KeyVal<K, V>*)&s->aBuckets[i]; }
+        KeyVal<K, V>& operator*() { return *(KeyVal<K, V>*)&s->m_aBuckets[i]; }
+        KeyVal<K, V>* operator->() { return (KeyVal<K, V>*)&s->m_aBuckets[i]; }
 
         It operator++()
         {
@@ -114,8 +120,8 @@ template<typename K, typename V>
 inline u32
 MapBase<K, V>::idx(KeyVal<K, V>* p) const
 {
-    auto r = (MapBucket<K, V>*)p - &this->aBuckets[0];
-    assert(r < this->aBuckets.getCap());
+    auto r = (MapBucket<K, V>*)p - &this->m_aBuckets[0];
+    assert(r < this->m_aBuckets.getCap());
     return r;
 }
 
@@ -123,8 +129,8 @@ template<typename K, typename V>
 inline u32
 MapBase<K, V>::idx(MapResult<K, V> res) const
 {
-    auto idx = res.pData - &this->aBuckets[0];
-    assert(idx < this->aBuckets.getCap());
+    auto idx = res.pData - &this->m_aBuckets[0];
+    assert(idx < this->m_aBuckets.getCap());
     return idx;
 }
 
@@ -133,10 +139,10 @@ inline u32
 MapBase<K, V>::firstI() const
 {
     u32 i = 0;
-    while (i < this->aBuckets.getCap() && !this->aBuckets[i].bOccupied)
+    while (i < this->m_aBuckets.getCap() && !this->m_aBuckets[i].bOccupied)
         ++i;
 
-    if (i >= this->aBuckets.getCap()) i = NPOS;
+    if (i >= this->m_aBuckets.getCap()) i = NPOS;
 
     return i;
 }
@@ -146,9 +152,9 @@ inline u32
 MapBase<K, V>::nextI(u32 i) const
 {
     do ++i;
-    while (i < this->aBuckets.getCap() && !this->aBuckets[i].bOccupied);
+    while (i < this->m_aBuckets.getCap() && !this->m_aBuckets[i].bOccupied);
 
-    if (i >= this->aBuckets.getCap()) i = NPOS;
+    if (i >= this->m_aBuckets.getCap()) i = NPOS;
 
     return i;
 }
@@ -157,7 +163,7 @@ template<typename K, typename V>
 inline f32
 MapBase<K, V>::loadFactor() const
 {
-    return f32(this->nOccupied) / f32(this->aBuckets.getCap());
+    return f32(this->m_nOccupied) / f32(this->m_aBuckets.getCap());
 }
 
 template<typename K, typename V>
@@ -166,9 +172,9 @@ MapBase<K, V>::insert(IAllocator* p, const K& key, const V& val)
 {
     u64 keyHash = hash::func(key);
 
-    if (this->aBuckets.getCap() == 0) *this = {p};
-    else if (this->loadFactor() >= this->maxLoadFactor)
-        this->rehash(p, this->aBuckets.getCap() * 2);
+    if (this->m_aBuckets.getCap() == 0) *this = {p};
+    else if (this->loadFactor() >= this->m_maxLoadFactor)
+        this->rehash(p, this->m_aBuckets.getCap() * 2);
 
     return this->insertHashed(key, val, keyHash);
 }
@@ -185,9 +191,9 @@ template<typename K, typename V>
 inline void
 MapBase<K, V>::remove(u32 i)
 {
-    this->aBuckets[i].bDeleted = true;
-    this->aBuckets[i].bOccupied = false;
-    --this->nOccupied;
+    this->m_aBuckets[i].bDeleted = true;
+    this->m_aBuckets[i].bOccupied = false;
+    --this->m_nOccupied;
 }
 
 template<typename K, typename V>
@@ -216,19 +222,19 @@ template<typename K, typename V>
 inline void
 MapBase<K, V>::destroy(IAllocator* p)
 {
-    this->aBuckets.destroy(p);
+    this->m_aBuckets.destroy(p);
 }
 
 template<typename K, typename V>
 inline u32 MapBase<K, V>::getCap() const
 {
-    return this->aBuckets.getCap();
+    return this->m_aBuckets.getCap();
 }
 
 template<typename K, typename V>
 inline u32 MapBase<K, V>::getSize() const
 {
-    return this->nOccupied;
+    return this->m_nOccupied;
 }
 
 template<typename K, typename V>
@@ -237,9 +243,9 @@ MapBase<K, V>::rehash(IAllocator* p, u32 size)
 {
     auto mNew = MapBase<K, V>(p, size);
 
-    for (u32 i = 0; i < this->aBuckets.getCap(); ++i)
-        if (this->aBuckets[i].bOccupied)
-            mNew.insert(p, this->aBuckets[i].key, this->aBuckets[i].val);
+    for (u32 i = 0; i < this->m_aBuckets.getCap(); ++i)
+        if (this->m_aBuckets[i].bOccupied)
+            mNew.insert(p, this->m_aBuckets[i].key, this->m_aBuckets[i].val);
 
     this->destroy(p);
     *this = mNew;
@@ -249,19 +255,19 @@ template<typename K, typename V>
 inline MapResult<K, V>
 MapBase<K, V>::insertHashed(const K& key, const V& val, u64 keyHash)
 {
-    u32 idx = u32(keyHash % this->aBuckets.getCap());
+    u32 idx = u32(keyHash % this->m_aBuckets.getCap());
 
-    while (this->aBuckets[idx].bOccupied)
-        ++idx %= this->aBuckets.getCap();
+    while (this->m_aBuckets[idx].bOccupied)
+        ++idx %= this->m_aBuckets.getCap();
 
-    this->aBuckets[idx].key = key;
-    this->aBuckets[idx].val = val;
-    this->aBuckets[idx].bOccupied = true;
-    this->aBuckets[idx].bDeleted = false;
-    ++this->nOccupied;
+    this->m_aBuckets[idx].key = key;
+    this->m_aBuckets[idx].val = val;
+    this->m_aBuckets[idx].bOccupied = true;
+    this->m_aBuckets[idx].bDeleted = false;
+    ++this->m_nOccupied;
 
     return {
-        .pData = &this->aBuckets[idx],
+        .pData = &this->m_aBuckets[idx],
         .hash = keyHash,
         .eStatus = MAP_RESULT_STATUS::INSERTED
     };
@@ -273,9 +279,9 @@ MapBase<K, V>::searchHashed(const K& key, u64 keyHash)
 {
     MapResult<K, V> res {.eStatus = MAP_RESULT_STATUS::NOT_FOUND};
 
-    if (this->nOccupied == 0) return res;
+    if (this->m_nOccupied == 0) return res;
 
-    auto& aBuckets = this->aBuckets;
+    auto& aBuckets = this->m_aBuckets;
 
     u32 idx = u32(keyHash % u64(aBuckets.getCap()));
     res.hash = keyHash;
@@ -298,36 +304,45 @@ MapBase<K, V>::searchHashed(const K& key, u64 keyHash)
 
 template<typename K, typename V>
 MapBase<K, V>::MapBase(IAllocator* pAllocator, u32 prealloc)
-    : aBuckets(pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV),
-      maxLoadFactor(MAP_DEFAULT_LOAD_FACTOR)
+    : m_aBuckets(pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV),
+      m_maxLoadFactor(MAP_DEFAULT_LOAD_FACTOR)
 {
-    aBuckets.setSize(pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV);
-    memset(aBuckets.pData, 0, sizeof(aBuckets[0]) * aBuckets.getSize());
+    m_aBuckets.setSize(pAllocator, prealloc * MAP_DEFAULT_LOAD_FACTOR_INV);
+    memset(m_aBuckets.data(), 0, sizeof(m_aBuckets[0]) * m_aBuckets.getSize());
 }
 
 template<typename K, typename V>
 struct Map
 {
     MapBase<K, V> base {};
-    IAllocator* pAlloc {};
+
+    /* */
+
+    IAllocator* m_pAlloc {};
+
+    /* */
 
     Map() = default;
     Map(IAllocator* _pAlloc, u32 prealloc = SIZE_MIN)
-        : base(_pAlloc, prealloc), pAlloc(_pAlloc) {}
+        : base(_pAlloc, prealloc), m_pAlloc(_pAlloc) {}
+
+    /* */
 
     [[nodiscard]] bool empty() const { return base.empty(); }
     [[nodiscard]] u32 idx(MapResult<K, V> res) const { return base.idx(res); }
     [[nodiscard]] u32 firstI() const { return base.firstI(); }
     [[nodiscard]] u32 nextI(u32 i) const { return base.nextI(i); }
     [[nodiscard]] f32 loadFactor() const { return base.loadFactor(); }
-    MapResult<K, V> insert(const K& key, const V& val) { return base.insert(pAlloc, key, val); }
+    MapResult<K, V> insert(const K& key, const V& val) { return base.insert(m_pAlloc, key, val); }
     [[nodiscard]] MapResult<K, V> search(const K& key) { return base.search(key); }
     void remove(u32 i) { base.remove(i); }
     void remove(const K& key) { base.remove(key); }
-    [[nodiscard]] MapResult<K, V> tryInsert(const K& key, const V& val) { return base.tryInsert(pAlloc, key, val); }
-    void destroy() { base.destroy(pAlloc); }
+    [[nodiscard]] MapResult<K, V> tryInsert(const K& key, const V& val) { return base.tryInsert(m_pAlloc, key, val); }
+    void destroy() { base.destroy(m_pAlloc); }
     [[nodiscard]] u32 getCap() const { return base.getCap(); }
     [[nodiscard]] u32 getSize() const { return base.getSize(); }
+
+    /* */
 
     MapBase<K, V>::It begin() { return base.begin(); }
     MapBase<K, V>::It end() { return base.end(); }

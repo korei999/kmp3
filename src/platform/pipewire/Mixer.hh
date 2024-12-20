@@ -31,21 +31,26 @@ namespace pipewire
 struct Mixer
 {
     audio::IMixer super {};
-    u8 nChannels = 2;
-    enum spa_audio_format eformat {};
-    std::atomic<bool> bDecodes = false;
-    ffmpeg::Decoder* pDecoder {};
-    String sPath {};
 
-    pw_thread_loop* pThrdLoop {};
-    pw_stream* pStream {};
-    u32 nLastFrames {};
-    mtx_t mtxDecoder {};
+    /* */
+
+    u8 m_nChannels = 2;
+    enum spa_audio_format m_eformat {};
+    std::atomic<bool> m_bDecodes = false;
+    ffmpeg::Decoder* m_pDecoder {};
+    String m_sPath {};
+
+    pw_thread_loop* m_pThrdLoop {};
+    pw_stream* m_pStream {};
+    u32 m_nLastFrames {};
+    mtx_t m_mtxDecoder {};
     
     /* */
 
     Mixer() = default;
     Mixer(IAllocator* pA);
+
+    /* */
 
     void init();
     void destroy();
@@ -64,7 +69,7 @@ struct Mixer
 inline const audio::MixerVTable inl_MixerVTable = audio::MixerVTableGenerate<Mixer>();
 
 inline
-Mixer::Mixer(IAllocator* pA) : super(&inl_MixerVTable), pDecoder(ffmpeg::DecoderAlloc(pA)) {}
+Mixer::Mixer(IAllocator* pA) : super(&inl_MixerVTable), m_pDecoder(ffmpeg::DecoderAlloc(pA)) {}
 
 } /* namespace pipewire */
 } /* namespace platform */

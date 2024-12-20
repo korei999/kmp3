@@ -14,33 +14,41 @@ namespace adt
 template<typename T>
 struct QueueBase
 {
-    T* pData {};
-    int size {};
-    int cap {};
-    int first {};
-    int last {};
+    T* m_pData {};
+    int m_size {};
+    int m_cap {};
+    int m_first {};
+    int m_last {};
+
+    /* */
 
     QueueBase() = default;
     QueueBase(IAllocator* pAlloc, u32 prealloc = SIZE_MIN)
-        : pData {(T*)pAlloc->alloc(prealloc, sizeof(T))},
-          cap (prealloc) {}
+        : m_pData {(T*)pAlloc->alloc(prealloc, sizeof(T))},
+          m_cap (prealloc) {}
 
-    T& operator[](int i)             { assert(i < cap && "[Queue]: out of capacity"); return pData[i]; }
-    const T& operator[](int i) const { assert(i < cap && "[Queue]: out of capacity"); return pData[i]; }
+    /* */
 
-    [[nodiscard]] int nextI(int i) const { return (i + 1) >= this->cap ? 0 : (i + 1); }
-    [[nodiscard]] int prevI(int i) const { return (i - 1) < 0 ? this->cap - 1 : (i - 1); }
-    [[nodiscard]] int firstI() const { return empty() ? -1 : this->first; }
-    [[nodiscard]] int lastI() const { return empty() ? 0 : this->last - 1; }
+    T& operator[](int i)             { assert(i < m_cap && "[Queue]: out of capacity"); return m_pData[i]; }
+    const T& operator[](int i) const { assert(i < m_cap && "[Queue]: out of capacity"); return m_pData[i]; }
 
-    bool empty() const { return size == 0; }
+    [[nodiscard]] int nextI(int i) const { return (i + 1) >= m_cap ? 0 : (i + 1); }
+    [[nodiscard]] int prevI(int i) const { return (i - 1) < 0 ? m_cap - 1 : (i - 1); }
+    [[nodiscard]] int firstI() const { return empty() ? -1 : m_first; }
+    [[nodiscard]] int lastI() const { return empty() ? 0 : m_last - 1; }
+
+    bool empty() const { return m_size == 0; }
+    T* data() { return m_pData; }
+    const T* data() const { return m_pData; }
     void destroy(IAllocator* p);
     T* pushFront(IAllocator* p, const T& val);
     T* pushBack(IAllocator* p, const T& val);
-    void resize(IAllocator* p, u32 size);
+    void grow(IAllocator* p, u32 size);
     T* popFront();
     T* popBack();
     u32 idx(const T* pItem) const;
+
+    /* */
 
     struct It
     {
@@ -50,8 +58,8 @@ struct QueueBase
 
         It(const QueueBase* _s, int _i, int _counter) : s(_s), i(_i), counter(_counter) {}
 
-        T& operator*() const { return s->pData[i]; }
-        T* operator->() const { return &s->pData[i]; }
+        T& operator*() const { return s->m_pData[i]; }
+        T* operator->() const { return &s->m_pData[i]; }
 
         It
         operator++()
@@ -77,63 +85,63 @@ struct QueueBase
         friend bool operator!=(const It& l, const It& r) { return l.counter != r.counter; }
     };
 
-    It begin() { return {this, this->firstI(), 0}; }
-    It end() { return {this, {}, this->size}; }
-    It rbegin() { return {this, this->lastI(), 0}; }
-    It rend() { return {this, {}, this->size}; }
+    It begin() { return {this, firstI(), 0}; }
+    It end() { return {this, {}, m_size}; }
+    It rbegin() { return {this, lastI(), 0}; }
+    It rend() { return {this, {}, m_size}; }
 
-    const It begin() const { return {this, this->firstI(), 0}; }
-    const It end() const { return {this, {}, this->size}; }
-    const It rbegin() const { return {this, this->lastI(), 0}; }
-    const It rend() const { return {this, {}, this->size}; }
+    const It begin() const { return {this, firstI(), 0}; }
+    const It end() const { return {this, {}, m_size}; }
+    const It rbegin() const { return {this, lastI(), 0}; }
+    const It rend() const { return {this, {}, m_size}; }
 };
 
 template<typename T>
 inline void
 QueueBase<T>::destroy(IAllocator* p)
 {
-    p->free(this->pData);
+    p->free(m_pData);
 }
 
 template<typename T>
 inline T*
 QueueBase<T>::pushFront(IAllocator* p, const T& val)
 {
-    if (this->size >= this->cap) this->resize(p, this->cap * 2);
+    if (m_size >= m_cap) grow(p, m_cap * 2);
 
-    int i = this->first;
-    int ni = this->prevI(i);
-    this->pData[ni] = val;
-    this->first = ni;
-    this->size++;
+    int i = m_first;
+    int ni = prevI(i);
+    m_pData[ni] = val;
+    m_first = ni;
+    m_size++;
 
-    return &this->pData[ni];
+    return &m_pData[ni];
 }
 
 template<typename T>
 inline T*
 QueueBase<T>::pushBack(IAllocator* p, const T& val)
 {
-    if (this->size >= this->cap) this->resize(p, this->cap * 2);
+    if (m_size >= m_cap) grow(p, m_cap * 2);
 
-    int i = this->last;
-    int ni = this->nextI(i);
-    this->pData[i] = val;
-    this->last = ni;
-    this->size++;
+    int i = m_last;
+    int ni = nextI(i);
+    m_pData[i] = val;
+    m_last = ni;
+    m_size++;
 
-    return &this->pData[i];
+    return &m_pData[i];
 }
 
 template<typename T>
 inline void
-QueueBase<T>::resize(IAllocator* p, u32 size)
+QueueBase<T>::grow(IAllocator* p, u32 size)
 {
     auto nQ = QueueBase<T>(p, size);
 
     for (auto& e : *this) nQ.pushBack(p, e);
 
-    p->free(this->pData);
+    p->free(m_pData);
     *this = nQ;
 }
 
@@ -141,11 +149,11 @@ template<typename T>
 inline T*
 QueueBase<T>::popFront()
 {
-    assert(this->size > 0);
+    assert(m_size > 0);
 
-    T* ret = &this->pData[this->first];
-    this->first = this->nextI(this->first);
-    this->size--;
+    T* ret = &m_pData[m_first];
+    m_first = nextI(m_first);
+    m_size--;
 
     return ret;
 }
@@ -154,11 +162,11 @@ template<typename T>
 inline T*
 QueueBase<T>::popBack()
 {
-    assert(this->size > 0);
+    assert(m_size > 0);
 
-    T* ret = &this->pData[this->lastI()];
-    this->last = this->prevI(this->lastI());
-    this->size--;
+    T* ret = &m_pData[lastI()];
+    m_last = prevI(lastI());
+    m_size--;
 
     return ret;
 }
@@ -167,30 +175,41 @@ template<typename T>
 inline u32
 QueueBase<T>::idx(const T* pItem) const
 {
-    return pItem - this->pData;
+    return pItem - m_pData;
 }
 
 template<typename T>
 struct Queue
 {
     QueueBase<T> base {};
-    IAllocator* pAlloc {};
+
+    /* */
+
+    IAllocator* m_pAlloc {};
+
+    /* */
 
     Queue() = default;
     Queue(IAllocator* p, u32 prealloc = SIZE_MIN)
-        : base(p, prealloc), pAlloc(p) {}
+        : base(p, prealloc), m_pAlloc(p) {}
+
+    /* */
 
     T& operator[](u32 i) { return base[i]; }
     const T& operator[](u32 i) const { return base[i]; }
 
     bool empty() const { return base.empty(); }
-    void destroy() { base.destroy(pAlloc); }
-    T* pushFront(const T& val) { return base.pushFront(pAlloc, val); }
-    T* pushBack(const T& val) { return base.pushBack(pAlloc, val); }
-    void resize(u32 size) { base.resize(pAlloc, size); }
+    T* data() { return base.data(); }
+    const T* data() const { return base.data(); }
+    void destroy() { base.destroy(m_pAlloc); }
+    T* pushFront(const T& val) { return base.pushFront(m_pAlloc, val); }
+    T* pushBack(const T& val) { return base.pushBack(m_pAlloc, val); }
+    void resize(u32 size) { base.grow(m_pAlloc, size); }
     T* popFront() { return base.popFront(); }
     T* popBack() { return base.popBack(); }
     u32 idx(const T* pItem) { return base.idx(pItem); }
+
+    /* */
 
     QueueBase<T>::It begin() { return base.begin(); }
     QueueBase<T>::It end() { return base.end(); }
@@ -221,7 +240,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const QueueBas
     u32 nRead = 0;
     for (const auto& it : x)
     {
-        const char* fmt = (x.idx(&it) == x.last - 1U ? "{}" : "{}, ");
+        const char* fmt = (x.idx(&it) == x.m_last - 1U ? "{}" : "{}, ");
 
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, it);
     }

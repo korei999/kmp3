@@ -56,18 +56,23 @@ MixerVTableGenerate()
 struct IMixer
 {
     const MixerVTable* pVTable {};
-    std::atomic<bool> bPaused = false;
+
+    /* */
+
+    std::atomic<bool> m_bPaused = false;
 #ifdef USE_MPRIS
-    std::atomic<bool> bUpdateMpris {};
+    std::atomic<bool> m_bUpdateMpris {};
 #endif
-    bool bMuted = false;
-    bool bRunning = true;
-    u32 sampleRate = 48000;
-    u32 changedSampleRate = 48000;
-    u8 nChannels = 2;
-    f32 volume = 0.5f;
-    u64 currentTimeStamp {};
-    u64 totalSamplesCount {};
+    bool m_bMuted = false;
+    bool m_bRunning = true;
+    u32 m_sampleRate = 48000;
+    u32 m_changedSampleRate = 48000;
+    u8 m_nChannels = 2;
+    f32 m_volume = 0.5f;
+    u64 m_currentTimeStamp {};
+    u64 m_totalSamplesCount {};
+
+    /* */
 
     ADT_NO_UB void init() { pVTable->init(this); }
     ADT_NO_UB void destroy() { pVTable->destroy(this); }
@@ -82,13 +87,15 @@ struct IMixer
     [[nodiscard]] ADT_NO_UB Opt<ffmpeg::Image> getCoverImage() { return pVTable->getCoverImage(this); }
     ADT_NO_UB void setVolume(const f32 volume) { pVTable->setVolume(this, volume); }
 
-    void volumeDown(const f32 step) { setVolume(volume - step); }
-    void volumeUp(const f32 step) { setVolume(volume + step); }
-    [[nodiscard]] f64 getCurrentMS() { return (f64(currentTimeStamp) / f64(sampleRate) / f64(nChannels)) * 1000.0; }
-    [[nodiscard]] f64 getMaxMS() { return (f64(totalSamplesCount) / f64(sampleRate) / f64(nChannels)) * 1000.0; }
-    void changeSampleRateDown(int ms, bool bSave) { changeSampleRate(changedSampleRate - ms, bSave); }
-    void changeSampleRateUp(int ms, bool bSave) { changeSampleRate(changedSampleRate + ms, bSave); }
-    void restoreSampleRate() { changeSampleRate(sampleRate, false); }
+    /* */
+
+    void volumeDown(const f32 step) { setVolume(m_volume - step); }
+    void volumeUp(const f32 step) { setVolume(m_volume + step); }
+    [[nodiscard]] f64 getCurrentMS() { return (f64(m_currentTimeStamp) / f64(m_sampleRate) / f64(m_nChannels)) * 1000.0; }
+    [[nodiscard]] f64 getMaxMS() { return (f64(m_totalSamplesCount) / f64(m_sampleRate) / f64(m_nChannels)) * 1000.0; }
+    void changeSampleRateDown(int ms, bool bSave) { changeSampleRate(m_changedSampleRate - ms, bSave); }
+    void changeSampleRateUp(int ms, bool bSave) { changeSampleRate(m_changedSampleRate + ms, bSave); }
+    void restoreSampleRate() { changeSampleRate(m_sampleRate, false); }
 };
 
 struct DummyMixer
@@ -115,6 +122,6 @@ inline const MixerVTable inl_DummyMixerVTable = MixerVTableGenerate<DummyMixer>(
 
 constexpr
 DummyMixer::DummyMixer()
-    : super(&inl_DummyMixerVTable) {}
+    : super {&inl_DummyMixerVTable} {}
 
 } /* namespace audio */

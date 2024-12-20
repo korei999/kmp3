@@ -519,7 +519,7 @@ getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termW
     defer( g_string_free(pGStr, true) );
 
     auto sRet = StringAlloc(&pArena->super, pGStr->str, pGStr->len);
-    assert(sRet.size == pGStr->len);
+    assert(sRet.getSize() == pGStr->len);
     return {
         .s = sRet,
         .width = widthCells,

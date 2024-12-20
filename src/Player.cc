@@ -37,7 +37,7 @@ void
 Player::focusNext()
 {
     long ns = this->focused + 1;
-    if (ns >= long(this->aSongIdxs.size)) ns = 0;
+    if (ns >= long(this->aSongIdxs.getSize())) ns = 0;
     this->focused = ns;
 }
 
@@ -45,20 +45,20 @@ void
 Player::focusPrev()
 {
     long ns = this->focused - 1;
-    if (ns < 0) ns = this->aSongIdxs.size - 1;
+    if (ns < 0) ns = this->aSongIdxs.getSize() - 1;
     this->focused = ns;
 }
 
 void
 Player::focus(long i)
 {
-    this->focused = utils::clamp(i, 0L, long(this->aSongIdxs.size - 1));
+    this->focused = utils::clamp(i, 0L, long(this->aSongIdxs.getSize() - 1));
 }
 
 void
 Player::focusLast()
 {
-    this->focus(this->aSongIdxs.size - 1);
+    this->focus(this->aSongIdxs.getSize() - 1);
 }
 
 u16
@@ -123,11 +123,11 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
         if (!this->acceptedFormat(song)) continue;
 
         aSongToUpper.zeroOut();
-        mbstowcs(aSongToUpper.data(), song.pData, song.size);
+        mbstowcs(aSongToUpper.data(), song.data(), song.getSize());
         for (auto& wc : aSongToUpper)
             wc = towupper(wc);
 
-        if (wcsstr(aSongToUpper.data(), aUpperRight.aData) != nullptr)
+        if (wcsstr(aSongToUpper.data(), aUpperRight.data()) != nullptr)
             this->aSongIdxs.push(this->pAlloc, u16(i));
     }
 }

@@ -6,8 +6,8 @@
 namespace adt
 {
 
-#define ADT_LIST_FOREACH_SAFE(L, IT, TMP) for (decltype((L)->pFirst) IT = (L)->pFirst, TMP = {}; IT && ((TMP) = (IT)->pNext, true); (IT) = (TMP))
-#define ADT_LIST_FOREACH(L, IT) for (auto IT = (L)->pFirst; (IT); (IT) = (IT)->pNext)
+#define ADT_LIST_FOREACH_SAFE(L, IT, TMP) for (decltype((L)->m_pFirst) IT = (L)->m_pFirst, TMP = {}; IT && ((TMP) = (IT)->pNext, true); (IT) = (TMP))
+#define ADT_LIST_FOREACH(L, IT) for (auto IT = (L)->m_pFirst; (IT); (IT) = (IT)->pNext)
 
 template<typename T>
 struct ListNode
@@ -30,11 +30,13 @@ ListNodeAlloc(IAllocator* pA, const T& x)
 template<typename T>
 struct ListBase
 {
-    ListNode<T>* pFirst {};
-    ListNode<T>* pLast {};
-    u32 size {};
+    ListNode<T>* m_pFirst {};
+    ListNode<T>* m_pLast {};
+    u32 m_size {};
 
-    [[nodiscard]] constexpr bool empty() const { return size == 0; }
+    /* */
+
+    [[nodiscard]] constexpr bool empty() const { return m_size == 0; }
     constexpr void destroy(IAllocator* pA);
     constexpr ListNode<T>* pushFront(ListNode<T>* pNew);
     constexpr ListNode<T>* pushBack(ListNode<T>* pNew);
@@ -45,6 +47,8 @@ struct ListBase
     constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p);
     template<auto FN_CMP = utils::compare<T>>
     constexpr void sort();
+
+    /* */
 
     struct It
     {
@@ -65,14 +69,14 @@ struct ListBase
         friend constexpr bool operator!=(const It l, const It r) { return l.s != r.s; }
     };
 
-    It begin() { return {this->pFirst}; }
+    It begin() { return {this->m_pFirst}; }
     It end() { return nullptr; }
-    It rbegin() { return {this->pLast}; }
+    It rbegin() { return {this->m_pLast}; }
     It rend() { return nullptr; }
 
-    const It begin() const { return {this->pFirst}; }
+    const It begin() const { return {this->m_pFirst}; }
     const It end() const { return nullptr; }
-    const It rbegin() const { return {this->pLast}; }
+    const It rbegin() const { return {this->m_pLast}; }
     const It rend() const { return nullptr; }
 };
 
@@ -83,28 +87,28 @@ ListBase<T>::destroy(IAllocator* pA)
     ADT_LIST_FOREACH_SAFE(this, it, tmp)
         pA->free(it);
 
-    this->pFirst = this->pLast = nullptr;
-    this->size = 0;
+    this->m_pFirst = this->m_pLast = nullptr;
+    this->m_size = 0;
 }
 
 template<typename T>
 constexpr ListNode<T>*
 ListBase<T>::pushFront(ListNode<T>* pNew)
 {
-    if (!this->pFirst)
+    if (!this->m_pFirst)
     {
         pNew->pNext = pNew->pPrev = nullptr;
-        this->pLast = this->pFirst = pNew;
+        this->m_pLast = this->m_pFirst = pNew;
     }
     else
     {
         pNew->pPrev = nullptr;
-        pNew->pNext = this->pFirst;
-        this->pFirst->pPrev = pNew;
-        this->pFirst = pNew;
+        pNew->pNext = this->m_pFirst;
+        this->m_pFirst->pPrev = pNew;
+        this->m_pFirst = pNew;
     }
 
-    ++this->size;
+    ++this->m_size;
     return pNew;
 }
 
@@ -112,20 +116,20 @@ template<typename T>
 constexpr ListNode<T>*
 ListBase<T>::pushBack(ListNode<T>* pNew)
 {
-    if (!this->pFirst)
+    if (!this->m_pFirst)
     {
         pNew->pNext = pNew->pPrev = nullptr;
-        this->pLast = this->pFirst = pNew;
+        this->m_pLast = this->m_pFirst = pNew;
     }
     else
     {
         pNew->pNext = nullptr;
-        pNew->pPrev = this->pLast;
-        this->pLast->pNext = pNew;
-        this->pLast = pNew;
+        pNew->pPrev = this->m_pLast;
+        this->m_pLast->pNext = pNew;
+        this->m_pLast = pNew;
     }
 
-    ++this->size;
+    ++this->m_size;
     return pNew;
 }
 
@@ -149,21 +153,21 @@ template<typename T>
 constexpr void
 ListBase<T>::remove(ListNode<T>* p)
 {
-    assert(p && this->size > 0);
+    assert(p && this->m_size > 0);
 
-    if (p == this->pFirst && p == this->pLast)
+    if (p == this->m_pFirst && p == this->m_pLast)
     {
-        this->pFirst = this->pLast = nullptr;
+        this->m_pFirst = this->m_pLast = nullptr;
     }
-    else if (p == this->pFirst)
+    else if (p == this->m_pFirst)
     {
-        this->pFirst = this->pFirst->pNext;
-        this->pFirst->pPrev = nullptr;
+        this->m_pFirst = this->m_pFirst->pNext;
+        this->m_pFirst->pPrev = nullptr;
     }
-    else if (p == this->pLast)
+    else if (p == this->m_pLast)
     {
-        this->pLast = this->pLast->pPrev;
-        this->pLast->pNext = nullptr;
+        this->m_pLast = this->m_pLast->pPrev;
+        this->m_pLast->pNext = nullptr;
     }
     else 
     {
@@ -171,7 +175,7 @@ ListBase<T>::remove(ListNode<T>* p)
         p->pNext->pPrev = p->pPrev;
     }
 
-    --this->size;
+    --this->m_size;
 }
 
 template<typename T>
@@ -185,9 +189,9 @@ ListBase<T>::insertAfter(ListNode<T>* pAfter, ListNode<T>* p)
 
     pAfter->pNext = p;
 
-    if (pAfter == this->pLast) this->pLast = p;
+    if (pAfter == this->m_pLast) this->m_pLast = p;
 
-    ++this->size;
+    ++this->m_size;
 }
 
 template<typename T>
@@ -201,9 +205,9 @@ ListBase<T>::insertBefore(ListNode<T>* pBefore, ListNode<T>* p)
 
     pBefore->pPrev = p;
 
-    if (pBefore == this->pFirst) this->pFirst = p;
+    if (pBefore == this->m_pFirst) this->m_pFirst = p;
 
-    ++this->size;
+    ++this->m_size;
 }
 
 /* https://www.chiark.greenend.org.uk/~sgtatham/algorithms/listsort.c */
@@ -214,9 +218,9 @@ ListBase<T>::sort()
 {
     ListNode<T>* p, * q, * e, * tail;
     long inSize, nMerges, pSize, qSize, i;
-    ListNode<T>* list = this->pFirst;
+    ListNode<T>* list = this->m_pFirst;
 
-    if (!this->pFirst) return;
+    if (!this->m_pFirst) return;
 
     inSize = 1;
 
@@ -291,28 +295,37 @@ ListBase<T>::sort()
         inSize *= 2;
     }
 
-    this->pFirst = list;
-    this->pLast = tail;
+    this->m_pFirst = list;
+    this->m_pLast = tail;
 }
 
 template<typename T>
 struct List
 {
     ListBase<T> base {};
-    IAllocator* pAlloc {};
+
+    /* */
+
+    IAllocator* m_pAlloc {};
+
+    /* */
 
     List() = default;
-    List(IAllocator* pA) : pAlloc(pA) {}
+    List(IAllocator* pA) : m_pAlloc(pA) {}
+
+    /* */
 
     [[nodiscard]] constexpr bool empty() const { return base.empty(); }
-    constexpr ListNode<T>* pushFront(const T& x) { return base.pushFront(pAlloc, x); }
-    constexpr ListNode<T>* pushBack(const T& x) { return base.pushBack(pAlloc, x); }
-    constexpr void remove(ListNode<T>* p) { base.remove(p); pAlloc->free(p); }
-    constexpr void destroy() { base.destroy(pAlloc); }
+    constexpr ListNode<T>* pushFront(const T& x) { return base.pushFront(m_pAlloc, x); }
+    constexpr ListNode<T>* pushBack(const T& x) { return base.pushBack(m_pAlloc, x); }
+    constexpr void remove(ListNode<T>* p) { base.remove(p); m_pAlloc->free(p); }
+    constexpr void destroy() { base.destroy(m_pAlloc); }
     constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p) { base.insertAfter(pAfter, p); }
     constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p) { base.insertBefore(pBefore, p); }
     template<auto FN_CMP = utils::compare<T>>
     constexpr void sort() { base.template sort<FN_CMP>(); }
+
+    /* */
 
     ListBase<T>::It begin() { return base.begin(); }
     ListBase<T>::It end() { return base.end(); }
@@ -343,7 +356,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const ListBase
     u32 nRead = 0;
     ADT_LIST_FOREACH(&x, it)
     {
-        const char* fmt = it == x.pLast ? "{}" : "{}, ";
+        const char* fmt = it == x.m_pLast ? "{}" : "{}, ";
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, it->data);
     }
 
