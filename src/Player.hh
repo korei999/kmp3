@@ -49,7 +49,7 @@ struct Player
     Player(IAllocator* p, int nArgs, [[maybe_unused]] char** ppArgs)
         : pAlloc(p), aShortArgvs(p, nArgs), aSongIdxs(p, nArgs) {}
 
-    bool acceptedFormat(const String s);
+    static bool acceptedFormat(const String s);
     void focusNext();
     void focusPrev();
     void focus(long i);

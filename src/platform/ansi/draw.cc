@@ -344,6 +344,9 @@ update(Win* s)
         tb.clear();
     }
 
+    time(s);
+    timeSlider(s);
+
     if (s->bRedraw || app::g_pPlayer->bSelectionChanged)
     {
         s->bRedraw = false;
@@ -354,9 +357,6 @@ update(Win* s)
         list(s);
         bottomLine(s);
     }
-
-    time(s);
-    timeSlider(s);
 }
 
 } /* namespace draw */
