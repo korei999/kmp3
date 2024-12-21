@@ -258,7 +258,11 @@ MapBase<K, V>::insertHashed(const K& key, const V& val, u64 keyHash)
     u32 idx = u32(keyHash % this->m_aBuckets.getCap());
 
     while (this->m_aBuckets[idx].bOccupied)
-        ++idx %= this->m_aBuckets.getCap();
+    {
+        ++idx;
+        if (idx >= this->m_aBuckets.getCap())
+            idx = 0;
+    }
 
     this->m_aBuckets[idx].key = key;
     this->m_aBuckets[idx].val = val;
@@ -295,7 +299,9 @@ MapBase<K, V>::searchHashed(const K& key, u64 keyHash)
             break;
         }
 
-        ++idx %= aBuckets.getCap();
+        ++idx;
+        if (idx >= aBuckets.getCap())
+            idx = 0;
     }
 
     return res;

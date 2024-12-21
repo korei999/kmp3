@@ -2,10 +2,9 @@
 
 #include "adt/Opt.hh"
 #include "adt/String.hh"
+#include "Image.hh"
 
 #include <atomic>
-
-#include "ffmpeg.hh"
 
 using namespace adt;
 
@@ -15,13 +14,14 @@ namespace audio
 constexpr u64 CHUNK_SIZE = (1 << 18); /* big enough */
 /* Platrform abstracted audio interface */
 struct IMixer;
-struct Track;
+struct File;
 
 struct MixerVTable
 {
     void (*init)(IMixer* s);
     void (*destroy)(IMixer*);
     void (*play)(IMixer*, String);
+    /*void (*loadFile)(IMixer*, File*);*/
     void (*pause)(IMixer* s, bool bPause);
     void (*togglePause)(IMixer* s);
     void (*changeSampleRate)(IMixer* s, u64 sampleRate, bool bSave);
@@ -29,7 +29,7 @@ struct MixerVTable
     void (*seekLeftMS)(IMixer* s, s64 ms);
     void (*seekRightMS)(IMixer* s, s64 ms);
     Opt<String> (*getMetadata)(IMixer* s, const String sKey);
-    Opt<ffmpeg::Image> (*getCoverImage)(IMixer* s);
+    Opt<Image> (*getCoverImage)(IMixer* s);
     void (*setVolume)(IMixer* s, const f32 volume);
 };
 
@@ -84,7 +84,7 @@ struct IMixer
     ADT_NO_UB void seekLeftMS(s64 ms) { pVTable->seekLeftMS(this, ms); }
     ADT_NO_UB void seekRightMS(s64 ms) { pVTable->seekRightMS(this, ms); }
     [[nodiscard]] ADT_NO_UB Opt<String> getMetadata(const String sKey) { return pVTable->getMetadata(this, sKey); }
-    [[nodiscard]] ADT_NO_UB Opt<ffmpeg::Image> getCoverImage() { return pVTable->getCoverImage(this); }
+    [[nodiscard]] ADT_NO_UB Opt<Image> getCoverImage() { return pVTable->getCoverImage(this); }
     ADT_NO_UB void setVolume(const f32 volume) { pVTable->setVolume(this, volume); }
 
     /* */
@@ -114,14 +114,90 @@ struct DummyMixer
     void seekLeftMS(s64) {}
     void seekRightMS(s64) {}
     Opt<String> getMetadata(const String) { return {}; }
-    Opt<ffmpeg::Image> getCoverImage() { return {}; }
+    Opt<Image> getCoverImage() { return {}; }
     void setVolume(const f32) {}
 };
 
 inline const MixerVTable inl_DummyMixerVTable = MixerVTableGenerate<DummyMixer>();
 
 constexpr
-DummyMixer::DummyMixer()
-    : super {&inl_DummyMixerVTable} {}
+DummyMixer::DummyMixer() : super {&inl_DummyMixerVTable} {}
+
+struct File
+{
+};
+
+enum class ERROR : u8
+{
+    OK_ = 0,
+    END_OF_FILE,
+    DONE,
+    FAIL,
+};
+
+constexpr String mapERRORToString[] {
+    "OK_",
+    "EOF_OF_FILE",
+    "DONE",
+    "FAIL",
+};
+
+struct IReader;
+
+struct ReaderVTable
+{
+    ERROR (* writeToBuffer)(IReader* s,
+        f32* pBuff, const u32 buffSize, const u32 nFrames, const u32 nChannles,
+        long* pSamplesWritten, u64* pPcmPos
+    );
+    u32 (* getSampleRate)(IReader* s);
+    void (* seekMS)(IReader* s, long ms);
+    long (* getCurrentSamplePos)(IReader* s);
+    long (* getTotalSamplesCount)(IReader* s);
+    int (* getChannelsCount)(IReader* s);
+    Opt<String> (* getMetadataValue)(IReader* s, const String sKey);
+    Opt<Image> (* getCoverImage)(IReader* s);
+    ERROR (* open)(IReader* s, String sPath);
+    void (* close)(IReader* s);
+};
+
+template<typename READER_T>
+constexpr ReaderVTable
+ReaderVTableGenerate()
+{
+    return ReaderVTable {
+        .writeToBuffer = decltype(ReaderVTable::writeToBuffer)(methodPointer(&READER_T::writeToBuffer)),
+        .getSampleRate = decltype(ReaderVTable::getSampleRate)(methodPointer(&READER_T::getSampleRate)),
+        .seekMS = decltype(ReaderVTable::seekMS)(methodPointer(&READER_T::seekMS)),
+        .getCurrentSamplePos = decltype(ReaderVTable::getCurrentSamplePos)(methodPointer(&READER_T::getCurrentSamplePos)),
+        .getTotalSamplesCount = decltype(ReaderVTable::getTotalSamplesCount)(methodPointer(&READER_T::getTotalSamplesCount)),
+        .getChannelsCount = decltype(ReaderVTable::getChannelsCount)(methodPointer(&READER_T::getChannelsCount)),
+        .getMetadataValue = decltype(ReaderVTable::getMetadataValue)(methodPointer(&READER_T::getMetadataValue)),
+        .getCoverImage = decltype(ReaderVTable::getCoverImage)(methodPointer(&READER_T::getCoverImage)),
+        .open = decltype(ReaderVTable::open)(methodPointer(&READER_T::open)),
+        .close = decltype(ReaderVTable::close)(methodPointer(&READER_T::close))
+    };
+}
+
+struct IReader
+{
+    const ReaderVTable* pVTable {};
+
+    /* */
+
+    [[nodiscard]] ADT_NO_UB ERROR writeToBuffer(
+        f32* pBuff, const u32 buffSize, const u32 nFrames, const u32 nChannles,
+        long* pSamplesWritten, u64* pPcmPos
+    ) { return pVTable->writeToBuffer(this, pBuff, buffSize, nFrames, nChannles, pSamplesWritten, pPcmPos); }
+    [[nodiscard]] ADT_NO_UB u32 getSampleRate() { return pVTable->getSampleRate(this); }
+    ADT_NO_UB void seekMS(long ms) { pVTable->seekMS(this, ms); }
+    [[nodiscard]] ADT_NO_UB long getCurrentSamplePos() { return pVTable->getCurrentSamplePos(this); }
+    [[nodiscard]] ADT_NO_UB long getTotalSamplesCount() { return pVTable->getTotalSamplesCount(this); }
+    [[nodiscard]] ADT_NO_UB int getChannelsCount() { return pVTable->getChannelsCount(this); }
+    [[nodiscard]] ADT_NO_UB Opt<String> getMetadataValue(const String sKey) { return pVTable->getMetadataValue(this, sKey); }
+    [[nodiscard]] ADT_NO_UB Opt<Image> getCoverImage() { return pVTable->getCoverImage(this); }
+    [[nodiscard]] ADT_NO_UB ERROR open(String sPath) { return pVTable->open(this, sPath); }
+    ADT_NO_UB void close() { pVTable->close(this); }
+};
 
 } /* namespace audio */

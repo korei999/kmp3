@@ -1,5 +1,6 @@
 #pragma once
 
+#include "adt/logs.hh"
 #include "audio.hh"
 #include "ffmpeg.hh"
 
@@ -37,7 +38,7 @@ struct Mixer
     u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
     std::atomic<bool> m_bDecodes = false;
-    ffmpeg::Decoder* m_pDecoder {};
+    audio::IReader* m_pIReader {};
     String m_sPath {};
 
     pw_thread_loop* m_pThrdLoop {};
@@ -62,14 +63,21 @@ struct Mixer
     void seekLeftMS(s64 ms);
     void seekRightMS(s64 ms);
     [[nodiscard]] Opt<String> getMetadata(const String sKey);
-    [[nodiscard]] Opt<ffmpeg::Image> getCoverImage();
+    [[nodiscard]] Opt<Image> getCoverImage();
     void setVolume(const f32 volume);
 };
 
 inline const audio::MixerVTable inl_MixerVTable = audio::MixerVTableGenerate<Mixer>();
 
 inline
-Mixer::Mixer(IAllocator* pA) : super(&inl_MixerVTable), m_pDecoder(ffmpeg::DecoderAlloc(pA)) {}
+Mixer::Mixer(IAllocator* pA)
+    : super(&inl_MixerVTable)
+{
+    auto* p = (ffmpeg::Reader*)pA->zalloc(1, sizeof(ffmpeg::Reader));
+    *p = ffmpeg::Reader(pA);
+    m_pIReader = (audio::IReader*)p;
+    LOG_BAD("allocated\n");
+}
 
 } /* namespace pipewire */
 } /* namespace platform */

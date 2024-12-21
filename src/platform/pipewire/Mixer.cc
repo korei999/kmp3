@@ -18,13 +18,13 @@ namespace platform
 namespace pipewire
 {
 
-struct ThrdLoopLockGuard
+struct PWLockGuard
 {
     pw_thread_loop* p;
 
-    ThrdLoopLockGuard() = delete;
-    ThrdLoopLockGuard(pw_thread_loop* _p) : p(_p) { pw_thread_loop_lock(_p); }
-    ~ThrdLoopLockGuard() { pw_thread_loop_unlock(p); }
+    PWLockGuard() = delete;
+    PWLockGuard(pw_thread_loop* _p) : p(_p) { pw_thread_loop_lock(_p); }
+    ~PWLockGuard() { pw_thread_loop_unlock(p); }
 };
 
 static void runThread(Mixer* s, int argc, char** argv);
@@ -104,7 +104,7 @@ void
 Mixer::destroy()
 {
     {
-        ThrdLoopLockGuard tLock(m_pThrdLoop);
+        PWLockGuard tLock(m_pThrdLoop);
         pw_stream_set_active(m_pStream, true);
     }
 
@@ -113,7 +113,7 @@ Mixer::destroy()
 
     super.m_bRunning = false;
 
-    if (m_bDecodes) ffmpeg::DecoderClose(m_pDecoder);
+    if (m_bDecodes) m_pIReader->close();
 
     pw_stream_destroy(m_pStream);
     pw_thread_loop_destroy(m_pThrdLoop);
@@ -137,11 +137,11 @@ Mixer::play(String sPath)
 
         if (m_bDecodes)
         {
-            ffmpeg::DecoderClose(m_pDecoder);
+            m_pIReader->close();
         }
 
-        auto err = ffmpeg::DecoderOpen(m_pDecoder, sPath);
-        if (err != ffmpeg::ERROR::OK_)
+        auto err = m_pIReader->open(sPath);
+        if (err != audio::ERROR::OK_)
         {
             LOG_WARN("DecoderOpen\n");
             return;
@@ -149,8 +149,8 @@ Mixer::play(String sPath)
         m_bDecodes = true;
     }
 
-    super.m_nChannels = ffmpeg::DecoderGetChannelsCount(m_pDecoder);
-    changeSampleRate(ffmpeg::DecoderGetSampleRate(m_pDecoder), true);
+    super.m_nChannels = m_pIReader->getChannelsCount();
+    changeSampleRate(m_pIReader->getSampleRate(), true);
 
     if (!math::eq(prevSpeed, 1.0))
         changeSampleRate(f64(super.m_sampleRate) * prevSpeed, false);
@@ -210,22 +210,26 @@ runThread(Mixer* s, int argc, char** argv)
 static void
 writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten, u64* pPcmPos)
 {
-    ffmpeg::ERROR err {};
+    audio::ERROR err {};
     {
         guard::Mtx lock(&s->m_mtxDecoder);
 
         if (!s->m_bDecodes) return;
 
-        err = ffmpeg::DecoderWriteToBuffer(s->m_pDecoder, pBuff, utils::size(s_aPwBuff), nFrames, s->m_nChannels, pSamplesWritten, pPcmPos);
-        if (err == ffmpeg::ERROR::END_OF_FILE)
+        err = s->m_pIReader->writeToBuffer(
+            pBuff, utils::size(s_aPwBuff),
+            nFrames, s->m_nChannels,
+            pSamplesWritten, pPcmPos
+        );
+        if (err == audio::ERROR::END_OF_FILE)
         {
             s->pause(true);
-            ffmpeg::DecoderClose(s->m_pDecoder);
+            s->m_pIReader->close();
             s->m_bDecodes = false;
         }
     }
 
-    if (err == ffmpeg::ERROR::END_OF_FILE) app::g_pPlayer->onSongEnd();
+    if (err == audio::ERROR::END_OF_FILE) app::g_pPlayer->onSongEnd();
 }
 
 static void
@@ -285,7 +289,7 @@ onProcess(void* pData)
     }
     else
     {
-        s->super.m_totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(s->m_pDecoder);
+        s->super.m_totalSamplesCount = s->m_pIReader->getTotalSamplesCount();
     }
 
     pBuffData.chunk->offset = 0;
@@ -298,7 +302,7 @@ onProcess(void* pData)
 void
 Mixer::pause(bool bPause)
 {
-    ThrdLoopLockGuard lock(m_pThrdLoop);
+    PWLockGuard lock(m_pThrdLoop);
     pw_stream_set_active(m_pStream, !bPause);
     super.m_bPaused = bPause;
 
@@ -332,7 +336,7 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     const spa_pod* aParams[1] {};
     aParams[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
 
-    ThrdLoopLockGuard lock(m_pThrdLoop);
+    PWLockGuard lock(m_pThrdLoop);
     pw_stream_update_params(m_pStream, aParams, utils::size(aParams));
     /* update won't apply without this */
     pw_stream_set_active(m_pStream, super.m_bPaused);
@@ -351,10 +355,10 @@ Mixer::seekMS(s64 ms)
 
     s64 maxMs = super.getMaxMS();
     ms = utils::clamp(ms, 0LL, maxMs);
-    ffmpeg::DecoderSeekMS(m_pDecoder, ms);
+    m_pIReader->seekMS(ms);
 
     super.m_currentTimeStamp = f64(ms)/1000.0 * super.m_sampleRate * super.m_nChannels;
-    super.m_totalSamplesCount = ffmpeg::DecoderGetTotalSamplesCount(m_pDecoder);
+    super.m_totalSamplesCount = m_pIReader->getTotalSamplesCount();
 
     mpris::seeked();
 }
@@ -376,13 +380,13 @@ Mixer::seekRightMS(s64 ms)
 Opt<String>
 Mixer::getMetadata(const String sKey)
 {
-    return ffmpeg::DecoderGetMetadataValue(m_pDecoder, sKey);
+    return m_pIReader->getMetadataValue(sKey);
 }
 
-Opt<ffmpeg::Image>
+Opt<Image>
 Mixer::getCoverImage()
 {
-    return ffmpeg::DecoderGetCoverImage(m_pDecoder);
+    return m_pIReader->getCoverImage();
 }
 
 void

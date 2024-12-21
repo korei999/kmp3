@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <cstdlib>
 #include <immintrin.h>
 
 namespace adt

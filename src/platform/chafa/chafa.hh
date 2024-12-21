@@ -1,7 +1,8 @@
 #pragma once
 
 #include "adt/Arena.hh"
-#include "ffmpeg.hh"
+#include "adt/String.hh"
+#include "Image.hh"
 
 #ifdef USE_NCURSES
 #include <ncurses.h>
@@ -20,20 +21,20 @@ struct Image
 };
 
 #ifdef USE_NCURSES
-void showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, const int termWidth);
+void showImageNCurses(WINDOW* pWin, const ::Image img, const int termHeight, const int termWidth);
 #endif
 
 void
 showImage(
     Arena* pArena,
-    const ffmpeg::Image img,
+    const Image img,
     const int termHeight,
     const int termWidth,
     const int hOff,
     const int vOff
 );
 
-[[nodiscard]] Image getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termWidth);
+[[nodiscard]] Image getImageString(Arena* pArena, const ::Image img, int termHeight, int termWidth);
 
 } /* namespace chafa */
 } /* namespace platform */

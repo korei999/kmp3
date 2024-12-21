@@ -13,10 +13,68 @@ namespace input
 
 #define ESC_SEQ '\x1b'
 
-[[nodiscard]] static int
-parseSeq(Win* s, char* aBuff, u32 buffSize, ssize_t nRead)
+enum class MOUSE : u16
 {
-    LOG("{}\n", *(int*)(aBuff + 1));
+    LEFT = 48,
+    MID = 49,
+    RIGHT = 50,
+    SCROLL = 54,
+};
+
+enum class SCROLL_DIR : char
+{
+    UP = 52,
+    DOWN = 53,
+};
+
+enum class BUTTON_STATE : u16
+{
+    PRESS = 19764,
+    RELEASE = 27961,
+};
+
+[[maybe_unused, nodiscard]] static int
+parseMouse([[maybe_unused]] Win* s, char* aBuff, u32 buffSize, [[maybe_unused]] ssize_t nRead)
+{
+    enum { TYPE_VT200 = 0, TYPE_1006, TYPE_1015, ESIZE };
+
+    const char *cmp[ESIZE] = {//
+        // X10 mouse encoding, the simplest one
+        // \x1b [ M Cb Cx Cy
+        [TYPE_VT200] = "\x1b[M",
+        // xterm 1006 extended mode or urxvt 1015 extended mode
+        // xterm: \x1b [ < Cb ; Cx ; Cy (M or m)
+        [TYPE_1006] = "\x1b[<",
+        // urxvt: \x1b [ Cb ; Cx ; Cy M
+        [TYPE_1015] = "\x1b["
+    };
+
+    int type = 0;
+
+    for (; type < ESIZE; ++type) {
+        size_t size = strlen(cmp[type]);
+
+        if (buffSize >= size && (strncmp(cmp[type], aBuff, size)) == 0) {
+            break;
+        }
+    }
+
+    LOG("type: {} '{}'\n", type, aBuff);
+
+    if (type != 1) return {};
+
+    {
+    }
+
+    return {};
+}
+
+[[nodiscard]] static int
+parseSeq([[maybe_unused]] Win* s, char* aBuff, [[maybe_unused]] u32 buffSize, ssize_t nRead)
+{
+    /*LOG("{}, nRead: {}\n", *(int*)(aBuff + 1), nRead);*/
+
+    /*if (nRead >= 10) return parseMouse(s, aBuff, buffSize, nRead);*/
 
     if (nRead <= 5)
     {
@@ -63,8 +121,8 @@ readFromStdin(Win* s, const int timeoutMS)
     tv.tv_usec = (timeoutMS - (tv.tv_sec * 1000)) * 1000;
 
     select(1, &fds, {}, {}, &tv);
-    [[maybe_unused]] ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
-    LOG("nRead: {}, ({}, {}): '{}'\n", nRead, *(u64*)aBuff, *(u64*)(aBuff + 8), aBuff);
+    ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
+    /*LOG("nRead: {}, ({}, {}): '{}'\n", nRead, *(u64*)aBuff, *(u64*)(aBuff + 8), aBuff);*/
 
     if (nRead > 1)
     {

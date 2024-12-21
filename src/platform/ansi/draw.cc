@@ -62,7 +62,7 @@ coverImage(Win* s)
         s->textBuff.clearKittyImages();
         clearArea(s, 1, 1, s->prevImgWidth, split + 1);
 
-        Opt<ffmpeg::Image> oCoverImg = app::g_pMixer->getCoverImage();
+        Opt<Image> oCoverImg = app::g_pMixer->getCoverImage();
         if (oCoverImg)
         {
             const auto& img = oCoverImg.getData();

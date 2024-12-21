@@ -22,15 +22,14 @@ extern "C"
 namespace ffmpeg
 {
 
-[[maybe_unused]] static PIXEL_FORMAT
+[[maybe_unused]] static IMAGE_PIXEL_FORMAT
 covertFormat(int format)
 {
     switch (format)
     {
-        default: return PIXEL_FORMAT::NONE;
-        case AV_PIX_FMT_RGB24: return PIXEL_FORMAT::RGB8;
-        /*case AV_PIX_FMT_YUVJ420P: return PIXEL_FORMAT::RGB565;*/
-        case AV_PIX_FMT_RGBA: return PIXEL_FORMAT::RGBA8_UNASSOCIATED;
+        default: return IMAGE_PIXEL_FORMAT::NONE;
+        case AV_PIX_FMT_RGB24: return IMAGE_PIXEL_FORMAT::RGB8;
+        case AV_PIX_FMT_RGBA: return IMAGE_PIXEL_FORMAT::RGBA8_UNASSOCIATED;
     }
 };
 
@@ -45,7 +44,7 @@ struct Decoder
 
     AVPacket* pImgPacket {};
     AVFrame* pImgFrame {};
-    Opt<ffmpeg::Image> oCoverImg {};
+    Opt<Image> oCoverImg {};
 
 #ifdef USE_CHAFA
     SwsContext* pSwsCtx {};
@@ -178,13 +177,13 @@ DecoderGetAttachedPicture(Decoder* s)
     #define DecoderGetAttachedPicture(...) (void)0
 #endif
 
-Opt<ffmpeg::Image>
+Opt<Image>
 DecoderGetCoverImage(Decoder* s)
 {
     return s->oCoverImg;
 }
 
-ERROR
+audio::ERROR
 DecoderOpen(Decoder* s, String sPath)
 {
     String sPathNullTerm = StringAlloc(OsAllocatorGet(), sPath); /* with null char */
@@ -194,22 +193,22 @@ DecoderOpen(Decoder* s, String sPath)
     defer( if (err < 0) DecoderClose(s) );
 
     err = avformat_open_input(&s->pFormatCtx, sPathNullTerm.data(), {}, {});
-    if (err != 0) return ERROR::FILE_OPENING;
+    if (err != 0) return audio::ERROR::FAIL;
 
     err = avformat_find_stream_info(s->pFormatCtx, {});
-    if (err != 0) return ERROR::AUDIO_STREAM_NOT_FOUND;
+    if (err != 0) return audio::ERROR::FAIL;
 
     int idx = av_find_best_stream(s->pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
-    if (idx < 0) return ERROR::AUDIO_STREAM_NOT_FOUND;
+    if (idx < 0) return audio::ERROR::FAIL;
 
     s->audioStreamIdx = idx;
     s->pStream = s->pFormatCtx->streams[idx];
 
     const AVCodec* pCodec = avcodec_find_decoder(s->pStream->codecpar->codec_id);
-    if (!pCodec) return ERROR::DECODER_NOT_FOUND;
+    if (!pCodec) return audio::ERROR::FAIL;
 
     s->pCodecCtx = avcodec_alloc_context3(pCodec);
-    if (!s->pCodecCtx) return ERROR::DECODING_CONTEXT_ALLOCATION;
+    if (!s->pCodecCtx) return audio::ERROR::FAIL;
 
     avcodec_parameters_to_context(s->pCodecCtx, s->pStream->codecpar);
 
@@ -217,7 +216,7 @@ DecoderOpen(Decoder* s, String sPath)
     if (err < 0)
     {
         LOG("avcodec_open2\n");
-        return ERROR::CODEC_OPEN;
+        return audio::ERROR::FAIL;
     }
 
     err = swr_alloc_set_opts2(&s->pSwr,
@@ -230,10 +229,10 @@ DecoderOpen(Decoder* s, String sPath)
 
     DecoderGetAttachedPicture(s);
 
-    return ERROR::OK_;
+    return audio::ERROR::OK_;
 }
 
-ERROR
+audio::ERROR
 DecoderWriteToBuffer(
     Decoder* s,
     f32* pBuff,
@@ -319,12 +318,12 @@ DecoderWriteToBuffer(
             if (nWrites >= maxSamples && nWrites >= nFrames*2) /* mul by nChannels */
             {
                 *pSamplesWritten += nWrites;
-                return ERROR::OK_;
+                return audio::ERROR::OK_;
             }
         }
     }
 
-    return ERROR::END_OF_FILE;
+    return audio::ERROR::END_OF_FILE;
 }
 
 u32
@@ -366,5 +365,7 @@ DecoderGetChannelsCount(Decoder* s)
 {
     return s->pStream->codecpar->ch_layout.nb_channels;
 }
+
+Reader::Reader(IAllocator* pAlloc) : super {&inl_ReaderVTable}, m_pDecoder {DecoderAlloc(pAlloc)} {}
 
 } /* namespace ffmpeg */

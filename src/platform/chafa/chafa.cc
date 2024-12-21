@@ -29,16 +29,16 @@ struct TermSize
 };
 
 [[nodiscard]] static int
-formatToPixelType(const ffmpeg::PIXEL_FORMAT eFormat)
+formatToPixelType(const IMAGE_PIXEL_FORMAT eFormat)
 {
     switch (eFormat)
     {
-        case ffmpeg::PIXEL_FORMAT::NONE: return -1;
+        case IMAGE_PIXEL_FORMAT::NONE: return -1;
 
-        case ffmpeg::PIXEL_FORMAT::RGB8: return CHAFA_PIXEL_RGB8;
+        case IMAGE_PIXEL_FORMAT::RGB8: return CHAFA_PIXEL_RGB8;
 
-        case ffmpeg::PIXEL_FORMAT::RGBA8_PREMULTIPLIED:
-        case ffmpeg::PIXEL_FORMAT::RGBA8_UNASSOCIATED:
+        case IMAGE_PIXEL_FORMAT::RGBA8_PREMULTIPLIED:
+        case IMAGE_PIXEL_FORMAT::RGBA8_UNASSOCIATED:
         return CHAFA_PIXEL_RGBA8_PREMULTIPLIED;
     }
 
@@ -46,17 +46,17 @@ formatToPixelType(const ffmpeg::PIXEL_FORMAT eFormat)
 }
 
 [[nodiscard]] static int
-getFormatChannelNumber(const ffmpeg::PIXEL_FORMAT eFormat)
+getFormatChannelNumber(const IMAGE_PIXEL_FORMAT eFormat)
 {
     switch (eFormat)
     {
-        case ffmpeg::PIXEL_FORMAT::NONE: return 0;
+        case IMAGE_PIXEL_FORMAT::NONE: return 0;
 
-        case ffmpeg::PIXEL_FORMAT::RGBA8_UNASSOCIATED:
-        case ffmpeg::PIXEL_FORMAT::RGBA8_PREMULTIPLIED:
+        case IMAGE_PIXEL_FORMAT::RGBA8_UNASSOCIATED:
+        case IMAGE_PIXEL_FORMAT::RGBA8_PREMULTIPLIED:
         return 4;
 
-        case ffmpeg::PIXEL_FORMAT::RGB8: return 3;
+        case IMAGE_PIXEL_FORMAT::RGB8: return 3;
     }
 
     return 0;
@@ -314,7 +314,7 @@ paintCanvas(
     const u8* pBuff,
     const int width,
     const int height,
-    const ffmpeg::PIXEL_FORMAT eFormat
+    const IMAGE_PIXEL_FORMAT eFormat
 )
 {
     int convertedFormat = formatToPixelType(eFormat);
@@ -403,7 +403,7 @@ showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, co
 #endif
 
 void
-showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const int termWidth, const int hOff, const int vOff)
+showImage(Arena* pArena, const ::Image img, const int termHeight, const int termWidth, const int hOff, const int vOff)
 {
     TermSize termSize {};
     getTTYSize(&termSize);
@@ -476,7 +476,7 @@ showImage(Arena* pArena, const ffmpeg::Image img, const int termHeight, const in
 }
 
 Image
-getImageString(Arena* pArena, const ffmpeg::Image img, int termHeight, int termWidth)
+getImageString(Arena* pArena, const ::Image img, int termHeight, int termWidth)
 {
     TermSize termSize {};
     getTTYSize(&termSize);
