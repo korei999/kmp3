@@ -344,6 +344,9 @@ update(Win* s)
         tb.clear();
     }
 
+    if (s->bRedraw || app::g_pPlayer->bSelectionChanged)
+        coverImage(s);
+
     time(s);
     timeSlider(s);
 
@@ -351,7 +354,6 @@ update(Win* s)
     {
         s->bRedraw = false;
 
-        coverImage(s);
         info(s);
         volume(s);
         list(s);
