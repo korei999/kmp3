@@ -28,12 +28,8 @@ namespace platform
 namespace pipewire
 {
 
-struct Mixer
+struct Mixer : public audio::IMixer
 {
-    audio::IMixer super {};
-
-    /* */
-
     u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
     std::atomic<bool> m_bDecodes = false;
@@ -52,29 +48,27 @@ struct Mixer
 
     /* */
 
-    void init();
-    void destroy();
-    void play(String sPath);
-    void pause(bool bPause);
-    void togglePause();
-    void changeSampleRate(u64 sampleRate, bool bSave);
-    void seekMS(s64 ms);
-    void seekLeftMS(s64 ms);
-    void seekRightMS(s64 ms);
-    [[nodiscard]] Opt<String> getMetadata(const String sKey);
-    [[nodiscard]] Opt<Image> getCoverImage();
-    void setVolume(const f32 volume);
+    virtual void init() override final;
+    virtual void destroy() override final;
+    virtual void play(String sPath) override final;
+    virtual void pause(bool bPause) override final;
+    virtual void togglePause() override final;
+    virtual void changeSampleRate(u64 sampleRate, bool bSave) override final;
+    virtual void seekMS(s64 ms) override final;
+    virtual void seekLeftMS(s64 ms) override final;
+    virtual void seekRightMS(s64 ms) override final;
+    [[nodiscard]] virtual Opt<String> getMetadata(const String sKey) override final;
+    [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
+    virtual void setVolume(const f32 volume) override final;
 };
-
-inline const audio::MixerVTable inl_MixerVTable = audio::MixerVTableGenerate<Mixer>();
 
 inline
 Mixer::Mixer(IAllocator* pA)
-    : super(&inl_MixerVTable)
 {
     auto* p = (ffmpeg::Reader*)pA->zalloc(1, sizeof(ffmpeg::Reader));
-    *p = ffmpeg::Reader(INIT_FLAG::INIT);
-    m_pIReader = (audio::IReader*)p;
+    new(p) ffmpeg::Reader();
+
+    m_pIReader = p;
 }
 
 } /* namespace pipewire */

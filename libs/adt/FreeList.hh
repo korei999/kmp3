@@ -41,11 +41,9 @@ struct FreeListData
     constexpr void addSize(u64 _size) { setSize(_size + getSize()); }
 };
 
-struct FreeList
+struct FreeList : IAllocator
 {
     using Node = RBNode<FreeListData>; /* node is the header + memory chunk of the allocation */
-
-    IAllocator super {};
 
     /* */
 
@@ -61,11 +59,11 @@ struct FreeList
 
     /* */
 
-    [[nodiscard]] void* alloc(u64 mCount, u64 mSize);
-    [[nodiscard]] void* zalloc(u64 mCount, u64 mSize);
-    [[nodiscard]] void* realloc(void* ptr, u64 mCount, u64 mSize);
-    void free(void* ptr);
-    void freeAll();
+    [[nodiscard]] virtual void* alloc(u64 mCount, u64 mSize) override;
+    [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override;
+    [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override;
+    virtual void free(void* ptr) override;
+    virtual void freeAll() override;
 };
 
 template<>
@@ -134,14 +132,14 @@ _FreeListBlockPrepend(FreeList* s, u64 size)
 inline void
 FreeList::freeAll()
 {
-    auto* it = this->m_pBlocks;
+    auto* it = m_pBlocks;
     while (it)
     {
         auto* next = it->pNext;
         ::free(it);
         it = next;
     }
-    this->m_pBlocks = nullptr;
+    m_pBlocks = nullptr;
 }
 
 inline FreeListData*
@@ -159,7 +157,7 @@ _FreeListNodeFromPtr(void* p)
 inline FreeList::Node*
 _FreeListFindFittingNode(FreeList* s, const u64 size)
 {
-    auto* it = s->m_tree.pRoot;
+    auto* it = s->m_tree.m_pRoot;
     const s64 realSize = size + sizeof(FreeList::Node);
 
     FreeList::Node* pLastFitting {};
@@ -265,7 +263,7 @@ FreeList::alloc(u64 nMembers, u64 mSize)
     u64 realSize = requested + sizeof(FreeList::Node);
 
     /* find block that fits */
-    auto* pBlock = this->m_pBlocks;
+    auto* pBlock = m_pBlocks;
     while (pBlock)
     {
         bool bFits = (((pdiff)pBlock->size - (pdiff)sizeof(FreeListBlock)) -
@@ -282,14 +280,14 @@ FreeList::alloc(u64 nMembers, u64 mSize)
 #endif
 
 again:
-        pBlock = _FreeListBlockPrepend(this, utils::max(this->m_blockSize, requested*2 + sizeof(FreeListBlock) + sizeof(FreeList::Node)));
+        pBlock = _FreeListBlockPrepend(this, utils::max(m_blockSize, requested*2 + sizeof(FreeListBlock) + sizeof(FreeList::Node)));
     }
 
     auto* pFree = _FreeListFindFittingNode(this, requested);
     if (!pFree) goto again;
 
     pBlock->nBytesOccupied += realSize;
-    this->m_totalAllocated += realSize;
+    m_totalAllocated += realSize;
 
     _FreeListSplitNode(this, pFree, realSize);
 
@@ -299,7 +297,7 @@ again:
 inline void*
 FreeList::zalloc(u64 nMembers, u64 mSize)
 {
-    auto* p = this->alloc(nMembers, mSize);
+    auto* p = alloc(nMembers, mSize);
     memset(p, 0, nMembers * mSize);
     return p;
 }
@@ -316,12 +314,12 @@ FreeList::free(void* ptr)
 
     pNode->m_data.setFree(true);
     pBlock->nBytesOccupied -= pNode->m_data.getSize();
-    this->m_totalAllocated -= pNode->m_data.getSize();
+    m_totalAllocated -= pNode->m_data.getSize();
 
     /* next adjecent node coalescence */
     if (pNode->m_data.pNext && pNode->m_data.pNext->isFree())
     {
-        this->m_tree.remove(_FreeListNodeFromPtr(pNode->m_data.pNext->pMem));
+        m_tree.remove(_FreeListNodeFromPtr(pNode->m_data.pNext->pMem));
 
         pNode->m_data.addSize(pNode->m_data.pNext->getSize());
         if (pNode->m_data.pNext->pNext)
@@ -333,7 +331,7 @@ FreeList::free(void* ptr)
     if (pNode->m_data.pPrev && pNode->m_data.pPrev->isFree())
     {
         auto* pPrev = _FreeListNodeFromPtr(pNode->m_data.pPrev->pMem);
-        this->m_tree.remove(pPrev);
+        m_tree.remove(pPrev);
 
         pNode = pPrev;
 
@@ -343,13 +341,13 @@ FreeList::free(void* ptr)
         pNode->m_data.pNext = pNode->m_data.pNext->pNext;
     }
 
-    this->m_tree.insert(pNode, true);
+    m_tree.insert(pNode, true);
 }
 
 inline void*
 FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
 {
-    if (!ptr) return this->alloc(nMembers, mSize);
+    if (!ptr) return alloc(nMembers, mSize);
 
     auto* pNode = _FreeListNodeFromPtr(ptr);
     s64 nodeSize = (s64)pNode->m_data.getSize() - (s64)sizeof(FreeList::Node);
@@ -371,11 +369,11 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
             assert(pBlock && "[FreeList]: failed to find the block");
 
             pBlock->nBytesOccupied += realSize - pNode->m_data.getSize();
-            this->m_totalAllocated += realSize - pNode->m_data.getSize();
+            m_totalAllocated += realSize - pNode->m_data.getSize();
 
             /* remove next from the free list */
             pNext->setFree(false);
-            this->m_tree.remove(_FreeListNodeFromPtr(pNext->pMem));
+            m_tree.remove(_FreeListNodeFromPtr(pNext->pMem));
 
             /* merge with next */
             pNode->m_data.addSize(pNext->getSize());
@@ -383,7 +381,7 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
             if (pNext->pNext) pNext->pNext->pPrev = &pNode->m_data;
             pNode->m_data.setFree(true);
 
-            this->m_tree.insert(_FreeListNodeFromPtr(ptr), true);
+            m_tree.insert(_FreeListNodeFromPtr(ptr), true);
 
             _FreeListSplitNode(this, pNode, realSize);
 
@@ -392,18 +390,15 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
         }
     }
 
-    auto* pRet = this->alloc(nMembers, mSize);
+    auto* pRet = alloc(nMembers, mSize);
     memcpy(pRet, ptr, nodeSize);
-    this->free(ptr);
+    free(ptr);
 
     return pRet;
 }
 
-inline const AllocatorVTable inl_FreeListVTable = AllocatorVTableGenerate<FreeList>();
-
 inline FreeList::FreeList(u64 _blockSize)
-    : super(&inl_FreeListVTable),
-      m_blockSize(align8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
-      m_pBlocks(_FreeListAllocBlock(this, this->m_blockSize)) {}
+    : m_blockSize(align8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
+      m_pBlocks(_FreeListAllocBlock(this, m_blockSize)) {}
 
 } /* namespace adt */

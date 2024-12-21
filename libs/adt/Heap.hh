@@ -44,7 +44,7 @@ template<typename T>
 inline void
 Heap<T>::destroy(IAllocator* pA)
 {
-    this->m_vec.destroy(pA);
+    m_vec.destroy(pA);
 }
 
 template<typename T>
@@ -54,9 +54,9 @@ Heap<T>::minBubbleUp(u32 i)
 again:
     if (HeapParentI(i) == NPOS) return;
 
-    if (this->m_vec[HeapParentI(i)] > this->m_vec[i])
+    if (m_vec[HeapParentI(i)] > m_vec[i])
     {
-        utils::swap(&this->m_vec[i], &this->m_vec[HeapParentI(i)]);
+        utils::swap(&m_vec[i], &m_vec[HeapParentI(i)]);
         i = HeapParentI(i);
         goto again;
     }
@@ -69,9 +69,9 @@ Heap<T>::maxBubbleUp(u32 i)
 again:
     if (HeapParentI(i) == NPOS) return;
 
-    if (this->m_vec[HeapParentI(i)] < this->m_vec[i])
+    if (m_vec[HeapParentI(i)] < m_vec[i])
     {
-        utils::swap(&this->m_vec[i], &this->m_vec[HeapParentI(i)]);
+        utils::swap(&m_vec[i], &m_vec[HeapParentI(i)]);
         i = HeapParentI(i);
         goto again;
     }
@@ -82,7 +82,7 @@ inline void
 Heap<T>::minBubbleDown(u32 i)
 {
     long smallest, left, right;
-    Vec<T>& a = this->m_vec;
+    Vec<T>& a = m_vec;
 
 again:
     left = HeapLeftI(i);
@@ -108,7 +108,7 @@ inline void
 Heap<T>::maxBubbleDown(u32 i)
 {
     long largest, left, right;
-    VecBase<T>& a = this->m_vec;
+    VecBase<T>& a = m_vec;
 
 again:
     left = HeapLeftI(i);
@@ -133,16 +133,16 @@ template<typename T>
 inline void
 Heap<T>::pushMin(IAllocator* pA, const T& x)
 {
-    this->m_vec.push(pA, x);
-    this->minBubbleUp(this->m_vec.getSize() - 1);
+    m_vec.push(pA, x);
+    minBubbleUp(m_vec.getSize() - 1);
 }
 
 template<typename T>
 inline void
 Heap<T>::pushMax(IAllocator* pA, const T& x)
 {
-    this->m_vec.push(pA, x);
-    this->maxBubbleUp(this->m_vec.getSize() - 1);
+    m_vec.push(pA, x);
+    maxBubbleUp(m_vec.getSize() - 1);
 }
 
 template<typename T>
@@ -178,12 +178,14 @@ template<typename T>
 inline T
 Heap<T>::minExtract()
 {
-    assert(this->m_vec.m_size > 0 && "empty heap");
+    assert(m_vec.m_size > 0 && "empty heap");
 
-    this->m_vec.swapWithLast(0);
+    m_vec.swapWithLast(0);
 
-    T min = *this->m_vec.pop();
-    this->minBubbleDown(0);
+    T min;
+    new(&min) T(*m_vec.pop());
+
+    minBubbleDown(0);
 
     return min;
 }
@@ -193,12 +195,14 @@ template<typename T>
 inline T
 Heap<T>::maxExtract()
 {
-    assert(this->m_vec.m_size > 0 && "empty heap");
+    assert(m_vec.m_size > 0 && "empty heap");
 
-    this->m_vec.swapWithLast(0);
+    m_vec.swapWithLast(0);
 
-    T max = *this->m_vec.pop();
-    this->maxBubbleDown(0);
+    T max;
+    new(&max) T(*m_vec.pop());
+
+    maxBubbleDown(0);
 
     return max;
 }

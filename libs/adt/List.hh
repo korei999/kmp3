@@ -3,6 +3,8 @@
 #include "IAllocator.hh"
 #include "print.hh"
 
+#include <new> /* IWYU pragma: keep */
+
 namespace adt
 {
 
@@ -22,7 +24,7 @@ constexpr ListNode<T>*
 ListNodeAlloc(IAllocator* pA, const T& x)
 {
     auto* pNew = (ListNode<T>*)pA->alloc(1, sizeof(ListNode<T>));
-    pNew->data = x;
+    new(&pNew->data) T(x);
 
     return pNew;
 }

@@ -25,24 +25,15 @@ void subStringSearch();
 
 } /* namespace window */
 
-struct Win
+struct Win : IWindow
 {
-    IWindow super {};
-
-    Win();
-
-    bool start(Arena* pArena) { return window::init(pArena); }
-    void destroy() { window::destroy(); }
-    void draw() { window::draw(); }
-    void procEvents() { window::procEvents(); }
-    void seekFromInput() { window::seekFromInput(); }
-    void subStringSearch() { window::subStringSearch(); }
+    virtual bool start(Arena* pArena) final { return window::init(pArena); }
+    virtual void destroy() final { window::destroy(); }
+    virtual void draw() final { window::draw(); }
+    virtual void procEvents() final { window::procEvents(); }
+    virtual void seekFromInput() final { window::seekFromInput(); }
+    virtual void subStringSearch() final { window::subStringSearch(); }
 };
-
-inline const WindowVTable inl_WinVTable = WindowVTableGenerate<Win>();
-
-inline
-Win::Win() : super(&inl_WinVTable) {}
 
 } /* namespace termbox2 */
 } /* namespace platform */

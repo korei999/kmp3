@@ -31,42 +31,13 @@ constexpr u64 SIZE_8M = 8UL * SIZE_1M;
 constexpr u64 SIZE_1G = SIZE_1M * SIZE_1K; 
 constexpr u64 SIZE_8G = SIZE_1G * SIZE_1K;
 
-struct IAllocator;
-
-/* at least alloc() and free() or freeAll() must be supported */
-struct AllocatorVTable
-{
-    void* (* alloc)(IAllocator* s, u64 mCount, u64 mSize);
-    void* (* zalloc)(IAllocator* s, u64 mCount, u64 mSize);
-    void* (* realloc)(IAllocator* s, void* p, u64 mCount, u64 mSize); /* must alloc if p == nullptr */
-    void (* free)(IAllocator* s, void* p);
-    void (* freeAll)(IAllocator* s);
-};
-
 struct IAllocator
 {
-    const AllocatorVTable* pVTable {};
-
-    /* */
-
-    [[nodiscard]] ADT_NO_UB constexpr void* alloc(u64 mCount, u64 mSize) { return pVTable->alloc(this, mCount, mSize); }
-    [[nodiscard]] ADT_NO_UB constexpr void* zalloc(u64 mCount, u64 mSize) { return pVTable->zalloc(this, mCount, mSize); }
-    [[nodiscard]] ADT_NO_UB constexpr void* realloc(void* p, u64 mCount, u64 mSize) { return pVTable->realloc(this, p, mCount, mSize); }
-    ADT_NO_UB constexpr void free(void* ptr) { pVTable->free(this, ptr); }
-    ADT_NO_UB constexpr void freeAll() { pVTable->freeAll(this); }
+    [[nodiscard]] virtual constexpr void* alloc(u64 mCount, u64 mSize) = 0;
+    [[nodiscard]] virtual constexpr void* zalloc(u64 mCount, u64 mSize) = 0;
+    [[nodiscard]] virtual constexpr void* realloc(void* p, u64 mCount, u64 mSize) = 0;
+    virtual constexpr void free(void* ptr) = 0;
+    virtual constexpr void freeAll() = 0;
 };
-
-template<typename ALLOC_T>
-constexpr AllocatorVTable
-AllocatorVTableGenerate()
-{
-    return AllocatorVTable {
-        .alloc = decltype(AllocatorVTable::alloc)(methodPointer(&ALLOC_T::alloc)),
-        .zalloc = decltype(AllocatorVTable::zalloc)(methodPointer(&ALLOC_T::zalloc)),
-        .realloc = decltype(AllocatorVTable::realloc)(methodPointer(&ALLOC_T::realloc)),
-        .free = decltype(AllocatorVTable::free)(methodPointer(&ALLOC_T::free)),
-        .freeAll = decltype(AllocatorVTable::freeAll)(methodPointer(&ALLOC_T::freeAll)),
-    };
-}
 
 } /* namespace adt */

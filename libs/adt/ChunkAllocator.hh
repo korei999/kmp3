@@ -24,12 +24,8 @@ struct ChunkAllocatorBlock
     u8 pMem[];
 };
 
-struct ChunkAllocator
+struct ChunkAllocator : IAllocator
 {
-    IAllocator super {};
-
-    /* */
-
     u64 m_blockCap = 0; 
     u64 m_chunkSize = 0;
     ChunkAllocatorBlock* m_pBlocks = nullptr;
@@ -41,11 +37,11 @@ struct ChunkAllocator
 
     /* */
 
-    [[nodiscard]] void* alloc(u64 mCount, u64 mSize);
-    [[nodiscard]] void* zalloc(u64 mCount, u64 mSize);
-    [[nodiscard]] void* realloc(void* ptr, u64 mCount, u64 mSize);
-    void free(void* ptr);
-    void freeAll();
+    [[nodiscard]] virtual void* alloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
+    void virtual free(void* ptr) override final;
+    void virtual freeAll() override final;
 };
 
 inline ChunkAllocatorBlock*
@@ -149,12 +145,9 @@ ChunkAllocator::freeAll()
     m_pBlocks = nullptr;
 }
 
-inline const AllocatorVTable inl_ChunkAllocatorVTable = AllocatorVTableGenerate<ChunkAllocator>();
-
 inline
 ChunkAllocator::ChunkAllocator(u64 chunkSize, u64 blockSize)
-    : super {&inl_ChunkAllocatorVTable},
-      m_blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
+    : m_blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
       m_chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
       m_pBlocks {_ChunkAllocatorNewBlock(this)} {}
 

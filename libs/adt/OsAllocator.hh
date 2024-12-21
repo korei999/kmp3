@@ -10,25 +10,20 @@ namespace adt
 
 /* default os allocator (aka malloc() / calloc() / realloc() / free()).
  * freeAll() method is not supported. */
-struct OsAllocator
+struct OsAllocator : IAllocator
 {
-    IAllocator super {};
-
-    OsAllocator([[maybe_unused]] u64 _ingnored = 0);
-
-    [[nodiscard]] void* alloc(u64 mCount, u64 mSize);
-    [[nodiscard]] void* zalloc(u64 mCount, u64 mSize);
-    [[nodiscard]] void* realloc(void* ptr, u64 mCount, u64 mSize);
-    void free(void* ptr);
-    void freeAll(); /* assert(false) */
-    void reset();
+    [[nodiscard]] virtual void* alloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
+    void virtual free(void* ptr) override final;
+    void virtual freeAll() override final; /* assert(false) */
 };
 
 inline IAllocator*
 OsAllocatorGet()
 {
     static OsAllocator alloc {};
-    return &alloc.super;
+    return &alloc;
 }
 
 inline void*
@@ -66,9 +61,5 @@ OsAllocator::freeAll()
 {
     assert(false && "[OsAllocator]: no 'freeAll()' method");
 }
-
-inline const AllocatorVTable inl_OsAllocatorVTable = AllocatorVTableGenerate<OsAllocator>();
-
-inline OsAllocator::OsAllocator(u64) : super(&inl_OsAllocatorVTable) {}
 
 } /* namespace adt */

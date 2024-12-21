@@ -166,8 +166,8 @@ _ThreadPoolLoop(void* p)
 {
     auto* s = (ThreadPool*)p;
 
-    atomic_fetch_add_explicit(&s->nActiveThreadsInLoop, 1, memory_order_relaxed);
-    defer( atomic_fetch_sub_explicit(&s->nActiveThreadsInLoop, 1, memory_order_relaxed) );
+    s->nActiveThreadsInLoop.fetch_add(1, memory_order_relaxed);
+    defer( s->nActiveThreadsInLoop.fetch_sub(1, memory_order_relaxed) );
 
     while (!s->bDone)
     {
@@ -182,16 +182,16 @@ _ThreadPoolLoop(void* p)
 
             task = *s->qTasks.popFront();
             /* increment before unlocking mtxQ to avoid 0 tasks and 0 q possibility */
-            atomic_fetch_add_explicit(&s->nActiveTasks, 1, memory_order_relaxed);
+            s->nActiveTasks.fetch_add(1, memory_order_relaxed);
         }
 
         task.pfn(task.pArgs);
-        atomic_fetch_sub_explicit(&s->nActiveTasks, 1, memory_order_relaxed);
+        s->nActiveTasks.fetch_sub(1, memory_order_relaxed);
 
         if (task.eWait == WAIT_FLAG::WAIT)
         {
             /* keep signaling until it's truly awakened */
-            while (atomic_load_explicit(&task.pLock->bSignaled, memory_order_relaxed) == false)
+            while (task.pLock->bSignaled.load(memory_order_relaxed) == false)
                 cnd_signal(&task.pLock->cnd);
         }
 

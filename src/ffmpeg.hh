@@ -23,12 +23,26 @@ using namespace adt;
 namespace ffmpeg
 {
 
-struct Reader
+struct Reader : audio::IReader
 {
-    audio::IReader super {};
+    [[nodiscard]] virtual audio::ERROR writeToBuffer(
+        f32* pBuff, const u32 buffSize, const u32 nFrames, const u32 nChannles,
+        long* pSamplesWritten, u64* pPcmPos
+    ) override final;
+
+    [[nodiscard]] virtual u32 getSampleRate() override final;
+    virtual void seekMS(long ms) override final;
+    [[nodiscard]] virtual long getCurrentSamplePos() override final;
+    [[nodiscard]] virtual long getTotalSamplesCount() override final;
+    [[nodiscard]] virtual int getChannelsCount() override final;
+    [[nodiscard]] virtual Opt<String> getMetadataValue(const String sKey) override final;
+    [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
+    [[nodiscard]] virtual audio::ERROR open(String sPath) override final;
+    virtual void close() override final;
 
     /* */
 
+private:
     AVStream* m_pStream {};
     AVFormatContext* m_pFormatCtx {};
     AVCodecContext* m_pCodecCtx {};
@@ -45,35 +59,8 @@ struct Reader
     AVFrame* m_pConverted {};
 #endif
 
-    /* */
-
-    Reader() = default;
-    Reader(INIT_FLAG eFlag);
-
-    /* */
-
-    [[nodiscard]] audio::ERROR writeToBuffer(
-        f32* pBuff, const u32 buffSize, const u32 nFrames, const u32 nChannles,
-        long* pSamplesWritten, u64* pPcmPos
-    );
-
-    [[nodiscard]] u32 getSampleRate();
-    void seekMS(long ms);
-    [[nodiscard]] long getCurrentSamplePos();
-    [[nodiscard]] long getTotalSamplesCount();
-    [[nodiscard]] int getChannelsCount();
-    [[nodiscard]] Opt<String> getMetadataValue(const String sKey);
-    [[nodiscard]] Opt<Image> getCoverImage();
-    [[nodiscard]] audio::ERROR open(String sPath);
-    void close();
+    void getAttachedPicture();
+    void seekFrame(u64 frame);
 };
-
-inline const audio::ReaderVTable inl_ReaderVTable = audio::ReaderVTableGenerate<Reader>();
-
-inline
-Reader::Reader(INIT_FLAG eFlag)
-{
-    if (eFlag == INIT_FLAG::INIT) super = {&inl_ReaderVTable};
-}
 
 } /* namespace ffmpeg */

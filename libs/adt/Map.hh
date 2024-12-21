@@ -264,11 +264,13 @@ MapBase<K, V>::insertHashed(const K& key, const V& val, u64 keyHash)
             idx = 0;
     }
 
-    this->m_aBuckets[idx].key = key;
-    this->m_aBuckets[idx].val = val;
-    this->m_aBuckets[idx].bOccupied = true;
-    this->m_aBuckets[idx].bDeleted = false;
-    ++this->m_nOccupied;
+    new(&m_aBuckets[idx].key) K(key);
+    new(&m_aBuckets[idx].val) V(val);
+
+    m_aBuckets[idx].bOccupied = true;
+    m_aBuckets[idx].bDeleted = false;
+
+    ++m_nOccupied;
 
     return {
         .pData = &this->m_aBuckets[idx],

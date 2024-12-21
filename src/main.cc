@@ -63,7 +63,7 @@ main(int argc, char** argv)
         }
     }
 
-    Vec<String> aInput(&freeList.super, argc);
+    Vec<String> aInput(&freeList, argc);
     if (argc < 2) /* use stdin instead */
     {
         int flags = fcntl(0, F_GETFL, 0);
@@ -75,7 +75,7 @@ main(int argc, char** argv)
 
         while ((nread = getline(&line, &len, stdin)) != -1)
         {
-            String s = StringAlloc(&freeList.super, line, nread);
+            String s = StringAlloc(&freeList, line, nread);
             s.removeNLEnd();
             aInput.push(s);
         }
@@ -94,9 +94,9 @@ main(int argc, char** argv)
     app::g_argv = argv;
 
     for (int i = 0; i < argc; ++i)
-        app::g_aArgs.push(&freeList.super, {app::g_argv[i]});
+        app::g_aArgs.push(&freeList, {app::g_argv[i]});
 
-    Player player(&freeList.super, argc, argv);
+    Player player(&freeList, argc, argv);
     app::g_pPlayer = &player;
     defer( player.destroy() );
 
@@ -119,12 +119,12 @@ main(int argc, char** argv)
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
-    platform::pipewire::Mixer mixer(&freeList.super);
+    platform::pipewire::Mixer mixer(&freeList);
     mixer.init();
     defer( mixer.destroy() );
 
-    mixer.super.m_volume = defaults::VOLUME;
-    app::g_pMixer = &mixer.super;
+    mixer.m_volume = defaults::VOLUME;
+    app::g_pMixer = &mixer;
 
 #ifdef USE_MPRIS
     mpris::initLocks();

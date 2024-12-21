@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <initializer_list>
+#include <new> /* IWYU pragma: keep */
 
 namespace adt
 {
@@ -65,50 +66,51 @@ struct Arr
         friend constexpr bool operator!=(const It& l, const It& r) { return l.s != r.s; }
     };
 
-    constexpr It begin() { return {&this->m_aData[0]}; }
-    constexpr It end() { return {&this->m_aData[this->m_size]}; }
-    constexpr It rbegin() { return {&this->m_aData[this->m_size - 1]}; }
-    constexpr It rend() { return {this->m_aData - 1}; }
+    constexpr It begin() { return {&m_aData[0]}; }
+    constexpr It end() { return {&m_aData[m_size]}; }
+    constexpr It rbegin() { return {&m_aData[m_size - 1]}; }
+    constexpr It rend() { return {m_aData - 1}; }
 
-    constexpr const It begin() const { return {&this->m_aData[0]}; }
-    constexpr const It end() const { return {&this->m_aData[this->m_size]}; }
-    constexpr const It rbegin() const { return {&this->m_aData[this->m_size - 1]}; }
-    constexpr const It rend() const { return {this->m_aData - 1}; }
+    constexpr const It begin() const { return {&m_aData[0]}; }
+    constexpr const It end() const { return {&m_aData[m_size]}; }
+    constexpr const It rbegin() const { return {&m_aData[m_size - 1]}; }
+    constexpr const It rend() const { return {m_aData - 1}; }
 };
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr u32
 Arr<T, CAP>::push(const T& x)
 {
-    assert(this->getSize() < CAP && "[Arr]: pushing over capacity");
+    assert(getSize() < CAP && "[Arr]: pushing over capacity");
 
-    this->m_aData[this->m_size++] = x;
-    return this->m_size - 1;
+    new(m_aData + m_size++) T(x);
+
+    return m_size - 1;
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr u32
 Arr<T, CAP>::fakePush()
 {
-    assert(this->m_size < CAP && "[Arr]: fake push over capacity");
-    ++this->m_size;
-    return this->m_size - 1;
+    assert(m_size < CAP && "[Arr]: fake push over capacity");
+    ++m_size;
+    return m_size - 1;
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr T*
 Arr<T, CAP>::pop()
 {
-    assert(this->m_size > 0 && "[Arr]: pop from empty");
-    return &this->m_aData[--this->m_size];
+    assert(m_size > 0 && "[Arr]: pop from empty");
+    return &m_aData[--m_size];
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr void
 Arr<T, CAP>::fakePop()
 {
-    assert(this->m_size > 0 && "[Arr]: pop from empty");
-    --this->m_size;
+    assert(m_size > 0 && "[Arr]: pop from empty");
+    --m_size;
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
@@ -122,7 +124,7 @@ template<typename T, u32 CAP> requires(CAP > 0)
 constexpr u32
 Arr<T, CAP>::getSize() const
 {
-    return this->m_size;
+    return m_size;
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
@@ -130,15 +132,15 @@ constexpr void
 Arr<T, CAP>::setSize(u32 newSize)
 {
     assert(newSize <= CAP && "[Arr]: cannot enlarge static array");
-    this->m_size = newSize;
+    m_size = newSize;
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr u32
 Arr<T, CAP>::idx(const T* p)
 {
-    u32 r = u32(p - this->m_aData);
-    assert(r < this->getCap());
+    u32 r = u32(p - m_aData);
+    assert(r < getCap());
     return r;
 }
 
@@ -146,34 +148,34 @@ template<typename T, u32 CAP> requires(CAP > 0)
 constexpr T&
 Arr<T, CAP>::first()
 {
-    return this->operator[](0);
+    return operator[](0);
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr const T&
 Arr<T, CAP>::first() const
 {
-    return this->operator[](0);
+    return operator[](0);
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr T&
 Arr<T, CAP>::last()
 {
-    return this->operator[](this->m_size - 1);
+    return operator[](m_size - 1);
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr const T&
 Arr<T, CAP>::last() const
 {
-    return this->operator[](this->m_size - 1);
+    return operator[](m_size - 1);
 }
 
 template<typename T, u32 CAP> requires(CAP > 0)
 constexpr Arr<T, CAP>::Arr(std::initializer_list<T> list)
 {
-    for (auto& e : list) this->push(e);
+    for (auto& e : list) push(e);
 }
 
 namespace sort

@@ -87,15 +87,15 @@ struct String
         friend constexpr bool operator!=(It l, It r) { return l.p != r.p; }
     };
 
-    constexpr It begin() { return {&this->m_pData[0]}; }
-    constexpr It end() { return {&this->m_pData[this->m_size]}; }
-    constexpr It rbegin() { return {&this->m_pData[this->m_size - 1]}; }
-    constexpr It rend() { return {this->m_pData - 1}; }
+    constexpr It begin() { return {&m_pData[0]}; }
+    constexpr It end() { return {&m_pData[m_size]}; }
+    constexpr It rbegin() { return {&m_pData[m_size - 1]}; }
+    constexpr It rend() { return {m_pData - 1}; }
 
-    constexpr const It begin() const { return {&this->m_pData[0]}; }
-    constexpr const It end() const { return {&this->m_pData[this->m_size]}; }
-    constexpr const It rbegin() const { return {&this->m_pData[this->m_size - 1]}; }
-    constexpr const It rend() const { return {this->m_pData - 1}; }
+    constexpr const It begin() const { return {&m_pData[0]}; }
+    constexpr const It end() const { return {&m_pData[m_size]}; }
+    constexpr const It rbegin() const { return {&m_pData[m_size - 1]}; }
+    constexpr const It rend() const { return {m_pData - 1}; }
 };
 
 constexpr bool
@@ -309,7 +309,7 @@ StringAlloc(IAllocator* p, const String s)
 inline void
 String::destroy(IAllocator* p)
 {
-    p->free(this->m_pData);
+    p->free(m_pData);
     *this = {};
 }
 
@@ -334,18 +334,18 @@ inline void
 String::trimEnd()
 {
     auto isWhiteSpace = [&](int i) -> bool {
-        char c = this->m_pData[i];
+        char c = m_pData[i];
         if (c == '\n' || c == ' ' || c == '\r' || c == '\t' || c == '\0')
             return true;
 
         return false;
     };
 
-    for (int i = this->m_size - 1; i >= 0; --i)
+    for (int i = m_size - 1; i >= 0; --i)
         if (isWhiteSpace(i))
         {
-            this->m_pData[i] = 0;
-            --this->m_size;
+            m_pData[i] = 0;
+            --m_size;
         }
         else break;
 }
@@ -360,17 +360,17 @@ String::removeNLEnd()
         return false;
     };
 
-    u64 pos = this->m_size - 1;
-    while (this->m_size > 0 && oneOf((*this)[pos]))
-        this->m_pData[--this->m_size] = '\0';
+    u64 pos = m_size - 1;
+    while (m_size > 0 && oneOf((*this)[pos]))
+        m_pData[--m_size] = '\0';
 }
 
 inline bool
 String::contains(const String r) const
 {
-    if (this->m_size < r.m_size || this->m_size == 0 || r.m_size == 0) return false;
+    if (m_size < r.m_size || m_size == 0 || r.m_size == 0) return false;
 
-    for (u32 i = 0; i < this->m_size - r.m_size + 1; ++i)
+    for (u32 i = 0; i < m_size - r.m_size + 1; ++i)
     {
         const String sSub {const_cast<char*>(&(*this)[i]), r.m_size};
         if (sSub == r) return true;

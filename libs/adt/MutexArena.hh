@@ -7,12 +7,9 @@
 namespace adt
 {
 
-struct MutexArena
+struct MutexArena : IAllocator
 {
-    Arena base {};
-
-    /* */
-
+    Arena m_arena {};
     mtx_t m_mtx {};
 
     /* */
@@ -22,18 +19,18 @@ struct MutexArena
 
     /* */
 
-    [[nodiscard]] void* alloc(u64 mCount, u64 mSize);
-    [[nodiscard]] void* zalloc(u64 mCount, u64 mSize);
-    [[nodiscard]] void* realloc(void* ptr, u64 mCount, u64 mSize);
-    void free(void* ptr);
-    void freeAll();
+    [[nodiscard]] virtual void* alloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
+    virtual void free(void* ptr) override final;
+    virtual void freeAll() override final;
 };
 
 inline void*
 MutexArena::alloc(u64 mCount, u64 mSize)
 {
     mtx_lock(&m_mtx);
-    auto* r = base.zalloc(mCount, mSize);
+    auto* r = m_arena.alloc(mCount, mSize);
     mtx_unlock(&m_mtx);
 
     return r;
@@ -43,7 +40,7 @@ inline void*
 MutexArena::zalloc(u64 mCount, u64 mSize)
 {
     mtx_lock(&m_mtx);
-    auto* r = base.zalloc(mCount, mSize);
+    auto* r = m_arena.zalloc(mCount, mSize);
     mtx_unlock(&m_mtx);
 
     return r;
@@ -53,7 +50,7 @@ inline void*
 MutexArena::realloc(void* p, u64 mCount, u64 mSize)
 {
     mtx_lock(&m_mtx);
-    auto* r = base.realloc(p, mCount, mSize);
+    auto* r = m_arena.realloc(p, mCount, mSize);
     mtx_unlock(&m_mtx);
 
     return r;
@@ -68,17 +65,14 @@ MutexArena::free(void*)
 inline void
 MutexArena::freeAll()
 {
-    base.freeAll();
+    m_arena.freeAll();
     mtx_destroy(&m_mtx);
 }
 
-inline const AllocatorVTable inl_AtomicArenaAllocatorVTable = AllocatorVTableGenerate<MutexArena>();
-
 inline
 MutexArena::MutexArena(u32 blockCap)
-    : base(blockCap)
+    : m_arena(blockCap)
 {
-    base.super = {&inl_AtomicArenaAllocatorVTable};
     mtx_init(&m_mtx, mtx_plain);
 }
 

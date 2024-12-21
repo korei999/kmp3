@@ -112,7 +112,7 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
     for (u32 i = 0; i < size && i < aUpperRight.getCap() && pBuff[i]; ++i)
         aUpperRight.push(wchar_t(towupper(pBuff[i])));
 
-    Vec<wchar_t> aSongToUpper(&pAlloc->super, m_longestStringSize + 1);
+    Vec<wchar_t> aSongToUpper(pAlloc, m_longestStringSize + 1);
     aSongToUpper.setSize(m_longestStringSize + 1);
 
     m_aSongIdxs.setSize(m_pAlloc, 0);

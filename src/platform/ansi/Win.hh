@@ -14,9 +14,8 @@ namespace ansi
 
 extern TermSize g_termSize;
 
-struct Win
+struct Win : IWindow
 {
-    IWindow super {};
     Arena* pArena {};
     TextBuff textBuff {};
     termios termOg {};
@@ -28,20 +27,15 @@ struct Win
     f64 time {};
     f64 lastResizeTime {};
 
-    Win();
+    /* */
 
-    bool start(Arena* pArena);
-    void destroy();
-    void draw();
-    void procEvents();
-    void seekFromInput();
-    void subStringSearch();
+    virtual bool start(Arena* pArena) final;
+    virtual void destroy() final;
+    virtual void draw() final;
+    virtual void procEvents() final;
+    virtual void seekFromInput() final;
+    virtual void subStringSearch() final;
 };
-
-inline const WindowVTable inl_WinWindowVTable = WindowVTableGenerate<Win>();
-
-inline
-Win::Win() : super(&inl_WinWindowVTable) {}
 
 } /* namespace ansi */
 } /* namespace platform */

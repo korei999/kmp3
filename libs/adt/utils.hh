@@ -43,8 +43,8 @@ template<typename T>
 constexpr void
 swap(T* l, T* r)
 {
-    auto t0 = *l;
-    auto t1 = *r;
+    T t0 = *l;
+    T t1 = *r;
     *l = t1;
     *r = t0;
 }

@@ -87,11 +87,11 @@ formatByteSize(enum spa_audio_format eFormat)
 void
 Mixer::init()
 {
-    super.m_bRunning = true;
-    super.m_bMuted = false;
-    super.m_volume = 0.1f;
+    m_bRunning = true;
+    m_bMuted = false;
+    m_volume = 0.1f;
 
-    super.m_sampleRate = 48000;
+    m_sampleRate = 48000;
     m_nChannels = 2;
     m_eformat = SPA_AUDIO_FORMAT_F32;
 
@@ -111,7 +111,7 @@ Mixer::destroy()
     pw_thread_loop_stop(m_pThrdLoop);
     LOG_NOTIFY("pw_thread_loop_stop()\n");
 
-    super.m_bRunning = false;
+    m_bRunning = false;
 
     if (m_bDecodes) m_pIReader->close();
 
@@ -126,7 +126,7 @@ Mixer::destroy()
 void
 Mixer::play(String sPath)
 {
-    const f64 prevSpeed = f64(super.m_changedSampleRate) / f64(super.m_sampleRate);
+    const f64 prevSpeed = f64(m_changedSampleRate) / f64(m_sampleRate);
 
     pause(true);
 
@@ -149,15 +149,15 @@ Mixer::play(String sPath)
         m_bDecodes = true;
     }
 
-    super.m_nChannels = m_pIReader->getChannelsCount();
+    m_nChannels = m_pIReader->getChannelsCount();
     changeSampleRate(m_pIReader->getSampleRate(), true);
 
     if (!math::eq(prevSpeed, 1.0))
-        changeSampleRate(f64(super.m_sampleRate) * prevSpeed, false);
+        changeSampleRate(f64(m_sampleRate) * prevSpeed, false);
 
     pause(false);
 
-    super.m_bUpdateMpris = true; /* mark to update in frame::run() */
+    m_bUpdateMpris = true; /* mark to update in frame::run() */
 }
 
 static void
@@ -188,7 +188,7 @@ runThread(Mixer* s, int argc, char** argv)
     spa_audio_info_raw rawInfo {
         .format = s->m_eformat,
         .flags {},
-        .rate = s->super.m_sampleRate,
+        .rate = s->m_sampleRate,
         .channels = s->m_nChannels,
         .position {}
     };
@@ -264,7 +264,7 @@ onProcess(void* pData)
     static long nDecodedSamples = 0;
     static long nWrites = 0;
 
-    f32 vol = s->super.m_bMuted ? 0.0f : std::pow(s->super.m_volume, 3);
+    f32 vol = s->m_bMuted ? 0.0f : std::pow(s->m_volume, 3);
 
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
@@ -277,19 +277,19 @@ onProcess(void* pData)
         if (nWrites >= nDecodedSamples)
         {
             /* ask to fill the buffer when it's empty */
-            writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples, &s->super.m_currentTimeStamp);
+            writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples, &s->m_currentTimeStamp);
             nWrites = 0;
         }
     }
 
     if (nDecodedSamples == 0)
     {
-        s->super.m_currentTimeStamp = 0;
-        s->super.m_totalSamplesCount = 0;
+        s->m_currentTimeStamp = 0;
+        s->m_totalSamplesCount = 0;
     }
     else
     {
-        s->super.m_totalSamplesCount = s->m_pIReader->getTotalSamplesCount();
+        s->m_totalSamplesCount = s->m_pIReader->getTotalSamplesCount();
     }
 
     pBuffData.chunk->offset = 0;
@@ -304,16 +304,16 @@ Mixer::pause(bool bPause)
 {
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_set_active(m_pStream, !bPause);
-    super.m_bPaused = bPause;
+    m_bPaused = bPause;
 
-    LOG_NOTIFY("bPaused: {}\n", super.m_bPaused);
+    LOG_NOTIFY("bPaused: {}\n", m_bPaused);
     mpris::playbackStatusChanged();
 }
 
 void
 Mixer::togglePause()
 {
-    pause(!super.m_bPaused);
+    pause(!m_bPaused);
 }
 
 void
@@ -339,12 +339,12 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_update_params(m_pStream, aParams, utils::size(aParams));
     /* update won't apply without this */
-    pw_stream_set_active(m_pStream, super.m_bPaused);
-    pw_stream_set_active(m_pStream, !super.m_bPaused);
+    pw_stream_set_active(m_pStream, m_bPaused);
+    pw_stream_set_active(m_pStream, !m_bPaused);
 
-    if (bSave) super.m_sampleRate = sampleRate;
+    if (bSave) m_sampleRate = sampleRate;
 
-    super.m_changedSampleRate = sampleRate;
+    m_changedSampleRate = sampleRate;
 }
 
 void
@@ -353,12 +353,12 @@ Mixer::seekMS(s64 ms)
     guard::Mtx lock(&m_mtxDecoder);
     if (!m_bDecodes) return;
 
-    s64 maxMs = super.getMaxMS();
+    s64 maxMs = getMaxMS();
     ms = utils::clamp(ms, 0LL, maxMs);
     m_pIReader->seekMS(ms);
 
-    super.m_currentTimeStamp = f64(ms)/1000.0 * super.m_sampleRate * super.m_nChannels;
-    super.m_totalSamplesCount = m_pIReader->getTotalSamplesCount();
+    m_currentTimeStamp = f64(ms)/1000.0 * m_sampleRate * m_nChannels;
+    m_totalSamplesCount = m_pIReader->getTotalSamplesCount();
 
     mpris::seeked();
 }
@@ -366,14 +366,14 @@ Mixer::seekMS(s64 ms)
 void
 Mixer::seekLeftMS(s64 ms)
 {
-    u64 currMs = super.getCurrentMS();
+    u64 currMs = getCurrentMS();
     seekMS(currMs - ms);
 }
 
 void
 Mixer::seekRightMS(s64 ms)
 {
-    u64 currMs = super.getCurrentMS();
+    u64 currMs = getCurrentMS();
     seekMS(currMs + ms);
 }
 
@@ -392,7 +392,7 @@ Mixer::getCoverImage()
 void
 Mixer::setVolume(const f32 volume)
 {
-    super.m_volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
+    m_volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
     mpris::volumeChanged();
 }
 

@@ -37,7 +37,6 @@ Reader::close()
     LOG_NOTIFY("close()\n");
 
     *this = {};
-    super = {&inl_ReaderVTable};
 }
 
 Opt<String>
@@ -59,15 +58,15 @@ Reader::getMetadataValue(const String sKey)
 }
 
 #ifdef USE_CHAFA
-static void
-getAttachedPicture(Reader* s)
+void
+Reader::getAttachedPicture()
 {
     int err = 0;
     AVStream* pStream {};
 
-    for (u32 i = 0; i < s->m_pFormatCtx->nb_streams; ++i)
+    for (u32 i = 0; i < m_pFormatCtx->nb_streams; ++i)
     {
-        auto* itStream = s->m_pFormatCtx->streams[i];
+        auto* itStream = m_pFormatCtx->streams[i];
         if (itStream->disposition & AV_DISPOSITION_ATTACHED_PIC)
         {
             LOG_WARN("Found 'attached_pic'\n");
@@ -95,44 +94,44 @@ getAttachedPicture(Reader* s)
 
     LOG_WARN("codec name: '{}'\n", pCodec->long_name);
 
-    s->m_pImgPacket = av_packet_alloc();
-    err = av_read_frame(s->m_pFormatCtx, s->m_pImgPacket);
+    m_pImgPacket = av_packet_alloc();
+    err = av_read_frame(m_pFormatCtx, m_pImgPacket);
     if (err != 0) return;
 
-    err = avcodec_send_packet(pCodecCtx, s->m_pImgPacket);
+    err = avcodec_send_packet(pCodecCtx, m_pImgPacket);
     if (err != 0) return;
 
-    s->m_pImgFrame = av_frame_alloc();
-    err = avcodec_receive_frame(pCodecCtx, s->m_pImgFrame);
+    m_pImgFrame = av_frame_alloc();
+    err = avcodec_receive_frame(pCodecCtx, m_pImgFrame);
     if (err == AVERROR(EINVAL))
         LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
 
-    s->m_pSwsCtx = sws_getContext(
-        s->m_pImgFrame->width, s->m_pImgFrame->height, (AVPixelFormat)s->m_pImgFrame->format,
-        s->m_pImgFrame->width, s->m_pImgFrame->height, AV_PIX_FMT_RGB24,
+    m_pSwsCtx = sws_getContext(
+        m_pImgFrame->width, m_pImgFrame->height, (AVPixelFormat)m_pImgFrame->format,
+        m_pImgFrame->width, m_pImgFrame->height, AV_PIX_FMT_RGB24,
         SWS_BILINEAR, {}, {}, {}
     );
 
-    s->m_pConverted = av_frame_alloc();
-    s->m_pConverted->format = AV_PIX_FMT_RGB24;
-    s->m_pConverted->width = s->m_pImgFrame->width;
-    s->m_pConverted->height = s->m_pImgFrame->height;
+    m_pConverted = av_frame_alloc();
+    m_pConverted->format = AV_PIX_FMT_RGB24;
+    m_pConverted->width = m_pImgFrame->width;
+    m_pConverted->height = m_pImgFrame->height;
 
-    err = av_frame_get_buffer(s->m_pConverted, 0);
+    err = av_frame_get_buffer(m_pConverted, 0);
     if (err != 0) { LOG_BAD("av_frame_get_buffer()\n"); return; }
 
-    sws_scale(s->m_pSwsCtx,
-        s->m_pImgFrame->data, s->m_pImgFrame->linesize, 0, s->m_pImgFrame->height,
-        s->m_pConverted->data, s->m_pConverted->linesize
+    sws_scale(m_pSwsCtx,
+        m_pImgFrame->data, m_pImgFrame->linesize, 0, m_pImgFrame->height,
+        m_pConverted->data, m_pConverted->linesize
     );
 
-    LOG_WARN("width: {}, height: {}, format: {}\n", s->m_pImgFrame->width, s->m_pImgFrame->height, s->m_pImgFrame->format);
+    LOG_WARN("width: {}, height: {}, format: {}\n", m_pImgFrame->width, m_pImgFrame->height, m_pImgFrame->format);
 
-    s->m_oCoverImg = Image {
-        .pBuff = s->m_pConverted->data[0],
-        .width = u32(s->m_pConverted->width),
-        .height = u32(s->m_pConverted->height),
-        .eFormat = covertFormat(s->m_pConverted->format)
+    m_oCoverImg = Image {
+        .pBuff = m_pConverted->data[0],
+        .width = u32(m_pConverted->width),
+        .height = u32(m_pConverted->height),
+        .eFormat = covertFormat(m_pConverted->format)
     };
 }
 #else
@@ -189,7 +188,7 @@ Reader::open(String sPath)
 
     LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
 
-    getAttachedPicture(this);
+    getAttachedPicture();
 
     return audio::ERROR::OK_;
 }
@@ -293,11 +292,11 @@ Reader::getSampleRate()
     return m_pStream->codecpar->sample_rate;
 }
 
-static void
-seekFrame(Reader* s, u64 frame)
+void
+Reader::seekFrame(u64 frame)
 {
-    avcodec_flush_buffers(s->m_pCodecCtx);
-    avformat_seek_file(s->m_pFormatCtx, s->m_pStream->index, 0, frame, frame, AVSEEK_FLAG_BACKWARD);
+    avcodec_flush_buffers(m_pCodecCtx);
+    avformat_seek_file(m_pFormatCtx, m_pStream->index, 0, frame, frame, AVSEEK_FLAG_BACKWARD);
 }
 
 void
@@ -305,7 +304,7 @@ Reader::seekMS(long ms)
 {
     auto frameNumber = av_rescale(ms, m_pStream->time_base.den, m_pStream->time_base.num);
     frameNumber /= 1000;
-    seekFrame(this, frameNumber);
+    seekFrame(frameNumber);
 }
 
 long

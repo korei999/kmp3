@@ -34,17 +34,17 @@ allocWindow(IAllocator* pAlloc)
     {
         case UI_FRONTEND::ANSI:
         {
-            auto* pAnsiWin = (platform::ansi::Win*)pAlloc->alloc(1, sizeof(platform::ansi::Win));
-            *pAnsiWin = platform::ansi::Win();
-            pRet = &pAnsiWin->super;
+            auto* pAnsiWin = (platform::ansi::Win*)pAlloc->zalloc(1, sizeof(platform::ansi::Win));
+            new(pAnsiWin) platform::ansi::Win();
+            pRet = pAnsiWin;
         }
         break;
 
         case UI_FRONTEND::TERMBOX:
         {
-            auto* pTermboxWin = (platform::termbox2::Win*)pAlloc->alloc(1, sizeof(platform::termbox2::Win));
-            *pTermboxWin = platform::termbox2::Win();
-            pRet = &pTermboxWin->super;
+            auto* pTermboxWin = (platform::termbox2::Win*)pAlloc->zalloc(1, sizeof(platform::termbox2::Win));
+            new(pTermboxWin) platform::termbox2::Win();
+            pRet = pTermboxWin;
         }
         break;
 

@@ -4,6 +4,7 @@
 #include "print.hh"
 
 #include <cassert>
+#include <new> /* IWYU pragma: keep */
 
 namespace adt
 {
@@ -111,7 +112,9 @@ QueueBase<T>::pushFront(IAllocator* p, const T& val)
 
     int i = m_first;
     int ni = prevI(i);
-    m_pData[ni] = val;
+
+    new(m_pData + ni) T(val);
+
     m_first = ni;
     m_size++;
 
@@ -126,7 +129,9 @@ QueueBase<T>::pushBack(IAllocator* p, const T& val)
 
     int i = m_last;
     int ni = nextI(i);
-    m_pData[i] = val;
+
+    new(m_pData + i) T(val);
+
     m_last = ni;
     m_size++;
 

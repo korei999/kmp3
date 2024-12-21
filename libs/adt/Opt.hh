@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <new> /* IWYU pragma: keep */
 
 namespace adt
 {

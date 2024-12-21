@@ -39,7 +39,7 @@ struct Pool
         if (e != INIT_FLAG::INIT) return;
 
         mtx_init(&m_mtx, mtx_plain);
-        for (auto& e : this->m_aNodes) e.bDeleted = true;
+        for (auto& e : m_aNodes) e.bDeleted = true;
     }
 
     /* */
@@ -104,39 +104,39 @@ struct Pool
         friend bool operator!=(It l, It r) { return l.i != r.i; }
     };
 
-    It begin() { return {this, this->firstI()}; }
-    It end() { return {this, this->m_aNodes.m_size == 0 ? -1 : this->lastI() + 1}; }
-    It rbegin() { return {this, PoolLastIdx(this)}; }
-    It rend() { return {this, this->m_aNodes.m_size == 0 ? -1 : this->firstI() - 1}; }
+    It begin() { return {this, firstI()}; }
+    It end() { return {this, m_aNodes.m_size == 0 ? -1 : lastI() + 1}; }
+    It rbegin() { return {this, lastI()}; }
+    It rend() { return {this, m_aNodes.m_size == 0 ? -1 : firstI() - 1}; }
 
-    const It begin() const { return {this, this->firstI()}; }
-    const It end() const { return {this, this->m_aNodes.m_size == 0 ? -1 : this->lastI() + 1}; }
-    const It rbegin() const { return {this, PoolLastIdx(this)}; }
-    const It rend() const { return {this, this->m_aNodes.m_size == 0 ? -1 : this->firstI() - 1}; }
+    const It begin() const { return {this, firstI()}; }
+    const It end() const { return {this, m_aNodes.m_size == 0 ? -1 : lastI() + 1}; }
+    const It rbegin() const { return {this, lastI()}; }
+    const It rend() const { return {this, m_aNodes.m_size == 0 ? -1 : firstI() - 1}; }
 };
 
 template<typename T, u32 CAP>
 inline s64
 Pool<T, CAP>::firstI() const
 {
-    if (this->m_aNodes.m_size == 0) return -1;
+    if (m_aNodes.m_size == 0) return -1;
 
-    for (u32 i = 0; i < this->m_aNodes.m_size; ++i)
-        if (!this->m_aNodes[i].bDeleted) return i;
+    for (u32 i = 0; i < m_aNodes.m_size; ++i)
+        if (!m_aNodes[i].bDeleted) return i;
 
-    return this->m_aNodes.m_size;
+    return m_aNodes.m_size;
 }
 
 template<typename T, u32 CAP>
 inline s64
 Pool<T, CAP>::lastI() const
 {
-    if (this->m_aNodes.m_size == 0) return -1;
+    if (m_aNodes.m_size == 0) return -1;
 
-    for (s64 i = s64(this->m_aNodes.m_size) - 1; i >= 0; --i)
-        if (!this->m_aNodes[i].bDeleted) return i;
+    for (s64 i = s64(m_aNodes.m_size) - 1; i >= 0; --i)
+        if (!m_aNodes[i].bDeleted) return i;
 
-    return this->m_aNodes.m_size;
+    return m_aNodes.m_size;
 }
 
 template<typename T, u32 CAP>
@@ -144,7 +144,7 @@ inline s64
 Pool<T, CAP>::nextI(s64 i) const
 {
     do ++i;
-    while (i < this->m_aNodes.m_size && this->m_aNodes[i].bDeleted);
+    while (i < m_aNodes.m_size && m_aNodes[i].bDeleted);
 
     return i;
 }
@@ -154,7 +154,7 @@ inline s64
 Pool<T, CAP>::prevI(s64 i) const
 {
     do --i;
-    while (i >= 0 && this->m_aNodes[i].bDeleted);
+    while (i >= 0 && m_aNodes[i].bDeleted);
 
     return i;
 }
@@ -163,7 +163,7 @@ template<typename T, u32 CAP>
 inline u32
 Pool<T, CAP>::idx(const PoolNode<T>* p) const
 {
-    u32 r = p - &this->m_aNodes.m_aData[0];
+    u32 r = p - &m_aNodes.m_aData[0];
     assert(r < CAP && "[Pool]: out of range");
     return r;
 }
@@ -172,25 +172,25 @@ template<typename T, u32 CAP>
 inline u32
 Pool<T, CAP>::idx(const T* p) const
 {
-    return (PoolNode<T>*)p - &this->m_aNodes.m_aData[0];
+    return (PoolNode<T>*)p - &m_aNodes.m_aData[0];
 }
 
 template<typename T, u32 CAP>
 inline void
 Pool<T, CAP>::destroy()
 {
-    mtx_destroy(&this->m_mtx);
+    mtx_destroy(&m_mtx);
 }
 
 template<typename T, u32 CAP>
 inline PoolHnd
 Pool<T, CAP>::getHandle()
 {
-    guard::Mtx lock(&this->m_mtx);
+    guard::Mtx lock(&m_mtx);
 
     PoolHnd ret = std::numeric_limits<PoolHnd>::max();
 
-    if (this->m_nOccupied >= CAP)
+    if (m_nOccupied >= CAP)
     {
 #ifndef NDEBUG
         fputs("[MemPool]: no free element, returning NPOS", stderr);
@@ -198,12 +198,12 @@ Pool<T, CAP>::getHandle()
         return ret;
     }
 
-    ++this->m_nOccupied;
+    ++m_nOccupied;
 
-    if (this->m_aFreeIdxs.m_size > 0) ret = *this->m_aFreeIdxs.pop();
-    else ret = this->m_aNodes.fakePush();
+    if (m_aFreeIdxs.m_size > 0) ret = *m_aFreeIdxs.pop();
+    else ret = m_aNodes.fakePush();
 
-    this->m_aNodes[ret].bDeleted = false;
+    m_aNodes[ret].bDeleted = false;
     return ret;
 }
 
@@ -211,8 +211,8 @@ template<typename T, u32 CAP>
 inline PoolHnd
 Pool<T, CAP>::getHandle(const T& value)
 {
-    auto idx = this->getHandle();
-    (*this)[idx] = value;
+    auto idx = getHandle();
+    new(&operator[](idx)) T(value);
 
     return idx;
 }
@@ -221,16 +221,16 @@ template<typename T, u32 CAP>
 inline void
 Pool<T, CAP>::giveBack(PoolHnd hnd)
 {
-    guard::Mtx lock(&this->m_mtx);
+    guard::Mtx lock(&m_mtx);
 
-    --this->m_nOccupied;
-    assert(this->m_nOccupied < CAP && "[Pool]: nothing to return");
+    --m_nOccupied;
+    assert(m_nOccupied < CAP && "[Pool]: nothing to return");
 
-    if (hnd == this->m_aNodes.getSize() - 1) this->m_aNodes.fakePop();
+    if (hnd == m_aNodes.getSize() - 1) m_aNodes.fakePop();
     else
     {
-        this->m_aFreeIdxs.push(hnd);
-        auto& node = this->m_aNodes[hnd];
+        m_aFreeIdxs.push(hnd);
+        auto& node = m_aNodes[hnd];
         assert(!node.bDeleted && "[Pool]: returning already deleted node");
         node.bDeleted = true;
     }

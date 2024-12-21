@@ -9,22 +9,25 @@
 namespace adt
 {
 
-struct FixedAllocator
+struct FixedAllocator : IAllocator
 {
-    IAllocator super {};
     u8* pMemBuffer = nullptr;
     u64 size = 0;
     u64 cap = 0;
     void* pLastAlloc = nullptr;
+    
+    /* */
 
     constexpr FixedAllocator() = default;
     constexpr FixedAllocator(void* pMemory, u64 capacity);
 
-    [[nodiscard]] constexpr void* alloc(u64 mCount, u64 mSize);
-    [[nodiscard]] constexpr void* zalloc(u64 mCount, u64 mSize);
-    [[nodiscard]] constexpr void* realloc(void* ptr, u64 mCount, u64 mSize);
-    constexpr void free(void* ptr);
-    constexpr void freeAll();
+    /* */
+
+    [[nodiscard]] virtual constexpr void* alloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual constexpr void* zalloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual constexpr void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
+    constexpr virtual void free(void* ptr) override final;
+    constexpr virtual void freeAll() override final;
     constexpr void reset();
 };
 
@@ -95,11 +98,8 @@ FixedAllocator::reset()
     this->size = 0;
 }
 
-inline const AllocatorVTable inl_FixedAllocatorVTable = AllocatorVTableGenerate<FixedAllocator>();
-
 constexpr FixedAllocator::FixedAllocator(void* pMemory, u64 capacity)
-    : super {&inl_FixedAllocatorVTable},
-      pMemBuffer((u8*)pMemory),
+    : pMemBuffer((u8*)pMemory),
       cap(capacity) {}
 
 } /* namespace adt */
