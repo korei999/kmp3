@@ -349,14 +349,15 @@ update(Win* s)
 
     /*if (s->bRedraw || pl.m_bSelectionChanged)*/
 
+    time(s);
+    timeSlider(s);
+
     if (s->bRedraw || pl.m_bSelectionChanged)
     {
         s->bRedraw = false;
 
         coverImage(s);
 
-        time(s);
-        timeSlider(s);
         volume(s);
         info(s);
         list(s);
