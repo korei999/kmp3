@@ -1,8 +1,9 @@
 #pragma once
 
+#include "Image.hh"
 #include "adt/Opt.hh"
 #include "adt/String.hh"
-#include "Image.hh"
+#include "adt/utils.hh"
 
 #include <atomic>
 
@@ -14,8 +15,9 @@ namespace audio
 constexpr u64 CHUNK_SIZE = (1 << 18); /* big enough */
 /* Platrform abstracted audio interface */
 
-struct IMixer
+class IMixer
 {
+protected:
     std::atomic<bool> m_bPaused = false;
 #ifdef USE_MPRIS
     std::atomic<bool> m_bUpdateMpris {};
@@ -29,8 +31,7 @@ struct IMixer
     u64 m_currentTimeStamp {};
     u64 m_totalSamplesCount {};
 
-    /* */
-
+public:
     virtual void init() = 0;
     virtual void destroy() = 0;
     virtual void play(String sPath) = 0;
@@ -46,6 +47,15 @@ struct IMixer
 
     /* */
 
+    bool isMuted() const { return m_bMuted; }
+    void toggleMute() { utils::toggle(&m_bMuted); }
+    u32 getSampleRate() const { return m_sampleRate; }
+    u32 getChangedSampleRate() const { return m_changedSampleRate; }
+    u8 getNChannels() const { return m_nChannels; }
+    u64 getTotalSamplesCount() const { return m_totalSamplesCount; }
+    u64 getCurrentTimeStamp() const { return m_currentTimeStamp; }
+    const std::atomic<bool>& isPaused() const { return m_bPaused; }
+    f64 getVolume() const { return m_volume; }
     void volumeDown(const f32 step) { setVolume(m_volume - step); }
     void volumeUp(const f32 step) { setVolume(m_volume + step); }
     [[nodiscard]] f64 getCurrentMS() { return (f64(m_currentTimeStamp) / f64(m_sampleRate) / f64(m_nChannels)) * 1000.0; }
@@ -53,6 +63,11 @@ struct IMixer
     void changeSampleRateDown(int ms, bool bSave) { changeSampleRate(m_changedSampleRate - ms, bSave); }
     void changeSampleRateUp(int ms, bool bSave) { changeSampleRate(m_changedSampleRate + ms, bSave); }
     void restoreSampleRate() { changeSampleRate(m_sampleRate, false); }
+
+#ifdef USE_MPRIS
+    const std::atomic<bool>& mprisHasToUpdate() const { return m_bUpdateMpris; }
+    void mprisSetToUpdate(bool b) { m_bUpdateMpris = b; }
+#endif
 };
 
 struct DummyMixer : public IMixer

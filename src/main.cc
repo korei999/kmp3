@@ -123,7 +123,7 @@ main(int argc, char** argv)
     mixer.init();
     defer( mixer.destroy() );
 
-    mixer.m_volume = defaults::VOLUME;
+    mixer.setVolume(defaults::VOLUME);
     app::g_pMixer = &mixer;
 
 #ifdef USE_MPRIS

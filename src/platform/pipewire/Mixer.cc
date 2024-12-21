@@ -27,7 +27,6 @@ struct PWLockGuard
     ~PWLockGuard() { pw_thread_loop_unlock(p); }
 };
 
-static void runThread(Mixer* s, int argc, char** argv);
 static void onProcess(void* data);
 
 static const pw_stream_events s_streamEvents {

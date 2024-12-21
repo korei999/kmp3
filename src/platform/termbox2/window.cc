@@ -349,8 +349,8 @@ drawVolume()
     const auto width = tb_width();
     const auto height = tb_height();
     int split = common::getHorizontalSplitPos(height) + 2;
-    const f32 vol = app::g_pMixer->m_volume;
-    const bool bMuted = app::g_pMixer->m_bMuted;
+    const f32 vol = app::g_pMixer->getVolume();
+    const bool bMuted = app::g_pMixer->isMuted();
     constexpr String fmt = "volume: %3d";
     const int maxVolumeBars = (split - fmt.getSize() - 2) * vol * 1.0f/defaults::MAX_VOLUME;
 
@@ -502,7 +502,7 @@ drawTimeSlider()
 
     /* play/pause indicator */
     {
-        bool bPaused = atomic_load_explicit(&mix.m_bPaused, memory_order_relaxed);
+        bool bPaused = atomic_load_explicit(&mix.isPaused(), memory_order_relaxed);
         const char* ntsIndicator = bPaused ? "II" : "I>";
 
         drawMBString(1 + n, split + 1, ntsIndicator, width - 2, TB_BOLD);
@@ -513,8 +513,8 @@ drawTimeSlider()
     
     /* time slider */
     {
-        const auto& time = mix.m_currentTimeStamp;
-        const auto& maxTime = mix.m_totalSamplesCount;
+        const auto& time = mix.getCurrentTimeStamp();
+        const auto& maxTime = mix.getTotalSamplesCount();
         const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - (n + 3));
 
         for (long i = n + 3, t = 0; i < width - 2; ++i, ++t)

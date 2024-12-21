@@ -20,9 +20,9 @@ mprisPollLoop([[maybe_unused]] void* pNull)
     while (app::g_bRunning)
     {
         mpris::proc();
-        if (app::g_pMixer->m_bUpdateMpris)
+        if (app::g_pMixer->mprisHasToUpdate().load(memory_order_relaxed))
         {
-            app::g_pMixer->m_bUpdateMpris = false;
+            app::g_pMixer->mprisSetToUpdate(false);
             mpris::destroy();
             mpris::init();
         }

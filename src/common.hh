@@ -48,8 +48,8 @@ allocTimeString(Arena* pArena, int width)
     auto& mixer = *app::g_pMixer;
     char* pBuff = (char*)pArena->zalloc(1, width + 1);
 
-    u64 t = std::round(f64(mixer.m_currentTimeStamp) / f64(mixer.m_nChannels) / f64(mixer.m_changedSampleRate));
-    u64 totalT = std::round(f64(mixer.m_totalSamplesCount) / f64(mixer.m_nChannels) / f64(mixer.m_changedSampleRate));
+    u64 t = std::round(f64(mixer.getCurrentTimeStamp()) / f64(mixer.getNChannels()) / f64(mixer.getChangedSampleRate()));
+    u64 totalT = std::round(f64(mixer.getTotalSamplesCount()) / f64(mixer.getNChannels()) / f64(mixer.getChangedSampleRate()));
 
     u64 currMin = t / 60;
     u64 currSec = t - (60 * currMin);
@@ -58,8 +58,8 @@ allocTimeString(Arena* pArena, int width)
     u64 maxSec = totalT - (60 * maxMin);
 
     int n = snprintf(pBuff, width, "time: %llu:%02llu / %llu:%02llu", currMin, currSec, maxMin, maxSec);
-    if (mixer.m_sampleRate != mixer.m_changedSampleRate)
-        snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f64(mixer.m_changedSampleRate) / f64(mixer.m_sampleRate) * 100.0)));
+    if (mixer.getSampleRate() != mixer.getChangedSampleRate())
+        snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f64(mixer.getChangedSampleRate()) / f64(mixer.getSampleRate()) * 100.0)));
 
     return pBuff;
 }

@@ -300,7 +300,7 @@ playbackStatus(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    const char* s = app::g_pMixer->m_bPaused ? "Paused" : "Playing";
+    const char* s = app::g_pMixer->isPaused() ? "Paused" : "Playing";
     return sd_bus_message_append_basic(reply, 's', s);
 }
 
@@ -356,7 +356,7 @@ getVolume(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 vol = app::g_pMixer->m_volume;
+    f64 vol = app::g_pMixer->getVolume();
     return sd_bus_message_append_basic(reply, 'd', &vol);
 }
 
@@ -406,7 +406,7 @@ rate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = f64(app::g_pMixer->m_changedSampleRate) / f64(app::g_pMixer->m_sampleRate);
+    f64 mul = f64(app::g_pMixer->getChangedSampleRate()) / f64(app::g_pMixer->getSampleRate());
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -421,7 +421,7 @@ minRate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = (f64)defaults::MIN_SAMPLE_RATE / (f64)app::g_pMixer->m_sampleRate;
+    f64 mul = (f64)defaults::MIN_SAMPLE_RATE / (f64)app::g_pMixer->getSampleRate();
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -436,7 +436,7 @@ maxRate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = (f64)defaults::MAX_SAMPLE_RATE / (f64)app::g_pMixer->m_sampleRate;
+    f64 mul = (f64)defaults::MAX_SAMPLE_RATE / (f64)app::g_pMixer->getSampleRate();
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 

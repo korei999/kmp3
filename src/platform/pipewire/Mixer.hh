@@ -28,8 +28,9 @@ namespace platform
 namespace pipewire
 {
 
-struct Mixer : public audio::IMixer
+class Mixer : public audio::IMixer
 {
+protected:
     u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
     std::atomic<bool> m_bDecodes = false;
@@ -40,9 +41,10 @@ struct Mixer : public audio::IMixer
     pw_stream* m_pStream {};
     u32 m_nLastFrames {};
     mtx_t m_mtxDecoder {};
-    
+
     /* */
 
+public:
     Mixer() = default;
     Mixer(IAllocator* pA);
 
@@ -60,6 +62,13 @@ struct Mixer : public audio::IMixer
     [[nodiscard]] virtual Opt<String> getMetadata(const String sKey) override final;
     [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
     virtual void setVolume(const f32 volume) override final;
+
+    /* */
+
+private:
+    friend void runThread(Mixer* s, int argc, char** argv);
+    friend void writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten, u64* pPcmPos);
+    friend void onProcess(void* pData);
 };
 
 inline

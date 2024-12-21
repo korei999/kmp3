@@ -14,7 +14,7 @@ namespace ansi
 
 extern TermSize g_termSize;
 
-struct Win : IWindow
+struct Win : public IWindow
 {
     Arena* pArena {};
     TextBuff textBuff {};
@@ -29,6 +29,7 @@ struct Win : IWindow
 
     /* */
 
+public:
     virtual bool start(Arena* pArena) final;
     virtual void destroy() final;
     virtual void draw() final;

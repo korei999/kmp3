@@ -4,6 +4,8 @@
 #include "audio.hh"
 #include "IWindow.hh"
 
+#include <stdatomic.h>
+
 using namespace adt;
 
 namespace app
@@ -44,7 +46,7 @@ inline void seekRightMS(u64 ms) { g_pMixer->seekRightMS(ms); }
 inline PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward) { return g_pPlayer->cycleRepeatMethods(bForward); }
 inline void selectPrev() { g_pPlayer->selectPrev(); }
 inline void selectNext() { g_pPlayer->selectNext(); }
-inline void toggleMute() { utils::toggle(&g_pMixer->m_bMuted); }
+inline void toggleMute() { g_pMixer->toggleMute(); }
 inline void seekFromInput() { g_pWin->seekFromInput(); }
 inline void subStringSearch() { g_pWin->subStringSearch(); }
 

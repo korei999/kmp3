@@ -126,8 +126,8 @@ volume(Win* s)
     auto& tb = s->textBuff;
     const auto width = g_termSize.width;
     const int off = s->prevImgWidth + 2;
-    const f32 vol = app::g_pMixer->m_volume;
-    const bool bMuted = app::g_pMixer->m_bMuted;
+    const f32 vol = app::g_pMixer->getVolume();
+    const bool bMuted = app::g_pMixer->isMuted();
     constexpr String fmt = "volume: %3d";
     const int maxVolumeBars = (width - off - fmt.getSize() - 2) * vol * 1.0f/defaults::MAX_VOLUME;
 
@@ -146,7 +146,7 @@ volume(Win* s)
     tb.moveClearLine(off - 1, 6, TEXT_BUFF_ARG::TO_END);
 
     char* pBuff = (char*)s->pArena->zalloc(1, width + 1);
-    u32 n = snprintf(pBuff, width, fmt.data(), int(std::round(app::g_pMixer->m_volume * 100.0)));
+    u32 n = snprintf(pBuff, width, fmt.data(), int(std::round(app::g_pMixer->getVolume() * 100.0)));
     tb.push(col);
     tb.push(BOLD);
     tb.movePushGlyphs(off, 6, {pBuff, n}, width - off);
@@ -204,7 +204,7 @@ timeSlider(Win* s)
 
     /* play/pause indicator */
     {
-        bool bPaused = mix.m_bPaused.load(memory_order_relaxed);
+        bool bPaused = mix.isPaused().load(memory_order_relaxed);
         const char* ntsIndicator = bPaused ? "II" : "I>";
 
         tb.movePush(xOff, yOff, ntsIndicator);
@@ -215,8 +215,8 @@ timeSlider(Win* s)
     /* time slider */
     {
         const int wMax = width - xOff - n;
-        const auto& time = mix.m_currentTimeStamp;
-        const auto& maxTime = mix.m_totalSamplesCount;
+        const auto& time = mix.getCurrentTimeStamp();
+        const auto& maxTime = mix.getTotalSamplesCount();
         const f64 timePlace = (f64(time) / f64(maxTime)) * (wMax - n - 1);
 
         for (long i = n + 1, t = 0; i < wMax; ++i, ++t)
@@ -346,8 +346,6 @@ update(Win* s)
         s->bClear = false;
         tb.clear();
     }
-
-    /*if (s->bRedraw || pl.m_bSelectionChanged)*/
 
     time(s);
     timeSlider(s);
