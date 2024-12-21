@@ -6,19 +6,6 @@
 #include "adt/types.hh"
 #include "adt/utils.hh"
 
-extern "C"
-{
-
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
-
-#ifdef USE_CHAFA
-#include <libswscale/swscale.h>
-#endif
-
-}
-
 namespace ffmpeg
 {
 
@@ -33,64 +20,39 @@ covertFormat(int format)
     }
 };
 
-struct Decoder
-{
-    AVStream* pStream {};
-    AVFormatContext* pFormatCtx {};
-    AVCodecContext* pCodecCtx {};
-    SwrContext* pSwr {};
-    int audioStreamIdx {};
-    u64 currentSamplePos {};
-
-    AVPacket* pImgPacket {};
-    AVFrame* pImgFrame {};
-    Opt<Image> oCoverImg {};
-
-#ifdef USE_CHAFA
-    SwsContext* pSwsCtx {};
-    AVFrame* pConverted {};
-#endif
-};
-
-Decoder*
-DecoderAlloc(IAllocator* pAlloc)
-{
-    Decoder* s = (Decoder*)pAlloc->zalloc(1, sizeof(Decoder));
-    return s;
-}
-
 void
-DecoderClose(Decoder* s)
+Reader::close()
 {
-    if (s->pFormatCtx) avformat_close_input(&s->pFormatCtx);
-    if (s->pCodecCtx) avcodec_free_context(&s->pCodecCtx);
-    if (s->pSwr) swr_free(&s->pSwr);
-    if (s->pImgPacket) av_packet_free(&s->pImgPacket);
-    if (s->pImgFrame) av_frame_free(&s->pImgFrame);
+    if (pFormatCtx) avformat_close_input(&pFormatCtx);
+    if (pCodecCtx) avcodec_free_context(&pCodecCtx);
+    if (pSwr) swr_free(&pSwr);
+    if (pImgPacket) av_packet_free(&pImgPacket);
+    if (pImgFrame) av_frame_free(&pImgFrame);
 
 #ifdef USE_CHAFA
-    if (s->pConverted) av_frame_free(&s->pConverted);
-    if (s->pSwsCtx) sws_freeContext(s->pSwsCtx);
+    if (pConverted) av_frame_free(&pConverted);
+    if (pSwsCtx) sws_freeContext(pSwsCtx);
 #endif
 
-    LOG_NOTIFY("DecoderClose()\n");
+    LOG_NOTIFY("close()\n");
 
-    *s = {};
+    *this = {};
+    super = {&inl_ReaderVTable};
 }
 
 Opt<String>
-DecoderGetMetadataValue(Decoder* s, const String sKey)
+Reader::getMetadataValue(const String sKey)
 {
     char aBuff[64] {};
     strncpy(aBuff, sKey.data(), utils::min(u64(sKey.getSize()), utils::size(aBuff) - 1));
 
     AVDictionaryEntry* pTag {};
-    pTag = av_dict_get(s->pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
+    pTag = av_dict_get(pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
 
     if (pTag) return {pTag->value};
     else
     {
-        pTag = av_dict_get(s->pFormatCtx->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
+        pTag = av_dict_get(pFormatCtx->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
         if (pTag) return {pTag->value};
         else return {};
     }
@@ -98,7 +60,7 @@ DecoderGetMetadataValue(Decoder* s, const String sKey)
 
 #ifdef USE_CHAFA
 static void
-DecoderGetAttachedPicture(Decoder* s)
+getAttachedPicture(Reader* s)
 {
     int err = 0;
     AVStream* pStream {};
@@ -174,67 +136,66 @@ DecoderGetAttachedPicture(Decoder* s)
     };
 }
 #else
-    #define DecoderGetAttachedPicture(...) (void)0
+    #define getAttachedPicture(...) (void)0
 #endif
 
 Opt<Image>
-DecoderGetCoverImage(Decoder* s)
+Reader::getCoverImage()
 {
-    return s->oCoverImg;
+    return oCoverImg;
 }
 
 audio::ERROR
-DecoderOpen(Decoder* s, String sPath)
+Reader::open(String sPath)
 {
     String sPathNullTerm = StringAlloc(OsAllocatorGet(), sPath); /* with null char */
     defer( sPathNullTerm.destroy(OsAllocatorGet()) );
 
     int err = 0;
-    defer( if (err < 0) DecoderClose(s) );
+    defer( if (err < 0) close() );
 
-    err = avformat_open_input(&s->pFormatCtx, sPathNullTerm.data(), {}, {});
+    err = avformat_open_input(&pFormatCtx, sPathNullTerm.data(), {}, {});
     if (err != 0) return audio::ERROR::FAIL;
 
-    err = avformat_find_stream_info(s->pFormatCtx, {});
+    err = avformat_find_stream_info(pFormatCtx, {});
     if (err != 0) return audio::ERROR::FAIL;
 
-    int idx = av_find_best_stream(s->pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
+    int idx = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
     if (idx < 0) return audio::ERROR::FAIL;
 
-    s->audioStreamIdx = idx;
-    s->pStream = s->pFormatCtx->streams[idx];
+    audioStreamIdx = idx;
+    pStream = pFormatCtx->streams[idx];
 
-    const AVCodec* pCodec = avcodec_find_decoder(s->pStream->codecpar->codec_id);
+    const AVCodec* pCodec = avcodec_find_decoder(pStream->codecpar->codec_id);
     if (!pCodec) return audio::ERROR::FAIL;
 
-    s->pCodecCtx = avcodec_alloc_context3(pCodec);
-    if (!s->pCodecCtx) return audio::ERROR::FAIL;
+    pCodecCtx = avcodec_alloc_context3(pCodec);
+    if (!pCodecCtx) return audio::ERROR::FAIL;
 
-    avcodec_parameters_to_context(s->pCodecCtx, s->pStream->codecpar);
+    avcodec_parameters_to_context(pCodecCtx, pStream->codecpar);
 
-    err = avcodec_open2(s->pCodecCtx, pCodec, {});
+    err = avcodec_open2(pCodecCtx, pCodec, {});
     if (err < 0)
     {
         LOG("avcodec_open2\n");
         return audio::ERROR::FAIL;
     }
 
-    err = swr_alloc_set_opts2(&s->pSwr,
-        &s->pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, s->pStream->codecpar->sample_rate,
-        &s->pStream->codecpar->ch_layout, (AVSampleFormat)s->pStream->codecpar->format, s->pStream->codecpar->sample_rate,
+    err = swr_alloc_set_opts2(&pSwr,
+        &pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, pStream->codecpar->sample_rate,
+        &pStream->codecpar->ch_layout, (AVSampleFormat)pStream->codecpar->format, pStream->codecpar->sample_rate,
         0, {}
     );
 
     LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
 
-    DecoderGetAttachedPicture(s);
+    getAttachedPicture(this);
 
     return audio::ERROR::OK_;
 }
 
 audio::ERROR
-DecoderWriteToBuffer(
-    Decoder* s,
+Reader::writeToBuffer(
     f32* pBuff,
     const u32 buffSize,
     const u32 nFrames,
@@ -249,23 +210,23 @@ DecoderWriteToBuffer(
     *pSamplesWritten = 0;
 
     AVPacket packet {};
-    while (av_read_frame(s->pFormatCtx, &packet) == 0)
+    while (av_read_frame(pFormatCtx, &packet) == 0)
     {
         defer( av_packet_unref(&packet) );
 
-        if (packet.stream_index != s->pStream->index) continue;
-        err = avcodec_send_packet(s->pCodecCtx, &packet);
+        if (packet.stream_index != pStream->index) continue;
+        err = avcodec_send_packet(pCodecCtx, &packet);
         if (err != 0 && err != AVERROR(EAGAIN))
             LOG_WARN("!EAGAIN\n");
 
         AVFrame frame {};
-        while ((err = avcodec_receive_frame(s->pCodecCtx, &frame)) == 0)
+        while ((err = avcodec_receive_frame(pCodecCtx, &frame)) == 0)
         {
             defer( av_frame_unref(&frame) );
 
-            f64 currentTimeInSeconds = av_q2d(s->pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
+            f64 currentTimeInSeconds = av_q2d(pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
             long pcmPos = currentTimeInSeconds * frame.ch_layout.nb_channels * frame.sample_rate;
-            s->currentSamplePos = pcmPos;
+            currentSamplePos = pcmPos;
             *pPcmPos = pcmPos;
 
             AVFrame res {};
@@ -275,8 +236,8 @@ DecoderWriteToBuffer(
             res.format = AV_SAMPLE_FMT_FLT;
             defer( av_frame_unref(&res) );
 
-            swr_config_frame(s->pSwr, &res, &frame);
-            err = swr_convert_frame(s->pSwr, &res, &frame);
+            swr_config_frame(pSwr, &res, &frame);
+            err = swr_convert_frame(pSwr, &res, &frame);
 
             if (err < 0)
             {
@@ -327,45 +288,43 @@ DecoderWriteToBuffer(
 }
 
 u32
-DecoderGetSampleRate(Decoder* s)
+Reader::getSampleRate()
 {
-    return s->pStream->codecpar->sample_rate;
+    return pStream->codecpar->sample_rate;
 }
 
 static void
-DecoderSeekFrame(Decoder* s, u64 frame)
+seekFrame(Reader* s, u64 frame)
 {
     avcodec_flush_buffers(s->pCodecCtx);
     avformat_seek_file(s->pFormatCtx, s->pStream->index, 0, frame, frame, AVSEEK_FLAG_BACKWARD);
 }
 
 void
-DecoderSeekMS(Decoder* s, long ms)
+Reader::seekMS(long ms)
 {
-    auto frameNumber = av_rescale(ms, s->pStream->time_base.den, s->pStream->time_base.num);
+    auto frameNumber = av_rescale(ms, pStream->time_base.den, pStream->time_base.num);
     frameNumber /= 1000;
-    DecoderSeekFrame(s, frameNumber);
+    seekFrame(this, frameNumber);
 }
 
 long
-DecoderGetCurrentSamplePos(Decoder* s)
+Reader::getCurrentSamplePos()
 {
-    return s->currentSamplePos;
+    return currentSamplePos;
 }
 
 long
-DecoderGetTotalSamplesCount(Decoder* s)
+Reader::getTotalSamplesCount()
 {
-    long res = (s->pFormatCtx->duration / (f32)AV_TIME_BASE) * s->pStream->codecpar->sample_rate * s->pStream->codecpar->ch_layout.nb_channels;
+    long res = (pFormatCtx->duration / (f32)AV_TIME_BASE) * pStream->codecpar->sample_rate * pStream->codecpar->ch_layout.nb_channels;
     return res;
 }
 
 int
-DecoderGetChannelsCount(Decoder* s)
+Reader::getChannelsCount()
 {
-    return s->pStream->codecpar->ch_layout.nb_channels;
+    return pStream->codecpar->ch_layout.nb_channels;
 }
-
-Reader::Reader(IAllocator* pAlloc) : super {&inl_ReaderVTable}, m_pDecoder {DecoderAlloc(pAlloc)} {}
 
 } /* namespace ffmpeg */

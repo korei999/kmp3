@@ -74,7 +74,7 @@ Mixer::Mixer(IAllocator* pA)
     : super(&inl_MixerVTable)
 {
     auto* p = (ffmpeg::Reader*)pA->zalloc(1, sizeof(ffmpeg::Reader));
-    *p = ffmpeg::Reader(pA);
+    *p = ffmpeg::Reader(INIT_FLAG::INIT);
     m_pIReader = (audio::IReader*)p;
     LOG_BAD("allocated\n");
 }
