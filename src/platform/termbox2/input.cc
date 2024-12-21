@@ -94,9 +94,9 @@ procMouse(tb_event* pEv)
         pl.selectFocused();
     }
     else if (ev.key == TB_KEY_MOUSE_WHEEL_UP)
-        pl.focus(pl.focused - 22);
+        pl.focus(pl.m_focused - 22);
     else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN)
-        pl.focus(pl.focused + 22);
+        pl.focus(pl.m_focused + 22);
 }
 
 void

@@ -23,15 +23,15 @@ covertFormat(int format)
 void
 Reader::close()
 {
-    if (pFormatCtx) avformat_close_input(&pFormatCtx);
-    if (pCodecCtx) avcodec_free_context(&pCodecCtx);
-    if (pSwr) swr_free(&pSwr);
-    if (pImgPacket) av_packet_free(&pImgPacket);
-    if (pImgFrame) av_frame_free(&pImgFrame);
+    if (m_pFormatCtx) avformat_close_input(&m_pFormatCtx);
+    if (m_pCodecCtx) avcodec_free_context(&m_pCodecCtx);
+    if (m_pSwr) swr_free(&m_pSwr);
+    if (m_pImgPacket) av_packet_free(&m_pImgPacket);
+    if (m_pImgFrame) av_frame_free(&m_pImgFrame);
 
 #ifdef USE_CHAFA
-    if (pConverted) av_frame_free(&pConverted);
-    if (pSwsCtx) sws_freeContext(pSwsCtx);
+    if (m_pConverted) av_frame_free(&m_pConverted);
+    if (m_pSwsCtx) sws_freeContext(m_pSwsCtx);
 #endif
 
     LOG_NOTIFY("close()\n");
@@ -47,12 +47,12 @@ Reader::getMetadataValue(const String sKey)
     strncpy(aBuff, sKey.data(), utils::min(u64(sKey.getSize()), utils::size(aBuff) - 1));
 
     AVDictionaryEntry* pTag {};
-    pTag = av_dict_get(pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
+    pTag = av_dict_get(m_pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
 
     if (pTag) return {pTag->value};
     else
     {
-        pTag = av_dict_get(pFormatCtx->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
+        pTag = av_dict_get(m_pFormatCtx->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
         if (pTag) return {pTag->value};
         else return {};
     }
@@ -65,9 +65,9 @@ getAttachedPicture(Reader* s)
     int err = 0;
     AVStream* pStream {};
 
-    for (u32 i = 0; i < s->pFormatCtx->nb_streams; ++i)
+    for (u32 i = 0; i < s->m_pFormatCtx->nb_streams; ++i)
     {
-        auto* itStream = s->pFormatCtx->streams[i];
+        auto* itStream = s->m_pFormatCtx->streams[i];
         if (itStream->disposition & AV_DISPOSITION_ATTACHED_PIC)
         {
             LOG_WARN("Found 'attached_pic'\n");
@@ -95,44 +95,44 @@ getAttachedPicture(Reader* s)
 
     LOG_WARN("codec name: '{}'\n", pCodec->long_name);
 
-    s->pImgPacket = av_packet_alloc();
-    err = av_read_frame(s->pFormatCtx, s->pImgPacket);
+    s->m_pImgPacket = av_packet_alloc();
+    err = av_read_frame(s->m_pFormatCtx, s->m_pImgPacket);
     if (err != 0) return;
 
-    err = avcodec_send_packet(pCodecCtx, s->pImgPacket);
+    err = avcodec_send_packet(pCodecCtx, s->m_pImgPacket);
     if (err != 0) return;
 
-    s->pImgFrame = av_frame_alloc();
-    err = avcodec_receive_frame(pCodecCtx, s->pImgFrame);
+    s->m_pImgFrame = av_frame_alloc();
+    err = avcodec_receive_frame(pCodecCtx, s->m_pImgFrame);
     if (err == AVERROR(EINVAL))
         LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
 
-    s->pSwsCtx = sws_getContext(
-        s->pImgFrame->width, s->pImgFrame->height, (AVPixelFormat)s->pImgFrame->format,
-        s->pImgFrame->width, s->pImgFrame->height, AV_PIX_FMT_RGB24,
+    s->m_pSwsCtx = sws_getContext(
+        s->m_pImgFrame->width, s->m_pImgFrame->height, (AVPixelFormat)s->m_pImgFrame->format,
+        s->m_pImgFrame->width, s->m_pImgFrame->height, AV_PIX_FMT_RGB24,
         SWS_BILINEAR, {}, {}, {}
     );
 
-    s->pConverted = av_frame_alloc();
-    s->pConverted->format = AV_PIX_FMT_RGB24;
-    s->pConverted->width = s->pImgFrame->width;
-    s->pConverted->height = s->pImgFrame->height;
+    s->m_pConverted = av_frame_alloc();
+    s->m_pConverted->format = AV_PIX_FMT_RGB24;
+    s->m_pConverted->width = s->m_pImgFrame->width;
+    s->m_pConverted->height = s->m_pImgFrame->height;
 
-    err = av_frame_get_buffer(s->pConverted, 0);
+    err = av_frame_get_buffer(s->m_pConverted, 0);
     if (err != 0) { LOG_BAD("av_frame_get_buffer()\n"); return; }
 
-    sws_scale(s->pSwsCtx,
-        s->pImgFrame->data, s->pImgFrame->linesize, 0, s->pImgFrame->height,
-        s->pConverted->data, s->pConverted->linesize
+    sws_scale(s->m_pSwsCtx,
+        s->m_pImgFrame->data, s->m_pImgFrame->linesize, 0, s->m_pImgFrame->height,
+        s->m_pConverted->data, s->m_pConverted->linesize
     );
 
-    LOG_WARN("width: {}, height: {}, format: {}\n", s->pImgFrame->width, s->pImgFrame->height, s->pImgFrame->format);
+    LOG_WARN("width: {}, height: {}, format: {}\n", s->m_pImgFrame->width, s->m_pImgFrame->height, s->m_pImgFrame->format);
 
-    s->oCoverImg = Image {
-        .pBuff = s->pConverted->data[0],
-        .width = u32(s->pConverted->width),
-        .height = u32(s->pConverted->height),
-        .eFormat = covertFormat(s->pConverted->format)
+    s->m_oCoverImg = Image {
+        .pBuff = s->m_pConverted->data[0],
+        .width = u32(s->m_pConverted->width),
+        .height = u32(s->m_pConverted->height),
+        .eFormat = covertFormat(s->m_pConverted->format)
     };
 }
 #else
@@ -142,7 +142,7 @@ getAttachedPicture(Reader* s)
 Opt<Image>
 Reader::getCoverImage()
 {
-    return oCoverImg;
+    return m_oCoverImg;
 }
 
 audio::ERROR
@@ -154,36 +154,36 @@ Reader::open(String sPath)
     int err = 0;
     defer( if (err < 0) close() );
 
-    err = avformat_open_input(&pFormatCtx, sPathNullTerm.data(), {}, {});
+    err = avformat_open_input(&m_pFormatCtx, sPathNullTerm.data(), {}, {});
     if (err != 0) return audio::ERROR::FAIL;
 
-    err = avformat_find_stream_info(pFormatCtx, {});
+    err = avformat_find_stream_info(m_pFormatCtx, {});
     if (err != 0) return audio::ERROR::FAIL;
 
-    int idx = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
+    int idx = av_find_best_stream(m_pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
     if (idx < 0) return audio::ERROR::FAIL;
 
-    audioStreamIdx = idx;
-    pStream = pFormatCtx->streams[idx];
+    m_audioStreamIdx = idx;
+    m_pStream = m_pFormatCtx->streams[idx];
 
-    const AVCodec* pCodec = avcodec_find_decoder(pStream->codecpar->codec_id);
+    const AVCodec* pCodec = avcodec_find_decoder(m_pStream->codecpar->codec_id);
     if (!pCodec) return audio::ERROR::FAIL;
 
-    pCodecCtx = avcodec_alloc_context3(pCodec);
-    if (!pCodecCtx) return audio::ERROR::FAIL;
+    m_pCodecCtx = avcodec_alloc_context3(pCodec);
+    if (!m_pCodecCtx) return audio::ERROR::FAIL;
 
-    avcodec_parameters_to_context(pCodecCtx, pStream->codecpar);
+    avcodec_parameters_to_context(m_pCodecCtx, m_pStream->codecpar);
 
-    err = avcodec_open2(pCodecCtx, pCodec, {});
+    err = avcodec_open2(m_pCodecCtx, pCodec, {});
     if (err < 0)
     {
         LOG("avcodec_open2\n");
         return audio::ERROR::FAIL;
     }
 
-    err = swr_alloc_set_opts2(&pSwr,
-        &pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, pStream->codecpar->sample_rate,
-        &pStream->codecpar->ch_layout, (AVSampleFormat)pStream->codecpar->format, pStream->codecpar->sample_rate,
+    err = swr_alloc_set_opts2(&m_pSwr,
+        &m_pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, m_pStream->codecpar->sample_rate,
+        &m_pStream->codecpar->ch_layout, (AVSampleFormat)m_pStream->codecpar->format, m_pStream->codecpar->sample_rate,
         0, {}
     );
 
@@ -210,23 +210,23 @@ Reader::writeToBuffer(
     *pSamplesWritten = 0;
 
     AVPacket packet {};
-    while (av_read_frame(pFormatCtx, &packet) == 0)
+    while (av_read_frame(m_pFormatCtx, &packet) == 0)
     {
         defer( av_packet_unref(&packet) );
 
-        if (packet.stream_index != pStream->index) continue;
-        err = avcodec_send_packet(pCodecCtx, &packet);
+        if (packet.stream_index != m_pStream->index) continue;
+        err = avcodec_send_packet(m_pCodecCtx, &packet);
         if (err != 0 && err != AVERROR(EAGAIN))
             LOG_WARN("!EAGAIN\n");
 
         AVFrame frame {};
-        while ((err = avcodec_receive_frame(pCodecCtx, &frame)) == 0)
+        while ((err = avcodec_receive_frame(m_pCodecCtx, &frame)) == 0)
         {
             defer( av_frame_unref(&frame) );
 
-            f64 currentTimeInSeconds = av_q2d(pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
+            f64 currentTimeInSeconds = av_q2d(m_pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
             long pcmPos = currentTimeInSeconds * frame.ch_layout.nb_channels * frame.sample_rate;
-            currentSamplePos = pcmPos;
+            m_currentSamplePos = pcmPos;
             *pPcmPos = pcmPos;
 
             AVFrame res {};
@@ -236,8 +236,8 @@ Reader::writeToBuffer(
             res.format = AV_SAMPLE_FMT_FLT;
             defer( av_frame_unref(&res) );
 
-            swr_config_frame(pSwr, &res, &frame);
-            err = swr_convert_frame(pSwr, &res, &frame);
+            swr_config_frame(m_pSwr, &res, &frame);
+            err = swr_convert_frame(m_pSwr, &res, &frame);
 
             if (err < 0)
             {
@@ -290,20 +290,20 @@ Reader::writeToBuffer(
 u32
 Reader::getSampleRate()
 {
-    return pStream->codecpar->sample_rate;
+    return m_pStream->codecpar->sample_rate;
 }
 
 static void
 seekFrame(Reader* s, u64 frame)
 {
-    avcodec_flush_buffers(s->pCodecCtx);
-    avformat_seek_file(s->pFormatCtx, s->pStream->index, 0, frame, frame, AVSEEK_FLAG_BACKWARD);
+    avcodec_flush_buffers(s->m_pCodecCtx);
+    avformat_seek_file(s->m_pFormatCtx, s->m_pStream->index, 0, frame, frame, AVSEEK_FLAG_BACKWARD);
 }
 
 void
 Reader::seekMS(long ms)
 {
-    auto frameNumber = av_rescale(ms, pStream->time_base.den, pStream->time_base.num);
+    auto frameNumber = av_rescale(ms, m_pStream->time_base.den, m_pStream->time_base.num);
     frameNumber /= 1000;
     seekFrame(this, frameNumber);
 }
@@ -311,20 +311,20 @@ Reader::seekMS(long ms)
 long
 Reader::getCurrentSamplePos()
 {
-    return currentSamplePos;
+    return m_currentSamplePos;
 }
 
 long
 Reader::getTotalSamplesCount()
 {
-    long res = (pFormatCtx->duration / (f32)AV_TIME_BASE) * pStream->codecpar->sample_rate * pStream->codecpar->ch_layout.nb_channels;
+    long res = (m_pFormatCtx->duration / (f32)AV_TIME_BASE) * m_pStream->codecpar->sample_rate * m_pStream->codecpar->ch_layout.nb_channels;
     return res;
 }
 
 int
 Reader::getChannelsCount()
 {
-    return pStream->codecpar->ch_layout.nb_channels;
+    return m_pStream->codecpar->ch_layout.nb_channels;
 }
 
 } /* namespace ffmpeg */

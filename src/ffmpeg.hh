@@ -29,20 +29,20 @@ struct Reader
 
     /* */
 
-    AVStream* pStream {};
-    AVFormatContext* pFormatCtx {};
-    AVCodecContext* pCodecCtx {};
-    SwrContext* pSwr {};
-    int audioStreamIdx {};
-    u64 currentSamplePos {};
+    AVStream* m_pStream {};
+    AVFormatContext* m_pFormatCtx {};
+    AVCodecContext* m_pCodecCtx {};
+    SwrContext* m_pSwr {};
+    int m_audioStreamIdx {};
+    u64 m_currentSamplePos {};
 
-    AVPacket* pImgPacket {};
-    AVFrame* pImgFrame {};
-    Opt<Image> oCoverImg {};
+    AVPacket* m_pImgPacket {};
+    AVFrame* m_pImgFrame {};
+    Opt<Image> m_oCoverImg {};
 
 #ifdef USE_CHAFA
-    SwsContext* pSwsCtx {};
-    AVFrame* pConverted {};
+    SwsContext* m_pSwsCtx {};
+    AVFrame* m_pConverted {};
 #endif
 
     /* */

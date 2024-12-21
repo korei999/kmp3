@@ -21,33 +21,33 @@ repeatMethodToString(PLAYER_REPEAT_METHOD e)
 
 struct Player
 {
-    IAllocator* pAlloc {};
+    IAllocator* m_pAlloc {};
     struct {
         String time {};
         String volume {};
         String total {};
-    } status {};
+    } m_status {};
     struct {
         String title {};
         String album {};
         String artist {};
-    } info {};
+    } m_info {};
     struct {
         //
-    } bottomBar {};
-    u8 imgHeight {};
-    f64 statusToInfoWidthRatio {};
-    VecBase<String> aShortArgvs {}; /* only the name of the file, without full path */
-    VecBase<u16> aSongIdxs {}; /* index buffer for aShortArgvs */
-    long focused {};
-    long selected {};
-    u32 longestStringSize {};
-    PLAYER_REPEAT_METHOD eReapetMethod {};
-    bool bSelectionChanged {};
+    } m_bottomBar {};
+    u8 m_imgHeight {};
+    f64 m_statusToInfoWidthRatio {};
+    VecBase<String> m_aShortArgvs {}; /* only the name of the file, without full path */
+    VecBase<u16> m_aSongIdxs {}; /* index buffer for aShortArgvs */
+    long m_focused {};
+    long m_selected {};
+    u32 m_longestStringSize {};
+    PLAYER_REPEAT_METHOD m_eReapetMethod {};
+    bool m_bSelectionChanged {};
 
     Player() = delete;
     Player(IAllocator* p, int nArgs, [[maybe_unused]] char** ppArgs)
-        : pAlloc(p), aShortArgvs(p, nArgs), aSongIdxs(p, nArgs) {}
+        : m_pAlloc(p), m_aShortArgvs(p, nArgs), m_aSongIdxs(p, nArgs) {}
 
     static bool acceptedFormat(const String s);
     void focusNext();

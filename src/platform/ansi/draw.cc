@@ -53,11 +53,13 @@ clearArea(Win* s, int x, int y, int width, int height)
 static void
 coverImage(Win* s)
 {
-    if (app::g_pPlayer->bSelectionChanged && s->time > s->lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
-    {
-        app::g_pPlayer->bSelectionChanged = false;
+    auto& pl = *app::g_pPlayer;
 
-        const int split = app::g_pPlayer->imgHeight;
+    if (pl.m_bSelectionChanged && s->time > s->lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
+    {
+        pl.m_bSelectionChanged = false;
+
+        const int split = pl.m_imgHeight;
 
         s->textBuff.clearKittyImages();
         clearArea(s, 1, 1, s->prevImgWidth, split + 1);
@@ -113,9 +115,9 @@ info(Win* s)
         tb.push(NORM);
     };
 
-    drawLine(1, "title: ", pl.info.title, BOLD ITALIC YELLOW);
-    drawLine(2, "album: ", pl.info.album, BOLD);
-    drawLine(3, "artist: ", pl.info.artist, BOLD);
+    drawLine(1, "title: ", pl.m_info.title, BOLD ITALIC YELLOW);
+    drawLine(2, "album: ", pl.m_info.album, BOLD);
+    drawLine(3, "artist: ", pl.m_info.artist, BOLD);
 }
 
 static void
@@ -234,22 +236,22 @@ list(Win* s)
     auto& tb = s->textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
-    const int split = pl.imgHeight + 1;
+    const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
     tb.push(NORM);
     for (u16 h = s->firstIdx, i = 0; i < listHeight - 1; ++h, ++i)
     {
-        if (h < pl.aSongIdxs.getSize())
+        if (h < pl.m_aSongIdxs.getSize())
         {
-            const u16 songIdx = pl.aSongIdxs[h];
-            const String sSong = pl.aShortArgvs[songIdx];
+            const u16 songIdx = pl.m_aSongIdxs[h];
+            const String sSong = pl.m_aShortArgvs[songIdx];
 
-            bool bSelected = songIdx == pl.selected ? true : false;
+            bool bSelected = songIdx == pl.m_selected ? true : false;
 
-            if (h == pl.focused && bSelected)
+            if (h == pl.m_focused && bSelected)
                 tb.push(BOLD YELLOW REVERSE);
-            else if (h == pl.focused)
+            else if (h == pl.m_focused)
                 tb.push(REVERSE);
             else if (bSelected)
                 tb.push(BOLD YELLOW);
@@ -283,12 +285,12 @@ bottomLine(Win* s)
     {
         char* pBuff = (char*)s->pArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.getSize() - 1);
-        if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortArgvs.getSize() - 1);
+        if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
-            if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
-            else if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
+            if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
+            else if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
 
             n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
         }
@@ -321,6 +323,7 @@ update(Win* s)
 {
     guard::Mtx lock(&s->mtxUpdate);
 
+    auto& pl = *app::g_pPlayer;
     auto& tb = s->textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
@@ -344,19 +347,20 @@ update(Win* s)
         tb.clear();
     }
 
-    if (s->bRedraw || app::g_pPlayer->bSelectionChanged)
-        coverImage(s);
+    /*if (s->bRedraw || pl.m_bSelectionChanged)*/
 
-    time(s);
-    timeSlider(s);
-
-    if (s->bRedraw || app::g_pPlayer->bSelectionChanged)
+    if (s->bRedraw || pl.m_bSelectionChanged)
     {
         s->bRedraw = false;
 
-        info(s);
+        coverImage(s);
+
+        time(s);
+        timeSlider(s);
         volume(s);
+        info(s);
         list(s);
+
         bottomLine(s);
     }
 }

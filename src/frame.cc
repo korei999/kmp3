@@ -37,7 +37,7 @@ mprisPollLoop([[maybe_unused]] void* pNull)
 void
 run()
 {
-    app::g_pWin = app::allocWindow(app::g_pPlayer->pAlloc);
+    app::g_pWin = app::allocWindow(app::g_pPlayer->m_pAlloc);
     if (app::g_pWin == nullptr)
     {
         CERR("app::allocWindow(): failed\n");
@@ -54,7 +54,7 @@ run()
     }
     defer( app::g_pWin->destroy() );
 
-    app::g_pPlayer->focused = 0;
+    app::g_pPlayer->m_focused = 0;
     app::g_pPlayer->selectFocused();
 
 #ifdef USE_MPRIS

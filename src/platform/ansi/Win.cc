@@ -53,7 +53,7 @@ sigwinchHandler([[maybe_unused]] int sig)
 
     /* NOTE: don't allocate / write to the buffer from here.
      * Marking things to be redrawn instead. */
-    app::g_pPlayer->bSelectionChanged = true;
+    app::g_pPlayer->m_bSelectionChanged = true;
     s->bRedraw = true;
     s->bClear = true;
     s->lastResizeTime = utils::timeNowMS();
@@ -110,7 +110,7 @@ Win::procEvents()
     input::procInput(this);
 
     common::fixFirstIdx(
-        g_termSize.height - app::g_pPlayer->imgHeight - 5,
+        g_termSize.height - app::g_pPlayer->m_imgHeight - 5,
         &this->firstIdx
     );
 }

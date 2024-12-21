@@ -217,7 +217,7 @@ seekAbs(
 )
 {
 	char aBuff[] = "/1122334455667788";
-    sprintf(aBuff, "/%" PRIx64, app::g_pPlayer->selected);
+    sprintf(aBuff, "/%" PRIx64, app::g_pPlayer->m_selected);
 
 	const char *pPath = NULL;
 	s64 val = 0;
@@ -317,7 +317,7 @@ getLoopStatus(
 {
     return sd_bus_message_append_basic(
         reply, 's',
-        repeatMethodToString(app::g_pPlayer->eReapetMethod).data()
+        repeatMethodToString(app::g_pPlayer->m_eReapetMethod).data()
     );
 }
 
@@ -336,12 +336,12 @@ setLoopStatus(
     CK(sd_bus_message_read_basic(value, 's', &t));
     LOG("mpris::setLoopStatus(): {}\n", t);
 
-    auto eMethod = app::g_pPlayer->eReapetMethod;
+    auto eMethod = app::g_pPlayer->m_eReapetMethod;
     for (u64 i = 0; i < utils::size(mapPlayerRepeatMethodStrings); ++i)
         if (t == mapPlayerRepeatMethodStrings[i])
             eMethod = PLAYER_REPEAT_METHOD(i);
 
-    app::g_pPlayer->eReapetMethod = eMethod;
+    app::g_pPlayer->m_eReapetMethod = eMethod;
     return sd_bus_reply_method_return(value, "");
 }
 
@@ -469,12 +469,12 @@ metadata(
     CK(sd_bus_message_open_container(reply, 'a', "{sv}"));
     const auto& pl = *app::g_pPlayer;
 
-    if (pl.info.title.getSize() > 0)
-        CK(msgAppendDictSS(reply, "xesam:title", pl.info.title.data()));
-    if (pl.info.album.getSize() > 0)
-        CK(msgAppendDictSS(reply, "xesam:album", pl.info.album.data()));
-    if (pl.info.artist.getSize() > 0)
-        CK(msgAppendDictSAS(reply, "xesam:artist", pl.info.artist.data()));
+    if (pl.m_info.title.getSize() > 0)
+        CK(msgAppendDictSS(reply, "xesam:title", pl.m_info.title.data()));
+    if (pl.m_info.album.getSize() > 0)
+        CK(msgAppendDictSS(reply, "xesam:album", pl.m_info.album.data()));
+    if (pl.m_info.artist.getSize() > 0)
+        CK(msgAppendDictSAS(reply, "xesam:artist", pl.m_info.artist.data()));
 
     {
         long duration = app::g_pMixer->getMaxMS() * 1000;
@@ -483,7 +483,7 @@ metadata(
 
     {
         char aBuff[] = "/1122334455667788";
-        auto currIdx = pl.selected;
+        auto currIdx = pl.m_selected;
         sprintf(aBuff, "/%" PRIx64, currIdx);
         CK(msgAppendDictSO(reply, "mpris:trackid", aBuff));
     }

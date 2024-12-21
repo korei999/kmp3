@@ -1,6 +1,5 @@
 #pragma once
 
-#include "adt/logs.hh"
 #include "audio.hh"
 #include "ffmpeg.hh"
 
@@ -76,7 +75,6 @@ Mixer::Mixer(IAllocator* pA)
     auto* p = (ffmpeg::Reader*)pA->zalloc(1, sizeof(ffmpeg::Reader));
     *p = ffmpeg::Reader(INIT_FLAG::INIT);
     m_pIReader = (audio::IReader*)p;
-    LOG_BAD("allocated\n");
 }
 
 } /* namespace pipewire */

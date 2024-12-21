@@ -106,18 +106,18 @@ main(int argc, char** argv)
     u32 longsetSize = 0;
     for (int i = 0; i < argc; ++i)
     {
-        player.aShortArgvs.push(player.pAlloc, file::getPathEnding(app::g_aArgs[i]));
-        if (player.acceptedFormat(player.aShortArgvs.last()))
+        player.m_aShortArgvs.push(player.m_pAlloc, file::getPathEnding(app::g_aArgs[i]));
+        if (player.acceptedFormat(player.m_aShortArgvs.last()))
             ++nAccepted;
 
         if (app::g_aArgs[i].getSize() > longsetSize)
             longsetSize = app::g_aArgs[i].getSize();
     }
-    player.longestStringSize = longsetSize;
-    player.imgHeight = 10;
-    player.statusToInfoWidthRatio = 0.4;
-    player.eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
-    player.bSelectionChanged = true;
+    player.m_longestStringSize = longsetSize;
+    player.m_imgHeight = 10;
+    player.m_statusToInfoWidthRatio = 0.4;
+    player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
+    player.m_bSelectionChanged = true;
 
     platform::pipewire::Mixer mixer(&freeList.super);
     mixer.init();

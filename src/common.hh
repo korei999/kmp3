@@ -70,14 +70,14 @@ fixFirstIdx(const u16 listHeight, u16* pFirstIdx)
 {
     const auto& pl = *app::g_pPlayer;
 
-    const u16 focused = pl.focused;
+    const u16 focused = pl.m_focused;
     u16 first = *pFirstIdx;
 
     if (focused > first + listHeight)
         first = focused - listHeight;
     else if (focused < first)
         first = focused;
-    else if (pl.aSongIdxs.getSize() < listHeight)
+    else if (pl.m_aSongIdxs.getSize() < listHeight)
         first = 0;
 
     *pFirstIdx = first;
@@ -155,8 +155,8 @@ subStringSearch(
     } while (pfnRead(pReadArg) != READ_STATUS::DONE);
 
     /* fix focused if it ends up out of the list range */
-    if (pl.focused >= pl.aSongIdxs.getSize())
-        pl.focused = *pFirstIdx;
+    if (pl.m_focused >= pl.m_aSongIdxs.getSize())
+        pl.m_focused = *pFirstIdx;
 }
 
 inline void
@@ -184,7 +184,7 @@ seekFromInput(
 inline int
 getHorizontalSplitPos(int height)
 {
-    return std::round(f64(height) * (1.0 - app::g_pPlayer->statusToInfoWidthRatio));
+    return std::round(f64(height) * (1.0 - app::g_pPlayer->m_statusToInfoWidthRatio));
 }
 
 

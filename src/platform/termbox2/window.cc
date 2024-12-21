@@ -134,7 +134,7 @@ seekFromInput()
 static void
 procResize([[maybe_unused]] tb_event* pEv)
 {
-    app::g_pPlayer->bSelectionChanged = true;
+    app::g_pPlayer->m_bSelectionChanged = true;
 }
 
 void
@@ -310,22 +310,22 @@ drawSongList()
     const int split = common::getHorizontalSplitPos(height) + 3;
     const u16 listHeight = height - split - 2;
 
-    for (u16 h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.aSongIdxs.getSize(); ++h, ++i)
+    for (u16 h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.m_aSongIdxs.getSize(); ++h, ++i)
     {
-        const u16 songIdx = pl.aSongIdxs[h];
-        const String sSong = pl.aShortArgvs[songIdx];
+        const u16 songIdx = pl.m_aSongIdxs[h];
+        const String sSong = pl.m_aShortArgvs[songIdx];
         const u32 maxLen = tb_width() - 2;
 
-        bool bSelected = songIdx == pl.selected ? true : false;
+        bool bSelected = songIdx == pl.m_selected ? true : false;
 
         u32 fg = TB_WHITE;
         u32 bg = TB_DEFAULT;
-        if (h == pl.focused && bSelected)
+        if (h == pl.m_focused && bSelected)
         {
             fg = TB_BLACK|TB_BOLD;
             bg = TB_YELLOW;
         }
-        else if (h == pl.focused)
+        else if (h == pl.m_focused)
         {
             fg = TB_BLACK;
             bg = TB_WHITE;
@@ -405,9 +405,9 @@ drawInfo()
         int n = print::toBuffer(pBuff, width, "title: ");
         drawMBString(0, 1, pBuff, width - 1);
         memset(pBuff, 0, width + 1);
-        if (pl.info.title.getSize() > 0)
-            print::toBuffer(pBuff, width, "{}", pl.info.title);
-        else print::toBuffer(pBuff, width, "{}", pl.aShortArgvs[pl.selected]);
+        if (pl.m_info.title.getSize() > 0)
+            print::toBuffer(pBuff, width, "{}", pl.m_info.title);
+        else print::toBuffer(pBuff, width, "{}", pl.m_aShortArgvs[pl.m_selected]);
         drawMBString(n, 1, pBuff, width - 1 - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
     }
 
@@ -416,10 +416,10 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
         drawMBString(0, 2, pBuff, width - 1);
-        if (pl.info.album.getSize() > 0)
+        if (pl.m_info.album.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
-            print::toBuffer(pBuff, width, "{}", pl.info.album);
+            print::toBuffer(pBuff, width, "{}", pl.m_info.album);
             drawMBString(n, 2, pBuff, width - 1 - n - 1, TB_BOLD);
         }
     }
@@ -429,10 +429,10 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
         drawMBString(0, 3, pBuff, width - 2);
-        if (pl.info.artist.getSize() > 0)
+        if (pl.m_info.artist.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
-            print::toBuffer(pBuff, width, "{}", pl.info.artist);
+            print::toBuffer(pBuff, width, "{}", pl.m_info.artist);
             drawMBString(n, 3, pBuff, width - 1 - n - 1, TB_BOLD);
         }
     }
@@ -451,12 +451,12 @@ drawBottomLine()
     {
         char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.selected, pl.aShortArgvs.getSize() - 1);
-        if (pl.eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortArgvs.getSize() - 1);
+        if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
-            if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
-            else if (pl.eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
+            if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
+            else if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
 
             n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
         }
@@ -490,7 +490,7 @@ drawTimeSlider()
     int height = tb_height();
     int width = tb_width();
 
-    int split = std::round(f64(height) * (1.0 - app::g_pPlayer->statusToInfoWidthRatio));
+    int split = std::round(f64(height) * (1.0 - app::g_pPlayer->m_statusToInfoWidthRatio));
     int n = 0;
 
     /* time */
@@ -537,10 +537,10 @@ drawCoverImage()
 
     static f64 lastTime {};
 
-    if (app::g_pPlayer->bSelectionChanged && g_time > lastTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
+    if (app::g_pPlayer->m_bSelectionChanged && g_time > lastTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
         lastTime = g_time;
-        app::g_pPlayer->bSelectionChanged = false;
+        app::g_pPlayer->m_bSelectionChanged = false;
 
         auto oCover = app::g_pMixer->getCoverImage();
         if (oCover)

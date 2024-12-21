@@ -29,8 +29,8 @@ inline void focusPrev() { g_pPlayer->focusPrev(); }
 inline void focusFirst() { g_pPlayer->focusFirst(); }
 inline void focusLast() { g_pPlayer->focusLast(); }
 inline void focus(long i) { g_pPlayer->focus(i); }
-inline void focusUp(long step) { focus(g_pPlayer->focused - step); }
-inline void focusDown(long step) { focus(g_pPlayer->focused + step); }
+inline void focusUp(long step) { focus(g_pPlayer->m_focused - step); }
+inline void focusDown(long step) { focus(g_pPlayer->m_focused + step); }
 inline void selectFocused() { g_pPlayer->selectFocused(); }
 inline void focusSelected() { g_pPlayer->focusSelected(); }
 inline void togglePause() { g_pPlayer->togglePause(); }
