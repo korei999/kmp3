@@ -62,12 +62,6 @@ getNCores()
 
 enum class WAIT_FLAG : u64 { DONT_WAIT, WAIT };
 
-struct ThreadPoolLock;
-
-inline void ThreadPoolLockInit(ThreadPoolLock* s);
-inline void ThreadPoolLockWait(ThreadPoolLock* s);
-inline void ThreadPoolLockDestroy(ThreadPoolLock* s);
-
 /* wait for individual task completion without ThreadPoolWait */
 struct ThreadPoolLock
 {
