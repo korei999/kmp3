@@ -51,16 +51,6 @@ main(int argc, char** argv)
             return 1;
 #endif
         }
-        else if (argv[1] == String("--notcurses"))
-        {
-#ifdef USE_NOTCURSES
-            app::g_eUIBackend = app::UI_BACKEND::NOTCURSES;
-            LOG_NOTIFY("setting NOTCURSES ui\n");
-#else
-            CERR("{} Program was built without notcurses support.\n", argv[0]);
-            return 1;
-#endif
-        }
     }
 
     Vec<String> aInput(&freeList, argc);
