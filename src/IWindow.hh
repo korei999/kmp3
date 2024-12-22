@@ -18,10 +18,10 @@ struct IWindow
 
 struct DummyWindow : IWindow
 {
-    virtual bool start(Arena*) override { return true; };
-    virtual void destroy() override {};
-    virtual void draw() override {};
-    virtual void procEvents() override {};
-    virtual void seekFromInput() override {};
-    virtual void subStringSearch() override {};
+    virtual bool start(Arena*) override final { return true; };
+    virtual void destroy() override final { };
+    virtual void draw() override final {};
+    virtual void procEvents() override final {};
+    virtual void seekFromInput() override final {};
+    virtual void subStringSearch() override final {};
 };

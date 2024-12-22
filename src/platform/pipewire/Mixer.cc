@@ -27,7 +27,7 @@ struct PWLockGuard
     ~PWLockGuard() { pw_thread_loop_unlock(p); }
 };
 
-static void onProcess(void* data);
+void onProcess(void* data);
 
 static const pw_stream_events s_streamEvents {
     .version = PW_VERSION_STREAM_EVENTS,
@@ -44,7 +44,7 @@ static const pw_stream_events s_streamEvents {
     .trigger_done {},
 };
 
-static f32 s_aPwBuff[audio::CHUNK_SIZE] {}; /* big */
+static f32 s_aPwBuff[audio::CHUNK_SIZE] {};
 
 static u32
 formatByteSize(enum spa_audio_format eFormat)
@@ -159,7 +159,7 @@ Mixer::play(String sPath)
     m_bUpdateMpris = true; /* mark to update in frame::run() */
 }
 
-static void
+void
 runThread(Mixer* s, int argc, char** argv)
 {
     pw_init(&argc, &argv);
@@ -206,7 +206,7 @@ runThread(Mixer* s, int argc, char** argv)
     pw_thread_loop_start(s->m_pThrdLoop);
 }
 
-static void
+void
 writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten, u64* pPcmPos)
 {
     audio::ERROR err {};
@@ -231,7 +231,7 @@ writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten, u64*
     if (err == audio::ERROR::END_OF_FILE) app::g_pPlayer->onSongEnd();
 }
 
-static void
+void
 onProcess(void* pData)
 {
     auto* s = (Mixer*)pData;

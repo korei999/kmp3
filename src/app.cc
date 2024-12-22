@@ -60,19 +60,6 @@ allocWindow(IAllocator* pAlloc)
 #endif
         }
         break;
-
-        case UI_FRONTEND::NOTCURSES:
-        {
-#ifdef USE_NOTCURSES
-            auto* pNotCurses = (platform::notcurses::Win*)alloc(pAlloc, 1, sizeof(platform::notcurses::Win));
-            *pNotCurses = platform::notcurses::Win();
-            pRet = &pNotCurses->super;
-#else
-            CERR("UI_BACKEND::NCURSES: not available\n");
-            exit(1);
-#endif
-        }
-        break;
     }
 
     return pRet;

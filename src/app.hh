@@ -4,14 +4,12 @@
 #include "audio.hh"
 #include "IWindow.hh"
 
-#include <stdatomic.h>
-
 using namespace adt;
 
 namespace app
 {
 
-enum class UI_FRONTEND : u8 { ANSI, TERMBOX, NCURSES, NOTCURSES };
+enum class UI_FRONTEND : u8 { ANSI, TERMBOX, NCURSES };
 
 extern UI_FRONTEND g_eUIFrontend;
 extern IWindow* g_pWin;
