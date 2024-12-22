@@ -54,7 +54,6 @@ add_executable(
 )
 
 option(OPT_NCURSES "ncurses support" OFF)
-option(OPT_NOTCURSES "notcurses support" OFF)
 option(OPT_MPRIS "mpris support" ON)
 option(OPT_SIXEL "sixel support" OFF)
 option(OPT_CHAFA "chafa support" ON)
@@ -218,19 +217,6 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
             target_sources(
                 ${CMAKE_PROJECT_NAME} PRIVATE
                 "src/platform/chafa/chafa.cc"
-            )
-        endif()
-    endif()
-
-    if (OPT_NOTCURSES)
-        pkg_check_modules(NOTCURSES notcurses)
-        if (${NOTCURSES_FOUND})
-            include_directories(BEFORE ${NOTCURSES_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${NOTCURSES_LIBRARIES})
-            add_definitions("-DUSE_NOTCURSES")
-            target_sources(
-                ${CMAKE_PROJECT_NAME} PRIVATE
-                "src/platform/notcurses/Win.cc"
             )
         endif()
     endif()
