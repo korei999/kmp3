@@ -135,17 +135,17 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
 static void
 updateInfo(Player* s)
 {
-    String sTitle = s->m_info.title;
-    String sAlbum = s->m_info.album;
-    String sArtist = s->m_info.artist;
+    String s0 = app::g_pMixer->getMetadata("title").data.clone(s->m_pAlloc);
+    String s1 = app::g_pMixer->getMetadata("album").data.clone(s->m_pAlloc);
+    String s2 = app::g_pMixer->getMetadata("artist").data.clone(s->m_pAlloc);
 
-    s->m_info.title = StringAlloc(s->m_pAlloc, app::g_pMixer->getMetadata("title").data);
-    s->m_info.album = StringAlloc(s->m_pAlloc, app::g_pMixer->getMetadata("album").data);
-    s->m_info.artist = StringAlloc(s->m_pAlloc, app::g_pMixer->getMetadata("artist").data);
+    s->m_info.title.destroy(s->m_pAlloc);
+    s->m_info.album.destroy(s->m_pAlloc);
+    s->m_info.artist.destroy(s->m_pAlloc);
 
-    sTitle.destroy(s->m_pAlloc);
-    sAlbum.destroy(s->m_pAlloc);
-    sArtist.destroy(s->m_pAlloc);
+    s->m_info.title = s0;
+    s->m_info.album = s1;
+    s->m_info.artist = s2;
 
     s->m_bSelectionChanged = true;
 

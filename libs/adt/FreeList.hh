@@ -286,10 +286,10 @@ again:
     auto* pFree = _FreeListFindFittingNode(this, requested);
     if (!pFree) goto again;
 
-    pBlock->nBytesOccupied += realSize;
-    m_totalAllocated += realSize;
-
     _FreeListSplitNode(this, pFree, realSize);
+
+    pBlock->nBytesOccupied += pFree->data().getSize();
+    m_totalAllocated += pFree->data().getSize();
 
     return pFree->m_data.pMem;
 }

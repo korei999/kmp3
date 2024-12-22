@@ -355,6 +355,8 @@ update(Win* s)
         s->bRedraw = false;
 
         coverImage(s);
+        time(s); /* redraw if image size changed */
+        timeSlider(s);
 
         volume(s);
         info(s);

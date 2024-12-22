@@ -32,7 +32,7 @@ struct String;
 /* StringAlloc() inserts '\0' char */
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str, u32 size);
 [[nodiscard]] inline String StringAlloc(IAllocator* p, u32 size);
-[[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str);
+[[nodiscard]] inline String StringAlloc(IAllocator* p, const char* nts);
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const String s);
 
 [[nodiscard]] inline String StringCat(IAllocator* p, const String l, const String r);
@@ -44,19 +44,27 @@ struct String
 {
     char* m_pData {};
     u32 m_size {};
+    bool m_bAllocated {};
 
     /* */
 
     constexpr String() = default;
-    constexpr String(char* sNullTerminated) : m_pData(sNullTerminated), m_size(nullTermStringSize(sNullTerminated)) {}
-    constexpr String(const char* sNullTerminated) : m_pData(const_cast<char*>(sNullTerminated)), m_size(nullTermStringSize(sNullTerminated)) {}
-    constexpr String(char* pStr, u32 len) : m_pData(pStr), m_size(len) {}
+
+    constexpr String(char* sNullTerminated)
+        : m_pData(sNullTerminated), m_size(nullTermStringSize(sNullTerminated)), m_bAllocated(false) {}
+
+    constexpr String(const char* sNullTerminated)
+        : m_pData(const_cast<char*>(sNullTerminated)), m_size(nullTermStringSize(sNullTerminated)), m_bAllocated(false) {}
+
+    constexpr String(char* pStr, u32 len)
+        : m_pData(pStr), m_size(len), m_bAllocated(false) {}
 
     /* */
 
-    constexpr char& operator[](u32 i)             { return m_pData[i]; }
-    constexpr const char& operator[](u32 i) const { return m_pData[i]; }
+    constexpr char& operator[](u32 i)             { assert(i < m_size && "[String]: out of size"); return m_pData[i]; }
+    constexpr const char& operator[](u32 i) const { assert(i < m_size && "[String]: out of size"); return m_pData[i]; }
 
+    [[nodiscard]] bool isAllocated() const { return m_bAllocated; }
     const char* data() const { return m_pData; }
     char* data() { return m_pData; }
     u32 getSize() const { return m_size; }
@@ -66,6 +74,7 @@ struct String
     void trimEnd();
     constexpr void removeNLEnd(); /* remove \r\n */
     [[nodiscard]] bool contains(const String r) const;
+    [[nodiscard]] String clone(IAllocator* pAlloc) const;
 
     /* */
 
@@ -281,7 +290,9 @@ StringAlloc(IAllocator* p, const char* str, u32 size)
     strncpy(pData, str, size);
     pData[size] = '\0';
 
-    return {pData, size};
+    String sNew {pData, size};
+    sNew.m_bAllocated = true;
+    return sNew;
 }
 
 inline String
@@ -291,25 +302,35 @@ StringAlloc(IAllocator* p, u32 size)
 
     char* pData = (char*)p->zalloc(size + 1, sizeof(char));
 
-    return {pData, size};
+    String sNew {pData, size};
+    sNew.m_bAllocated = true;
+    return sNew;
 }
 
 inline String
-StringAlloc(IAllocator* p, const char* str)
+StringAlloc(IAllocator* p, const char* nts)
 {
-    return StringAlloc(p, str, nullTermStringSize(str));
+    return StringAlloc(p, nts, nullTermStringSize(nts));
 }
 
 inline String
 StringAlloc(IAllocator* p, const String s)
 {
-    return StringAlloc(p, s.m_pData, s.m_size);
+    if (s.getSize() == 0) return {};
+
+    char* pData = (char*)p->zalloc(s.getSize() + 1, sizeof(char));
+    strncpy(pData, s.data(), s.getSize());
+    pData[s.getSize()] = '\0';
+
+    String sNew {pData, s.getSize()};
+    sNew.m_bAllocated = true;
+    return sNew;
 }
 
 inline void
 String::destroy(IAllocator* p)
 {
-    p->free(m_pData);
+    if (isAllocated()) p->free(m_pData);
     *this = {};
 }
 
@@ -377,6 +398,12 @@ String::contains(const String r) const
     }
 
     return false;
+}
+
+[[nodiscard]] inline String
+String::clone(IAllocator* pAlloc) const
+{
+    return StringAlloc(pAlloc, *this);
 }
 
 inline u32
