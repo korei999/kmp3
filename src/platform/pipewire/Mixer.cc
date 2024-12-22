@@ -234,9 +234,9 @@ writeFramesLocked(Mixer* s, f32* pBuff, u32 nFrames, long* pSamplesWritten, u64*
 void
 onProcess(void* pData)
 {
-    auto* s = (Mixer*)pData;
+    auto* self = (Mixer*)pData;
 
-    pw_buffer* pPwBuffer = pw_stream_dequeue_buffer(s->m_pStream);
+    pw_buffer* pPwBuffer = pw_stream_dequeue_buffer(self->m_pStream);
     if (!pPwBuffer)
     {
         pw_log_warn("out of buffers: %m");
@@ -252,50 +252,50 @@ onProcess(void* pData)
         return;
     }
 
-    u32 stride = formatByteSize(s->m_eformat) * s->m_nChannels;
+    u32 stride = formatByteSize(self->m_eformat) * self->m_nChannels;
     u32 nFrames = pBuffData.maxsize / stride;
     if (pPwBuffer->requested) nFrames = SPA_MIN(pPwBuffer->requested, (u64)nFrames);
 
-    if (nFrames * s->m_nChannels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
+    if (nFrames * self->m_nChannels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
 
-    s->m_nLastFrames = nFrames;
+    self->m_nLastFrames = nFrames;
 
-    static long nDecodedSamples = 0;
-    static long nWrites = 0;
+    static long s_nDecodedSamples = 0;
+    static long s_nWrites = 0;
 
-    f32 vol = s->m_bMuted ? 0.0f : std::pow(s->m_volume, 3);
+    f32 vol = self->m_bMuted ? 0.0f : std::pow(self->m_volume, 3);
 
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
-        for (u32 chIdx = 0; chIdx < s->m_nChannels; chIdx++)
+        for (u32 chIdx = 0; chIdx < self->m_nChannels; chIdx++)
         {
             /* modify each sample here */
-            *pDest++ = s_aPwBuff[nWrites++] * vol;
+            *pDest++ = s_aPwBuff[s_nWrites++] * vol;
         }
 
-        if (nWrites >= nDecodedSamples)
+        if (s_nWrites >= s_nDecodedSamples)
         {
             /* ask to fill the buffer when it's empty */
-            writeFramesLocked(s, s_aPwBuff, nFrames, &nDecodedSamples, &s->m_currentTimeStamp);
-            nWrites = 0;
+            writeFramesLocked(self, s_aPwBuff, nFrames, &s_nDecodedSamples, &self->m_currentTimeStamp);
+            s_nWrites = 0;
         }
     }
 
-    if (nDecodedSamples == 0)
+    if (s_nDecodedSamples == 0)
     {
-        s->m_currentTimeStamp = 0;
-        s->m_totalSamplesCount = 0;
+        self->m_currentTimeStamp = 0;
+        self->m_totalSamplesCount = 0;
     }
     else
     {
-        s->m_totalSamplesCount = s->m_pIReader->getTotalSamplesCount();
+        self->m_totalSamplesCount = self->m_pIReader->getTotalSamplesCount();
     }
 
     pBuffData.chunk->offset = 0;
     pBuffData.chunk->stride = stride;
     pBuffData.chunk->size = nFrames * stride;
 
-    pw_stream_queue_buffer(s->m_pStream, pPwBuffer);
+    pw_stream_queue_buffer(self->m_pStream, pPwBuffer);
 }
 
 void
