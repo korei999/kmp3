@@ -81,7 +81,7 @@ public:
 
 private:
     void writeFramesLocked(f32* pBuff, u32 nFrames, long* pSamplesWritten, s64* pPcmPos);
-    void configureChannles(u32 nChannles);
+    void setNChannles(u32 nChannles);
 
     friend Device;
     friend void onProcess(void* pData);

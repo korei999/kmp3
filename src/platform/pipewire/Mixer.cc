@@ -391,7 +391,7 @@ Mixer::play(String sPath)
 
     }
 
-    m_nChannels = m_pIDecoder->getChannelsCount();
+    setNChannles(m_pIDecoder->getChannelsCount());
     changeSampleRate(m_pIDecoder->getSampleRate(), true);
 
     if (!math::eq(prevSpeed, 1.0))
@@ -428,8 +428,30 @@ Mixer::writeFramesLocked(f32* pBuff, u32 nFrames, long* pSamplesWritten, s64* pP
 }
 
 void
-Mixer::configureChannles([[maybe_unused]] u32 nChannles)
+Mixer::setNChannles([[maybe_unused]] u32 nChannles)
 {
+    m_nChannels = nChannles;
+
+    u8 aSetupBuff[512] {};
+    spa_audio_info_raw rawInfo {
+        .format = m_eformat,
+        .flags {},
+        .rate = m_sampleRate,
+        .channels = nChannles,
+        .position {}
+    };
+
+    spa_pod_builder b {};
+    spa_pod_builder_init(&b, aSetupBuff, sizeof(aSetupBuff));
+
+    const spa_pod* aParams[1] {};
+    aParams[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
+
+    PWLockGuard lock(m_pThrdLoop);
+    pw_stream_update_params(m_pStream, aParams, utils::size(aParams));
+    /* won't apply without this */
+    pw_stream_set_active(m_pStream, m_bPaused);
+    pw_stream_set_active(m_pStream, !m_bPaused);
 }
 
 void

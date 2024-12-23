@@ -214,7 +214,7 @@ Decoder::writeToBuffer(
     f32* pBuff,
     const u32 buffSize,
     const u32 nFrames,
-    const u32 nChannles,
+    [[maybe_unused]] const u32 nChannles,
     long* pSamplesWritten,
     s64* pPcmPos
 )
@@ -269,31 +269,10 @@ Decoder::writeToBuffer(
             const auto& nFrameChannles = res.ch_layout.nb_channels;
             assert(nFrameChannles > 0);
 
-            if (nFrameChannles == 2)
-            {
-                utils::copy(pBuff + nWrites, (f32*)(res.data[0]), maxSamples);
-                nWrites += maxSamples;
-            }
-            else if (nFrameChannles == 1)
-            {
-                f32* data = (f32*)(res.data[0]);
-                for (u32 i = 0; i < maxSamples; ++i)
-                {
-                    for (u32 j = 0; j < nChannles; ++j)
-                        pBuff[nWrites++] = data[i];
-                }
-            }
-            else
-            {
-                f32* data = (f32*)(res.data[0]);
-                for (u32 i = 0; i < maxSamples; i += nFrameChannles)
-                {
-                    for (u32 j = 0; j < nChannles; ++j)
-                        pBuff[nWrites++] = data[i + j];
-                }
-            }
+            utils::copy(pBuff + nWrites, (f32*)(res.data[0]), maxSamples);
+            nWrites += maxSamples;
 
-            if (nWrites >= maxSamples && nWrites >= nFrames*2) /* mul by nChannels */
+            if (nWrites >= maxSamples && nWrites >= nFrames * nFrameChannles) /* mul by nChannels */
             {
                 *pSamplesWritten += nWrites;
                 return audio::ERROR::OK_;
