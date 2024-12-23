@@ -23,17 +23,19 @@ using namespace adt;
 namespace ffmpeg
 {
 
-struct Reader : audio::IReader
+struct Decoder : audio::IDecoder
 {
     [[nodiscard]] virtual audio::ERROR writeToBuffer(
         f32* pBuff, const u32 buffSize, const u32 nFrames, const u32 nChannles,
-        long* pSamplesWritten, u64* pPcmPos
+        long* pSamplesWritten, s64* pPcmPos
     ) override final;
 
     [[nodiscard]] virtual u32 getSampleRate() override final;
-    virtual void seekMS(long ms) override final;
-    [[nodiscard]] virtual long getCurrentSamplePos() override final;
-    [[nodiscard]] virtual long getTotalSamplesCount() override final;
+    virtual void seekMS(f64 ms) override final;
+    [[nodiscard]] virtual s64 getCurrentSamplePos() override final;
+    [[nodiscard]] virtual s64 getCurrentMS() override final;
+    [[nodiscard]] virtual s64 getTotalMS() override final;
+    [[nodiscard]] virtual s64 getTotalSamplesCount() override final;
     [[nodiscard]] virtual int getChannelsCount() override final;
     [[nodiscard]] virtual Opt<String> getMetadataValue(const String sKey) override final;
     [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
@@ -42,6 +44,7 @@ struct Reader : audio::IReader
 
     /* */
 
+
 private:
     AVStream* m_pStream {};
     AVFormatContext* m_pFormatCtx {};
@@ -49,6 +52,7 @@ private:
     SwrContext* m_pSwr {};
     int m_audioStreamIdx {};
     u64 m_currentSamplePos {};
+    f64 m_currentMS {};
 
     AVPacket* m_pImgPacket {};
     AVFrame* m_pImgFrame {};
@@ -60,7 +64,6 @@ private:
 #endif
 
     void getAttachedPicture();
-    void seekFrame(u64 frame);
 };
 
 } /* namespace ffmpeg */

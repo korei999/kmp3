@@ -225,7 +225,7 @@ seekAbs(
 	CK(sd_bus_message_read_basic(m, 'x', &val));
 
 	if (strncmp(aBuff, pPath, utils::size(aBuff)) == 0)
-        app::g_pMixer->seekMS(val / 1000);
+        app::g_pMixer->seekMS(val / 1000.0);
 
 	return sd_bus_reply_method_return(m, "");
 }
@@ -477,7 +477,7 @@ metadata(
         CK(msgAppendDictSAS(reply, "xesam:artist", pl.m_info.artist.data()));
 
     {
-        long duration = app::g_pMixer->getMaxMS() * 1000;
+        long duration = app::g_pMixer->getTotalMS() * 1000;
         CK(msgAppendDictSX(reply, "mpris:length", duration));
     }
 

@@ -27,6 +27,7 @@ main(int argc, char** argv)
     FreeList freeList(SIZE_8M);
     defer( freeList.freeAll() );
 
+
     app::g_eUIFrontend = app::UI_FRONTEND::ANSI;
 
     if (argc > 1)
@@ -109,7 +110,7 @@ main(int argc, char** argv)
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
-    platform::pipewire::Mixer mixer(&freeList);
+    platform::pipewire::Mixer mixer {};
     mixer.init();
     defer( mixer.destroy() );
 

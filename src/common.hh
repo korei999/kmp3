@@ -45,11 +45,16 @@ readModeToString(WINDOW_READ_MODE e)
 [[nodiscard]] inline String
 allocTimeString(Arena* pArena, int width)
 {
-    auto& mixer = *app::g_pMixer;
+    auto& mix = *app::g_pMixer;
     char* pBuff = (char*)pArena->zalloc(1, width + 1);
 
-    u64 t = std::round(f64(mixer.getCurrentTimeStamp()) / f64(mixer.getNChannels()) / f64(mixer.getChangedSampleRate()));
-    u64 totalT = std::round(f64(mixer.getTotalSamplesCount()) / f64(mixer.getNChannels()) / f64(mixer.getChangedSampleRate()));
+    f64 sampleRateRatio = f64(mix.getSampleRate()) / f64(mix.getChangedSampleRate());
+
+    u64 t = std::round(mix.getCurrentMS() / 1000.0 * sampleRateRatio);
+    u64 totalT = std::round(mix.getTotalMS() / 1000.0 * sampleRateRatio);
+
+    /*u64 t = std::round(f64(mix.getCurrentTimeStamp()) / f64(mix.getNChannels()) / f64(mix.getChangedSampleRate()));*/
+    /*u64 totalT = std::round(f64(mix.getTotalSamplesCount()) / f64(mix.getNChannels()) / f64(mix.getChangedSampleRate()));*/
 
     u64 currMin = t / 60;
     u64 currSec = t - (60 * currMin);
@@ -58,8 +63,8 @@ allocTimeString(Arena* pArena, int width)
     u64 maxSec = totalT - (60 * maxMin);
 
     int n = snprintf(pBuff, width, "time: %llu:%02llu / %llu:%02llu", currMin, currSec, maxMin, maxSec);
-    if (mixer.getSampleRate() != mixer.getChangedSampleRate())
-        snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f64(mixer.getChangedSampleRate()) / f64(mixer.getSampleRate()) * 100.0)));
+    if (mix.getSampleRate() != mix.getChangedSampleRate())
+        snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f64(mix.getChangedSampleRate()) / f64(mix.getSampleRate()) * 100.0)));
 
     return pBuff;
 }
@@ -114,7 +119,7 @@ procSeekString(const wchar_t* pBuff, u32 size)
 
     if (bPercent)
     {
-        long maxMS = app::g_pMixer->getMaxMS();
+        long maxMS = app::g_pMixer->getTotalMS();
 
         app::g_pMixer->seekMS(maxMS * (f64(atoll(aMinutesBuff.data())) / 100.0));
     }

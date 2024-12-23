@@ -63,9 +63,6 @@ parseMouse([[maybe_unused]] Win* s, char* aBuff, u32 buffSize, [[maybe_unused]] 
 
     if (type != 1) return {};
 
-    {
-    }
-
     return {};
 }
 

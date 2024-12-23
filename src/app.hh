@@ -39,8 +39,7 @@ inline void volumeUp(const f32 step) { g_pMixer->volumeUp(step); }
 inline void changeSampleRateDown(u64 ms, bool bSave) { g_pMixer->changeSampleRateDown(ms, bSave); }
 inline void changeSampleRateUp(u64 ms, bool bSave) { g_pMixer->changeSampleRateUp(ms, bSave); }
 inline void restoreSampleRate() { g_pMixer->restoreSampleRate(); }
-inline void seekLeftMS(u64 ms) { g_pMixer->seekLeftMS(ms); }
-inline void seekRightMS(u64 ms) { g_pMixer->seekRightMS(ms); }
+inline void seekOff(f64 ms) { g_pMixer->seekOff(ms); }
 inline PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward) { return g_pPlayer->cycleRepeatMethods(bForward); }
 inline void selectPrev() { g_pPlayer->selectPrev(); }
 inline void selectNext() { g_pPlayer->selectNext(); }

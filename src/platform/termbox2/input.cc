@@ -35,7 +35,6 @@ void
 procMouse(tb_event* pEv)
 {
     auto& pl = *app::g_pPlayer;
-    // auto& mix = *app::g_pMixer;
     const long width = tb_width();
     const long height = tb_height();
     const int split = common::getHorizontalSplitPos(height);
@@ -56,12 +55,12 @@ procMouse(tb_event* pEv)
             }
 
             f64 target = f64(ev.x - xOff) / f64((width - 2) - xOff);
-            target *= app::g_pMixer->getMaxMS();
+            target *= app::g_pMixer->getTotalMS();
             app::g_pMixer->seekMS(target);
             return;
         }
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::seekRightMS(5000);
-        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::seekLeftMS(5000);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::seekOff(10000);
+        else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::seekOff(-10000);
 
         return;
     }

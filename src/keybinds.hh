@@ -6,7 +6,7 @@
 namespace keybinds
 {
 
-enum ARG_TYPE : u8 { NONE, LONG, F32, U64, U64_BOOL, BOOL };
+enum ARG_TYPE : u8 { NONE, LONG, F32, F64, U64, U64_BOOL, BOOL };
 
 struct Arg
 {
@@ -15,6 +15,7 @@ struct Arg
         null nil;
         long l;
         f32 f;
+        f64 d;
         u64 u;
         struct { u64 u; bool b; } ub;
         bool b;
@@ -27,6 +28,7 @@ union PFN
     void (*none)();
     void (*long_)(long);
     void (*f32_)(f32);
+    void (*f64_)(f64);
     void (*u64_)(u64);
     void (*u64b)(u64, bool);
     void (*bool_)(bool);
@@ -69,11 +71,10 @@ inline const Key inl_aKeys[] {
     {{},               L']',  (void*)app::changeSampleRateUp,   {U64_BOOL, {.ub {1000, false}}}},
     {{},               L'}',  (void*)app::changeSampleRateUp,   {U64_BOOL, {.ub {100, false}}} },
     {{},               L'\\', (void*)app::restoreSampleRate,    NONE                           },
-    {keys::ARROWLEFT,  L'h',  (void*)app::seekLeftMS,           {U64, {.u = 5000}}             },
-    {{},               L'h',  (void*)app::seekLeftMS,           {U64, {.u = 5000}}             },
-    {{},               L'H',  (void*)app::seekLeftMS,           {U64, {.u = 1000}}             },
-    {keys::ARROWRIGHT, L'l',  (void*)app::seekRightMS,          {U64, {.u = 5000}}             },
-    {{},               L'L',  (void*)app::seekRightMS,          {U64, {.u = 1000}}             },
+    {keys::ARROWLEFT,  L'h',  (void*)app::seekOff,              {F64, {.d = -10000.0}}         },
+    {{},               L'H',  (void*)app::seekOff,              {F64, {.d = -1000.0}}          },
+    {keys::ARROWRIGHT, L'l',  (void*)app::seekOff,              {F64, {.d = 10000.0}}          },
+    {{},               L'L',  (void*)app::seekOff,              {F64, {.d = 1000.0}}           },
     {{},               L'r',  (void*)app::cycleRepeatMethods,   {BOOL, {.b = true}}            },
     {{},               L'R',  (void*)app::cycleRepeatMethods,   {BOOL, {.b = false}}           },
     {{},               L'm',  (void*)app::toggleMute,           NONE                           },
@@ -97,6 +98,10 @@ resolveKey(const keybinds::PFN pfn, const keybinds::Arg arg)
 
         case keybinds::ARG_TYPE::F32:
         pfn.f32_(arg.uVal.f);
+        break;
+
+        case keybinds::ARG_TYPE::F64:
+        pfn.f64_(arg.uVal.d);
         break;
 
         case keybinds::ARG_TYPE::U64:

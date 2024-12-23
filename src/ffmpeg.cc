@@ -21,7 +21,7 @@ covertFormat(int format)
 };
 
 void
-Reader::close()
+Decoder::close()
 {
     if (m_pFormatCtx) avformat_close_input(&m_pFormatCtx);
     if (m_pCodecCtx) avcodec_free_context(&m_pCodecCtx);
@@ -39,8 +39,24 @@ Reader::close()
     *this = {};
 }
 
+s64
+Decoder::getCurrentMS()
+{
+    return m_currentMS;
+}
+
+s64
+Decoder::getTotalMS()
+{
+    s64 total = getTotalSamplesCount();
+    f64 ret = (av_q2d(m_pStream->time_base) * total) / getChannelsCount() * 1000.0;
+
+    return ret;
+}
+
+
 Opt<String>
-Reader::getMetadataValue(const String sKey)
+Decoder::getMetadataValue(const String sKey)
 {
     char aBuff[64] {};
     strncpy(aBuff, sKey.data(), utils::min(u64(sKey.getSize()), utils::size(aBuff) - 1));
@@ -59,7 +75,7 @@ Reader::getMetadataValue(const String sKey)
 
 #ifdef USE_CHAFA
 void
-Reader::getAttachedPicture()
+Decoder::getAttachedPicture()
 {
     int err = 0;
     AVStream* pStream {};
@@ -139,13 +155,13 @@ Reader::getAttachedPicture()
 #endif
 
 Opt<Image>
-Reader::getCoverImage()
+Decoder::getCoverImage()
 {
     return m_oCoverImg;
 }
 
 audio::ERROR
-Reader::open(String sPath)
+Decoder::open(String sPath)
 {
     String sPathNullTerm = StringAlloc(OsAllocatorGet(), sPath); /* with null char */
     defer( sPathNullTerm.destroy(OsAllocatorGet()) );
@@ -186,7 +202,7 @@ Reader::open(String sPath)
         0, {}
     );
 
-    LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
+    LOG_NOTIFY("codec name: '{}', ch_layout: {}\n", pCodec->long_name, m_pStream->codecpar->ch_layout.nb_channels);
 
     getAttachedPicture();
 
@@ -194,13 +210,13 @@ Reader::open(String sPath)
 }
 
 audio::ERROR
-Reader::writeToBuffer(
+Decoder::writeToBuffer(
     f32* pBuff,
     const u32 buffSize,
     const u32 nFrames,
     const u32 nChannles,
     long* pSamplesWritten,
-    u64* pPcmPos
+    s64* pPcmPos
 )
 {
     int err = 0;
@@ -224,6 +240,7 @@ Reader::writeToBuffer(
             defer( av_frame_unref(&frame) );
 
             f64 currentTimeInSeconds = av_q2d(m_pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
+            m_currentMS = currentTimeInSeconds * 1000.0;
             long pcmPos = currentTimeInSeconds * frame.ch_layout.nb_channels * frame.sample_rate;
             m_currentSamplePos = pcmPos;
             *pPcmPos = pcmPos;
@@ -251,6 +268,7 @@ Reader::writeToBuffer(
 
             const auto& nFrameChannles = res.ch_layout.nb_channels;
             assert(nFrameChannles > 0);
+
             if (nFrameChannles == 2)
             {
                 utils::copy(pBuff + nWrites, (f32*)(res.data[0]), maxSamples);
@@ -287,41 +305,34 @@ Reader::writeToBuffer(
 }
 
 u32
-Reader::getSampleRate()
+Decoder::getSampleRate()
 {
     return m_pStream->codecpar->sample_rate;
 }
 
 void
-Reader::seekFrame(u64 frame)
+Decoder::seekMS(f64 ms)
 {
-    avcodec_flush_buffers(m_pCodecCtx);
-    avformat_seek_file(m_pFormatCtx, m_pStream->index, 0, frame, frame, AVSEEK_FLAG_BACKWARD);
+	avcodec_flush_buffers(m_pCodecCtx);
+	s64 pts = av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
+    av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);
 }
 
-void
-Reader::seekMS(long ms)
-{
-    auto frameNumber = av_rescale(ms, m_pStream->time_base.den, m_pStream->time_base.num);
-    frameNumber /= 1000;
-    seekFrame(frameNumber);
-}
-
-long
-Reader::getCurrentSamplePos()
+s64
+Decoder::getCurrentSamplePos()
 {
     return m_currentSamplePos;
 }
 
-long
-Reader::getTotalSamplesCount()
+s64
+Decoder::getTotalSamplesCount()
 {
-    long res = (m_pFormatCtx->duration / (f32)AV_TIME_BASE) * m_pStream->codecpar->sample_rate * m_pStream->codecpar->ch_layout.nb_channels;
+    s64 res = (m_pFormatCtx->duration / (f64)AV_TIME_BASE) * m_pStream->codecpar->sample_rate * m_pStream->codecpar->ch_layout.nb_channels;
     return res;
 }
 
 int
-Reader::getChannelsCount()
+Decoder::getChannelsCount()
 {
     return m_pStream->codecpar->ch_layout.nb_channels;
 }

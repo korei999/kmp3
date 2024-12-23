@@ -53,6 +53,10 @@ constexpr String
 getPathEnding(String sPath)
 {
     u32 lastSlash = StringLastOf(sPath, '/');
+
+    if (lastSlash == NPOS || (lastSlash + 1) == sPath.getSize()) /* nothing after slash */
+        return {};
+
     return String(&sPath[lastSlash + 1], &sPath[sPath.m_size - 1] - &sPath[lastSlash]);
 }
 
