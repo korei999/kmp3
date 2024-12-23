@@ -6,7 +6,6 @@
 #include "adt/logs.hh"
 #include "defaults.hh"
 #include "frame.hh"
-#include "platform/pipewire/Mixer.hh"
 #include "adt/FreeList.hh"
 
 #ifdef USE_MPRIS
@@ -27,8 +26,8 @@ main(int argc, char** argv)
     FreeList freeList(SIZE_8M);
     defer( freeList.freeAll() );
 
-
     app::g_eUIFrontend = app::UI_FRONTEND::ANSI;
+    app::g_eMixer = app::MIXER::PIPEWIRE;
 
     if (argc > 1)
     {
@@ -110,12 +109,10 @@ main(int argc, char** argv)
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
-    platform::pipewire::Mixer mixer {};
-    mixer.init();
-    defer( mixer.destroy() );
-
-    mixer.setVolume(defaults::VOLUME);
-    app::g_pMixer = &mixer;
+    app::g_pMixer = app::allocMixer(&freeList);
+    app::g_pMixer->init();
+    app::g_pMixer->setVolume(defaults::VOLUME);
+    defer( app::g_pMixer->destroy() );
 
 #ifdef USE_MPRIS
     mpris::initLocks();

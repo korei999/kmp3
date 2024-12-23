@@ -84,6 +84,8 @@ struct DummyMixer : public IMixer
     virtual Opt<String> getMetadata(const String) override final { return {}; }
     virtual Opt<Image> getCoverImage() override final { return {}; }
     virtual void setVolume(const f32) override final {}
+    virtual s64 getCurrentMS() override final { return {}; };
+    virtual s64 getTotalMS() override final { return {}; };
 };
 
 enum class ERROR : u8

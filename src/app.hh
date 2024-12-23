@@ -9,9 +9,11 @@ using namespace adt;
 namespace app
 {
 
-enum class UI_FRONTEND : u8 { ANSI, TERMBOX, NCURSES };
+enum class UI_FRONTEND : u8 { DUMMY, ANSI, TERMBOX, NCURSES };
+enum class MIXER : u8 { DUMMY, PIPEWIRE };
 
 extern UI_FRONTEND g_eUIFrontend;
+extern MIXER g_eMixer;
 extern IWindow* g_pWin;
 extern bool g_bRunning;
 extern int g_argc;
@@ -22,6 +24,7 @@ extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
 
 IWindow* allocWindow(IAllocator* pArena);
+audio::IMixer* allocMixer(IAllocator* pAlloc);
 
 inline void quit() { g_bRunning = false; }
 inline void focusNext() { g_pPlayer->focusNext(); }

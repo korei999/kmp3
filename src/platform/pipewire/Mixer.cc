@@ -268,7 +268,7 @@ Mixer::init()
     m_nChannels = 2;
     m_eformat = SPA_AUDIO_FORMAT_F32;
 
-    mtx_init(&m_mtxDecoder, mtx_plain);
+    mtx_init(&m_mtxDecoder, mtx_recursive);
 
     pw_init(&app::g_argc, &app::g_argv);
 
@@ -599,6 +599,7 @@ Mixer::getCurrentMS()
 s64
 Mixer::getTotalMS()
 {
+    guard::Mtx lock(&m_mtxDecoder);
     return m_pIDecoder->getTotalMS();
 }
 

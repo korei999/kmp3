@@ -2,6 +2,7 @@
 
 #include "adt/logs.hh"
 #include "platform/ansi/Win.hh"
+#include "platform/pipewire/Mixer.hh"
 #include "platform/termbox2/window.hh"
 
 #ifdef USE_NCURSES
@@ -16,6 +17,7 @@ namespace app
 {
 
 UI_FRONTEND g_eUIFrontend = UI_FRONTEND::TERMBOX;
+MIXER g_eMixer = MIXER::PIPEWIRE;
 IWindow* g_pWin {};
 bool g_bRunning {};
 int g_argc {};
@@ -30,8 +32,16 @@ allocWindow(IAllocator* pAlloc)
 {
     IWindow* pRet {};
 
-    switch (app::g_eUIFrontend)
+    switch (g_eUIFrontend)
     {
+        case UI_FRONTEND::DUMMY:
+        {
+            DummyWindow* pDummy = (DummyWindow*)pAlloc->zalloc(1, sizeof(*pDummy));
+            new(pDummy) DummyWindow();
+            pRet = pDummy;
+        }
+        break;
+
         case UI_FRONTEND::ANSI:
         {
             auto* pAnsiWin = (platform::ansi::Win*)pAlloc->zalloc(1, sizeof(platform::ansi::Win));
@@ -63,6 +73,33 @@ allocWindow(IAllocator* pAlloc)
     }
 
     return pRet;
+}
+
+audio::IMixer*
+allocMixer(IAllocator* pAlloc)
+{
+    audio::IMixer* pMix {};
+
+    switch (g_eMixer)
+    {
+        case MIXER::DUMMY:
+        {
+            audio::DummyMixer* pDummy = (decltype(pDummy))pAlloc->zalloc(1, sizeof(*pDummy));
+            new(pDummy) audio::DummyMixer();
+            pMix = pDummy;
+        }
+        break;
+
+        case MIXER::PIPEWIRE:
+        {
+            platform::pipewire::Mixer* pPwMixer = (decltype(pPwMixer))pAlloc->zalloc(1, sizeof(*pPwMixer));
+            new(pPwMixer) platform::pipewire::Mixer();
+            pMix = pPwMixer;
+        }
+        break;
+    }
+
+    return pMix;
 }
 
 } /* namespace app */
