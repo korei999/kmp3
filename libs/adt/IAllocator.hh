@@ -33,7 +33,7 @@ constexpr u64 SIZE_8G = SIZE_1G * SIZE_1K;
 
 struct IAllocator
 {
-    [[nodiscard]] virtual constexpr void* alloc(u64 mCount, u64 mSize) = 0;
+    [[nodiscard]] virtual constexpr void* malloc(u64 mCount, u64 mSize) = 0;
     [[nodiscard]] virtual constexpr void* zalloc(u64 mCount, u64 mSize) = 0;
     [[nodiscard]] virtual constexpr void* realloc(void* p, u64 mCount, u64 mSize) = 0;
     virtual constexpr void free(void* ptr) = 0;

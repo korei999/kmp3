@@ -7,6 +7,10 @@
 #include <cassert>
 #include <new> /* IWYU pragma: keep */
 
+#ifndef NDEBUG
+    #include <stdckdint.h>
+#endif
+
 namespace adt
 {
 
@@ -25,7 +29,7 @@ struct VecBase
 
     VecBase() = default;
     VecBase(IAllocator* p, u32 prealloc = 1)
-        : m_pData((T*)p->alloc(prealloc, sizeof(T))),
+        : m_pData((T*)p->malloc(prealloc, sizeof(T))),
           m_size(0),
           m_capacity(prealloc) {}
 
@@ -54,10 +58,15 @@ struct VecBase
     [[nodiscard]] T* const& data() const;
     void zeroOut();
     [[nodiscard]] VecBase<T> clone(IAllocator* pAlloc) const;
+
+    /* */
+
+private:
     void grow(IAllocator* p, u32 newCapacity);
 
     /* */
 
+public:
     struct It
     {
         T* s;
@@ -93,7 +102,14 @@ inline u32
 VecBase<T>::push(IAllocator* p, const T& data)
 {
     if (m_size >= m_capacity)
-        grow(p, nextPowerOf2(m_capacity + 1));
+    {
+#ifndef NDEBUG
+        u32 _result = 0;
+        assert(!ckd_add(&_result, m_capacity, 1U) && "[Vec]: capacity overflows");
+        assert(nextPowerOf2(m_capacity + 1U) > m_capacity && "[Vec]: can't grow to nextPowerOf2 (overflow)");
+#endif
+        grow(p, nextPowerOf2(m_capacity + 1U));
+    }
 
     new(m_pData + m_size++) T(data);
 
@@ -244,7 +260,6 @@ template<typename T>
 inline void
 VecBase<T>::grow(IAllocator* p, u32 newCapacity)
 {
-    assert(newCapacity * sizeof(T) > 0);
     m_capacity = newCapacity;
     m_pData = (T*)p->realloc(m_pData, newCapacity, sizeof(T));
 }

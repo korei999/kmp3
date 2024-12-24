@@ -41,7 +41,7 @@ load(IAllocator* pAlloc, String sPath)
     s64 size = ftell(pf) + 1;
     rewind(pf);
 
-    ret.m_pData = (char*)pAlloc->alloc(size, sizeof(char));
+    ret.m_pData = (char*)pAlloc->malloc(size, sizeof(char));
     ret.m_size = size - 1;
     fread(ret.data(), 1, ret.getSize(), pf);
 

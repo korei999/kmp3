@@ -25,7 +25,7 @@ struct QueueBase
 
     QueueBase() = default;
     QueueBase(IAllocator* pAlloc, u32 prealloc = SIZE_MIN)
-        : m_pData {(T*)pAlloc->alloc(prealloc, sizeof(T))},
+        : m_pData {(T*)pAlloc->malloc(prealloc, sizeof(T))},
           m_cap (prealloc) {}
 
     /* */

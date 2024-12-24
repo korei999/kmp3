@@ -65,20 +65,6 @@ namespace hash
 
 constexpr u64 FNV1_64_INIT = 0xcbf29ce484222325ULL;
 
-template<typename T>
-constexpr u64
-func(T& x)
-{
-    return x * FNV1_64_INIT;
-}
-
-template<typename T>
-constexpr u64
-funcHVal(T& x, u64 hashValue)
-{
-    return x * hashValue;
-}
-
 /* generic version that hashes everything */
 inline u64
 fnvBuff(void* pBuf, u32 byteSize)
@@ -161,6 +147,20 @@ fnvACharHVal(const char (&aChars)[N], u64 hval)
     }
 
     return hval;
+}
+
+template<typename T>
+inline u64
+func(T& x)
+{
+    return fnvBuff((void*)&x, sizeof(T));
+}
+
+template<typename T>
+inline u64
+funcHVal(T& x, u64 hashValue)
+{
+    return fnvBuffHVal((void*)&x, sizeof(T), hashValue);
 }
 
 template<u32 N>

@@ -12,7 +12,7 @@ namespace adt
  * freeAll() method is not supported. */
 struct OsAllocator : IAllocator
 {
-    [[nodiscard]] virtual void* alloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* malloc(u64 mCount, u64 mSize) override final;
     [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
     void virtual free(void* ptr) override final;
@@ -27,10 +27,10 @@ OsAllocatorGet()
 }
 
 inline void*
-OsAllocator::alloc(u64 mCount, u64 mSize)
+OsAllocator::malloc(u64 mCount, u64 mSize)
 {
     auto* r = ::malloc(mCount * mSize);
-    assert(r != nullptr && "[OsAllocator]: calloc failed");
+    assert(r != nullptr && "[OsAllocator]: malloc failed");
     return r;
 }
 

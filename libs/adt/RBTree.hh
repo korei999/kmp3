@@ -500,7 +500,7 @@ template<typename T>
 inline RBNode<T>*
 RBNodeAlloc(IAllocator* pA, const T& data)
 {
-    auto* r = (RBNode<T>*)pA->alloc(1, sizeof(RBNode<T>));
+    auto* r = (RBNode<T>*)pA->malloc(1, sizeof(RBNode<T>));
     new(&r->m_data) T(data);
     return r;
 }

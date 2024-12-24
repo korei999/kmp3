@@ -19,7 +19,7 @@ struct MutexArena : IAllocator
 
     /* */
 
-    [[nodiscard]] virtual void* alloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* malloc(u64 mCount, u64 mSize) override final;
     [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
     virtual void free(void* ptr) override final;
@@ -27,10 +27,10 @@ struct MutexArena : IAllocator
 };
 
 inline void*
-MutexArena::alloc(u64 mCount, u64 mSize)
+MutexArena::malloc(u64 mCount, u64 mSize)
 {
     mtx_lock(&m_mtx);
-    auto* r = m_arena.alloc(mCount, mSize);
+    auto* r = m_arena.malloc(mCount, mSize);
     mtx_unlock(&m_mtx);
 
     return r;

@@ -43,7 +43,7 @@ clearArea(Win* s, int x, int y, int width, int height)
     const int w = utils::minVal(g_termSize.width, width);
     const int h = utils::minVal(g_termSize.height, height);
 
-    char* pBuff = (char*)s->pArena->alloc(w + 1, 1);
+    char* pBuff = (char*)s->pArena->malloc(w + 1, 1);
     memset(pBuff, ' ', w);
 
     for (int i = y; i < h; ++i)
@@ -89,7 +89,7 @@ info(Win* s)
     const int hOff = s->prevImgWidth + 2;
     const int width = g_termSize.width;
 
-    char* pBuff = (char*)s->pArena->alloc(width + 1, 1);
+    char* pBuff = (char*)s->pArena->malloc(width + 1, 1);
 
     auto drawLine = [&](
         const int y,

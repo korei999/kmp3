@@ -59,7 +59,7 @@ struct FreeList : IAllocator
 
     /* */
 
-    [[nodiscard]] virtual void* alloc(u64 mCount, u64 mSize) override;
+    [[nodiscard]] virtual void* malloc(u64 mCount, u64 mSize) override;
     [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override;
     [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override;
     virtual void free(void* ptr) override;
@@ -256,7 +256,7 @@ _FreeListSplitNode(FreeList* s, FreeList::Node* pNode, u64 realSize)
 }
 
 inline void*
-FreeList::alloc(u64 nMembers, u64 mSize)
+FreeList::malloc(u64 nMembers, u64 mSize)
 {
     u64 requested = align8(nMembers * mSize);
     if (requested == 0) return nullptr;
@@ -297,7 +297,7 @@ again:
 inline void*
 FreeList::zalloc(u64 nMembers, u64 mSize)
 {
-    auto* p = alloc(nMembers, mSize);
+    auto* p = malloc(nMembers, mSize);
     memset(p, 0, nMembers * mSize);
     return p;
 }
@@ -347,7 +347,7 @@ FreeList::free(void* ptr)
 inline void*
 FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
 {
-    if (!ptr) return alloc(nMembers, mSize);
+    if (!ptr) return malloc(nMembers, mSize);
 
     auto* pNode = _FreeListNodeFromPtr(ptr);
     s64 nodeSize = (s64)pNode->m_data.getSize() - (s64)sizeof(FreeList::Node);
@@ -390,7 +390,7 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
         }
     }
 
-    auto* pRet = alloc(nMembers, mSize);
+    auto* pRet = malloc(nMembers, mSize);
     memcpy(pRet, ptr, nodeSize);
     free(ptr);
 

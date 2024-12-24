@@ -23,7 +23,7 @@ struct FixedAllocator : IAllocator
 
     /* */
 
-    [[nodiscard]] virtual constexpr void* alloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual constexpr void* malloc(u64 mCount, u64 mSize) override final;
     [[nodiscard]] virtual constexpr void* zalloc(u64 mCount, u64 mSize) override final;
     [[nodiscard]] virtual constexpr void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
     constexpr virtual void free(void* ptr) override final;
@@ -32,7 +32,7 @@ struct FixedAllocator : IAllocator
 };
 
 constexpr void*
-FixedAllocator::alloc(u64 mCount, u64 mSize)
+FixedAllocator::malloc(u64 mCount, u64 mSize)
 {
     u64 aligned = align8(mCount * mSize);
     void* ret = &this->pMemBuffer[this->size];
@@ -47,7 +47,7 @@ FixedAllocator::alloc(u64 mCount, u64 mSize)
 constexpr void*
 FixedAllocator::zalloc(u64 mCount, u64 mSize)
 {
-    auto* p = this->alloc(mCount, mSize);
+    auto* p = this->malloc(mCount, mSize);
     memset(p, 0, mCount * mSize);
     return p;
 }
@@ -55,7 +55,7 @@ FixedAllocator::zalloc(u64 mCount, u64 mSize)
 constexpr void*
 FixedAllocator::realloc(void* p, u64 mCount, u64 mSize)
 {
-    if (!p) return this->alloc(mCount, mSize);
+    if (!p) return this->malloc(mCount, mSize);
 
     void* ret = nullptr;
     u64 aligned = align8(mCount * mSize);

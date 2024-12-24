@@ -37,7 +37,7 @@ struct ChunkAllocator : IAllocator
 
     /* */
 
-    [[nodiscard]] virtual void* alloc(u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* malloc(u64 mCount, u64 mSize) override final;
     [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
     void virtual free(void* ptr) override final;
@@ -67,7 +67,7 @@ _ChunkAllocatorNewBlock(ChunkAllocator* s)
 }
 
 inline void*
-ChunkAllocator::alloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignored1)
+ChunkAllocator::malloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignored1)
 {
     ChunkAllocatorBlock* pBlock = m_pBlocks;
     ChunkAllocatorBlock* pPrev = nullptr;
@@ -97,7 +97,7 @@ ChunkAllocator::alloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignore
 inline void*
 ChunkAllocator::zalloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignored1)
 {
-    auto* p = alloc(ignored0, ignored1);
+    auto* p = malloc(ignored0, ignored1);
     memset(p, 0, m_chunkSize);
     return p;
 }

@@ -78,7 +78,7 @@ struct MapBase
     [[nodiscard]] MapResult<K, V> search(const K& key);
     void remove(u32 i);
     void remove(const K& key);
-    [[nodiscard]] MapResult<K, V> tryInsert(IAllocator* p, const K& key, const V& val);
+    MapResult<K, V> tryInsert(IAllocator* p, const K& key, const V& val);
     void destroy(IAllocator* p);
     [[nodiscard]] u32 getCap() const;
     [[nodiscard]] u32 getSize() const;
@@ -345,7 +345,7 @@ struct Map
     [[nodiscard]] MapResult<K, V> search(const K& key) { return base.search(key); }
     void remove(u32 i) { base.remove(i); }
     void remove(const K& key) { base.remove(key); }
-    [[nodiscard]] MapResult<K, V> tryInsert(const K& key, const V& val) { return base.tryInsert(m_pAlloc, key, val); }
+    MapResult<K, V> tryInsert(const K& key, const V& val) { return base.tryInsert(m_pAlloc, key, val); }
     void destroy() { base.destroy(m_pAlloc); }
     [[nodiscard]] u32 getCap() const { return base.getCap(); }
     [[nodiscard]] u32 getSize() const { return base.getSize(); }

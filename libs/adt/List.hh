@@ -23,7 +23,7 @@ template<typename T>
 constexpr ListNode<T>*
 ListNodeAlloc(IAllocator* pA, const T& x)
 {
-    auto* pNew = (ListNode<T>*)pA->alloc(1, sizeof(ListNode<T>));
+    auto* pNew = (ListNode<T>*)pA->malloc(1, sizeof(ListNode<T>));
     new(&pNew->data) T(x);
 
     return pNew;
