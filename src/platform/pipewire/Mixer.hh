@@ -41,21 +41,8 @@ protected:
     pw_thread_loop* m_pThrdLoop {};
     pw_stream* m_pStream {};
     u32 m_nLastFrames {};
-    mtx_t m_mtxDecoder {};
-    spa_list m_lDevices {};
-    spa_list m_lNodes {};
-    pw_context* m_pCtx {};
-    pw_core* m_pCore {};
-    pw_registry* m_pRegistry {};
-    spa_hook m_coreListener {};
-    spa_hook m_registryListener {};
-    spa_hook m_metadataListener {};
-
-    void* m_pProxyMetadata {};
-    void* m_pProxyNodeSink {};
-    void* m_pProxyNodeSource {};
-
     f64 m_currMs {};
+    mtx_t m_mtxDecoder {};
 
     /* */
 
@@ -79,15 +66,14 @@ public:
 
     /* */
 
+    static void* getOnProcessPFN() { return methodPointer(&Mixer::onProcess); }
+
+    /* */
+
 private:
     void writeFramesLocked(f32* pBuff, u32 nFrames, long* pSamplesWritten, s64* pPcmPos);
     void setNChannles(u32 nChannles);
-
-    friend Device;
-    friend void onProcess(void* pData);
-    friend void registryGlobalRemove(void* pData, uint32_t id);
-    friend void registryGlobal(void* pData, uint32_t id, uint32_t permissions, const char* pType, uint32_t version, const spa_dict* pProps);
-    friend int metadataProperty(void* pData, uint32_t subject, const char* pKey, const char* pType, const char* pValue);
+    void onProcess();
 };
 
 } /* namespace pipewire */

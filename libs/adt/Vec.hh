@@ -93,7 +93,7 @@ inline u32
 VecBase<T>::push(IAllocator* p, const T& data)
 {
     if (m_size >= m_capacity)
-        grow(p, utils::max(m_capacity * 2U, u32(SIZE_MIN)));
+        grow(p, nextPowerOf2(m_capacity + 1));
 
     new(m_pData + m_size++) T(data);
 
