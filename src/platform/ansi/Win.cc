@@ -2,8 +2,7 @@
 
 #include "adt/logs.hh"
 #include "app.hh"
-#include "draw.hh"
-#include "input.hh"
+#include "common.hh"
 
 #include <csignal>
 #include <unistd.h>
@@ -43,7 +42,7 @@ Win::enableRawMode()
         LOG_DIE("tcsetattr\n");
 }
 
-static void
+void
 sigwinchHandler([[maybe_unused]] int sig)
 {
     auto* s = (Win*)app::g_pWin;
@@ -101,13 +100,13 @@ Win::destroy()
 void
 Win::draw()
 {
-    draw::update(this);
+    update();
 }
 
 void
 Win::procEvents()
 {
-    input::procInput(this);
+    procInput();
 
     common::fixFirstIdx(
         g_termSize.height - app::g_pPlayer->m_imgHeight - 5,
@@ -119,9 +118,9 @@ void
 Win::seekFromInput()
 {
     common::seekFromInput(
-        +[](void* pArg) { return input::readWChar((Win*)pArg); },
+        +[](void* pArg) { return ((Win*)pArg)->readWChar(); },
         this,
-        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; draw::update((Win*)pArg); },
+        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; ((Win*)pArg)->update(); },
         this
     );
 }
@@ -131,9 +130,9 @@ Win::subStringSearch()
 {
     common::subStringSearch(
         this->m_pArena,
-        +[](void* pArg) { return input::readWChar((Win*)pArg); },
+        +[](void* pArg) { return ((Win*)pArg)->readWChar(); },
         this,
-        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; draw::update((Win*)pArg); },
+        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; ((Win*)pArg)->update(); },
         this,
         &this->m_firstIdx
     );

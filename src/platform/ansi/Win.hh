@@ -3,6 +3,7 @@
 #include "IWindow.hh"
 #include "TextBuff.hh"
 #include "TermSize.hh"
+#include "common.hh"
 
 #include <termios.h>
 #include <threads.h>
@@ -16,6 +17,7 @@ extern TermSize g_termSize;
 
 struct Win : public IWindow
 {
+private:
     Arena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
@@ -42,6 +44,25 @@ public:
 private:
     void disableRawMode();
     void enableRawMode();
+
+    /* draw */
+    void clearArea(int x, int y, int width, int height);
+    void coverImage();
+    void info();
+    void volume();
+    void time();
+    void timeSlider();
+    void list();
+    void bottomLine();
+    void update();
+    /* */
+
+    /* input */
+    void procInput();
+    common::READ_STATUS readWChar();
+    /* */
+
+    friend void sigwinchHandler([[maybe_unused]] int sig);
 };
 
 } /* namespace ansi */

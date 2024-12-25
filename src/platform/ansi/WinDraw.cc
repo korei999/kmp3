@@ -1,8 +1,7 @@
-#include "draw.hh"
+#include "Win.hh"
 
 #include "adt/guard.hh"
 #include "app.hh"
-#include "common.hh"
 #include "defaults.hh"
 #include "platform/chafa/chafa.hh"
 #include <stdatomic.h>
@@ -34,35 +33,33 @@ namespace platform
 {
 namespace ansi
 {
-namespace draw
-{
 
-static void
-clearArea(Win* s, int x, int y, int width, int height)
+void
+Win::clearArea(int x, int y, int width, int height)
 {
     const int w = utils::minVal(g_termSize.width, width);
     const int h = utils::minVal(g_termSize.height, height);
 
-    char* pBuff = (char*)s->m_pArena->malloc(w + 1, 1);
+    char* pBuff = (char*)m_pArena->malloc(w + 1, 1);
     memset(pBuff, ' ', w);
 
     for (int i = y; i < h; ++i)
-        s->m_textBuff.movePush(x, i, pBuff, w);
+        m_textBuff.movePush(x, i, pBuff, w);
 }
 
-static void
-coverImage(Win* s)
+void
+Win::coverImage()
 {
     auto& pl = *app::g_pPlayer;
 
-    if (pl.m_bSelectionChanged && s->m_time > s->m_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
+    if (pl.m_bSelectionChanged && m_time > m_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
         pl.m_bSelectionChanged = false;
 
         const int split = pl.m_imgHeight;
 
-        s->m_textBuff.clearKittyImages();
-        clearArea(s, 1, 1, s->m_prevImgWidth, split + 1);
+        m_textBuff.clearKittyImages();
+        clearArea(1, 1, m_prevImgWidth, split + 1);
 
         Opt<Image> oCoverImg = app::g_pMixer->getCoverImage();
         if (oCoverImg)
@@ -70,26 +67,26 @@ coverImage(Win* s)
             const auto& img = oCoverImg.getData();
 
             const platform::chafa::Image chafaImg = platform::chafa::getImageString(
-                s->m_pArena, img, split, g_termSize.width
+                m_pArena, img, split, g_termSize.width
             );
 
-            s->m_prevImgWidth = chafaImg.width;
+            m_prevImgWidth = chafaImg.width;
 
-            s->m_textBuff.move(1, 1);
-            s->m_textBuff.push(chafaImg.s);
+            m_textBuff.move(1, 1);
+            m_textBuff.push(chafaImg.s);
         }
     }
 }
 
-static void
-info(Win* s)
+void
+Win::info()
 {
     const auto& pl = *app::g_pPlayer;
-    auto& tb = s->m_textBuff;
-    const int hOff = s->m_prevImgWidth + 2;
+    auto& tb = m_textBuff;
+    const int hOff = m_prevImgWidth + 2;
     const int width = g_termSize.width;
 
-    char* pBuff = (char*)s->m_pArena->malloc(width + 1, 1);
+    char* pBuff = (char*)m_pArena->malloc(width + 1, 1);
 
     auto drawLine = [&](
         const int y,
@@ -120,12 +117,12 @@ info(Win* s)
     drawLine(3, "artist: ", pl.m_info.artist, BOLD);
 }
 
-static void
-volume(Win* s)
+void
+Win::volume()
 {
-    auto& tb = s->m_textBuff;
+    auto& tb = m_textBuff;
     const auto width = g_termSize.width;
-    const int off = s->m_prevImgWidth + 2;
+    const int off = m_prevImgWidth + 2;
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
     constexpr String fmt = "volume: %3d";
@@ -145,7 +142,7 @@ volume(Win* s)
     tb.push(NORM);
     tb.moveClearLine(off - 1, 6, TEXT_BUFF_ARG::TO_END);
 
-    char* pBuff = (char*)s->m_pArena->zalloc(1, width + 1);
+    char* pBuff = (char*)m_pArena->zalloc(1, width + 1);
     u32 n = snprintf(pBuff, width, fmt.data(), int(std::round(app::g_pMixer->getVolume() * 100.0)));
     tb.push(col);
     tb.push(BOLD);
@@ -174,27 +171,27 @@ volume(Win* s)
     }
 }
 
-static void
-time(Win* s)
+void
+Win::time()
 {
-    auto& tb = s->m_textBuff;
+    auto& tb = m_textBuff;
     const auto width = g_termSize.width;
-    const int off = s->m_prevImgWidth + 2;
+    const int off = m_prevImgWidth + 2;
 
     tb.push(NORM);
     tb.moveClearLine(off - 1, 9, TEXT_BUFF_ARG::TO_END);
 
-    String sTime = common::allocTimeString(s->m_pArena, width);
+    String sTime = common::allocTimeString(m_pArena, width);
     tb.movePushGlyphs(off, 9, sTime, width - off);
 }
 
-static void
-timeSlider(Win* s)
+void
+Win::timeSlider()
 {
-    auto& tb = s->m_textBuff;
+    auto& tb = m_textBuff;
     const auto& mix = *app::g_pMixer;
     const auto width = g_termSize.width;
-    const int xOff = s->m_prevImgWidth + 2;
+    const int xOff = m_prevImgWidth + 2;
     const int yOff = 10;
 
     tb.push(NORM);
@@ -229,18 +226,18 @@ timeSlider(Win* s)
     }
 }
 
-static void
-list(Win* s)
+void
+Win::list()
 {
     const auto& pl = *app::g_pPlayer;
-    auto& tb = s->m_textBuff;
+    auto& tb = m_textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
     const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
     tb.push(NORM);
-    for (u16 h = s->m_firstIdx, i = 0; i < listHeight - 1; ++h, ++i)
+    for (u16 h = m_firstIdx, i = 0; i < listHeight - 1; ++h, ++i)
     {
         if (h < pl.m_aSongIdxs.getSize())
         {
@@ -268,13 +265,13 @@ list(Win* s)
     }
 }
 
-static void
-bottomLine(Win* s)
+void
+Win::bottomLine()
 {
     namespace c = common;
 
     const auto& pl = *app::g_pPlayer;
-    auto& tb = s->m_textBuff;
+    auto& tb = m_textBuff;
     int height = g_termSize.height;
     int width = g_termSize.width;
 
@@ -283,7 +280,7 @@ bottomLine(Win* s)
 
     /* selected / focused */
     {
-        char* pBuff = (char*)s->m_pArena->zalloc(1, width + 1);
+        char* pBuff = (char*)m_pArena->zalloc(1, width + 1);
 
         int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortArgvs.getSize() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
@@ -319,16 +316,16 @@ bottomLine(Win* s)
 }
 
 void
-update(Win* s)
+Win::update()
 {
-    guard::Mtx lock(&s->m_mtxUpdate);
+    guard::Mtx lock(&m_mtxUpdate);
 
     auto& pl = *app::g_pPlayer;
-    auto& tb = s->m_textBuff;
+    auto& tb = m_textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
 
-    s->m_time = utils::timeNowMS();
+    m_time = utils::timeNowMS();
 
     defer(
         tb.flush();
@@ -341,31 +338,30 @@ update(Win* s)
         return;
     }
 
-    if (s->m_bClear)
+    if (m_bClear)
     {
-        s->m_bClear = false;
+        m_bClear = false;
         tb.clear();
     }
 
-    time(s);
-    timeSlider(s);
+    time();
+    timeSlider();
 
-    if (s->m_bRedraw || pl.m_bSelectionChanged)
+    if (m_bRedraw || pl.m_bSelectionChanged)
     {
-        s->m_bRedraw = false;
+        m_bRedraw = false;
 
-        coverImage(s);
-        time(s); /* redraw if image size changed */
-        timeSlider(s);
+        coverImage();
+        time(); /* redraw if image size changed */
+        timeSlider();
 
-        volume(s);
-        info(s);
-        list(s);
+        volume();
+        info();
+        list();
 
-        bottomLine(s);
+        bottomLine();
     }
 }
 
-} /* namespace draw */
 } /* namespace ansi */
 } /* namespace platform */

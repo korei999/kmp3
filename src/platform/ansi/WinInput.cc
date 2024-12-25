@@ -1,4 +1,4 @@
-#include "input.hh"
+#include "Win.hh"
 
 #include "adt/logs.hh"
 #include "defaults.hh"
@@ -7,8 +7,6 @@
 namespace platform
 {
 namespace ansi
-{
-namespace input
 {
 
 #define ESC_SEQ '\x1b'
@@ -134,11 +132,11 @@ readFromStdin(Win* s, const int timeoutMS)
 }
 
 common::READ_STATUS
-readWChar(Win* s)
+Win::readWChar()
 {
     namespace c = common;
 
-    int wc = readFromStdin(s, defaults::READ_TIMEOUT);
+    int wc = readFromStdin(this, defaults::READ_TIMEOUT);
 
     if (wc == keys::ESC) return c::READ_STATUS::DONE; /* esc */
     else if (wc == keys::CTRL_C) return c::READ_STATUS::DONE;
@@ -166,21 +164,20 @@ readWChar(Win* s)
 }
 
 void
-procInput(Win* s)
+Win::procInput()
 {
-    int wc = readFromStdin(s, defaults::UPDATE_RATE);
+    int wc = readFromStdin(this, defaults::UPDATE_RATE);
 
     for (const auto& k : keybinds::inl_aKeys)
     {
         if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
         {
             keybinds::resolveKey(k.pfn, k.arg);
-            s->m_bRedraw = true;
+            m_bRedraw = true;
         }
     }
 }
 
 
-} /* namespace input */
 } /* namespace ansi */
 } /* namespace platform */
