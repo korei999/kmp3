@@ -19,7 +19,7 @@ struct FixedAllocator : IAllocator
     /* */
 
     constexpr FixedAllocator() = default;
-    constexpr FixedAllocator(void* pMemory, u64 capacity);
+    constexpr FixedAllocator(u8* pMemory, u64 capacity);
 
     /* */
 
@@ -98,8 +98,8 @@ FixedAllocator::reset()
     this->size = 0;
 }
 
-constexpr FixedAllocator::FixedAllocator(void* pMemory, u64 capacity)
-    : pMemBuffer((u8*)pMemory),
+constexpr FixedAllocator::FixedAllocator(u8* pMemory, u64 capacity)
+    : pMemBuffer(pMemory),
       cap(capacity) {}
 
 } /* namespace adt */

@@ -7,10 +7,6 @@
 #include <cassert>
 #include <new> /* IWYU pragma: keep */
 
-#ifndef NDEBUG
-    #include <stdckdint.h>
-#endif
-
 namespace adt
 {
 
@@ -56,7 +52,7 @@ struct VecBase
     [[nodiscard]] u32 getCap() const;
     [[nodiscard]] T*& data();
     [[nodiscard]] T* const& data() const;
-    void zeroOut();
+    void zeroOut(); /* set size to zero and memset */
     [[nodiscard]] VecBase<T> clone(IAllocator* pAlloc) const;
 
     /* */
@@ -103,11 +99,7 @@ VecBase<T>::push(IAllocator* p, const T& data)
 {
     if (m_size >= m_capacity)
     {
-#ifndef NDEBUG
-        u32 _result = 0;
-        assert(!ckd_add(&_result, m_capacity, 1U) && "[Vec]: capacity overflows");
         assert(nextPowerOf2(m_capacity + 1U) > m_capacity && "[Vec]: can't grow to nextPowerOf2 (overflow)");
-#endif
         grow(p, nextPowerOf2(m_capacity + 1U));
     }
 
@@ -243,6 +235,7 @@ inline void
 VecBase<T>::zeroOut()
 {
     memset(m_pData, 0, m_size * sizeof(T));
+    m_size = 0;
 }
 
 template<typename T>
@@ -319,12 +312,12 @@ struct Vec
     VecBase<T>::It begin() { return base.begin(); }
     VecBase<T>::It end() { return base.end(); }
     VecBase<T>::It rbegin() { return base.rbegin(); }
-    VecBase<T>::It rend() { return rend(); }
+    VecBase<T>::It rend() { return base.rend(); }
 
     const VecBase<T>::It begin() const { return base.begin(); }
     const VecBase<T>::It end() const { return base.end(); }
     const VecBase<T>::It rbegin() const { return base.rbegin(); }
-    const VecBase<T>::It rend() const { return rend(); }
+    const VecBase<T>::It rend() const { return base.rend(); }
 };
 
 namespace print

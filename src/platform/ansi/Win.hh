@@ -16,16 +16,16 @@ extern TermSize g_termSize;
 
 struct Win : public IWindow
 {
-    Arena* pArena {};
-    TextBuff textBuff {};
-    termios termOg {};
-    u16 firstIdx {};
-    bool bRedraw = true;
-    bool bClear = false;
-    int prevImgWidth = 0;
-    mtx_t mtxUpdate {};
-    f64 time {};
-    f64 lastResizeTime {};
+    Arena* m_pArena {};
+    TextBuff m_textBuff {};
+    termios m_termOg {};
+    u16 m_firstIdx {};
+    bool m_bRedraw = true;
+    bool m_bClear = false;
+    int m_prevImgWidth = 0;
+    mtx_t m_mtxUpdate {};
+    f64 m_time {};
+    f64 m_lastResizeTime {};
 
     /* */
 
@@ -36,6 +36,12 @@ public:
     virtual void procEvents() final;
     virtual void seekFromInput() final;
     virtual void subStringSearch() final;
+
+    /* */
+
+private:
+    void disableRawMode();
+    void enableRawMode();
 };
 
 } /* namespace ansi */

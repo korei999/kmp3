@@ -219,7 +219,7 @@ struct Queue
     QueueBase<T>::It begin() { return base.begin(); }
     QueueBase<T>::It end() { return base.end(); }
     QueueBase<T>::It rbegin() { return base.rbegin(); }
-    QueueBase<T>::It rend() { return rend(); }
+    QueueBase<T>::It rend() { return base.rend(); }
 
     const QueueBase<T>::It begin() const { return base.begin(); }
     const QueueBase<T>::It end() const { return base.end(); }

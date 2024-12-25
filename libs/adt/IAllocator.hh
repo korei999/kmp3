@@ -23,13 +23,13 @@ nextPowerOf2(u64 x)
     return x;
 }
 
-constexpr u64 SIZE_MIN = 2UL;
-constexpr u64 SIZE_1K = 1024UL;
-constexpr u64 SIZE_8K = 8UL * SIZE_1K;
-constexpr u64 SIZE_1M = SIZE_1K * SIZE_1K; 
-constexpr u64 SIZE_8M = 8UL * SIZE_1M; 
-constexpr u64 SIZE_1G = SIZE_1M * SIZE_1K; 
-constexpr u64 SIZE_8G = SIZE_1G * SIZE_1K;
+constexpr u64 SIZE_MIN = 2ULL;
+constexpr u64 SIZE_1K = 1024ULL;
+constexpr u64 SIZE_8K = 8ULL * SIZE_1K;
+constexpr u64 SIZE_1M = SIZE_1K * SIZE_1K;
+constexpr u64 SIZE_8M = 8ULL * SIZE_1M;
+constexpr u64 SIZE_1G = SIZE_1M * SIZE_1K;
+constexpr u64 SIZE_8G = 8ULL * SIZE_1G;
 
 struct IAllocator
 {

@@ -79,6 +79,7 @@ _ArenaFindFittingBlock(Arena* s, u64 size)
 _ArenaAllocBlock(u64 size)
 {
     ArenaBlock* pBlock = (ArenaBlock*)::calloc(1, size + sizeof(ArenaBlock));
+    assert(pBlock && "[Arena]: failed to allocate the block (too big size / out of memory)");
     pBlock->size = size;
     pBlock->pLastAlloc = pBlock->pMem;
 

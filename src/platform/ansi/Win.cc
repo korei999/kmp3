@@ -21,20 +21,20 @@ namespace ansi
 
 TermSize g_termSize {};
 
-static void
-disableRawMode(Win* s)
+void
+Win::disableRawMode()
 {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &s->termOg) == -1)
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &m_termOg) == -1)
         LOG_DIE("tcsetattr\n");
 }
 
-static void
-enableRawMode(Win* s)
+void
+Win::enableRawMode()
 {
-    if (tcgetattr(STDIN_FILENO, &s->termOg) == -1)
+    if (tcgetattr(STDIN_FILENO, &m_termOg) == -1)
         LOG_DIE("tcgetattr\n");
 
-    struct termios raw = s->termOg;
+    struct termios raw = m_termOg;
     raw.c_lflag &= ~(ECHO | ICANON | ISIG);
     raw.c_cc[VMIN] = 0; /* disable blocking on read() */
     /*raw.c_cc[VTIME] = 1;*/
@@ -54,27 +54,27 @@ sigwinchHandler([[maybe_unused]] int sig)
     /* NOTE: don't allocate / write to the buffer from here.
      * Marking things to be redrawn instead. */
     app::g_pPlayer->m_bSelectionChanged = true;
-    s->bRedraw = true;
-    s->bClear = true;
-    s->lastResizeTime = utils::timeNowMS();
+    s->m_bRedraw = true;
+    s->m_bClear = true;
+    s->m_lastResizeTime = utils::timeNowMS();
 }
 
 bool
 Win::start(Arena* pArena)
 {
-    this->pArena = pArena;
-    this->textBuff = TextBuff(pArena);
+    this->m_pArena = pArena;
+    m_textBuff = TextBuff(pArena);
     g_termSize = getTermSize();
 
-    mtx_init(&this->mtxUpdate, mtx_plain);
+    mtx_init(&m_mtxUpdate, mtx_plain);
 
-    enableRawMode(this);
+    enableRawMode();
     signal(SIGWINCH, sigwinchHandler);
 
-    this->textBuff.clear();
-    this->textBuff.hideCursor(true);
-    this->textBuff.push(MOUSE_ENABLE KEYPAD_ENABLE);
-    this->textBuff.flush();
+    m_textBuff.clear();
+    m_textBuff.hideCursor(true);
+    m_textBuff.push(MOUSE_ENABLE KEYPAD_ENABLE);
+    m_textBuff.flush();
 
     LOG_GOOD("ansi::WinStart()\n");
 
@@ -84,16 +84,16 @@ Win::start(Arena* pArena)
 void
 Win::destroy()
 {
-    this->textBuff.hideCursor(false);
-    this->textBuff.clear();
-    this->textBuff.clearKittyImages();
-    this->textBuff.push(MOUSE_DISABLE KEYPAD_DISABLE);
-    this->textBuff.moveTopLeft();
-    this->textBuff.push("\n", 2);
-    this->textBuff.flush();
+    m_textBuff.hideCursor(false);
+    m_textBuff.clear();
+    m_textBuff.clearKittyImages();
+    m_textBuff.push(MOUSE_DISABLE KEYPAD_DISABLE);
+    m_textBuff.moveTopLeft();
+    m_textBuff.push("\n", 2);
+    m_textBuff.flush();
 
-    disableRawMode(this);
-    mtx_destroy(&this->mtxUpdate);
+    disableRawMode();
+    mtx_destroy(&m_mtxUpdate);
 
     LOG_GOOD("ansi::WinDestroy()\n");
 }
@@ -111,7 +111,7 @@ Win::procEvents()
 
     common::fixFirstIdx(
         g_termSize.height - app::g_pPlayer->m_imgHeight - 5,
-        &this->firstIdx
+        &this->m_firstIdx
     );
 }
 
@@ -121,7 +121,7 @@ Win::seekFromInput()
     common::seekFromInput(
         +[](void* pArg) { return input::readWChar((Win*)pArg); },
         this,
-        +[](void* pArg) { ((Win*)pArg)->bRedraw = true; draw::update((Win*)pArg); },
+        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; draw::update((Win*)pArg); },
         this
     );
 }
@@ -130,12 +130,12 @@ void
 Win::subStringSearch()
 {
     common::subStringSearch(
-        this->pArena,
+        this->m_pArena,
         +[](void* pArg) { return input::readWChar((Win*)pArg); },
         this,
-        +[](void* pArg) { ((Win*)pArg)->bRedraw = true; draw::update((Win*)pArg); },
+        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; draw::update((Win*)pArg); },
         this,
-        &this->firstIdx
+        &this->m_firstIdx
     );
 }
 

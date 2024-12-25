@@ -107,9 +107,63 @@ struct String
     constexpr const It rend() const { return {m_pData - 1}; }
 };
 
-constexpr bool
-StringEndsWith(String l, String r)
+/* wchar_t iterator for mutlibyte strings */
+struct StringGlyphIt
 {
+    using Iter = String::It;
+
+    /* */
+
+    const String s;
+
+    /* */
+
+    StringGlyphIt(const String _s) : s(_s) {};
+
+    /* */
+
+    struct It
+    {
+        const char* p {};
+        u32 i = 0;
+        u32 size = 0;
+        wchar_t wc {};
+
+        constexpr It(const char* pFirst, u32 _i, u32 _size) : p{pFirst}, i(_i), size(_size) {}
+
+        wchar_t& operator*() { return wc; }
+        wchar_t* operator->() { return &wc; }
+
+        It
+        operator++()
+        {
+            if (i >= size)
+            {
+                i = NPOS;
+                return *this;
+            }
+
+            int len = mbtowc(&wc, &p[i], size - i);
+            i += len;
+            return *this;
+        }
+
+        friend bool operator==(const It& l, const It& r) { return l.i == NPOS; }
+        friend bool operator!=(const It& l, const It& r) { return l.i != r.i; }
+    };
+
+    It begin() { return {s.data(), 0, s.getSize()}; }
+    It end() { return {{}, NPOS, {}}; }
+
+    const It begin() const { return {s.data(), 0, s.getSize()}; }
+    const It end() const { return {{}, NPOS, {}}; }
+};
+
+constexpr bool
+String::endsWith(const String r) const
+{
+    const auto& l = *this;
+
     if (l.m_size < r.m_size)
         return false;
 
@@ -272,10 +326,10 @@ operator-(const String& l, const String& r)
 }
 
 constexpr u32
-StringLastOf(String sv, char c)
+String::lastOf(char c) const
 {
-    for (int i = sv.m_size - 1; i >= 0; i--)
-        if (sv[i] == c)
+    for (int i = m_size - 1; i >= 0; i--)
+        if ((*this)[i] == c)
             return i;
 
     return NPOS;

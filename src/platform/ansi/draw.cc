@@ -43,11 +43,11 @@ clearArea(Win* s, int x, int y, int width, int height)
     const int w = utils::minVal(g_termSize.width, width);
     const int h = utils::minVal(g_termSize.height, height);
 
-    char* pBuff = (char*)s->pArena->malloc(w + 1, 1);
+    char* pBuff = (char*)s->m_pArena->malloc(w + 1, 1);
     memset(pBuff, ' ', w);
 
     for (int i = y; i < h; ++i)
-        s->textBuff.movePush(x, i, pBuff, w);
+        s->m_textBuff.movePush(x, i, pBuff, w);
 }
 
 static void
@@ -55,14 +55,14 @@ coverImage(Win* s)
 {
     auto& pl = *app::g_pPlayer;
 
-    if (pl.m_bSelectionChanged && s->time > s->lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
+    if (pl.m_bSelectionChanged && s->m_time > s->m_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
         pl.m_bSelectionChanged = false;
 
         const int split = pl.m_imgHeight;
 
-        s->textBuff.clearKittyImages();
-        clearArea(s, 1, 1, s->prevImgWidth, split + 1);
+        s->m_textBuff.clearKittyImages();
+        clearArea(s, 1, 1, s->m_prevImgWidth, split + 1);
 
         Opt<Image> oCoverImg = app::g_pMixer->getCoverImage();
         if (oCoverImg)
@@ -70,13 +70,13 @@ coverImage(Win* s)
             const auto& img = oCoverImg.getData();
 
             const platform::chafa::Image chafaImg = platform::chafa::getImageString(
-                s->pArena, img, split, g_termSize.width
+                s->m_pArena, img, split, g_termSize.width
             );
 
-            s->prevImgWidth = chafaImg.width;
+            s->m_prevImgWidth = chafaImg.width;
 
-            s->textBuff.move(1, 1);
-            s->textBuff.push(chafaImg.s);
+            s->m_textBuff.move(1, 1);
+            s->m_textBuff.push(chafaImg.s);
         }
     }
 }
@@ -85,11 +85,11 @@ static void
 info(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
-    auto& tb = s->textBuff;
-    const int hOff = s->prevImgWidth + 2;
+    auto& tb = s->m_textBuff;
+    const int hOff = s->m_prevImgWidth + 2;
     const int width = g_termSize.width;
 
-    char* pBuff = (char*)s->pArena->malloc(width + 1, 1);
+    char* pBuff = (char*)s->m_pArena->malloc(width + 1, 1);
 
     auto drawLine = [&](
         const int y,
@@ -123,9 +123,9 @@ info(Win* s)
 static void
 volume(Win* s)
 {
-    auto& tb = s->textBuff;
+    auto& tb = s->m_textBuff;
     const auto width = g_termSize.width;
-    const int off = s->prevImgWidth + 2;
+    const int off = s->m_prevImgWidth + 2;
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
     constexpr String fmt = "volume: %3d";
@@ -145,7 +145,7 @@ volume(Win* s)
     tb.push(NORM);
     tb.moveClearLine(off - 1, 6, TEXT_BUFF_ARG::TO_END);
 
-    char* pBuff = (char*)s->pArena->zalloc(1, width + 1);
+    char* pBuff = (char*)s->m_pArena->zalloc(1, width + 1);
     u32 n = snprintf(pBuff, width, fmt.data(), int(std::round(app::g_pMixer->getVolume() * 100.0)));
     tb.push(col);
     tb.push(BOLD);
@@ -177,24 +177,24 @@ volume(Win* s)
 static void
 time(Win* s)
 {
-    auto& tb = s->textBuff;
+    auto& tb = s->m_textBuff;
     const auto width = g_termSize.width;
-    const int off = s->prevImgWidth + 2;
+    const int off = s->m_prevImgWidth + 2;
 
     tb.push(NORM);
     tb.moveClearLine(off - 1, 9, TEXT_BUFF_ARG::TO_END);
 
-    String sTime = common::allocTimeString(s->pArena, width);
+    String sTime = common::allocTimeString(s->m_pArena, width);
     tb.movePushGlyphs(off, 9, sTime, width - off);
 }
 
 static void
 timeSlider(Win* s)
 {
-    auto& tb = s->textBuff;
+    auto& tb = s->m_textBuff;
     const auto& mix = *app::g_pMixer;
     const auto width = g_termSize.width;
-    const int xOff = s->prevImgWidth + 2;
+    const int xOff = s->m_prevImgWidth + 2;
     const int yOff = 10;
 
     tb.push(NORM);
@@ -233,14 +233,14 @@ static void
 list(Win* s)
 {
     const auto& pl = *app::g_pPlayer;
-    auto& tb = s->textBuff;
+    auto& tb = s->m_textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
     const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
     tb.push(NORM);
-    for (u16 h = s->firstIdx, i = 0; i < listHeight - 1; ++h, ++i)
+    for (u16 h = s->m_firstIdx, i = 0; i < listHeight - 1; ++h, ++i)
     {
         if (h < pl.m_aSongIdxs.getSize())
         {
@@ -274,7 +274,7 @@ bottomLine(Win* s)
     namespace c = common;
 
     const auto& pl = *app::g_pPlayer;
-    auto& tb = s->textBuff;
+    auto& tb = s->m_textBuff;
     int height = g_termSize.height;
     int width = g_termSize.width;
 
@@ -283,7 +283,7 @@ bottomLine(Win* s)
 
     /* selected / focused */
     {
-        char* pBuff = (char*)s->pArena->zalloc(1, width + 1);
+        char* pBuff = (char*)s->m_pArena->zalloc(1, width + 1);
 
         int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortArgvs.getSize() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
@@ -321,14 +321,14 @@ bottomLine(Win* s)
 void
 update(Win* s)
 {
-    guard::Mtx lock(&s->mtxUpdate);
+    guard::Mtx lock(&s->m_mtxUpdate);
 
     auto& pl = *app::g_pPlayer;
-    auto& tb = s->textBuff;
+    auto& tb = s->m_textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
 
-    s->time = utils::timeNowMS();
+    s->m_time = utils::timeNowMS();
 
     defer(
         tb.flush();
@@ -341,18 +341,18 @@ update(Win* s)
         return;
     }
 
-    if (s->bClear)
+    if (s->m_bClear)
     {
-        s->bClear = false;
+        s->m_bClear = false;
         tb.clear();
     }
 
     time(s);
     timeSlider(s);
 
-    if (s->bRedraw || pl.m_bSelectionChanged)
+    if (s->m_bRedraw || pl.m_bSelectionChanged)
     {
-        s->bRedraw = false;
+        s->m_bRedraw = false;
 
         coverImage(s);
         time(s); /* redraw if image size changed */

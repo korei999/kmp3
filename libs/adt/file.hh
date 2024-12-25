@@ -52,7 +52,7 @@ load(IAllocator* pAlloc, String sPath)
 constexpr String
 getPathEnding(String sPath)
 {
-    u32 lastSlash = StringLastOf(sPath, '/');
+    u32 lastSlash = sPath.lastOf('/');
 
     if (lastSlash == NPOS || (lastSlash + 1) == sPath.getSize()) /* nothing after slash */
         return {};
@@ -64,7 +64,7 @@ getPathEnding(String sPath)
 inline String
 replacePathEnding(IAllocator* pAlloc, String sPath, String sEnding)
 {
-    u32 lastSlash = StringLastOf(sPath, '/');
+    u32 lastSlash = sPath.lastOf('/');
     String sNoEnding = {&sPath[0], lastSlash + 1};
     String r = StringCat(pAlloc, sNoEnding, sEnding);
     return r;

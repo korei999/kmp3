@@ -175,7 +175,7 @@ procInput(Win* s)
         if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
         {
             keybinds::resolveKey(k.pfn, k.arg);
-            s->bRedraw = true;
+            s->m_bRedraw = true;
         }
     }
 }

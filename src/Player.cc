@@ -27,7 +27,7 @@ bool
 Player::acceptedFormat(const String s)
 {
     for (const auto ending : aAcceptedFileEndings)
-        if (StringEndsWith(s, ending))
+        if (s.endsWith(ending))
             return true;
 
     return false;

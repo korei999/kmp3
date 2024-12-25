@@ -1,6 +1,6 @@
-/* simple hashmap with linear probing.
- * For customr key types, add template<> hash::func(const key& x), (or template<> hash::funcHVal(const key& x, u64 hval) for reusable hash)
- * and bool operator==(const key& other) */
+/* Hashmap with linear probing.
+ * For custom hash function add template<> hash::func(const KeyType& x),
+ * and bool operator==(const KeyType& other) */
 
 #pragma once
 
@@ -42,7 +42,7 @@ struct MapResult
 
     constexpr operator bool() const
     {
-        return this->pData != nullptr;
+        return pData != nullptr;
     }
 
     constexpr
@@ -109,10 +109,10 @@ struct MapBase
         friend bool operator!=(const It& l, const It& r) { return l.i != r.i; }
     };
 
-    It begin() { return {this, this->firstI()}; }
+    It begin() { return {this, firstI()}; }
     It end() { return {this, NPOS}; }
 
-    const It begin() const { return {this, this->firstI()}; }
+    const It begin() const { return {this, firstI()}; }
     const It end() const { return {this, NPOS}; }
 };
 
@@ -120,8 +120,8 @@ template<typename K, typename V>
 inline u32
 MapBase<K, V>::idx(KeyVal<K, V>* p) const
 {
-    auto r = (MapBucket<K, V>*)p - &this->m_aBuckets[0];
-    assert(r < this->m_aBuckets.getCap());
+    auto r = (MapBucket<K, V>*)p - &m_aBuckets[0];
+    assert(r < m_aBuckets.getCap());
     return r;
 }
 
@@ -129,8 +129,8 @@ template<typename K, typename V>
 inline u32
 MapBase<K, V>::idx(MapResult<K, V> res) const
 {
-    auto idx = res.pData - &this->m_aBuckets[0];
-    assert(idx < this->m_aBuckets.getCap());
+    auto idx = res.pData - &m_aBuckets[0];
+    assert(idx < m_aBuckets.getCap());
     return idx;
 }
 
@@ -139,10 +139,10 @@ inline u32
 MapBase<K, V>::firstI() const
 {
     u32 i = 0;
-    while (i < this->m_aBuckets.getCap() && !this->m_aBuckets[i].bOccupied)
+    while (i < m_aBuckets.getCap() && !m_aBuckets[i].bOccupied)
         ++i;
 
-    if (i >= this->m_aBuckets.getCap()) i = NPOS;
+    if (i >= m_aBuckets.getCap()) i = NPOS;
 
     return i;
 }
@@ -152,9 +152,9 @@ inline u32
 MapBase<K, V>::nextI(u32 i) const
 {
     do ++i;
-    while (i < this->m_aBuckets.getCap() && !this->m_aBuckets[i].bOccupied);
+    while (i < m_aBuckets.getCap() && !m_aBuckets[i].bOccupied);
 
-    if (i >= this->m_aBuckets.getCap()) i = NPOS;
+    if (i >= m_aBuckets.getCap()) i = NPOS;
 
     return i;
 }
@@ -163,7 +163,7 @@ template<typename K, typename V>
 inline f32
 MapBase<K, V>::loadFactor() const
 {
-    return f32(this->m_nOccupied) / f32(this->m_aBuckets.getCap());
+    return f32(m_nOccupied) / f32(m_aBuckets.getCap());
 }
 
 template<typename K, typename V>
@@ -172,11 +172,11 @@ MapBase<K, V>::insert(IAllocator* p, const K& key, const V& val)
 {
     u64 keyHash = hash::func(key);
 
-    if (this->m_aBuckets.getCap() == 0) *this = {p};
-    else if (this->loadFactor() >= this->m_maxLoadFactor)
-        this->rehash(p, this->m_aBuckets.getCap() * 2);
+    if (m_aBuckets.getCap() == 0) *this = {p};
+    else if (loadFactor() >= m_maxLoadFactor)
+        rehash(p, m_aBuckets.getCap() * 2);
 
-    return this->insertHashed(key, val, keyHash);
+    return insertHashed(key, val, keyHash);
 }
 
 template<typename K, typename V>
@@ -184,57 +184,57 @@ template<typename K, typename V>
 MapBase<K, V>::search(const K& key)
 {
     u64 keyHash = hash::func(key);
-    return this->searchHashed(key, keyHash);
+    return searchHashed(key, keyHash);
 }
 
 template<typename K, typename V>
 inline void
 MapBase<K, V>::remove(u32 i)
 {
-    this->m_aBuckets[i].bDeleted = true;
-    this->m_aBuckets[i].bOccupied = false;
-    --this->m_nOccupied;
+    m_aBuckets[i].bDeleted = true;
+    m_aBuckets[i].bOccupied = false;
+    --m_nOccupied;
 }
 
 template<typename K, typename V>
 inline void
 MapBase<K, V>::remove(const K& key)
 {
-    auto f = this->search(key);
+    auto f = search(key);
     assert(f && "[Map]: not found");
-    this->remove(this->idx(f));
+    remove(idx(f));
 }
 
 template<typename K, typename V>
 inline MapResult<K, V>
 MapBase<K, V>::tryInsert(IAllocator* p, const K& key, const V& val)
 {
-    auto f = this->search(key);
+    auto f = search(key);
     if (f)
     {
         f.eStatus = MAP_RESULT_STATUS::FOUND;
         return f;
     }
-    else return this->insert(p, key, val);
+    else return insert(p, key, val);
 }
 
 template<typename K, typename V>
 inline void
 MapBase<K, V>::destroy(IAllocator* p)
 {
-    this->m_aBuckets.destroy(p);
+    m_aBuckets.destroy(p);
 }
 
 template<typename K, typename V>
 inline u32 MapBase<K, V>::getCap() const
 {
-    return this->m_aBuckets.getCap();
+    return m_aBuckets.getCap();
 }
 
 template<typename K, typename V>
 inline u32 MapBase<K, V>::getSize() const
 {
-    return this->m_nOccupied;
+    return m_nOccupied;
 }
 
 template<typename K, typename V>
@@ -243,11 +243,11 @@ MapBase<K, V>::rehash(IAllocator* p, u32 size)
 {
     auto mNew = MapBase<K, V>(p, size);
 
-    for (u32 i = 0; i < this->m_aBuckets.getCap(); ++i)
-        if (this->m_aBuckets[i].bOccupied)
-            mNew.insert(p, this->m_aBuckets[i].key, this->m_aBuckets[i].val);
+    for (u32 i = 0; i < m_aBuckets.getCap(); ++i)
+        if (m_aBuckets[i].bOccupied)
+            mNew.insert(p, m_aBuckets[i].key, m_aBuckets[i].val);
 
-    this->destroy(p);
+    destroy(p);
     *this = mNew;
 }
 
@@ -255,12 +255,12 @@ template<typename K, typename V>
 inline MapResult<K, V>
 MapBase<K, V>::insertHashed(const K& key, const V& val, u64 keyHash)
 {
-    u32 idx = u32(keyHash % this->m_aBuckets.getCap());
+    u32 idx = u32(keyHash % m_aBuckets.getCap());
 
-    while (this->m_aBuckets[idx].bOccupied)
+    while (m_aBuckets[idx].bOccupied)
     {
         ++idx;
-        if (idx >= this->m_aBuckets.getCap())
+        if (idx >= m_aBuckets.getCap())
             idx = 0;
     }
 
@@ -273,7 +273,7 @@ MapBase<K, V>::insertHashed(const K& key, const V& val, u64 keyHash)
     ++m_nOccupied;
 
     return {
-        .pData = &this->m_aBuckets[idx],
+        .pData = &m_aBuckets[idx],
         .hash = keyHash,
         .eStatus = MAP_RESULT_STATUS::INSERTED
     };
@@ -285,9 +285,9 @@ MapBase<K, V>::searchHashed(const K& key, u64 keyHash)
 {
     MapResult<K, V> res {.eStatus = MAP_RESULT_STATUS::NOT_FOUND};
 
-    if (this->m_nOccupied == 0) return res;
+    if (m_nOccupied == 0) return res;
 
-    auto& aBuckets = this->m_aBuckets;
+    auto& aBuckets = m_aBuckets;
 
     u32 idx = u32(keyHash % u64(aBuckets.getCap()));
     res.hash = keyHash;
