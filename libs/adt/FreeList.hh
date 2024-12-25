@@ -70,7 +70,7 @@ template<>
 constexpr s64
 utils::compare(const FreeListData& l, const FreeListData& r)
 {
-    return l.getSize() - r.getSize();
+    return (s64)l.getSize() - (s64)r.getSize();
 }
 
 inline FreeList::Node*
