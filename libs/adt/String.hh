@@ -148,7 +148,7 @@ struct StringGlyphIt
             return *this;
         }
 
-        friend bool operator==(const It& l, const It& r) { return l.i == NPOS; }
+        friend bool operator==(const It& l, const It& r) { return l.i == r.i; }
         friend bool operator!=(const It& l, const It& r) { return l.i != r.i; }
     };
 
