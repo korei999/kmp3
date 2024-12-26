@@ -176,7 +176,8 @@ inline void
 VecBase<T>::popAsLast(u32 i)
 {
     assert(m_size > 0 && "[Vec]: empty");
-    operator[](i) = operator[](--m_size);
+    operator[](i) = last();
+    --m_size;
 }
 
 template<typename T>
@@ -192,7 +193,7 @@ template<typename T>
 [[nodiscard]] inline u32
 VecBase<T>::lastI() const
 {
-    return idx(last());
+    return idx(&last());
 }
 
 template<typename T>
