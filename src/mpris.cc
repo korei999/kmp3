@@ -342,7 +342,7 @@ setLoopStatus(
             eMethod = PLAYER_REPEAT_METHOD(i);
 
     app::g_pPlayer->m_eReapetMethod = eMethod;
-    app::g_pPlayer->m_bRedraw = true;
+    app::g_pWin->m_bRedraw = true;
     return sd_bus_reply_method_return(value, "");
 }
 
@@ -375,7 +375,7 @@ setVolume(
     f64 vol;
     CK(sd_bus_message_read_basic(value, 'd', &vol));
     app::g_pMixer->setVolume(vol);
-    app::g_pPlayer->m_bRedraw = true;
+    app::g_pWin->m_bRedraw = true;
 
     return sd_bus_reply_method_return(value, "");
 }

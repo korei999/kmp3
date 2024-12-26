@@ -347,9 +347,9 @@ Win::update()
     time();
     timeSlider();
 
-    if (pl.m_bRedraw || pl.m_bSelectionChanged)
+    if (m_bRedraw || pl.m_bSelectionChanged)
     {
-        pl.m_bRedraw = false;
+        m_bRedraw = false;
 
         coverImage();
         time(); /* redraw if image size changed */

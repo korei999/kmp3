@@ -8,6 +8,8 @@ enum class WINDOW_READ_MODE : u8 { NONE, SEARCH, SEEK };
 
 struct IWindow
 {
+    bool m_bRedraw {};
+
     virtual bool start(Arena* pArena) = 0;
     virtual void destroy() = 0;
     virtual void draw() = 0;
