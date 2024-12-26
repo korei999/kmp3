@@ -538,6 +538,21 @@ static const sd_bus_vtable s_vtMediaPlayer2Player[] = {
     SD_BUS_VTABLE_END,
 };
 
+static const sd_bus_vtable s_vtMediaPlayer2TrackList[] {
+    SD_BUS_VTABLE_START(0),
+    SD_BUS_METHOD("GetTracksMetadata", "ao", "", msgIgnore, 0),
+    SD_BUS_METHOD("AddTrack", "sob", "", msgIgnore, 0),
+    SD_BUS_METHOD("RemoveTrack", "o", "", msgIgnore, 0),
+    SD_BUS_METHOD("GoTo", "o", "", msgIgnore, 0),
+    SD_BUS_SIGNAL("TrackListReplaced", "aoo", 0),
+    SD_BUS_SIGNAL("TrackAdded", "a{vs}o", 0),
+    SD_BUS_SIGNAL("TrackRemoved", "o", 0),
+    SD_BUS_SIGNAL("TrackMetadataChanged", "oa{sv}", 0),
+    MPRIS_PROP("Tracks", "ao", readFalse),
+    MPRIS_PROP("CanEditTracks", "b", readFalse),
+    SD_BUS_VTABLE_END,
+};
+
 void
 init()
 {
@@ -565,6 +580,16 @@ init()
         "/org/mpris/MediaPlayer2",
         "org.mpris.MediaPlayer2.Player",
         s_vtMediaPlayer2Player,
+        nullptr
+    );
+    if (res < 0) goto out;
+
+    res = sd_bus_add_object_vtable(
+        s_pBus,
+        nullptr,
+        "/org/mpris/MediaPlayer2",
+        "org.mpris.MediaPlayer2.TrackList",
+        s_vtMediaPlayer2TrackList,
         nullptr
     );
     if (res < 0) goto out;
