@@ -493,6 +493,17 @@ metadata(
     return 0;
 }
 
+static int
+trackList(
+    [[maybe_unused]] sd_bus_message* m,
+    [[maybe_unused]] void* data,
+    [[maybe_unused]] sd_bus_error* retError
+)
+{
+    sd_bus_reply_method_return(m, "");
+    return 0;
+}
+
 static const sd_bus_vtable s_vtMediaPlayer2[] {
     SD_BUS_VTABLE_START(0),
     SD_BUS_METHOD("Raise", "", "", msgIgnore, 0),
@@ -540,7 +551,7 @@ static const sd_bus_vtable s_vtMediaPlayer2Player[] = {
 
 static const sd_bus_vtable s_vtMediaPlayer2TrackList[] {
     SD_BUS_VTABLE_START(0),
-    SD_BUS_METHOD("GetTracksMetadata", "ao", "", msgIgnore, 0),
+    SD_BUS_METHOD("GetTracksMetadata", "ao", "", trackList, 0),
     SD_BUS_METHOD("AddTrack", "sob", "", msgIgnore, 0),
     SD_BUS_METHOD("RemoveTrack", "o", "", msgIgnore, 0),
     SD_BUS_METHOD("GoTo", "o", "", msgIgnore, 0),
@@ -584,15 +595,15 @@ init()
     );
     if (res < 0) goto out;
 
-    res = sd_bus_add_object_vtable(
-        s_pBus,
-        nullptr,
-        "/org/mpris/MediaPlayer2",
-        "org.mpris.MediaPlayer2.TrackList",
-        s_vtMediaPlayer2TrackList,
-        nullptr
-    );
-    if (res < 0) goto out;
+    // res = sd_bus_add_object_vtable(
+    //     s_pBus,
+    //     nullptr,
+    //     "/org/mpris/MediaPlayer2",
+    //     "org.mpris.MediaPlayer2.TrackList",
+    //     s_vtMediaPlayer2TrackList,
+    //     nullptr
+    // );
+    // if (res < 0) goto out;
 
     res = sd_bus_request_name(s_pBus, "org.mpris.MediaPlayer2.kmp3", 0);
     s_fdMpris = sd_bus_get_fd(s_pBus);
