@@ -346,6 +346,7 @@ Win::update()
 
     time();
     timeSlider();
+    bottomLine();
 
     if (m_bRedraw || pl.m_bSelectionChanged)
     {
@@ -358,8 +359,6 @@ Win::update()
         volume();
         info();
         list();
-
-        bottomLine();
     }
 }
 

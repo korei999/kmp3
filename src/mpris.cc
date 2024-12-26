@@ -389,7 +389,7 @@ position(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    long t = app::g_pMixer->getCurrentMS();
+    s64 t = app::g_pMixer->getCurrentMS();
     t *= 1000;
 
     return sd_bus_message_append_basic(reply, 'x', &t);
