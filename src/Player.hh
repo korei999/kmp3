@@ -44,6 +44,7 @@ struct Player
     u32 m_longestStringSize {};
     PLAYER_REPEAT_METHOD m_eReapetMethod {};
     bool m_bSelectionChanged {};
+    bool m_bRedraw {};
 
     Player() = delete;
     Player(IAllocator* p, int nArgs, [[maybe_unused]] char** ppArgs)

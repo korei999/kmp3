@@ -173,7 +173,7 @@ Win::procInput()
         if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
         {
             keybinds::resolveKey(k.pfn, k.arg);
-            m_bRedraw = true;
+            app::g_pPlayer->m_bRedraw = true;
         }
     }
 }

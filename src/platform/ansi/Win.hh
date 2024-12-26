@@ -22,7 +22,6 @@ private:
     TextBuff m_textBuff {};
     termios m_termOg {};
     u16 m_firstIdx {};
-    bool m_bRedraw = true;
     bool m_bClear = false;
     int m_prevImgWidth = 0;
     mtx_t m_mtxUpdate {};

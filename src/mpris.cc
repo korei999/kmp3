@@ -342,6 +342,7 @@ setLoopStatus(
             eMethod = PLAYER_REPEAT_METHOD(i);
 
     app::g_pPlayer->m_eReapetMethod = eMethod;
+    app::g_pPlayer->m_bRedraw = true;
     return sd_bus_reply_method_return(value, "");
 }
 
@@ -374,6 +375,7 @@ setVolume(
     f64 vol;
     CK(sd_bus_message_read_basic(value, 'd', &vol));
     app::g_pMixer->setVolume(vol);
+    app::g_pPlayer->m_bRedraw = true;
 
     return sd_bus_reply_method_return(value, "");
 }
@@ -549,7 +551,7 @@ static const sd_bus_vtable s_vtMediaPlayer2Player[] = {
     SD_BUS_VTABLE_END,
 };
 
-static const sd_bus_vtable s_vtMediaPlayer2TrackList[] {
+[[maybe_unused]] static const sd_bus_vtable s_vtMediaPlayer2TrackList[] {
     SD_BUS_VTABLE_START(0),
     SD_BUS_METHOD("GetTracksMetadata", "ao", "", trackList, 0),
     SD_BUS_METHOD("AddTrack", "sob", "", msgIgnore, 0),

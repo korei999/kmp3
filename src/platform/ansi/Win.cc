@@ -46,14 +46,16 @@ void
 sigwinchHandler([[maybe_unused]] int sig)
 {
     auto* s = (Win*)app::g_pWin;
+    auto& pl = *app::g_pPlayer;
 
     g_termSize = getTermSize();
     LOG_GOOD("term: {}\n", g_termSize);
 
     /* NOTE: don't allocate / write to the buffer from here.
      * Marking things to be redrawn instead. */
-    app::g_pPlayer->m_bSelectionChanged = true;
-    s->m_bRedraw = true;
+    pl.m_bSelectionChanged = true;
+    pl.m_bRedraw = true;
+
     s->m_bClear = true;
     s->m_lastResizeTime = utils::timeNowMS();
 }
@@ -120,7 +122,7 @@ Win::seekFromInput()
     common::seekFromInput(
         +[](void* pArg) { return ((Win*)pArg)->readWChar(); },
         this,
-        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; ((Win*)pArg)->update(); },
+        +[](void* pArg) { app::g_pPlayer->m_bRedraw = true; ((Win*)pArg)->update(); },
         this
     );
 }
@@ -132,7 +134,7 @@ Win::subStringSearch()
         this->m_pArena,
         +[](void* pArg) { return ((Win*)pArg)->readWChar(); },
         this,
-        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; ((Win*)pArg)->update(); },
+        +[](void* pArg) { app::g_pPlayer->m_bRedraw = true; ((Win*)pArg)->update(); },
         this,
         &this->m_firstIdx
     );

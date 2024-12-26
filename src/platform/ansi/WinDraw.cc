@@ -346,11 +346,10 @@ Win::update()
 
     time();
     timeSlider();
-    bottomLine();
 
-    if (m_bRedraw || pl.m_bSelectionChanged)
+    if (pl.m_bRedraw || pl.m_bSelectionChanged)
     {
-        m_bRedraw = false;
+        pl.m_bRedraw = false;
 
         coverImage();
         time(); /* redraw if image size changed */
@@ -359,6 +358,8 @@ Win::update()
         volume();
         info();
         list();
+
+        bottomLine();
     }
 }
 
