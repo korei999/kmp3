@@ -55,7 +55,7 @@ getPathEnding(String sPath)
     u32 lastSlash = sPath.lastOf('/');
 
     if (lastSlash == NPOS || (lastSlash + 1) == sPath.getSize()) /* nothing after slash */
-        return {};
+        return sPath;
 
     return String(&sPath[lastSlash + 1], &sPath[sPath.m_size - 1] - &sPath[lastSlash]);
 }

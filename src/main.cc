@@ -41,16 +41,14 @@ main(int argc, char** argv)
             app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
             LOG_NOTIFY("setting TERMBOX ui\n");
         }
+#ifdef USE_NCURSES
         else if (argv[1] == String("--ncurses"))
         {
-#ifdef USE_NCURSES
             app::g_eUIFrontend = app::UI_FRONTEND::NCURSES;
             LOG_NOTIFY("setting NCURSES ui\n");
-#else
-            CERR("{} was built without ncurses support.\n", argv[0]);
             return 1;
-#endif
         }
+#endif
     }
 
     Vec<String> aInput(&freeList, argc);
@@ -94,7 +92,7 @@ main(int argc, char** argv)
 
     u32 nAccepted = 0;
     u32 longsetSize = 0;
-    for (int i = 0; i < argc; ++i)
+    for (int i = 0; i < app::g_argc; ++i)
     {
         player.m_aShortArgvs.push(player.m_pAlloc, file::getPathEnding(app::g_aArgs[i]));
         if (player.acceptedFormat(player.m_aShortArgvs.last()))

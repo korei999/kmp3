@@ -51,6 +51,7 @@ void
 Win::coverImage()
 {
     auto& pl = *app::g_pPlayer;
+    auto& mix = *app::g_pMixer;
 
     if (pl.m_bSelectionChanged && m_time > m_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
@@ -61,7 +62,7 @@ Win::coverImage()
         m_textBuff.clearKittyImages();
         clearArea(1, 1, m_prevImgWidth, split + 1);
 
-        Opt<Image> oCoverImg = app::g_pMixer->getCoverImage();
+        Opt<Image> oCoverImg = mix.getCoverImage();
         if (oCoverImg)
         {
             const auto& img = oCoverImg.getData();
@@ -71,9 +72,7 @@ Win::coverImage()
             );
 
             m_prevImgWidth = chafaImg.width;
-
-            m_textBuff.move(1, 1);
-            m_textBuff.push(chafaImg.s);
+            m_textBuff.movePush(1, 1, chafaImg.s);
         }
     }
 }
