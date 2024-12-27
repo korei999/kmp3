@@ -236,7 +236,6 @@ inline void
 VecBase<T>::zeroOut()
 {
     memset(m_pData, 0, m_size * sizeof(T));
-    m_size = 0;
 }
 
 template<typename T>
