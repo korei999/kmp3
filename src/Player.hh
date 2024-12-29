@@ -45,9 +45,13 @@ struct Player
     PLAYER_REPEAT_METHOD m_eReapetMethod {};
     bool m_bSelectionChanged {};
 
+    /* */
+
     Player() = delete;
     Player(IAllocator* p, int nArgs, [[maybe_unused]] char** ppArgs)
         : m_pAlloc(p), m_aShortArgvs(p, nArgs), m_aSongIdxs(p, nArgs) {}
+
+    /* */
 
     static bool acceptedFormat(const String s);
     void focusNext();
@@ -67,4 +71,9 @@ struct Player
     void selectNext();
     void selectPrev();
     void destroy();
+
+    /* */
+
+private:
+    void updateInfo();
 };

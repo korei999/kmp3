@@ -36,9 +36,8 @@ union PFN
 
 struct Key
 {
-    // u8 mod {}; /* bitwise `TB_MOD_*` constants */
-    u16 key {}; /* one of `TB_KEY_*` constants */
-    u32 ch {}; /* a Unicode codepoint */
+    u16 key {};
+    u32 ch {};
     PFN pfn {};
     Arg arg {};
 };

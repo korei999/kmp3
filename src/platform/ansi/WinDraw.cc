@@ -65,7 +65,7 @@ Win::coverImage()
         Opt<Image> oCoverImg = mix.getCoverImage();
         if (oCoverImg)
         {
-            const auto& img = oCoverImg.getData();
+            const auto& img = oCoverImg.value();
 
             const platform::chafa::Image chafaImg = platform::chafa::getImageString(
                 m_pArena, img, split, g_termSize.width

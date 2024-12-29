@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <new> /* IWYU pragma: keep */
+#include <utility>
 
 namespace adt
 {
@@ -36,6 +37,7 @@ struct VecBase
 
     [[nodiscard]] bool empty() const { return m_size == 0; }
     u32 push(IAllocator* p, const T& data);
+    template<typename ...ARGS> u32 emplace(IAllocator* p, ARGS&&... args);
     [[nodiscard]] T& last();
     [[nodiscard]] const T& last() const;
     [[nodiscard]] T& first();
@@ -59,6 +61,7 @@ struct VecBase
 
 private:
     void grow(IAllocator* p, u32 newCapacity);
+    void growIfNeeded(IAllocator* p);
 
     /* */
 
@@ -97,14 +100,18 @@ template<typename T>
 inline u32
 VecBase<T>::push(IAllocator* p, const T& data)
 {
-    if (m_size >= m_capacity)
-    {
-        assert(nextPowerOf2(m_capacity + 1U) > m_capacity && "[Vec]: can't grow to nextPowerOf2 (overflow)");
-        grow(p, nextPowerOf2(m_capacity + 1U));
-    }
-
+    growIfNeeded(p);
     new(m_pData + m_size++) T(data);
+    return m_size - 1;
+}
 
+template<typename T>
+template<typename ...ARGS>
+inline u32
+VecBase<T>::emplace(IAllocator* p, ARGS&&... args)
+{
+    growIfNeeded(p);
+    new(m_pData + m_size++) T(std::forward<ARGS>(args)...);
     return m_size - 1;
 }
 
@@ -236,6 +243,7 @@ inline void
 VecBase<T>::zeroOut()
 {
     memset(m_pData, 0, m_size * sizeof(T));
+    m_size = 0;
 }
 
 template<typename T>
@@ -255,6 +263,17 @@ VecBase<T>::grow(IAllocator* p, u32 newCapacity)
 {
     m_capacity = newCapacity;
     m_pData = (T*)p->realloc(m_pData, newCapacity, sizeof(T));
+}
+
+template<typename T>
+inline void
+VecBase<T>::growIfNeeded(IAllocator* p)
+{
+    if (m_size >= m_capacity)
+    {
+        assert(nextPowerOf2(m_capacity + 1U) > m_capacity && "[Vec]: can't grow to nextPowerOf2 (overflow)");
+        grow(p, nextPowerOf2(m_capacity + 1U));
+    }
 }
 
 template<typename T>
@@ -278,6 +297,7 @@ struct Vec
 
     [[nodiscard]] bool empty() const { return base.empty(); }
     u32 push(const T& data) { return base.push(m_pAlloc, data); }
+    template<typename ...ARGS> u32 emplace(ARGS&&... args) { return base.emplace(m_pAlloc, std::forward<ARGS>(args)...); }
     [[nodiscard]] T& VecLast() { return base.last(); }
     [[nodiscard]] T& last() { return base.last(); }
     [[nodiscard]] const T& last() const { return base.last(); }

@@ -132,25 +132,25 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
     }
 }
 
-static void
-updateInfo(Player* s)
+void
+Player::updateInfo()
 {
-    String s0 = app::g_pMixer->getMetadata("title").data.clone(s->m_pAlloc);
-    String s1 = app::g_pMixer->getMetadata("album").data.clone(s->m_pAlloc);
-    String s2 = app::g_pMixer->getMetadata("artist").data.clone(s->m_pAlloc);
+    String s0 = app::g_pMixer->getMetadata("title").data.clone(m_pAlloc);
+    String s1 = app::g_pMixer->getMetadata("album").data.clone(m_pAlloc);
+    String s2 = app::g_pMixer->getMetadata("artist").data.clone(m_pAlloc);
 
-    s->m_info.title.destroy(s->m_pAlloc);
-    s->m_info.album.destroy(s->m_pAlloc);
-    s->m_info.artist.destroy(s->m_pAlloc);
+    m_info.title.destroy(m_pAlloc);
+    m_info.album.destroy(m_pAlloc);
+    m_info.artist.destroy(m_pAlloc);
 
-    s->m_info.title = s0;
-    s->m_info.album = s1;
-    s->m_info.artist = s2;
+    m_info.title = s0;
+    m_info.album = s1;
+    m_info.artist = s2;
 
-    s->m_bSelectionChanged = true;
+    m_bSelectionChanged = true;
 
 #ifndef NDEBUG
-    LOG_GOOD("freeList.size: {}\n", _FreeListNBytesAllocated((FreeList*)s->m_pAlloc));
+    LOG_GOOD("freeList.size: {}\n", _FreeListNBytesAllocated((FreeList*)m_pAlloc));
 #endif
 }
 
@@ -170,7 +170,7 @@ Player::selectFocused()
     LOG_NOTIFY("selected({}): {}\n", m_selected, sPath);
 
     app::g_pMixer->play(sPath);
-    updateInfo(this);
+    updateInfo();
 }
 
 void
@@ -210,7 +210,7 @@ Player::onSongEnd()
     m_bSelectionChanged = true;
 
     app::g_pMixer->play(app::g_aArgs[m_selected]);
-    updateInfo(this);
+    updateInfo();
 }
 
 PLAYER_REPEAT_METHOD
@@ -235,7 +235,7 @@ Player::selectNext()
     long currIdx = (findSongIdxFromSelected() + 1) % m_aSongIdxs.getSize();
     m_selected = m_aSongIdxs[currIdx];
     app::g_pMixer->play(app::g_aArgs[m_selected]);
-    updateInfo(this);
+    updateInfo();
 }
 
 void
@@ -244,7 +244,7 @@ Player::selectPrev()
     long currIdx = (findSongIdxFromSelected() + (m_aSongIdxs.getSize()) - 1) % m_aSongIdxs.getSize();
     m_selected = m_aSongIdxs[currIdx];
     app::g_pMixer->play(app::g_aArgs[m_selected]);
-    updateInfo(this);
+    updateInfo();
 }
 
 void

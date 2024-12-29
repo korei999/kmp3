@@ -97,8 +97,8 @@ ChunkAllocator::malloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignor
 inline void*
 ChunkAllocator::zalloc([[maybe_unused]] u64 ignored0, [[maybe_unused]] u64 ignored1)
 {
-    auto* p = malloc(ignored0, ignored1);
-    memset(p, 0, m_chunkSize);
+    auto* p = malloc(0, 0);
+    memset(p, 0, m_chunkSize - sizeof(ChunkAllocatorNode));
     return p;
 }
 

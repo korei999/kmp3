@@ -1098,7 +1098,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V2
 }
 
 inline u32
-formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::V3& x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V3& x)
 {
     ctx.fmt = "[{:.3}, {:.3}, {:.3}]";
     ctx.fmtIdx = 0;
@@ -1106,7 +1106,7 @@ formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::V
 }
 
 inline u32
-formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::V4& x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V4& x)
 {
     ctx.fmt = "[{:.3}, {:.3}, {:.3}, {:.3}]";
     ctx.fmtIdx = 0;
@@ -1114,7 +1114,7 @@ formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::V
 }
 
 inline u32
-formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::M2& x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M2& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}"
               "\n\t {:.3}, {:.3}]";
@@ -1123,7 +1123,7 @@ formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::M
 }
 
 inline u32
-formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::M3& x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M3& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}"
               "\n\t {:.3}, {:.3}, {:.3}"
@@ -1137,7 +1137,7 @@ formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::M
 }
 
 inline u32
-formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const math::M4& x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M4& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}, {:.3}"
               "\n\t {:.3}, {:.3}, {:.3}, {:.3}"

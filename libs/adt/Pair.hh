@@ -6,23 +6,15 @@ namespace adt
 {
 
 template<typename A, typename B>
-struct DefaultPair
+struct Pair
 {
     A first {};
     B second {};
 };
 
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
-struct Pair : C<A, B>
-{
-};
-
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
-Pair(const A&, const B&) -> Pair<A, B, C>;
-
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
+template<typename A, typename B>
 constexpr bool
-operator==(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
+operator==(const Pair<A, B>& l, const Pair<A, B>& r)
 {
     auto& [lFirst, lSecond] = l;
     auto& [rFirst, rSecond] = r;
@@ -30,16 +22,16 @@ operator==(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
     return lFirst == rFirst && lSecond == rSecond;
 }
 
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
+template<typename A, typename B>
 constexpr bool
-operator!=(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
+operator!=(const Pair<A, B>& l, const Pair<A, B>& r)
 {
     return !(l == r);
 }
 
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
+template<typename A, typename B>
 constexpr bool
-operator<(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
+operator<(const Pair<A, B>& l, const Pair<A, B>& r)
 {
     auto& [lFirst, lSecond] = l;
     auto& [rFirst, rSecond] = r;
@@ -47,9 +39,9 @@ operator<(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
     return lFirst < rFirst && lSecond < rSecond;
 }
 
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
+template<typename A, typename B>
 constexpr bool
-operator>(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
+operator>(const Pair<A, B>& l, const Pair<A, B>& r)
 {
     auto& [lFirst, lSecond] = l;
     auto& [rFirst, rSecond] = r;
@@ -57,9 +49,9 @@ operator>(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
     return lFirst > rFirst && lSecond > rSecond;
 }
 
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
+template<typename A, typename B>
 constexpr bool
-operator<=(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
+operator<=(const Pair<A, B>& l, const Pair<A, B>& r)
 {
     auto& [lFirst, lSecond] = l;
     auto& [rFirst, rSecond] = r;
@@ -67,9 +59,9 @@ operator<=(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
     return lFirst <= rFirst && lSecond <= rSecond;
 }
 
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
+template<typename A, typename B>
 constexpr bool
-operator>=(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
+operator>=(const Pair<A, B>& l, const Pair<A, B>& r)
 {
     auto& [lFirst, lSecond] = l;
     auto& [rFirst, rSecond] = r;
@@ -80,9 +72,9 @@ operator>=(const Pair<A, B, C>& l, const Pair<A, B, C>& r)
 namespace print
 {
 
-template<typename A, typename B, template<typename, typename> typename C = DefaultPair>
+template<typename A, typename B>
 inline u32
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Pair<A, B, C>& x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Pair<A, B>& x)
 {
     ctx.fmt = "[{}, {}]";
     ctx.fmtIdx = 0;

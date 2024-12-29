@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <cassert>
 #include <new> /* IWYU pragma: keep */
+#include <utility>
 
 #ifdef _WIN32
     #undef IN
@@ -76,7 +77,10 @@ struct RBNode
 };
 
 template<typename T>
-inline RBNode<T>* RBNodeAlloc(IAllocator* pA, const T& data);
+[[nodiscard]] inline RBNode<T>* RBNodeAlloc(IAllocator* pA, const T& data);
+
+template<typename T, typename ...ARGS>
+[[nodiscard]] inline RBNode<T>* RBNodeAlloc(IAllocator* pA, ARGS&& ...args);
 
 template<typename T>
 inline RBNode<T>* RBTraversePRE(
@@ -123,8 +127,9 @@ struct RBTreeBase
     bool empty();
     RBNode<T>* remove(RBNode<T>* elm);
     void removeAndFree(IAllocator* p, RBNode<T>* elm);
-    RBNode<T>* insert(RBNode<T>* elm, bool bAllowDuplicates);
-    RBNode<T>* insert(IAllocator* pA, const T& data, bool bAllowDuplicates);
+    RBNode<T>* insert(bool bAllowDuplicates, RBNode<T>* elm);
+    RBNode<T>* insert(IAllocator* pA, bool bAllowDuplicates, const T& data);
+    template<typename ...ARGS> RBNode<T>* emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args);
     void destroy(IAllocator* pA);
 };
 
@@ -134,8 +139,8 @@ RBPrintNodes(
     IAllocator* pA,
     const RBNode<T>* pNode,
     FILE* pF,
-    const String sPrefix,
-    bool bLeft
+    const String sPrefix = "",
+    bool bLeft = false
 );
 
 template<typename T> inline void _RBSetBlackRed(RBNode<T>* black, RBNode<T>* red);
@@ -454,7 +459,7 @@ RBTreeBase<T>::removeAndFree(IAllocator* p, RBNode<T>* elm)
 /* create RBNode outside then insert */
 template<typename T>
 inline RBNode<T>*
-RBTreeBase<T>::insert(RBNode<T>* elm, bool bAllowDuplicates)
+RBTreeBase<T>::insert(bool bAllowDuplicates, RBNode<T>* elm)
 {
     RBNode<T>* parent = nullptr;
     RBNode<T>* tmp = m_pRoot;
@@ -490,18 +495,36 @@ RBTreeBase<T>::insert(RBNode<T>* elm, bool bAllowDuplicates)
 
 template<typename T>
 inline RBNode<T>*
-RBTreeBase<T>::insert(IAllocator* pA, const T& data, bool bAllowDuplicates)
+RBTreeBase<T>::insert(IAllocator* pA, bool bAllowDuplicates, const T& data)
 {
     RBNode<T>* pNew = RBNodeAlloc(pA, data);
-    return insert(pNew, bAllowDuplicates);
+    return insert(bAllowDuplicates, pNew);
+}
+
+template<typename T>
+template<typename ...ARGS>
+inline RBNode<T>*
+RBTreeBase<T>::emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args)
+{
+    RBNode<T>* pNew = RBNodeAlloc(pA, std::forward<ARGS>(args)...);
+    return insert(bAllowDuplicates, pNew);
 }
 
 template<typename T>
 inline RBNode<T>*
 RBNodeAlloc(IAllocator* pA, const T& data)
 {
-    auto* r = (RBNode<T>*)pA->malloc(1, sizeof(RBNode<T>));
+    auto* r = (RBNode<T>*)pA->zalloc(1, sizeof(RBNode<T>));
     new(&r->m_data) T(data);
+    return r;
+}
+
+template<typename T, typename ...ARGS>
+inline RBNode<T>*
+RBNodeAlloc(IAllocator* pA, ARGS&& ...args)
+{
+    auto* r = (RBNode<T>*)pA->zalloc(1, sizeof(RBNode<T>));
+    new(&r->m_data) T(std::forward<ARGS>(args)...);
     return r;
 }
 
@@ -653,20 +676,29 @@ template<typename T>
 struct RBTree
 {
     RBTreeBase<T> base {};
-    IAllocator* pAlloc {};
+
+    /* */
+
+    IAllocator* m_pAlloc {};
+
+    /* */
     
     RBTree() = default;
-    RBTree(IAllocator* p) : pAlloc(p) {}
+    RBTree(IAllocator* p) : m_pAlloc(p) {}
+
+    /* */
 
     RBNode<T>* getRoot() { return base.getRoot(); }
     bool empty() { return base.empty(); }
     RBNode<T>* remove(RBNode<T>* elm) { return base.remove(elm); }
     RBNode<T>* remove(const T& x) { return base.remove(RBSearch<T>(getRoot(), x)); }
-    void removeAndFree(RBNode<T>* elm) { base.removeAndFree(pAlloc, elm); }
-    void removeAndFree(const T& x) { base.removeAndFree(pAlloc, RBSearch<T>(getRoot(), x)); }
-    RBNode<T>* insert(RBNode<T>* elm, bool bAllowDuplicates) { return base.insert(elm, bAllowDuplicates); }
-    RBNode<T>* insert(const T& data, bool bAllowDuplicates) { return base.insert(pAlloc, data, bAllowDuplicates); }
-    void destroy() { base.destroy(pAlloc); }
+    void removeAndFree(RBNode<T>* elm) { base.removeAndFree(m_pAlloc, elm); }
+    void removeAndFree(const T& x) { base.removeAndFree(m_pAlloc, RBSearch<T>(getRoot(), x)); }
+    RBNode<T>* insert(bool bAllowDuplicates, RBNode<T>* elm) { return base.insert(bAllowDuplicates, elm); }
+    RBNode<T>* insert(bool bAllowDuplicates, const T& data) { return base.insert(m_pAlloc, bAllowDuplicates, data); }
+    template<typename ...ARGS> RBNode<T>* emplace(bool bAllowDuplicates, ARGS&&... args)
+    { return base.emplace(m_pAlloc, bAllowDuplicates, std::forward<ARGS>(args)...); }
+    void destroy() { base.destroy(m_pAlloc); }
 };
 
 namespace print

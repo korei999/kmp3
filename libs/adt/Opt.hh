@@ -19,7 +19,7 @@ struct Opt
         data = x;
     }
 
-    constexpr T& getData() { assert(bHasValue && "[Opt]: has no data"); return data; }
+    constexpr T& value() { assert(bHasValue && "[Opt]: has no value"); return data; }
 
     constexpr operator bool() const
     {

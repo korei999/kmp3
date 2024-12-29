@@ -547,7 +547,7 @@ drawCoverImage()
         {
             /* FIXME: horrible screen flash */
             tb_invalidate();
-            auto& img = oCover.getData();
+            auto& img = oCover.value();
 
             f64 scaleFactor = f64(split - 1) / f64(img.height);
             int scaledWidth = std::round(img.width * scaleFactor / defaults::FONT_ASPECT_RATIO);

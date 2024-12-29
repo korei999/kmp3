@@ -109,7 +109,7 @@ _FreeListAllocBlock(FreeList* s, u64 size)
     pNode->m_data.setSizeSetFree(pBlock->size - sizeof(FreeListBlock) - sizeof(FreeList::Node), true);
     pNode->m_data.pNext = pNode->m_data.pPrev = nullptr;
 
-    s->m_tree.insert(pNode, true);
+    s->m_tree.insert(true, pNode);
 
 #if defined ADT_DBG_MEMORY
         CERR("[FreeList]: new block of '{}' bytes\n", size);
@@ -251,7 +251,7 @@ _FreeListSplitNode(FreeList* s, FreeList::Node* pNode, u64 realSize)
     pNode->m_data.pNext = &pSplit->m_data;
     pNode->m_data.setSizeSetFree(realSize, false);
 
-    s->m_tree.insert(pSplit, true);
+    s->m_tree.insert(true, pSplit);
     return pSplit;
 }
 
@@ -341,7 +341,7 @@ FreeList::free(void* ptr)
         pNode->m_data.pNext = pNode->m_data.pNext->pNext;
     }
 
-    m_tree.insert(pNode, true);
+    m_tree.insert(true, pNode);
 }
 
 inline void*
@@ -381,7 +381,7 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
             if (pNext->pNext) pNext->pNext->pPrev = &pNode->m_data;
             pNode->m_data.setFree(true);
 
-            m_tree.insert(_FreeListNodeFromPtr(ptr), true);
+            m_tree.insert(true, _FreeListNodeFromPtr(ptr));
 
             _FreeListSplitNode(this, pNode, realSize);
 

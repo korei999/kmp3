@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cassert>
 #include <limits>
+#include <utility>
 
 #include <threads.h>
 
@@ -39,7 +40,6 @@ struct Pool
         if (e != INIT_FLAG::INIT) return;
 
         mtx_init(&m_mtx, mtx_plain);
-        for (auto& e : m_aNodes) e.bDeleted = true;
     }
 
     /* */
@@ -55,8 +55,10 @@ struct Pool
     u32 idx(const T* p) const;
     void destroy();
     [[nodiscard]] PoolHnd getHandle();
-    [[nodiscard]] PoolHnd getHandle(const T& value);
+    [[nodiscard]] PoolHnd push(const T& value);
+    template<typename ...ARGS> [[nodiscard]] PoolHnd emplace(ARGS&&... args);
     void giveBack(PoolHnd hnd);
+    u32 getCap() const { return CAP; }
 
     /* */
 
@@ -209,11 +211,20 @@ Pool<T, CAP>::getHandle()
 
 template<typename T, u32 CAP>
 inline PoolHnd
-Pool<T, CAP>::getHandle(const T& value)
+Pool<T, CAP>::push(const T& value)
 {
     auto idx = getHandle();
     new(&operator[](idx)) T(value);
+    return idx;
+}
 
+template<typename T, u32 CAP>
+template<typename ...ARGS>
+inline PoolHnd
+Pool<T, CAP>::emplace(ARGS&&... args)
+{
+    auto idx = getHandle();
+    new(&operator[](idx)) T(std::forward<ARGS>(args)...);
     return idx;
 }
 
