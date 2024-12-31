@@ -51,10 +51,7 @@ sigwinchHandler([[maybe_unused]] int sig)
     g_termSize = getTermSize();
     LOG_GOOD("term: {}\n", g_termSize);
 
-    s.m_textBuff.m_tWidth = g_termSize.width;
-    s.m_textBuff.m_tHeight = g_termSize.height;
     s.m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
-    s.m_textBuff.m_vBackBuff.zeroOut();
 
     pl.m_bSelectionChanged = true;
     s.m_bRedraw = true;
@@ -80,8 +77,6 @@ Win::start(Arena* pArena)
     m_textBuff.push(MOUSE_ENABLE KEYPAD_ENABLE);
     m_textBuff.flush();
 
-    m_textBuff.m_tWidth = g_termSize.width;
-    m_textBuff.m_tHeight = g_termSize.height;
     m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
 
     LOG_GOOD("ansi::WinStart()\n");
@@ -102,6 +97,8 @@ Win::destroy()
 
     disableRawMode();
     mtx_destroy(&m_mtxUpdate);
+
+    m_textBuff.destroy();
 
     LOG_GOOD("ansi::WinDestroy()\n");
 }

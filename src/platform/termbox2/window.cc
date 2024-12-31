@@ -5,6 +5,7 @@
 #include "defaults.hh"
 #include "common.hh"
 #include "input.hh"
+#include "adt/math.hh"
 
 #include <cmath>
 #include <stdatomic.h>
@@ -41,8 +42,9 @@ namespace window
 
 Arena* g_pFrameArena {};
 u16 g_firstIdx = 0;
-int g_timeStringSize {};
 f64 g_time {};
+
+static f64 s_lastResizeTime {};
 
 bool
 init(Arena* pAlloc)
@@ -135,6 +137,7 @@ static void
 procResize([[maybe_unused]] tb_event* pEv)
 {
     app::g_pPlayer->m_bSelectionChanged = true;
+    s_lastResizeTime = utils::timeNowMS();
 }
 
 void
@@ -147,7 +150,6 @@ procEvents()
     switch (ev.type)
     {
         default:
-        assert(false && "what is this event?");
         break;
 
         case 0: break;
@@ -165,7 +167,7 @@ procEvents()
         break;
     }
 
-    common::fixFirstIdx(height - common::getHorizontalSplitPos(height) - 7, &g_firstIdx);
+    common::fixFirstIdx(height - app::g_pPlayer->m_imgHeight - 5, &g_firstIdx);
 }
 
 static void
@@ -180,6 +182,26 @@ clearArea(int x, int y, int width, int height)
 }
 
 static void
+clearAreaHARD(int x, int y, int width, int height)
+{
+    width = utils::min(width, tb_width());
+    height = utils::min(height, tb_height());
+
+    char* pSpace = (char*)g_pFrameArena->zalloc(1, width + 1);
+    utils::fill(pSpace, ' ', width);
+
+    const char s_ntsNORM[] = "\x1b[0m";
+
+    for (int h = y; h < height; ++h)
+    {
+        tb_set_cursor(x, h);
+        tb_send(s_ntsNORM, sizeof(s_ntsNORM)); /* stupid fix for white lines */
+        tb_send(pSpace, width);
+    }
+    tb_hide_cursor();
+}
+
+[[maybe_unused]] static void
 drawBox(
     u16 x,
     u16 y,
@@ -250,7 +272,7 @@ drawMBString(
     const int x,
     const int y,
     const String str,
-    const long maxLen,
+    [[maybe_unused]] const long maxLen,
     const u32 fg = TB_WHITE,
     const u32 bg = TB_DEFAULT,
     [[maybe_unused]] const bool bWrap = false,
@@ -258,47 +280,25 @@ drawMBString(
     [[maybe_unused]] const int nMaxWraps = 0
 )
 {
-    long it = 0;
-    long max = 0;
-    int yOff = y;
-    int xOff = x;
-    long maxLenMod = maxLen;
-    // int nWraps = 0;
+    //wchar_t wc {};
+    //while (it < str.getSize())
+    //{
+    //    if (max >= maxLenMod - 3)
+    //        break;
 
-    // wchar_t* pWstr = (wchar_t*)zalloc(g_pFrameArena, str.size + 1, sizeof(wchar_t));
-    // auto mbLen = mbstowcs(pWstr, str.pData, str.size);
+    //    int charLen = mbtowc(&wc, &str[it], str.getSize() - it);
 
-    // for (long i = 0, wrapLen = 0; i < maxLen - 2 && i < (long)mbLen && pWstr[i]; ++i, ++wrapLen, ++xOff)
-    // {
-    //     tb_set_cell(xOff + 1, yOff, pWstr[i], fg, bg);
-    // }
+    //    if (charLen < 0) break;
 
-    wchar_t wc {};
-    for (; it < str.getSize(); ++max)
-    {
-        if (max >= maxLenMod - 2)
-        {
-            break;
+    //    it += charLen;
+    //    tb_set_cell(xOff + 1 + max, yOff, wc, fg, bg);
 
-            /* FIXME: breaks termbox */
-            // if (bWrap)
-            // {
-            //     max = 0;
-            //     maxLenMod = maxLen + (x - xWrapAt); /* string gets longer */
-            //     xOff = xWrapAt;
-            //     ++yOff;
-            //     ++nWraps;
-            //     if (nWraps > nMaxWraps) break;
-            // }
-            // else break;
-        }
+    //    int wclen = wcwidth(wc);
+    //    if (wclen < 0) return;
+    //    max += wclen;
+    //}
 
-        int charLen = mbtowc(&wc, &str[it], str.getSize() - it);
-        if (charLen < 0) break;
-
-        it += charLen;
-        tb_set_cell(xOff + 1 + max, yOff, wc, fg, bg);
-    }
+    tb_printf(x, y, fg, bg, "%.*s", str.getSize(), str.data());
 }
 
 static void
@@ -306,8 +306,7 @@ drawSongList()
 {
     const auto& pl = *app::g_pPlayer;
     const int height = tb_height();
-    const int width = tb_width();
-    const int split = common::getHorizontalSplitPos(height) + 3;
+    const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
     for (u16 h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.m_aSongIdxs.getSize(); ++h, ++i)
@@ -338,7 +337,7 @@ drawSongList()
         drawMBString(1, i + split + 1, sSong, maxLen, fg, bg);
     }
 
-    drawBox(0, split, width - 1, listHeight, TB_BLUE, TB_DEFAULT);
+    /*drawBox(0, split, width - 1, listHeight, TB_BLUE, TB_DEFAULT);*/
 }
 
 using VOLUME_COLOR = int;
@@ -346,16 +345,17 @@ using VOLUME_COLOR = int;
 static VOLUME_COLOR
 drawVolume()
 {
+    auto& pl = *app::g_pPlayer;
     const auto width = tb_width();
-    const auto height = tb_height();
-    int split = common::getHorizontalSplitPos(height) + 2;
+    const int xOff = pl.m_imgWidth + 2;
+
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
-    constexpr String fmt = "volume: %3d";
-    const int maxVolumeBars = (split - fmt.getSize() - 2) * vol * 1.0f/defaults::MAX_VOLUME;
+    constexpr String sFmt = "volume: %3d";
+    const int maxVolumeBars = (width - xOff - sFmt.getSize() - 2) * vol * 1.0f/defaults::MAX_VOLUME;
 
     auto volumeColor = [&](int i) -> VOLUME_COLOR {
-        f32 col = f32(i) / (f32(split - fmt.getSize() - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
+        f32 col = f32(i) / (f32(width - xOff - sFmt.getSize() - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
 
         if (col <= 0.33f) return TB_GREEN;
         else if (col > 0.33f && col <= 0.66f) return TB_GREEN;
@@ -365,27 +365,27 @@ drawVolume()
 
     const auto col = bMuted ? TB_BLUE : volumeColor(maxVolumeBars - 1) | TB_BOLD;
 
-    for (int i = fmt.getSize() + 2, nTimes = 0; i < split && nTimes < maxVolumeBars; ++i, ++nTimes)
+    char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
+    u32 n = snprintf(pBuff, width, sFmt.data(), int(std::round(app::g_pMixer->getVolume() * 100.0)));
+    drawMBString(xOff, 6, pBuff, n, col, TB_DEFAULT);
+
+    for (int i = xOff + n + 1, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
     {
-        VOLUME_COLOR col;
+        u32 barCol {};
         wchar_t wc;
         if (bMuted)
         {
-            col = TB_BLUE;
+            barCol |= TB_BLUE;
             wc = common::CHAR_VOL;
         }
         else
         {
-            col = volumeColor(nTimes);
+            barCol |= volumeColor(nTimes);
             wc = common::CHAR_VOL_MUTED;
         }
 
-        tb_set_cell(i, split, wc, col, TB_DEFAULT);
+        tb_set_cell(i, 6, wc, barCol, TB_DEFAULT);
     }
-
-    char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
-    snprintf(pBuff, width, fmt.data(), int(std::round(vol * 100.0f)));
-    drawMBString(0, split, pBuff, split + 1, col);
 
     return col;
 }
@@ -395,6 +395,7 @@ drawInfo()
 {
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
+    const int xOff = pl.m_imgWidth + 2;
 
     /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
 
@@ -403,24 +404,24 @@ drawInfo()
     /* title */
     {
         int n = print::toBuffer(pBuff, width, "title: ");
-        drawMBString(0, 1, pBuff, width - 1);
+        drawMBString(xOff, 1, pBuff, width - 1);
         memset(pBuff, 0, width + 1);
         if (pl.m_info.title.getSize() > 0)
             print::toBuffer(pBuff, width, "{}", pl.m_info.title);
         else print::toBuffer(pBuff, width, "{}", pl.m_aShortArgvs[pl.m_selected]);
-        drawMBString(n, 1, pBuff, width - 1 - n, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
+        drawMBString(xOff + n + 1, 1, pBuff, width - 1 - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
     }
 
     /* album */
     {
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
-        drawMBString(0, 2, pBuff, width - 1);
+        drawMBString(xOff, 2, pBuff, width - 1);
         if (pl.m_info.album.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.m_info.album);
-            drawMBString(n, 2, pBuff, width - 1 - n - 1, TB_BOLD);
+            drawMBString(xOff + n + 1, 2, pBuff, width - 1 - n - 1, TB_BOLD);
         }
     }
 
@@ -428,12 +429,12 @@ drawInfo()
     {
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
-        drawMBString(0, 3, pBuff, width - 2);
+        drawMBString(xOff, 3, pBuff, width - 2);
         if (pl.m_info.artist.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.m_info.artist);
-            drawMBString(n, 3, pBuff, width - 1 - n - 1, TB_BOLD);
+            drawMBString(xOff + n + 1, 3, pBuff, width - 1 - n - 1, TB_BOLD);
         }
     }
 }
@@ -486,18 +487,15 @@ static void
 drawTimeSlider()
 {
     const auto& mix = *app::g_pMixer;
-
-    int height = tb_height();
+    const auto& pl = *app::g_pPlayer;
     int width = tb_width();
-
-    int split = std::round(f64(height) * (1.0 - app::g_pPlayer->m_statusToInfoWidthRatio));
-    int n = 0;
+    const int xOff = pl.m_imgWidth + 2;
 
     /* time */
     {
         const String str = common::allocTimeString(g_pFrameArena, width);
-        drawMBString(0, split + 1, str, width - 2);
-        n += str.getSize();
+        drawMBString(xOff, 9, str, width - 2);
+        str.getSize();
     }
 
     /* play/pause indicator */
@@ -505,24 +503,21 @@ drawTimeSlider()
         bool bPaused = atomic_load_explicit(&mix.isPaused(), memory_order_relaxed);
         const char* ntsIndicator = bPaused ? "II" : "I>";
 
-        drawMBString(1 + n, split + 1, ntsIndicator, width - 2, TB_BOLD);
-
-        n += strlen(ntsIndicator);
+        drawMBString(xOff, 10, ntsIndicator, width - 2, TB_BOLD);
     }
-    g_timeStringSize = n;
     
     /* time slider */
     {
         const auto& time = mix.getCurrentTimeStamp();
         const auto& maxTime = mix.getTotalSamplesCount();
-        const auto timePlace = (f64(time) / f64(maxTime)) * (width - 2 - (n + 3));
+        const auto timePlace = (f64(time) / f64(maxTime)) * (width - xOff - 5);
 
-        for (long i = n + 3, t = 0; i < width - 2; ++i, ++t)
+        for (long i = xOff + 4, t = 0; i < width - 1; ++i, ++t)
         {
             wchar_t wch = L'━';
             if ((t - 0) == std::floor(timePlace)) wch = L'╋';
 
-            tb_set_cell(i, split + 1, wch, TB_DEFAULT, TB_DEFAULT);
+            tb_set_cell(i, 10, wch, TB_DEFAULT, TB_DEFAULT);
         }
     }
 }
@@ -531,38 +526,41 @@ drawTimeSlider()
 static void
 drawCoverImage()
 {
-    int height = tb_height();
-    int width = tb_width();
-    int split = common::getHorizontalSplitPos(height);
+    auto& pl = *app::g_pPlayer;
 
-    static f64 lastTime {};
-
-    if (app::g_pPlayer->m_bSelectionChanged && g_time > lastTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
+    if (pl.m_bSelectionChanged && g_time > s_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
-        lastTime = g_time;
-        app::g_pPlayer->m_bSelectionChanged = false;
+        pl.m_bSelectionChanged = false;
 
         auto oCover = app::g_pMixer->getCoverImage();
         if (oCover)
         {
-            /* FIXME: horrible screen flash */
-            tb_invalidate();
+            /* clear without flickering */
+            char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
+            tb_send(sKittyClear, sizeof(sKittyClear));
+            clearAreaHARD(1, 1, pl.m_imgWidth, pl.m_imgHeight + 1);
+
             auto& img = oCover.value();
 
-            f64 scaleFactor = f64(split - 1) / f64(img.height);
-            int scaledWidth = std::round(img.width * scaleFactor / defaults::FONT_ASPECT_RATIO);
-            /*int scaledHeight = std::round(img.height * scaleFactor);*/
-            int hdiff = width - 2 - scaledWidth;
-            /*int vdiff = split - 1 - scaledHeight;*/
-            const int hOff = std::round(hdiff / 2.0);
-            /*const int vOff = std::round(vdiff / 2.0);*/
+            const auto chafaImg = platform::chafa::getImageString(
+                g_pFrameArena, img, pl.m_imgHeight, pl.m_imgWidth
+            );
 
-            LOG_GOOD("hOff: {}, split: {}\n", hOff, split);
+            f64 asp = (((f64)img.width / (f64)img.height));
+            f64 normalAsp = 1920.0 / 1080.0;
+            f64 diff = normalAsp - asp;
+            int xOff = 0;
 
-            const auto chafaImg = platform::chafa::getImageString(g_pFrameArena, img, split - 1, width - 2);
+            /* try to center the image */
+            if (!math::eq(diff, 0))
+            {
+                f64 coef = asp / normalAsp;
+                f64 move = (1.0 - coef) / 2.0;
 
-            tb_set_cursor(hOff + 2, 0);
-            /*platform::chafa::showImage(g_pFrameArena, img, split - 1, width - 2, hOff + 2, 1);*/
+                xOff = std::floor(pl.m_imgWidth * move);
+            }
+
+            tb_set_cursor(1 + xOff, 1);
             tb_send(chafaImg.s.data(), chafaImg.s.getSize());
             tb_hide_cursor();
         }
@@ -579,8 +577,6 @@ draw()
     int width = tb_width();
 
     g_time = utils::timeNowMS();
-
-    /*if (height < 6 || width < 6) return;*/
 
     tb_clear();
 

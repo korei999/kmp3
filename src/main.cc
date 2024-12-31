@@ -7,6 +7,7 @@
 #include "defaults.hh"
 #include "frame.hh"
 #include "adt/FreeList.hh"
+#include <cmath>
 
 #ifdef USE_MPRIS
     #include "mpris.hh"
@@ -44,7 +45,7 @@ main(int argc, char** argv)
     FreeList freeList(SIZE_8M);
     defer( freeList.freeAll() );
 
-    app::g_eUIFrontend = app::UI_FRONTEND::ANSI;
+    app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
     app::g_eMixer = app::MIXER::PIPEWIRE;
 
     if (argc > 1)
@@ -121,6 +122,7 @@ main(int argc, char** argv)
     }
     player.m_longestStringSize = longsetSize;
     player.m_imgHeight = 10;
+    player.m_imgWidth = std::round((player.m_imgHeight * (1920.0/1080.0)) / defaults::FONT_ASPECT_RATIO);
     player.m_statusToInfoWidthRatio = 0.4;
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;

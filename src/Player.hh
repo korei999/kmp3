@@ -36,6 +36,7 @@ struct Player
         //
     } m_bottomBar {};
     u8 m_imgHeight {};
+    u8 m_imgWidth {};
     f64 m_statusToInfoWidthRatio {};
     VecBase<String> m_aShortArgvs {}; /* only the name of the file, without full path */
     VecBase<u16> m_aSongIdxs {}; /* index buffer for aShortArgvs */

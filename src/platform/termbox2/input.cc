@@ -5,7 +5,6 @@
 #include "app.hh"
 #include "window.hh"
 #include "keybinds.hh"
-#include "common.hh"
 
 #include <cmath>
 
@@ -34,29 +33,35 @@ procKey(tb_event* pEv)
 void
 procMouse(tb_event* pEv)
 {
+    const auto& ev = *pEv;
+
     auto& pl = *app::g_pPlayer;
     const long width = tb_width();
     const long height = tb_height();
-    const int split = common::getHorizontalSplitPos(height);
-    const long listOff = split + 4;
-    const long sliderOff = split + 1;
-    const auto& ev = *pEv;
+
+    const long xOff = pl.m_imgWidth + 2;
+    const int yOff = pl.m_imgHeight + 1;
+
+    const long listOff = yOff + 1;
+    const long sliderOff = 10;
+    const long volumeOff = 6;
 
     /* click on slider */
-    if (ev.y == sliderOff)
+    if (ev.y == sliderOff && ev.x >= xOff)
     {
-        const long xOff = window::g_timeStringSize + 2;
         if (ev.key == TB_KEY_MOUSE_LEFT)
         {
-            if (ev.x <= xOff)
+            /* click on indicator */
+            if (ev.x >= xOff && ev.x <= xOff + 2)
             {
-                if (ev.key == TB_KEY_MOUSE_LEFT) app::togglePause();
+                app::togglePause();
                 return;
             }
 
-            f64 target = f64(ev.x - xOff) / f64((width - 2) - xOff);
+            f64 target = f64(ev.x - xOff - 4) / f64((width - 1) - xOff - 4);
             target *= app::g_pMixer->getTotalMS();
             app::g_pMixer->seekMS(target);
+
             return;
         }
         else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::seekOff(10000);
@@ -66,7 +71,7 @@ procMouse(tb_event* pEv)
     }
 
     /* scroll ontop of volume */
-    if (ev.y == split + 2 && ev.x <= 11)
+    if (ev.y == volumeOff && ev.x >= xOff)
     {
         if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN) app::volumeDown(0.1f);
         else if (ev.key == TB_KEY_MOUSE_WHEEL_UP) app::volumeUp(0.1f);

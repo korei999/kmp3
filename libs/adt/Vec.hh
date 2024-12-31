@@ -52,8 +52,8 @@ struct VecBase
     void destroy(IAllocator* p);
     [[nodiscard]] u32 getSize() const;
     [[nodiscard]] u32 getCap() const;
-    [[nodiscard]] T*& data();
-    [[nodiscard]] T* const& data() const;
+    [[nodiscard]] T* data();
+    [[nodiscard]] T* const data() const;
     void zeroOut(); /* set size to zero and memset */
     [[nodiscard]] VecBase<T> clone(IAllocator* pAlloc) const;
 
@@ -225,14 +225,14 @@ VecBase<T>::getCap() const
 }
 
 template<typename T>
-[[nodiscard]] inline T*&
+[[nodiscard]] inline T*
 VecBase<T>::data()
 {
     return m_pData;
 }
 
 template<typename T>
-[[nodiscard]] inline T* const&
+[[nodiscard]] inline T* const
 VecBase<T>::data() const
 {
     return m_pData;
@@ -312,8 +312,8 @@ struct Vec
     void destroy() { base.destroy(m_pAlloc); }
     [[nodiscard]] u32 getSize() const { return base.getSize(); }
     [[nodiscard]] u32 getCap() const { return base.getCap(); }
-    [[nodiscard]] T*& data() { return base.data(); }
-    [[nodiscard]] const T*& data() const { return base.data(); }
+    [[nodiscard]] T* data() { return base.data(); }
+    [[nodiscard]] const T* data() const { return base.data(); }
     void zeroOut() { base.zeroOut(); }
 
     [[nodiscard]] Vec<T>

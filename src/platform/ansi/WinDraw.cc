@@ -67,7 +67,7 @@ Win::coverImage()
         {
             const auto& img = oCoverImg.value();
 
-            const platform::chafa::Image chafaImg = platform::chafa::getImageString(
+            const auto chafaImg = platform::chafa::getImageString(
                 m_pArena, img, split, g_termSize.width
             );
 
@@ -166,7 +166,7 @@ Win::volume()
         }
 
         tb.push(col);
-        tb.movePushWideString(i, 6, &wc, 3);
+        tb.movePushWString(i, 6, &wc, 3);
     }
 }
 
@@ -220,7 +220,7 @@ Win::timeSlider()
             wchar_t wch = L'━';
             if (t == std::floor(timePlace)) wch = L'╋';
 
-            tb.movePushWideString(xOff + i, yOff, &wch, 3);
+            tb.movePushWString(xOff + i, yOff, &wch, 3);
         }
     }
 }
@@ -256,6 +256,8 @@ Win::list()
             tb.clearLine(TEXT_BUFF_ARG::EVERYTHING);
             tb.movePushGlyphs(1, i + split + 1, sSong, width - 2);
             tb.push(NORM);
+
+            // tb.setString(1, i + split + 1, sSong);
         }
         else
         {
@@ -301,7 +303,7 @@ Win::bottomLine()
     {
         const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
         tb.movePushGlyphs(1, height - 1, sReadMode, width - 1);
-        tb.movePushWideString(
+        tb.movePushWString(
             sReadMode.getSize() + 1,
             height - 1,
             c::g_input.aBuff,
