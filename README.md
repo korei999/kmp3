@@ -2,8 +2,10 @@
 
 ### Features
 - Plays most of the audio/video formats.
+- Cover image.
 - MPRIS D-Bus controls.
 - Any playback speed (no pitch correction).
+- Mouse support.
 
 ### Usage
 - Play each song in the directory: `kmp3 *`, or recursively: `kmp3 **/*`.
@@ -22,7 +24,7 @@
 
 ### Dependencies
 `libpipewire-0.3 libavformat libavcodec libavutil libswresample`.\
-To enable mpris support: `libsystemd` or `basu`.\
+For mpris support: `libsystemd` or `basu`.\
 For image support: `chafa glib-2.0 libswscale`.
 
 ### Install
