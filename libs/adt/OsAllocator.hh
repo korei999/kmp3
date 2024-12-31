@@ -19,7 +19,7 @@ struct OsAllocator : IAllocator
     void virtual freeAll() override final; /* assert(false) */
 };
 
-inline IAllocator*
+inline OsAllocator*
 OsAllocatorGet()
 {
     static OsAllocator alloc {};

@@ -15,6 +15,24 @@
 #include <clocale>
 #include <fcntl.h>
 
+void
+setTermEnv()
+{
+    const String sTerm = getenv("TERM");
+    LOG_WARN("ntsTerm: '{}'\n", sTerm);
+
+    if (sTerm == "foot")
+        app::g_eTerm = app::TERM::FOOT;
+    else if (sTerm == "xterm-kitty")
+        app::g_eTerm = app::TERM::KITTY;
+    else if (sTerm == "xterm-ghostty")
+        app::g_eTerm = app::TERM::GHOSTTY;
+    else
+        app::g_eTerm = app::TERM::XTERM;
+
+    app::g_sTerm = sTerm;
+}
+
 int
 main(int argc, char** argv)
 {
@@ -119,6 +137,8 @@ main(int argc, char** argv)
         mpris::destroyLocks();
     );
 #endif
+
+    setTermEnv();
 
     if (nAccepted > 0)
     {

@@ -70,7 +70,7 @@ struct ThreadPoolLock
     cnd_t cnd;
 
     ThreadPoolLock() = default;
-    ThreadPoolLock(INIT_FLAG e) { if (e == INIT_FLAG::INIT) init(); }
+    ThreadPoolLock([[maybe_unused]] INIT_FLAG e) { init(); }
 
     void init();
     void wait();

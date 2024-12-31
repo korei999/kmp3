@@ -64,7 +64,7 @@ sorted(const auto* a, const u32 size, const ORDER eOrder = INC)
     }
     else
     {
-        for (long i = size - 2; i >= 0; --i)
+        for (s64 i = size - 2; i >= 0; --i)
             if (a[i + 1] > a[i]) return false;
     }
 
@@ -77,14 +77,14 @@ sorted(const auto& a, const ORDER eOrder = INC)
     return sorted(a.data(), a.getSize(), eOrder);
 }
 
-template<typename T, decltype(utils::compare<T>) FN_CMP = utils::compare>
+template<typename T, auto FN_CMP = utils::compare<T>>
 constexpr void
-insertion(T* a, long l, long h)
+insertion(T* a, s64 l, s64 h)
 {
-    for (long i = l + 1; i < h + 1; i++)
+    for (s64 i = l + 1; i < h + 1; i++)
     {
         T key = a[i];
-        long j = i;
+        s64 j = i;
         for (; j > l && FN_CMP(a[j - 1], key) > 0; --j)
             a[j] = a[j - 1];
 
@@ -92,7 +92,7 @@ insertion(T* a, long l, long h)
     }
 }
 
-template<template<typename> typename CON_T, typename T, decltype(utils::compare<T>) FN_CMP = utils::compare>
+template<template<typename> typename CON_T, typename T, auto FN_CMP = utils::compare<T>>
 constexpr void
 insertion(CON_T<T>* a)
 {
@@ -105,10 +105,10 @@ constexpr void
 heapMax(auto* a, const u32 size)
 {
     u32 heapSize = size;
-    for (long p = HeapParentI(heapSize); p >= 0; --p)
+    for (s64 p = HeapParentI(heapSize); p >= 0; --p)
         maxHeapify(a, heapSize, p);
 
-    for (long i = size - 1; i > 0; --i)
+    for (s64 i = size - 1; i > 0; --i)
     {
         utils::swap(&a[i], &a[0]);
 
@@ -125,9 +125,9 @@ median3(const auto& x, const auto& y, const auto& z)
     else return z;
 }
 
-template<typename T, decltype(utils::compare<T>) FN_CMP = utils::compare>
-constexpr long
-partition(T a[], long l, long r, const T& pivot)
+template<typename T, auto FN_CMP = utils::compare<T>>
+constexpr s64
+partition(T a[], s64 l, s64 r, const T& pivot)
 {
     while (l <= r)
     {
@@ -140,9 +140,9 @@ partition(T a[], long l, long r, const T& pivot)
     return r;
 }
 
-template<typename T, decltype(utils::compare<T>) FN_CMP = utils::compare>
+template<typename T, auto FN_CMP = utils::compare<T>>
 constexpr void
-quick(T a[], long l, long r)
+quick(T a[], s64 l, s64 r)
 {
     if (l < r)
     {
@@ -153,7 +153,7 @@ quick(T a[], long l, long r)
         }
 
         T pivot = a[ median3(l, (l + r) / 2, r) ];
-        long i = l, j = r;
+        s64 i = l, j = r;
 
         while (i <= j)
         {
@@ -168,7 +168,7 @@ quick(T a[], long l, long r)
     }
 }
 
-template<template<typename> typename CON_T, typename T, decltype(utils::compare<T>) FN_CMP = utils::compare>
+template<template<typename> typename CON_T, typename T, auto FN_CMP = utils::compare<T>>
 constexpr void
 quick(CON_T<T>* pArrayContainer)
 {

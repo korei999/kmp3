@@ -124,7 +124,7 @@ compareRev(const T& l, const T& r)
     return r - l;
 }
 
-[[nodiscard]] inline long
+[[nodiscard]] inline s64
 timeNowUS()
 {
 #ifdef __linux__
@@ -147,13 +147,13 @@ timeNowUS()
 [[nodiscard]] inline f64
 timeNowMS()
 {
-    return timeNowUS() / 1000.0;
+    return static_cast<f64>(timeNowUS()) / 1000.0;
 }
 
 [[nodiscard]] inline f64
 timeNowS()
 {
-    return timeNowMS() / 1000.0;
+    return static_cast<f64>(timeNowMS()) / 1000.0;
 }
 
 inline void
@@ -177,9 +177,9 @@ sleepS(f64 s)
 }
 
 constexpr void
-addNSToTimespec(timespec* const pTs, const long nsec)
+addNSToTimespec(timespec* const pTs, const s64 nsec)
 {
-    constexpr long nsecMax = 1000000000;
+    constexpr s64 nsecMax = 1000000000;
     /* overflow check */
     if (pTs->tv_nsec + nsec >= nsecMax)
     {

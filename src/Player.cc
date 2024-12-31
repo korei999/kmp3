@@ -128,7 +128,12 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
             wc = towupper(wc);
 
         if (wcsstr(aSongToUpper.data(), aUpperRight.data()) != nullptr)
+        {
             m_aSongIdxs.push(m_pAlloc, u16(i));
+            char asdf[512] {};
+            wcstombs(asdf, aSongToUpper.data(), 500);
+            LOG("{}\n", song);
+        }
     }
 }
 
@@ -150,7 +155,7 @@ Player::updateInfo()
     m_bSelectionChanged = true;
 
 #ifndef NDEBUG
-    LOG_GOOD("freeList.size: {}\n", _FreeListNBytesAllocated((FreeList*)m_pAlloc));
+    LOG_GOOD("freeList.size: {}\n", ((FreeList*)m_pAlloc)->nBytesAllocated());
 #endif
 }
 

@@ -181,7 +181,7 @@ constexpr Arr<T, CAP>::Arr(std::initializer_list<T> list)
 namespace sort
 {
 
-template<typename T, u32 CAP, decltype(utils::compare<T>) FN_CMP = utils::compare>
+template<typename T, u32 CAP, auto FN_CMP = utils::compare<T>>
 constexpr void
 quick(Arr<T, CAP>* pArr)
 {
@@ -190,7 +190,7 @@ quick(Arr<T, CAP>* pArr)
     quick<T, FN_CMP>(pArr->m_aData, 0, pArr->m_size - 1);
 }
 
-template<typename T, u32 CAP, decltype(utils::compare<T>) FN_CMP = utils::compare>
+template<typename T, u32 CAP, auto FN_CMP = utils::compare<T>>
 constexpr void
 insertion(Arr<T, CAP>* pArr)
 {

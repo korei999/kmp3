@@ -72,7 +72,7 @@ struct String
     [[nodiscard]] constexpr u32 lastOf(char c) const;
     void destroy(IAllocator* p);
     void trimEnd();
-    constexpr void removeNLEnd(); /* remove \r\n */
+    void removeNLEnd(); /* remove \r\n */
     [[nodiscard]] bool contains(const String r) const;
     [[nodiscard]] String clone(IAllocator* pAlloc) const;
 
@@ -425,7 +425,7 @@ String::trimEnd()
         else break;
 }
 
-constexpr void
+inline void
 String::removeNLEnd()
 {
     auto oneOf = [&](char c) -> bool {

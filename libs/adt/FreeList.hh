@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RBTree.hh"
+#include "OsAllocator.hh"
 
 #if defined ADT_DBG_MEMORY
     #include "logs.hh"
@@ -12,8 +13,6 @@ namespace adt
 /* Best-fit logarithmic time allocator, all IAllocator methods are supported.
  * Can be slow and memory wasteful for small allocations (48 bytes of metadata per allocation).
  * Preallocating big blocks would help. */
-struct FreeList;
-
 struct FreeListBlock
 {
     FreeListBlock* pNext {};
@@ -41,21 +40,28 @@ struct FreeListData
     constexpr void addSize(u64 _size) { setSize(_size + getSize()); }
 };
 
-struct FreeList : IAllocator
+class FreeList : public IAllocator
 {
+public:
     using Node = RBNode<FreeListData>; /* node is the header + memory chunk of the allocation */
 
     /* */
 
+private:
     u64 m_blockSize {};
+    IAllocator* m_pBackAlloc {};
     u64 m_totalAllocated {};
     RBTreeBase<FreeListData> m_tree {}; /* free nodes sorted by size */
     FreeListBlock* m_pBlocks {};
 
     /* */
 
+public:
     FreeList() = default;
-    FreeList(u64 _blockSize);
+    FreeList(u64 _blockSize, IAllocator* pBackAlloc = OsAllocatorGet())
+        : m_blockSize(align8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
+          m_pBackAlloc(pBackAlloc),
+          m_pBlocks(allocBlock(m_blockSize)) {}
 
     /* */
 
@@ -64,6 +70,20 @@ struct FreeList : IAllocator
     [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override;
     virtual void free(void* ptr) override;
     virtual void freeAll() override;
+    u64 nBytesAllocated();
+
+#ifndef NDEBUG
+    void verify();
+#endif
+
+    /* */
+
+private:
+    [[nodiscard]] FreeListBlock* allocBlock(u64 size);
+    [[nodiscard]] FreeListBlock* blockPrepend(u64 size);
+    [[nodiscard]] FreeListBlock* blockFromNode(FreeList::Node* pNode);
+    [[nodiscard]] FreeList::Node* findFittingNode(const u64 size);
+    FreeList::Node* splitNode(FreeList::Node* pNode, u64 realSize);
 };
 
 template<>
@@ -80,15 +100,15 @@ _FreeListNodeFromBlock(FreeListBlock* pBlock)
 }
 
 inline u64
-_FreeListNBytesAllocated(FreeList* s)
+FreeList::nBytesAllocated()
 {
-    return s->m_totalAllocated;
+    return m_totalAllocated;
 }
 
 inline FreeListBlock*
-_FreeListBlockFromNode(FreeList* s, FreeList::Node* pNode)
+FreeList::blockFromNode(FreeList::Node* pNode)
 {
-    auto* pBlock = s->m_pBlocks;
+    auto* pBlock = m_pBlocks;
     while (pBlock)
     {
         if ((u8*)pNode > (u8*)pBlock && (u8*)pNode < (u8*)pBlock + pBlock->size)
@@ -100,16 +120,16 @@ _FreeListBlockFromNode(FreeList* s, FreeList::Node* pNode)
 }
 
 inline FreeListBlock*
-_FreeListAllocBlock(FreeList* s, u64 size)
+FreeList::allocBlock(u64 size)
 {
-    FreeListBlock* pBlock = (FreeListBlock*)::calloc(1, size);
+    FreeListBlock* pBlock = (FreeListBlock*)m_pBackAlloc->zalloc(1, size);
     pBlock->size = size;
 
     FreeList::Node* pNode = _FreeListNodeFromBlock(pBlock);
     pNode->m_data.setSizeSetFree(pBlock->size - sizeof(FreeListBlock) - sizeof(FreeList::Node), true);
     pNode->m_data.pNext = pNode->m_data.pPrev = nullptr;
 
-    s->m_tree.insert(true, pNode);
+    m_tree.insert(true, pNode);
 
 #if defined ADT_DBG_MEMORY
         CERR("[FreeList]: new block of '{}' bytes\n", size);
@@ -119,12 +139,12 @@ _FreeListAllocBlock(FreeList* s, u64 size)
 }
 
 inline FreeListBlock*
-_FreeListBlockPrepend(FreeList* s, u64 size)
+FreeList::blockPrepend(u64 size)
 {
-    auto* pNewBlock = _FreeListAllocBlock(s, size);
+    auto* pNewBlock = allocBlock(size);
 
-    pNewBlock->pNext = s->m_pBlocks;
-    s->m_pBlocks = pNewBlock;
+    pNewBlock->pNext = m_pBlocks;
+    m_pBlocks = pNewBlock;
 
     return pNewBlock;
 }
@@ -136,10 +156,11 @@ FreeList::freeAll()
     while (it)
     {
         auto* next = it->pNext;
-        ::free(it);
+        m_pBackAlloc->free(it);
         it = next;
     }
     m_pBlocks = nullptr;
+    m_tree = {};
 }
 
 inline FreeListData*
@@ -155,9 +176,9 @@ _FreeListNodeFromPtr(void* p)
 }
 
 inline FreeList::Node*
-_FreeListFindFittingNode(FreeList* s, const u64 size)
+FreeList::findFittingNode(const u64 size)
 {
-    auto* it = s->m_tree.m_pRoot;
+    auto* it = m_tree.m_pRoot;
     const s64 realSize = size + sizeof(FreeList::Node);
 
     FreeList::Node* pLastFitting {};
@@ -183,9 +204,9 @@ _FreeListFindFittingNode(FreeList* s, const u64 size)
 
 #ifndef NDEBUG
 inline void
-_FreeListVerify(FreeList* s)
+FreeList::verify()
 {
-    for (auto* pBlock = s->m_pBlocks; pBlock; pBlock = pBlock->pNext)
+    for (auto* pBlock = m_pBlocks; pBlock; pBlock = pBlock->pNext)
     {
         auto* pListNode = &_FreeListNodeFromBlock(pBlock)->m_data;
         auto* pPrev = pListNode;
@@ -218,22 +239,20 @@ _FreeListVerify(FreeList* s)
         }
     }
 }
-#else
-#define _FreeListVerify(...) (void)0
 #endif
 
 /* Split node in two pieces.
  * Return left part with realSize.
  * Insert right part with the rest of the space to the tree */
 inline FreeList::Node*
-_FreeListSplitNode(FreeList* s, FreeList::Node* pNode, u64 realSize)
+FreeList::splitNode(FreeList::Node* pNode, u64 realSize)
 {
     s64 splitSize = s64(pNode->m_data.getSize()) - s64(realSize);
 
     assert(splitSize >= 0);
 
     assert(pNode->m_data.isFree() && "splitting non free node (corruption)");
-    s->m_tree.remove(pNode);
+    m_tree.remove(pNode);
 
     if (splitSize <= (s64)sizeof(FreeList::Node))
     {
@@ -251,7 +270,7 @@ _FreeListSplitNode(FreeList* s, FreeList::Node* pNode, u64 realSize)
     pNode->m_data.pNext = &pSplit->m_data;
     pNode->m_data.setSizeSetFree(realSize, false);
 
-    s->m_tree.insert(true, pSplit);
+    m_tree.insert(true, pSplit);
     return pSplit;
 }
 
@@ -280,13 +299,13 @@ FreeList::malloc(u64 nMembers, u64 mSize)
 #endif
 
 again:
-        pBlock = _FreeListBlockPrepend(this, utils::max(m_blockSize, requested*2 + sizeof(FreeListBlock) + sizeof(FreeList::Node)));
+        pBlock = blockPrepend(utils::max(m_blockSize, requested*2 + sizeof(FreeListBlock) + sizeof(FreeList::Node)));
     }
 
-    auto* pFree = _FreeListFindFittingNode(this, requested);
+    auto* pFree = findFittingNode(requested);
     if (!pFree) goto again;
 
-    _FreeListSplitNode(this, pFree, realSize);
+    splitNode(pFree, realSize);
 
     pBlock->nBytesOccupied += pFree->data().getSize();
     m_totalAllocated += pFree->data().getSize();
@@ -310,7 +329,7 @@ FreeList::free(void* ptr)
     auto* pNode = _FreeListNodeFromPtr(ptr);
     assert(!pNode->m_data.isFree() && "[FreeList]: double free");
 
-    auto* pBlock = _FreeListBlockFromNode(this, pNode);
+    auto* pBlock = blockFromNode(pNode);
 
     pNode->m_data.setFree(true);
     pBlock->nBytesOccupied -= pNode->m_data.getSize();
@@ -365,7 +384,7 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
 
         if (pNext && pNext->isFree() && pNode->m_data.getSize() + pNext->getSize() >= realSize)
         {
-            auto* pBlock = _FreeListBlockFromNode(this, pNode);
+            auto* pBlock = blockFromNode(pNode);
             assert(pBlock && "[FreeList]: failed to find the block");
 
             pBlock->nBytesOccupied += realSize - pNode->m_data.getSize();
@@ -383,7 +402,7 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
 
             m_tree.insert(true, _FreeListNodeFromPtr(ptr));
 
-            _FreeListSplitNode(this, pNode, realSize);
+            splitNode(pNode, realSize);
 
             assert(ptr == pNode->m_data.pMem);
             return ptr;
@@ -396,9 +415,5 @@ FreeList::realloc(void* ptr, u64 nMembers, u64 mSize)
 
     return pRet;
 }
-
-inline FreeList::FreeList(u64 _blockSize)
-    : m_blockSize(align8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
-      m_pBlocks(_FreeListAllocBlock(this, m_blockSize)) {}
 
 } /* namespace adt */

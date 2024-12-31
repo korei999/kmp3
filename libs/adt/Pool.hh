@@ -35,10 +35,8 @@ struct Pool
     /* */
 
     Pool() = default;
-    Pool(INIT_FLAG e)
+    Pool([[maybe_unused]] INIT_FLAG e)
     { 
-        if (e != INIT_FLAG::INIT) return;
-
         mtx_init(&m_mtx, mtx_plain);
     }
 

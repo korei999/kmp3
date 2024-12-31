@@ -59,7 +59,7 @@ Win::coverImage()
 
         const int split = pl.m_imgHeight;
 
-        m_textBuff.clearKittyImages();
+        m_textBuff.clearKittyImages(); /* shouldn't hurt if TERM is not kitty */
         clearArea(1, 1, m_prevImgWidth, split + 1);
 
         Opt<Image> oCoverImg = mix.getCoverImage();

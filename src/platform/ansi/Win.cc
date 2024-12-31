@@ -45,19 +45,22 @@ Win::enableRawMode()
 void
 sigwinchHandler([[maybe_unused]] int sig)
 {
-    auto* s = (Win*)app::g_pWin;
+    auto& s = *(Win*)app::g_pWin;
     auto& pl = *app::g_pPlayer;
 
     g_termSize = getTermSize();
     LOG_GOOD("term: {}\n", g_termSize);
 
-    /* NOTE: don't allocate / write to the buffer from here.
-     * Marking things to be redrawn instead. */
-    pl.m_bSelectionChanged = true;
-    s->m_bRedraw = true;
+    s.m_textBuff.m_tWidth = g_termSize.width;
+    s.m_textBuff.m_tHeight = g_termSize.height;
+    s.m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
+    s.m_textBuff.m_vBackBuff.zeroOut();
 
-    s->m_bClear = true;
-    s->m_lastResizeTime = utils::timeNowMS();
+    pl.m_bSelectionChanged = true;
+    s.m_bRedraw = true;
+
+    s.m_bClear = true;
+    s.m_lastResizeTime = utils::timeNowMS();
 }
 
 bool
@@ -76,6 +79,10 @@ Win::start(Arena* pArena)
     m_textBuff.hideCursor(true);
     m_textBuff.push(MOUSE_ENABLE KEYPAD_ENABLE);
     m_textBuff.flush();
+
+    m_textBuff.m_tWidth = g_termSize.width;
+    m_textBuff.m_tHeight = g_termSize.height;
+    m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
 
     LOG_GOOD("ansi::WinStart()\n");
 

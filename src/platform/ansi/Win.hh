@@ -15,9 +15,8 @@ namespace ansi
 
 extern TermSize g_termSize;
 
-struct Win : public IWindow
+class Win : public IWindow
 {
-private:
     Arena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
@@ -61,7 +60,7 @@ private:
     common::READ_STATUS readWChar();
     /* */
 
-    friend void sigwinchHandler([[maybe_unused]] int sig);
+    friend void sigwinchHandler(int sig);
 };
 
 } /* namespace ansi */

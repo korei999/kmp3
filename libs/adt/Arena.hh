@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IAllocator.hh"
+#include "OsAllocator.hh"
 #include "utils.hh"
 
 #include <cassert>
@@ -25,15 +25,21 @@ struct ArenaBlock
 };
 
 /* fast region based allocator, only freeAll() free's memory, free() does nothing */
-struct Arena : IAllocator
+class Arena : public IAllocator
 {
     u64 m_defaultCapacity {};
+    IAllocator* m_pBackAlloc {};
     ArenaBlock* m_pBlocks {};
 
     /* */
 
+public:
     Arena() = default;
-    Arena(u64 capacity);
+
+    Arena(u64 capacity, IAllocator* pBackingAlloc = OsAllocatorGet())
+        : m_defaultCapacity(align8(capacity + sizeof(ArenaBlock))),
+          m_pBackAlloc(pBackingAlloc),
+          m_pBlocks(allocBlock(m_defaultCapacity)) {}
 
     /* */
 
@@ -43,12 +49,20 @@ struct Arena : IAllocator
     virtual void free(void* ptr) override final;
     virtual void freeAll() override final;
     void reset();
+
+    /* */
+
+private:
+    [[nodiscard]] inline ArenaBlock* allocBlock(u64 size);
+    [[nodiscard]] inline ArenaBlock* prependBlock(u64 size);
+    [[nodiscard]] inline ArenaBlock* findFittingBlock(u64 size);
+    [[nodiscard]] inline ArenaBlock* findBlockFromPtr(u8* ptr);
 };
 
-[[nodiscard]] inline ArenaBlock*
-_ArenaFindBlockFromPtr(Arena* s, u8* ptr)
+inline ArenaBlock*
+Arena::findBlockFromPtr(u8* ptr)
 {
-    auto* it = s->m_pBlocks;
+    auto* it = m_pBlocks;
     while (it)
     {
         if (ptr >= it->pMem && ptr < &it->pMem[it->size])
@@ -60,10 +74,10 @@ _ArenaFindBlockFromPtr(Arena* s, u8* ptr)
     return nullptr;
 }
 
-[[nodiscard]] inline ArenaBlock*
-_ArenaFindFittingBlock(Arena* s, u64 size)
+inline ArenaBlock*
+Arena::findFittingBlock(u64 size)
 {
-    auto* it = s->m_pBlocks;
+    auto* it = m_pBlocks;
     while (it)
     {
         if (size < it->size - it->nBytesOccupied)
@@ -75,10 +89,11 @@ _ArenaFindFittingBlock(Arena* s, u64 size)
     return nullptr;
 }
 
-[[nodiscard]] inline ArenaBlock*
-_ArenaAllocBlock(u64 size)
+inline ArenaBlock*
+Arena::allocBlock(u64 size)
 {
-    ArenaBlock* pBlock = (ArenaBlock*)::calloc(1, size + sizeof(ArenaBlock));
+    ArenaBlock* pBlock = static_cast<ArenaBlock*>(m_pBackAlloc->zalloc(1, size));
+
     assert(pBlock && "[Arena]: failed to allocate the block (too big size / out of memory)");
     pBlock->size = size;
     pBlock->pLastAlloc = pBlock->pMem;
@@ -86,12 +101,12 @@ _ArenaAllocBlock(u64 size)
     return pBlock;
 }
 
-[[nodiscard]] inline ArenaBlock*
-_ArenaPrependBlock(Arena* s, u64 size)
+inline ArenaBlock*
+Arena::prependBlock(u64 size)
 {
-    auto* pNew = _ArenaAllocBlock(size);
-    pNew->pNext = s->m_pBlocks;
-    s->m_pBlocks = pNew;
+    auto* pNew = allocBlock(size);
+    pNew->pNext = m_pBlocks;
+    m_pBlocks = pNew;
 
     return pNew;
 }
@@ -100,14 +115,14 @@ inline void*
 Arena::malloc(u64 mCount, u64 mSize)
 {
     u64 realSize = align8(mCount * mSize);
-    auto* pBlock = _ArenaFindFittingBlock(this, realSize);
+    auto* pBlock = findFittingBlock(realSize);
 
 #if defined ADT_DBG_MEMORY
     if (m_defaultCapacity <= realSize)
         fprintf(stderr, "[Arena]: allocating more than defaultCapacity (%llu, %llu)\n", m_defaultCapacity, realSize);
 #endif
 
-    if (!pBlock) pBlock = _ArenaPrependBlock(this, utils::max(m_defaultCapacity, realSize*2));
+    if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, realSize*2 + sizeof(ArenaBlock)));
 
     auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
     assert(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize);
@@ -134,7 +149,7 @@ Arena::realloc(void* ptr, u64 mCount, u64 mSize)
 
     u64 requested = mSize * mCount;
     u64 realSize = align8(requested);
-    auto* pBlock = _ArenaFindBlockFromPtr(this, (u8*)ptr);
+    auto* pBlock = findBlockFromPtr(static_cast<u8*>(ptr));
 
     assert(pBlock && "[Arena]: pointer doesn't belong to this arena");
 
@@ -172,7 +187,7 @@ Arena::freeAll()
     while (it)
     {
         auto* next = it->pNext;
-        ::free(it);
+        m_pBackAlloc->free(it);
         it = next;
     }
     m_pBlocks = nullptr;
@@ -191,9 +206,5 @@ Arena::reset()
         it = it->pNext;
     }
 }
-
-inline Arena::Arena(u64 capacity)
-    : m_defaultCapacity(align8(capacity)),
-      m_pBlocks(_ArenaAllocBlock(m_defaultCapacity)) {}
 
 } /* namespace adt */

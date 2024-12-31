@@ -2,16 +2,12 @@
 
 #include "adt/Arena.hh"
 #include "adt/String.hh"
+#include "adt/Vec.hh"
 #include "adt/print.hh"
 
 using namespace adt;
 
-/*
-Erases part of the line.
-If n is 0 (or missing), clear from cursor to the end of the line.
-If n is 1, clear from cursor to beginning of the line.
-If n is 2, clear entire line. Cursor position does not change. 
-*/
+/* TODO: damage tracking system */
 
 enum class TEXT_BUFF_ARG : u8
 {
@@ -24,6 +20,11 @@ struct TextBuff
     char* m_pData {};
     u32 m_size {};
     u32 m_capacity {};
+    u32 m_tWidth {};
+    u32 m_tHeight {};
+
+    VecBase<wchar_t> m_vBackBuff {};
+    VecBase<wchar_t> m_vFrontBuff {};
 
     /* */
 
@@ -55,6 +56,20 @@ struct TextBuff
     void pushWideString(const wchar_t* pwBuff, const u32 wBuffSize);
     void movePushWideString(int x, int y, const wchar_t* pwBuff, const u32 wBuffSize);
     void clearKittyImages();
+
+    void resizeBuffers(u32 width, u32 height);
+    void setCell(int x, int y, wchar_t wc);
+    void setString(int x, int y, const String s);
+    void setWString(int x, int y, wchar_t* pBuff, const u32 buffSize);
+
+    void swapBuffers();
+    void clearBuffers();
+
+    /* */
+
+private:
+    bool fbSet(int x, int y, wchar_t wc);
+    bool bbSet(int x, int y, wchar_t wc);
 };
 
 inline void
@@ -67,7 +82,7 @@ TextBuff::push(const char* pBuff, const u32 buffSize)
         m_capacity = newCap;
     }
 
-    strncpy(m_pData + m_size, pBuff, buffSize);
+    memcpy(m_pData + m_size, pBuff, buffSize);
     m_size += buffSize;
 }
 
@@ -243,4 +258,76 @@ inline void
 TextBuff::clearKittyImages()
 {
     push("\x1b_Ga=d,d=A\x1b\\");
+}
+
+inline bool
+TextBuff::fbSet(int x, int y, wchar_t wc)
+{
+    if (m_tWidth*y + x < m_vFrontBuff.getSize())
+    {
+        m_vFrontBuff[m_tWidth*y + x] = wc;
+        return true;
+    }
+
+    return false;
+}
+
+inline bool
+TextBuff::bbSet(int x, int y, wchar_t wc)
+{
+    if (m_tWidth*y + x < m_vBackBuff.getSize())
+    {
+        m_vBackBuff[m_tWidth*y + x] = wc;
+        return true;
+    }
+
+    return false;
+}
+
+inline void
+TextBuff::resizeBuffers(u32 width, u32 height)
+{
+    m_tWidth = width, m_tHeight = height;
+    m_vFrontBuff.setSize(OsAllocatorGet(), width * height);
+    m_vBackBuff.setSize(OsAllocatorGet(), width * height);
+}
+
+inline void
+TextBuff::setCell(int x, int y, wchar_t wc)
+{
+    fbSet(x, y, wc);
+}
+
+inline void
+TextBuff::setString(int x, int y, const String s)
+{
+    int xOff = 0;
+    for (auto wch : StringGlyphIt(s))
+    {
+        int cols = wcswidth(&wch, sizeof(wch));
+        if (cols < 0) return;
+
+        xOff += cols;
+        setCell(x + xOff, y, wch);
+    }
+}
+
+inline void
+TextBuff::setWString(int x, int y, wchar_t* pBuff, const u32 buffSize)
+{
+    /* TODO: */
+}
+
+inline void
+TextBuff::swapBuffers()
+{
+    utils::swap(&m_vBackBuff, &m_vFrontBuff);
+    m_vFrontBuff.zeroOut();
+}
+
+inline void
+TextBuff::clearBuffers()
+{
+    m_vBackBuff.zeroOut();
+    m_vFrontBuff.zeroOut();
 }

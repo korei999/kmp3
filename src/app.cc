@@ -18,6 +18,8 @@ namespace app
 
 UI_FRONTEND g_eUIFrontend = UI_FRONTEND::TERMBOX;
 MIXER g_eMixer = MIXER::PIPEWIRE;
+String g_sTerm {};
+TERM g_eTerm = TERM::XTERM;
 IWindow* g_pWin {};
 bool g_bRunning {};
 int g_argc {};

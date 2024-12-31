@@ -3,6 +3,7 @@
 #ifdef ADT_STD_TYPES
     #include <cstdint>
     #include <limits>
+    #include <cstddef>
 #endif
 
 namespace adt
@@ -49,7 +50,8 @@ using f64 = double;
 
 using null = decltype(nullptr);
 
-enum class INIT_FLAG : u8 { NO_INIT, INIT };
+using INIT_FLAG = bool;
+constexpr INIT_FLAG INIT = true;
 
 #if defined __clang__ || __GNUC__
     #define ADT_NO_UB __attribute__((no_sanitize("undefined")))
