@@ -14,7 +14,7 @@
 namespace adt
 {
 
-using PoolHnd = u32;
+using PoolHnd = ssize;
 
 template<typename T>
 struct PoolNode
@@ -24,12 +24,12 @@ struct PoolNode
 };
 
 /* statically allocated reusable resource collection */
-template<typename T, u32 CAP>
+template<typename T, ssize CAP>
 struct Pool
 {
     Arr<PoolNode<T>, CAP> m_aNodes {};
     Arr<PoolHnd, CAP> m_aFreeIdxs {};
-    u32 m_nOccupied {};
+    ssize m_nOccupied {};
     mtx_t m_mtx;
 
     /* */
@@ -42,30 +42,30 @@ struct Pool
 
     /* */
 
-    T& operator[](s64 i)             { assert(!m_aNodes[i].bDeleted && "[MemPool]: accessing deleted node"); return m_aNodes[i].data; }
-    const T& operator[](s64 i) const { assert(!m_aNodes[i].bDeleted && "[MemPool]: accessing deleted node"); return m_aNodes[i].data; }
+    T& operator[](ssize i)             { assert(!m_aNodes[i].bDeleted && "[MemPool]: accessing deleted node"); return m_aNodes[i].data; }
+    const T& operator[](ssize i) const { assert(!m_aNodes[i].bDeleted && "[MemPool]: accessing deleted node"); return m_aNodes[i].data; }
 
-    s64 firstI() const;
-    s64 lastI() const;
-    s64 nextI(s64 i) const;
-    s64 prevI(s64 i) const;
-    u32 idx(const PoolNode<T>* p) const;
-    u32 idx(const T* p) const;
+    ssize firstI() const;
+    ssize lastI() const;
+    ssize nextI(ssize i) const;
+    ssize prevI(ssize i) const;
+    ssize idx(const PoolNode<T>* p) const;
+    ssize idx(const T* p) const;
     void destroy();
     [[nodiscard]] PoolHnd getHandle();
     [[nodiscard]] PoolHnd push(const T& value);
-    template<typename ...ARGS> [[nodiscard]] PoolHnd emplace(ARGS&&... args);
+    template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) [[nodiscard]] PoolHnd emplace(ARGS&&... args);
     void giveBack(PoolHnd hnd);
-    u32 getCap() const { return CAP; }
+    ssize getCap() const { return CAP; }
 
     /* */
 
     struct It
     {
         Pool* s {};
-        s64 i {};
+        ssize i {};
 
-        It(Pool* _self, s64 _i) : s(_self), i(_i) {}
+        It(Pool* _self, ssize _i) : s(_self), i(_i) {}
 
         T& operator*() { return s->m_aNodes[i].data; }
         T* operator->() { return &s->m_aNodes[i].data; }
@@ -80,7 +80,7 @@ struct Pool
         It
         operator++(int)
         {
-            s64 tmp = i;
+            ssize tmp = i;
             i = s->nextI(i);
             return {s, tmp};
         }
@@ -95,7 +95,7 @@ struct Pool
         It
         operator--(int)
         {
-            s64 tmp = i;
+            ssize tmp = i;
             i = s->prevI(i);
             return {s, tmp};
         }
@@ -115,33 +115,33 @@ struct Pool
     const It rend() const { return {this, m_aNodes.m_size == 0 ? -1 : firstI() - 1}; }
 };
 
-template<typename T, u32 CAP>
-inline s64
+template<typename T, ssize CAP>
+inline ssize
 Pool<T, CAP>::firstI() const
 {
     if (m_aNodes.m_size == 0) return -1;
 
-    for (u32 i = 0; i < m_aNodes.m_size; ++i)
+    for (ssize i = 0; i < m_aNodes.m_size; ++i)
         if (!m_aNodes[i].bDeleted) return i;
 
     return m_aNodes.m_size;
 }
 
-template<typename T, u32 CAP>
-inline s64
+template<typename T, ssize CAP>
+inline ssize
 Pool<T, CAP>::lastI() const
 {
     if (m_aNodes.m_size == 0) return -1;
 
-    for (s64 i = s64(m_aNodes.m_size) - 1; i >= 0; --i)
+    for (ssize i = ssize(m_aNodes.m_size) - 1; i >= 0; --i)
         if (!m_aNodes[i].bDeleted) return i;
 
     return m_aNodes.m_size;
 }
 
-template<typename T, u32 CAP>
-inline s64
-Pool<T, CAP>::nextI(s64 i) const
+template<typename T, ssize CAP>
+inline ssize
+Pool<T, CAP>::nextI(ssize i) const
 {
     do ++i;
     while (i < m_aNodes.m_size && m_aNodes[i].bDeleted);
@@ -149,9 +149,9 @@ Pool<T, CAP>::nextI(s64 i) const
     return i;
 }
 
-template<typename T, u32 CAP>
-inline s64
-Pool<T, CAP>::prevI(s64 i) const
+template<typename T, ssize CAP>
+inline ssize
+Pool<T, CAP>::prevI(ssize i) const
 {
     do --i;
     while (i >= 0 && m_aNodes[i].bDeleted);
@@ -159,30 +159,30 @@ Pool<T, CAP>::prevI(s64 i) const
     return i;
 }
 
-template<typename T, u32 CAP>
-inline u32
+template<typename T, ssize CAP>
+inline ssize
 Pool<T, CAP>::idx(const PoolNode<T>* p) const
 {
-    u32 r = p - &m_aNodes.m_aData[0];
+    ssize r = p - &m_aNodes.m_aData[0];
     assert(r < CAP && "[Pool]: out of range");
     return r;
 }
 
-template<typename T, u32 CAP>
-inline u32
+template<typename T, ssize CAP>
+inline ssize
 Pool<T, CAP>::idx(const T* p) const
 {
     return (PoolNode<T>*)p - &m_aNodes.m_aData[0];
 }
 
-template<typename T, u32 CAP>
+template<typename T, ssize CAP>
 inline void
 Pool<T, CAP>::destroy()
 {
     mtx_destroy(&m_mtx);
 }
 
-template<typename T, u32 CAP>
+template<typename T, ssize CAP>
 inline PoolHnd
 Pool<T, CAP>::getHandle()
 {
@@ -207,7 +207,7 @@ Pool<T, CAP>::getHandle()
     return ret;
 }
 
-template<typename T, u32 CAP>
+template<typename T, ssize CAP>
 inline PoolHnd
 Pool<T, CAP>::push(const T& value)
 {
@@ -216,8 +216,8 @@ Pool<T, CAP>::push(const T& value)
     return idx;
 }
 
-template<typename T, u32 CAP>
-template<typename ...ARGS>
+template<typename T, ssize CAP>
+template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
 inline PoolHnd
 Pool<T, CAP>::emplace(ARGS&&... args)
 {
@@ -226,7 +226,7 @@ Pool<T, CAP>::emplace(ARGS&&... args)
     return idx;
 }
 
-template<typename T, u32 CAP>
+template<typename T, ssize CAP>
 inline void
 Pool<T, CAP>::giveBack(PoolHnd hnd)
 {

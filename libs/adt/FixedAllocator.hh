@@ -12,29 +12,29 @@ namespace adt
 struct FixedAllocator : IAllocator
 {
     u8* pMemBuffer = nullptr;
-    u64 size = 0;
-    u64 cap = 0;
+    usize size = 0;
+    usize cap = 0;
     void* pLastAlloc = nullptr;
     
     /* */
 
     constexpr FixedAllocator() = default;
-    constexpr FixedAllocator(u8* pMemory, u64 capacity);
+    constexpr FixedAllocator(u8* pMemory, usize capacity);
 
     /* */
 
-    [[nodiscard]] virtual constexpr void* malloc(u64 mCount, u64 mSize) override final;
-    [[nodiscard]] virtual constexpr void* zalloc(u64 mCount, u64 mSize) override final;
-    [[nodiscard]] virtual constexpr void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) override final;
+    [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) override final;
+    [[nodiscard]] virtual constexpr void* realloc(void* ptr, usize mCount, usize mSize) override final;
     constexpr virtual void free(void* ptr) override final;
     constexpr virtual void freeAll() override final;
     constexpr void reset();
 };
 
 constexpr void*
-FixedAllocator::malloc(u64 mCount, u64 mSize)
+FixedAllocator::malloc(usize mCount, usize mSize)
 {
-    u64 aligned = align8(mCount * mSize);
+    usize aligned = align8(mCount * mSize);
     void* ret = &this->pMemBuffer[this->size];
     this->size += aligned;
     this->pLastAlloc = ret;
@@ -45,7 +45,7 @@ FixedAllocator::malloc(u64 mCount, u64 mSize)
 }
 
 constexpr void*
-FixedAllocator::zalloc(u64 mCount, u64 mSize)
+FixedAllocator::zalloc(usize mCount, usize mSize)
 {
     auto* p = this->malloc(mCount, mSize);
     memset(p, 0, mCount * mSize);
@@ -53,12 +53,12 @@ FixedAllocator::zalloc(u64 mCount, u64 mSize)
 }
 
 constexpr void*
-FixedAllocator::realloc(void* p, u64 mCount, u64 mSize)
+FixedAllocator::realloc(void* p, usize mCount, usize mSize)
 {
     if (!p) return this->malloc(mCount, mSize);
 
     void* ret = nullptr;
-    u64 aligned = align8(mCount * mSize);
+    usize aligned = align8(mCount * mSize);
 
     if (p == this->pLastAlloc)
     {
@@ -71,8 +71,8 @@ FixedAllocator::realloc(void* p, u64 mCount, u64 mSize)
     {
         ret = &this->pMemBuffer[this->size];
         this->pLastAlloc = ret;
-        u64 nBytesUntilEndOfBlock = this->cap - this->size;
-        u64 nBytesToCopy = utils::min(aligned, nBytesUntilEndOfBlock);
+        usize nBytesUntilEndOfBlock = this->cap - this->size;
+        usize nBytesToCopy = utils::min(aligned, nBytesUntilEndOfBlock);
         memcpy(ret, p, nBytesToCopy);
         this->size += aligned;
     }
@@ -98,7 +98,7 @@ FixedAllocator::reset()
     this->size = 0;
 }
 
-constexpr FixedAllocator::FixedAllocator(u8* pMemory, u64 capacity)
+constexpr FixedAllocator::FixedAllocator(u8* pMemory, usize capacity)
     : pMemBuffer(pMemory),
       cap(capacity) {}
 

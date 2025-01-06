@@ -1089,7 +1089,7 @@ namespace adt
 namespace print
 {
 
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V2& x)
 {
     ctx.fmt = "[{:.3}, {:.3}]";
@@ -1097,7 +1097,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V2
     return printArgs(ctx, x.x, x.y);
 }
 
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V3& x)
 {
     ctx.fmt = "[{:.3}, {:.3}, {:.3}]";
@@ -1105,7 +1105,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V3
     return printArgs(ctx, x.x, x.y, x.z);
 }
 
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V4& x)
 {
     ctx.fmt = "[{:.3}, {:.3}, {:.3}, {:.3}]";
@@ -1113,7 +1113,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V4
     return printArgs(ctx, x.x, x.y, x.z, x.w);
 }
 
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M2& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}"
@@ -1122,7 +1122,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M2
     return printArgs(ctx, x.d[0], x.d[1], x.d[2], x.d[3]);
 }
 
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M3& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}"
@@ -1136,7 +1136,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M3
     );
 }
 
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M4& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}, {:.3}"

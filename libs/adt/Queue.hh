@@ -24,7 +24,7 @@ struct QueueBase
     /* */
 
     QueueBase() = default;
-    QueueBase(IAllocator* pAlloc, u32 prealloc = SIZE_MIN)
+    QueueBase(IAllocator* pAlloc, ssize prealloc = SIZE_MIN)
         : m_pData {(T*)pAlloc->malloc(prealloc, sizeof(T))},
           m_cap (prealloc) {}
 
@@ -44,10 +44,10 @@ struct QueueBase
     void destroy(IAllocator* p);
     T* pushFront(IAllocator* p, const T& val);
     T* pushBack(IAllocator* p, const T& val);
-    void grow(IAllocator* p, u32 size);
+    void grow(IAllocator* p, ssize size);
     T* popFront();
     T* popBack();
-    u32 idx(const T* pItem) const;
+    ssize idx(const T* pItem) const;
 
     /* */
 
@@ -140,7 +140,7 @@ QueueBase<T>::pushBack(IAllocator* p, const T& val)
 
 template<typename T>
 inline void
-QueueBase<T>::grow(IAllocator* p, u32 size)
+QueueBase<T>::grow(IAllocator* p, ssize size)
 {
     auto nQ = QueueBase<T>(p, size);
 
@@ -177,10 +177,11 @@ QueueBase<T>::popBack()
 }
 
 template<typename T>
-inline u32
+inline ssize
 QueueBase<T>::idx(const T* pItem) const
 {
-    return pItem - m_pData;
+    auto r = pItem - m_pData;
+    return r;
 }
 
 template<typename T>
@@ -195,13 +196,13 @@ struct Queue
     /* */
 
     Queue() = default;
-    Queue(IAllocator* p, u32 prealloc = SIZE_MIN)
+    Queue(IAllocator* p, ssize prealloc = SIZE_MIN)
         : base(p, prealloc), m_pAlloc(p) {}
 
     /* */
 
-    T& operator[](u32 i) { return base[i]; }
-    const T& operator[](u32 i) const { return base[i]; }
+    T& operator[](ssize i) { return base[i]; }
+    const T& operator[](ssize i) const { return base[i]; }
 
     bool empty() const { return base.empty(); }
     T* data() { return base.data(); }
@@ -209,10 +210,10 @@ struct Queue
     void destroy() { base.destroy(m_pAlloc); }
     T* pushFront(const T& val) { return base.pushFront(m_pAlloc, val); }
     T* pushBack(const T& val) { return base.pushBack(m_pAlloc, val); }
-    void resize(u32 size) { base.grow(m_pAlloc, size); }
+    void resize(ssize size) { base.grow(m_pAlloc, size); }
     T* popFront() { return base.popFront(); }
     T* popBack() { return base.popBack(); }
-    u32 idx(const T* pItem) { return base.idx(pItem); }
+    ssize idx(const T* pItem) { return base.idx(pItem); }
 
     /* */
 
@@ -231,7 +232,7 @@ namespace print
 {
 
 template<typename T>
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const QueueBase<T>& x)
 {
     if (x.empty())
@@ -242,7 +243,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const QueueBas
     }
 
     char aBuff[1024] {};
-    u32 nRead = 0;
+    ssize nRead = 0;
     for (const auto& it : x)
     {
         const char* fmt = (x.idx(&it) == x.m_last - 1U ? "{}" : "{}, ");
@@ -254,7 +255,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const QueueBas
 }
 
 template<typename T>
-inline u32
+inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const Queue<T>& x)
 {
     return formatToContext(ctx, fmtArgs, x.base);

@@ -13,13 +13,13 @@ namespace file
 struct Buff
 {
     u8* m_pData {};
-    u64 m_size {};
+    ssize m_size {};
 
     /* */
 
     u8* data() { return m_pData; }
     const u8* data() const { return m_pData; }
-    u64 getSize() { return m_size; }
+    ssize getSize() { return m_size; }
 };
 
 template<typename BUFF_T = String>
@@ -38,7 +38,7 @@ load(IAllocator* pAlloc, String sPath)
     BUFF_T ret {};
 
     fseek(pf, 0, SEEK_END);
-    s64 size = ftell(pf) + 1;
+    ssize size = ftell(pf) + 1;
     rewind(pf);
 
     ret.m_pData = (char*)pAlloc->malloc(size, sizeof(char));
@@ -52,7 +52,7 @@ load(IAllocator* pAlloc, String sPath)
 constexpr String
 getPathEnding(String sPath)
 {
-    u32 lastSlash = sPath.lastOf('/');
+    ssize lastSlash = sPath.lastOf('/');
 
     if (lastSlash == NPOS || (lastSlash + 1) == sPath.getSize()) /* nothing after slash */
         return sPath;
@@ -64,7 +64,7 @@ getPathEnding(String sPath)
 inline String
 replacePathEnding(IAllocator* pAlloc, String sPath, String sEnding)
 {
-    u32 lastSlash = sPath.lastOf('/');
+    ssize lastSlash = sPath.lastOf('/');
     String sNoEnding = {&sPath[0], lastSlash + 1};
     String r = StringCat(pAlloc, sNoEnding, sEnding);
     return r;

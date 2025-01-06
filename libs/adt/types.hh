@@ -20,10 +20,13 @@ using u32 = uint32_t;
 using s64 = int64_t;
 using u64 = uint64_t;
 using pdiff = ptrdiff_t;
+using ssize = ssize_t;
+using usize = size_t;
 
+constexpr ssize NPOS = -1L;
 constexpr u16 NPOS8 = std::numeric_limits<u8>::max();
 constexpr u16 NPOS16 = std::numeric_limits<u16>::max();
-constexpr u32 NPOS = std::numeric_limits<u32>::max();
+constexpr u32 NPOS32 = std::numeric_limits<u32>::max();
 constexpr u64 NPOS64 = std::numeric_limits<u64>::max();
 
 #else
@@ -37,10 +40,13 @@ using u32 = unsigned int;
 using s64 = signed long long;
 using u64 = unsigned long long;
 using pdiff = long long;
+using ssize = long long;
+using usize = unsigned long long;
 
+constexpr ssize NPOS = -1LL;
 constexpr u16 NPOS8 = u8(-1);
 constexpr u16 NPOS16 = u16(-1);
-constexpr u32 NPOS = u32(-1U);
+constexpr u32 NPOS32 = u32(-1U);
 constexpr u64 NPOS64 = u64(-1ULL);
 
 #endif

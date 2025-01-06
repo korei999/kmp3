@@ -50,7 +50,10 @@ enum class RB_ORDER : u8 { PRE, IN, POST };
 template<typename T>
 struct RBNode
 {
-    static constexpr u64 COLOR_MASK = 1ULL;
+    static constexpr usize COLOR_MASK = 1ULL;
+
+    /* */
+
     RBNode* m_left {};
     RBNode* m_right {};
     RBNode* m_parentColor {}; /* NOTE: color is stored as the least significant bit */
@@ -66,11 +69,11 @@ struct RBNode
     RBNode*& right() { return m_right; }
     RBNode* const& right() const { return m_right; }
 
-    RB_COLOR color() const { return (RB_COLOR)((u64)m_parentColor & COLOR_MASK); }
-    RB_COLOR setColor(const RB_COLOR eColor) { m_parentColor = (RBNode*)((u64)parent() | (u64)eColor); return eColor; }
+    RB_COLOR color() const { return (RB_COLOR)((usize)m_parentColor & COLOR_MASK); }
+    RB_COLOR setColor(const RB_COLOR eColor) { m_parentColor = (RBNode*)((usize)parent() | (usize)eColor); return eColor; }
 
-    RBNode* parent() const {  return (RBNode*)((u64)m_parentColor & ~COLOR_MASK); }
-    void setParent(RBNode* par) { m_parentColor = (RBNode*)(((u64)par & ~COLOR_MASK) | (u64)color()); }
+    RBNode* parent() const {  return (RBNode*)((usize)m_parentColor & ~COLOR_MASK); }
+    void setParent(RBNode* par) { m_parentColor = (RBNode*)(((usize)par & ~COLOR_MASK) | (usize)color()); }
 
     RBNode*& parentAndColor() { return m_parentColor; }
     RBNode* const& parentAndColor() const { return m_parentColor; }
@@ -121,7 +124,7 @@ template<typename T>
 struct RBTreeBase
 {
     RBNode<T>* m_pRoot = nullptr;
-    u64 m_size = 0;
+    usize m_size = 0;
 
     RBNode<T>* getRoot();
     bool empty();
@@ -129,7 +132,7 @@ struct RBTreeBase
     void removeAndFree(IAllocator* p, RBNode<T>* elm);
     RBNode<T>* insert(bool bAllowDuplicates, RBNode<T>* elm);
     RBNode<T>* insert(IAllocator* pA, bool bAllowDuplicates, const T& data);
-    template<typename ...ARGS> RBNode<T>* emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args);
+    template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) RBNode<T>* emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args);
     void destroy(IAllocator* pA);
 };
 
@@ -463,7 +466,7 @@ RBTreeBase<T>::insert(bool bAllowDuplicates, RBNode<T>* elm)
 {
     RBNode<T>* parent = nullptr;
     RBNode<T>* tmp = m_pRoot;
-    s64 comp = 0;
+    ssize comp = 0;
     while (tmp)
     {
         parent = tmp;
@@ -502,7 +505,7 @@ RBTreeBase<T>::insert(IAllocator* pA, bool bAllowDuplicates, const T& data)
 }
 
 template<typename T>
-template<typename ...ARGS>
+template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) 
 inline RBNode<T>*
 RBTreeBase<T>::emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args)
 {
@@ -615,7 +618,7 @@ RBSearch(RBNode<T>* p, const T& data)
     auto it = p;
     while (it)
     {
-        s64 cmp = utils::compare(data, it->m_data);
+        ssize cmp = utils::compare(data, it->m_data);
         if (cmp == 0) return it;
         else if (cmp < 0) it = it->left();
         else it = it->right();
@@ -696,7 +699,7 @@ struct RBTree
     void removeAndFree(const T& x) { base.removeAndFree(m_pAlloc, RBSearch<T>(getRoot(), x)); }
     RBNode<T>* insert(bool bAllowDuplicates, RBNode<T>* elm) { return base.insert(bAllowDuplicates, elm); }
     RBNode<T>* insert(bool bAllowDuplicates, const T& data) { return base.insert(m_pAlloc, bAllowDuplicates, data); }
-    template<typename ...ARGS> RBNode<T>* emplace(bool bAllowDuplicates, ARGS&&... args)
+    template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) RBNode<T>* emplace(bool bAllowDuplicates, ARGS&&... args)
     { return base.emplace(m_pAlloc, bAllowDuplicates, std::forward<ARGS>(args)...); }
     void destroy() { base.destroy(m_pAlloc); }
 };
@@ -705,7 +708,7 @@ namespace print
 {
 
 template<typename T>
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const RBNode<T>& node)
 {
     char aBuff[128] {};

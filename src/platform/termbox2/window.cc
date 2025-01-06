@@ -501,7 +501,7 @@ drawTimeSlider()
     /* play/pause indicator */
     {
         bool bPaused = atomic_load_explicit(&mix.isPaused(), memory_order_relaxed);
-        const char* ntsIndicator = bPaused ? "II" : "I>";
+        const char* ntsIndicator = bPaused ? "I>" : "II";
 
         drawMBString(xOff, 10, ntsIndicator, width - 2, TB_BOLD);
     }

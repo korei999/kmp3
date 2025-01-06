@@ -106,7 +106,7 @@ constexpr String mapERRORToString[] {
 struct IDecoder
 {
     [[nodiscard]] virtual ERROR writeToBuffer(
-        f32* pBuff, const u32 buffSize, const u32 nFrames, const u32 nChannles,
+        f32* pBuff, const int buffSize, const int nFrames, const int nChannles,
         long* pSamplesWritten, s64* pPcmPos
     ) = 0;
 

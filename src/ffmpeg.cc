@@ -59,12 +59,15 @@ Opt<String>
 Decoder::getMetadataValue(const String sKey)
 {
     char aBuff[64] {};
-    strncpy(aBuff, sKey.data(), utils::min(u64(sKey.getSize()), utils::size(aBuff) - 1));
+    strncpy(aBuff, sKey.data(), utils::min(sKey.getSize(), utils::size(aBuff) - 1));
 
     AVDictionaryEntry* pTag {};
     pTag = av_dict_get(m_pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
 
-    if (pTag) return {pTag->value};
+    if (pTag)
+    {
+        return {pTag->value};
+    }
     else
     {
         pTag = av_dict_get(m_pFormatCtx->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
@@ -80,7 +83,7 @@ Decoder::getAttachedPicture()
     int err = 0;
     AVStream* pStream {};
 
-    for (u32 i = 0; i < m_pFormatCtx->nb_streams; ++i)
+    for (int i = 0; i < (int)m_pFormatCtx->nb_streams; ++i)
     {
         auto* itStream = m_pFormatCtx->streams[i];
         if (itStream->disposition & AV_DISPOSITION_ATTACHED_PIC)
@@ -145,8 +148,8 @@ Decoder::getAttachedPicture()
 
     m_oCoverImg = Image {
         .pBuff = m_pConverted->data[0],
-        .width = u32(m_pConverted->width),
-        .height = u32(m_pConverted->height),
+        .width = m_pConverted->width,
+        .height = m_pConverted->height,
         .eFormat = covertFormat(m_pConverted->format)
     };
 }
@@ -212,9 +215,9 @@ Decoder::open(String sPath)
 audio::ERROR
 Decoder::writeToBuffer(
     f32* pBuff,
-    const u32 buffSize,
-    const u32 nFrames,
-    [[maybe_unused]] const u32 nChannles,
+    const int buffSize,
+    const int nFrames,
+    [[maybe_unused]] const int nChannles,
     long* pSamplesWritten,
     s64* pPcmPos
 )
@@ -263,7 +266,7 @@ Decoder::writeToBuffer(
                 continue;
             }
 
-            u32 maxSamples = res.nb_samples * res.ch_layout.nb_channels;
+            int maxSamples = res.nb_samples * res.ch_layout.nb_channels;
             if (maxSamples >= buffSize) maxSamples = buffSize - 1;
 
             const auto& nFrameChannles = res.ch_layout.nb_channels;

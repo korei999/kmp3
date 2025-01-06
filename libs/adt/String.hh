@@ -11,10 +11,10 @@
 namespace adt
 {
 
-[[nodiscard]] constexpr u32
+[[nodiscard]] constexpr ssize
 nullTermStringSize(const char* nts)
 {
-    u32 i = 0;
+    ssize i = 0;
     if (!nts) return 0;
 
     while (nts[i] != '\0') ++i;
@@ -30,46 +30,44 @@ struct String;
 [[nodiscard]] constexpr s64 operator-(const String& l, const String& r);
 
 /* StringAlloc() inserts '\0' char */
-[[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str, u32 size);
-[[nodiscard]] inline String StringAlloc(IAllocator* p, u32 size);
+[[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str, ssize size);
+[[nodiscard]] inline String StringAlloc(IAllocator* p, ssize size);
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const char* nts);
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const String s);
 
 [[nodiscard]] inline String StringCat(IAllocator* p, const String l, const String r);
 
-[[nodiscard]] inline u32 nGlyphs(const String str);
+[[nodiscard]] inline ssize nGlyphs(const String str);
 
 /* just pointer + size, no allocations */
 struct String
 {
     char* m_pData {};
-    u32 m_size {};
-    bool m_bAllocated {};
+    ssize m_size {};
 
     /* */
 
     constexpr String() = default;
 
     constexpr String(char* sNullTerminated)
-        : m_pData(sNullTerminated), m_size(nullTermStringSize(sNullTerminated)), m_bAllocated(false) {}
+        : m_pData(sNullTerminated), m_size(nullTermStringSize(sNullTerminated)) {}
 
     constexpr String(const char* sNullTerminated)
-        : m_pData(const_cast<char*>(sNullTerminated)), m_size(nullTermStringSize(sNullTerminated)), m_bAllocated(false) {}
+        : m_pData(const_cast<char*>(sNullTerminated)), m_size(nullTermStringSize(sNullTerminated)) {}
 
-    constexpr String(char* pStr, u32 len)
-        : m_pData(pStr), m_size(len), m_bAllocated(false) {}
+    constexpr String(char* pStr, ssize len)
+        : m_pData(pStr), m_size(len) {}
 
     /* */
 
-    constexpr char& operator[](u32 i)             { assert(i < m_size && "[String]: out of size"); return m_pData[i]; }
-    constexpr const char& operator[](u32 i) const { assert(i < m_size && "[String]: out of size"); return m_pData[i]; }
+    constexpr char& operator[](ssize i)             { assert(i < m_size && "[String]: out of size"); return m_pData[i]; }
+    constexpr const char& operator[](ssize i) const { assert(i < m_size && "[String]: out of size"); return m_pData[i]; }
 
-    [[nodiscard]] bool isAllocated() const { return m_bAllocated; }
     const char* data() const { return m_pData; }
     char* data() { return m_pData; }
-    u32 getSize() const { return m_size; }
+    ssize getSize() const { return m_size; }
     [[nodiscard]] constexpr bool endsWith(const String r) const;
-    [[nodiscard]] constexpr u32 lastOf(char c) const;
+    [[nodiscard]] constexpr ssize lastOf(char c) const;
     void destroy(IAllocator* p);
     void trimEnd();
     void removeNLEnd(); /* remove \r\n */
@@ -125,11 +123,11 @@ struct StringGlyphIt
     struct It
     {
         const char* p {};
-        u32 i = 0;
-        u32 size = 0;
+        ssize i = 0;
+        ssize size = 0;
         wchar_t wc {};
 
-        constexpr It(const char* pFirst, u32 _i, u32 _size) : p{pFirst}, i(_i), size(_size) {}
+        constexpr It(const char* pFirst, ssize _i, ssize _size) : p{pFirst}, i(_i), size(_size) {}
 
         wchar_t& operator*() { return wc; }
         wchar_t* operator->() { return &wc; }
@@ -179,7 +177,7 @@ StringCmpSlow(const String l, const String r)
 {
     if (l.m_size != r.m_size) return false;
 
-    for (u32 i = 0; i < l.m_size; ++i)
+    for (ssize i = 0; i < l.m_size; ++i)
         if (l[i] != r[i]) return false;
 
     return true;
@@ -190,22 +188,22 @@ StringCmpFast(const String& l, const String& r)
 {
     if (l.m_size != r.m_size) return false;
 
-    const u64* p0 = (u64*)l.m_pData;
-    const u64* p1 = (u64*)r.m_pData;
-    u32 len = l.m_size / 8;
+    const usize* p0 = (usize*)l.m_pData;
+    const usize* p1 = (usize*)r.m_pData;
+    ssize len = l.m_size / 8;
 
-    u32 i = 0;
+    ssize i = 0;
     for (; i < len; ++i)
         if (p0[i] - p1[i] != 0) return false;
 
     if (l.m_size > 8)
     {
-        const u64* t0 = (u64*)&l.m_pData[l.m_size - 9];
-        const u64* t1 = (u64*)&r.m_pData[l.m_size - 9];
+        const usize* t0 = (usize*)&l.m_pData[l.m_size - 9];
+        const usize* t1 = (usize*)&r.m_pData[l.m_size - 9];
         return *t0 == *t1;
     }
 
-    u32 leftOver = l.m_size - i*8;
+    ssize leftOver = l.m_size - i*8;
     String nl(&l.m_pData[i*8], leftOver);
     String nr(&r.m_pData[i*8], leftOver);
 
@@ -216,63 +214,63 @@ StringCmpFast(const String& l, const String& r)
 inline bool
 StringCmpSSE(const String& l, const String& r)
 {
-    if (l.size != r.size) return false;
+    if (l.getSize() != r.getSize()) return false;
 
-    const __m128i* p0 = (__m128i*)l.pData;
-    const __m128i* p1 = (__m128i*)r.pData;
-    u32 len = l.size / 16;
+    const __m128i* p0 = (__m128i*)l.data();
+    const __m128i* p1 = (__m128i*)r.data();
+    ssize len = l.getSize() / 16;
 
-    u32 i = 0;
+    ssize i = 0;
     for (; i < len; ++i)
     {
         auto res = _mm_xor_si128(_mm_loadu_si128(&p0[i]), _mm_loadu_si128(&p1[i]));
         if (_mm_testz_si128(res, res) != 1) return false;
     }
 
-    if (l.size > 16)
+    if (l.getSize() > 16)
     {
-        auto lv = _mm_loadu_si128((__m128i*)&l.pData[l.size - 17]);
-        auto rv = _mm_loadu_si128((__m128i*)&r.pData[l.size - 17]);
+        auto lv = _mm_loadu_si128((__m128i*)&l[l.getSize() - 17]);
+        auto rv = _mm_loadu_si128((__m128i*)&r[l.getSize() - 17]);
         auto res = _mm_xor_si128(lv, rv);
         return _mm_testz_si128(res, res) == 1;
     }
 
-    u32 leftOver = l.size - i*16;
-    String nl(&l.pData[i*16], leftOver);
-    String nr(&r.pData[i*16], leftOver);
+    ssize leftOver = l.getSize() - i*16;
+    String nl(const_cast<char*>(&l[i*16]), leftOver);
+    String nr(const_cast<char*>(&r[i*16]), leftOver);
 
     return StringCmpFast(nl, nr);
 }
 #endif
 
 #ifdef ADT_AVX2
-constexpr bool
+inline bool
 StringCmpAVX2(const String& l, const String& r)
 {
-    if (l.size != r.size) return false;
+    if (l.getSize() != r.getSize()) return false;
 
-    const __m256i* p0 = (__m256i*)l.pData;
-    const __m256i* p1 = (__m256i*)r.pData;
-    u32 len = l.size / 32;
+    const __m256i* p0 = (__m256i*)l.data();
+    const __m256i* p1 = (__m256i*)r.data();
+    ssize len = l.getSize() / 32;
 
-    u32 i = 0;
+    ssize i = 0;
     for (; i < len; ++i)
     {
         __m256i res = _mm256_xor_si256(_mm256_loadu_si256(&p0[i]), _mm256_loadu_si256(&p1[i]));
         if (_mm256_testz_si256(res, res) != 1) return false;
     }
 
-    if (l.size > 32)
+    if (l.getSize() > 32)
     {
-        auto lv = _mm256_loadu_si256((__m256i*)&l.pData[l.size - 33]);
-        auto rv = _mm256_loadu_si256((__m256i*)&r.pData[l.size - 33]);
+        auto lv = _mm256_loadu_si256((__m256i*)&l[l.getSize() - 33]);
+        auto rv = _mm256_loadu_si256((__m256i*)&r[l.getSize() - 33]);
         __m256i res = _mm256_xor_si256(lv, rv);
         return _mm256_testz_si256(res, res) == 1;
     }
 
-    u32 leftOver = l.size - i*32;
-    String nl(&l.pData[i*32], leftOver);
-    String nr(&r.pData[i*32], leftOver);
+    ssize leftOver = l.getSize() - i*32;
+    String nl(const_cast<char*>(&l[i*32]), leftOver);
+    String nr(const_cast<char*>(&r[i*32]), leftOver);
 
     return StringCmpFast(nl, nr);
 }
@@ -281,22 +279,9 @@ StringCmpAVX2(const String& l, const String& r)
 inline bool
 operator==(const String& l, const String& r)
 {
-#if defined(ADT_SSE4_2) && !defined(ADT_AVX2)
-    return StringCmpSSE(l, r);
-#endif
-
-#ifdef ADT_AVX2
-    if (l.size >= 32)
-        return StringCmpAVX2(l, r);
-    else if (l.size >= 16)
-        return StringCmpSSE(l, r);
-    else return StringCmpFast(l, r);
-#endif
-
-#if !defined(ADT_SSE4_2) && !defined(ADT_AVX2)
     if (l.m_size != r.m_size) return false;
-    return strncmp(l.m_pData, r.m_pData, l.m_size) == 0;
-#endif
+    if (l.data() == r.data()) return true; /* if points to itself */
+    return strncmp(l.m_pData, r.m_pData, l.m_size) == 0; /* strncmp is pretty fast actually */
 }
 
 inline bool
@@ -319,13 +304,13 @@ operator-(const String& l, const String& r)
     else if (l.m_size > r.m_size) return 1;
 
     s64 sum = 0;
-    for (u32 i = 0; i < l.m_size; i++)
+    for (ssize i = 0; i < l.m_size; i++)
         sum += (l[i] - r[i]);
 
     return sum;
 }
 
-constexpr u32
+constexpr ssize
 String::lastOf(char c) const
 {
     for (int i = m_size - 1; i >= 0; i--)
@@ -336,7 +321,7 @@ String::lastOf(char c) const
 }
 
 inline String
-StringAlloc(IAllocator* p, const char* str, u32 size)
+StringAlloc(IAllocator* p, const char* str, ssize size)
 {
     if (str == nullptr || size == 0) return {};
 
@@ -345,19 +330,17 @@ StringAlloc(IAllocator* p, const char* str, u32 size)
     pData[size] = '\0';
 
     String sNew {pData, size};
-    sNew.m_bAllocated = true;
     return sNew;
 }
 
 inline String
-StringAlloc(IAllocator* p, u32 size)
+StringAlloc(IAllocator* p, ssize size)
 {
     if (size == 0) return {};
 
     char* pData = (char*)p->zalloc(size + 1, sizeof(char));
 
     String sNew {pData, size};
-    sNew.m_bAllocated = true;
     return sNew;
 }
 
@@ -377,27 +360,26 @@ StringAlloc(IAllocator* p, const String s)
     pData[s.getSize()] = '\0';
 
     String sNew {pData, s.getSize()};
-    sNew.m_bAllocated = true;
     return sNew;
 }
 
 inline void
 String::destroy(IAllocator* p)
 {
-    if (isAllocated()) p->free(m_pData);
+    p->free(m_pData);
     *this = {};
 }
 
 inline String
 StringCat(IAllocator* p, const String l, const String r)
 {
-    u32 len = l.m_size + r.m_size;
+    ssize len = l.m_size + r.m_size;
     char* ret = (char*)p->zalloc(len + 1, sizeof(char));
 
-    u32 pos = 0;
-    for (u32 i = 0; i < l.m_size; ++i, ++pos)
+    ssize pos = 0;
+    for (ssize i = 0; i < l.m_size; ++i, ++pos)
         ret[pos] = l[i];
-    for (u32 i = 0; i < r.m_size; ++i, ++pos)
+    for (ssize i = 0; i < r.m_size; ++i, ++pos)
         ret[pos] = r[i];
 
     ret[len] = '\0';
@@ -435,7 +417,7 @@ String::removeNLEnd()
         return false;
     };
 
-    u64 pos = m_size - 1;
+    usize pos = m_size - 1;
     while (m_size > 0 && oneOf((*this)[pos]))
         m_pData[--m_size] = '\0';
 }
@@ -445,7 +427,7 @@ String::contains(const String r) const
 {
     if (m_size < r.m_size || m_size == 0 || r.m_size == 0) return false;
 
-    for (u32 i = 0; i < m_size - r.m_size + 1; ++i)
+    for (ssize i = 0; i < m_size - r.m_size + 1; ++i)
     {
         const String sSub {const_cast<char*>(&(*this)[i]), r.m_size};
         if (sSub == r) return true;
@@ -460,11 +442,11 @@ String::clone(IAllocator* pAlloc) const
     return StringAlloc(pAlloc, *this);
 }
 
-inline u32
+inline ssize
 nGlyphs(const String str)
 {
-    u32 n = 0;
-    for (u32 i = 0; i < str.m_size; )
+    ssize n = 0;
+    for (ssize i = 0; i < str.m_size; )
     {
         i+= mblen(&str[i], str.m_size - i);
         ++n;
@@ -474,31 +456,10 @@ nGlyphs(const String str)
 }
 
 template<>
-constexpr u64
-hash::func(String& str)
-{
-    return hash::fnvStr(str.m_pData, str.m_size);
-}
-
-template<>
-constexpr u64
+constexpr usize
 hash::func(const String& str)
 {
-    return hash::fnvStr(str.m_pData, str.m_size);
-}
-
-template<>
-inline u64
-hash::funcHVal(String& str, u64 hashValue)
-{
-    return hash::fnvBuffHVal(str.m_pData, str.m_size, hashValue);
-}
-
-template<>
-inline u64
-hash::funcHVal(const String& str, u64 hashValue)
-{
-    return hash::fnvBuffHVal(str.m_pData, str.m_size, hashValue);
+    return hash::fnv(str.data(), str.getSize(), hash::FNV1_64_INIT);
 }
 
 namespace utils

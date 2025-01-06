@@ -12,9 +12,9 @@ namespace adt
  * freeAll() method is not supported. */
 struct OsAllocator : IAllocator
 {
-    [[nodiscard]] virtual void* malloc(u64 mCount, u64 mSize) override final;
-    [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) override final;
+    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) override final;
     void virtual free(void* ptr) override final;
     void virtual freeAll() override final; /* assert(false) */
 };
@@ -27,7 +27,7 @@ OsAllocatorGet()
 }
 
 inline void*
-OsAllocator::malloc(u64 mCount, u64 mSize)
+OsAllocator::malloc(usize mCount, usize mSize)
 {
     auto* r = ::malloc(mCount * mSize);
     assert(r != nullptr && "[OsAllocator]: malloc failed");
@@ -35,7 +35,7 @@ OsAllocator::malloc(u64 mCount, u64 mSize)
 }
 
 inline void*
-OsAllocator::zalloc(u64 mCount, u64 mSize)
+OsAllocator::zalloc(usize mCount, usize mSize)
 {
     auto* r = ::calloc(mCount, mSize);
     assert(r != nullptr && "[OsAllocator]: calloc failed");
@@ -43,7 +43,7 @@ OsAllocator::zalloc(u64 mCount, u64 mSize)
 }
 
 inline void*
-OsAllocator::realloc(void* p, u64 mCount, u64 mSize)
+OsAllocator::realloc(void* p, usize mCount, usize mSize)
 {
     auto* r = ::realloc(p, mCount * mSize);
     assert(r != nullptr && "[OsAllocator]: realloc failed");

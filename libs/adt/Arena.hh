@@ -17,17 +17,17 @@ namespace adt
 struct ArenaBlock
 {
     ArenaBlock* pNext {};
-    u64 size {}; /* excluding sizeof(ArenaBlock) */
-    u64 nBytesOccupied {};
+    usize size {}; /* excluding sizeof(ArenaBlock) */
+    usize nBytesOccupied {};
     u8* pLastAlloc {};
-    u64 lastAllocSize {};
+    usize lastAllocSize {};
     u8 pMem[];
 };
 
 /* fast region based allocator, only freeAll() free's memory, free() does nothing */
 class Arena : public IAllocator
 {
-    u64 m_defaultCapacity {};
+    usize m_defaultCapacity {};
     IAllocator* m_pBackAlloc {};
     ArenaBlock* m_pBlocks {};
 
@@ -36,16 +36,16 @@ class Arena : public IAllocator
 public:
     Arena() = default;
 
-    Arena(u64 capacity, IAllocator* pBackingAlloc = OsAllocatorGet())
-        : m_defaultCapacity(align8(capacity + sizeof(ArenaBlock))),
+    Arena(usize capacity, IAllocator* pBackingAlloc = OsAllocatorGet())
+        : m_defaultCapacity(align8(capacity)),
           m_pBackAlloc(pBackingAlloc),
           m_pBlocks(allocBlock(m_defaultCapacity)) {}
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(u64 mCount, u64 mSize) override final;
-    [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) override final;
+    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) override final;
     virtual void free(void* ptr) override final;
     virtual void freeAll() override final;
     void reset();
@@ -53,9 +53,9 @@ public:
     /* */
 
 private:
-    [[nodiscard]] inline ArenaBlock* allocBlock(u64 size);
-    [[nodiscard]] inline ArenaBlock* prependBlock(u64 size);
-    [[nodiscard]] inline ArenaBlock* findFittingBlock(u64 size);
+    [[nodiscard]] inline ArenaBlock* allocBlock(usize size);
+    [[nodiscard]] inline ArenaBlock* prependBlock(usize size);
+    [[nodiscard]] inline ArenaBlock* findFittingBlock(usize size);
     [[nodiscard]] inline ArenaBlock* findBlockFromPtr(u8* ptr);
 };
 
@@ -75,7 +75,7 @@ Arena::findBlockFromPtr(u8* ptr)
 }
 
 inline ArenaBlock*
-Arena::findFittingBlock(u64 size)
+Arena::findFittingBlock(usize size)
 {
     auto* it = m_pBlocks;
     while (it)
@@ -90,9 +90,9 @@ Arena::findFittingBlock(u64 size)
 }
 
 inline ArenaBlock*
-Arena::allocBlock(u64 size)
+Arena::allocBlock(usize size)
 {
-    ArenaBlock* pBlock = static_cast<ArenaBlock*>(m_pBackAlloc->zalloc(1, size));
+    ArenaBlock* pBlock = static_cast<ArenaBlock*>(m_pBackAlloc->zalloc(1, size + sizeof(ArenaBlock)));
 
     assert(pBlock && "[Arena]: failed to allocate the block (too big size / out of memory)");
     pBlock->size = size;
@@ -102,7 +102,7 @@ Arena::allocBlock(u64 size)
 }
 
 inline ArenaBlock*
-Arena::prependBlock(u64 size)
+Arena::prependBlock(usize size)
 {
     auto* pNew = allocBlock(size);
     pNew->pNext = m_pBlocks;
@@ -112,9 +112,9 @@ Arena::prependBlock(u64 size)
 }
 
 inline void*
-Arena::malloc(u64 mCount, u64 mSize)
+Arena::malloc(usize mCount, usize mSize)
 {
-    u64 realSize = align8(mCount * mSize);
+    usize realSize = align8(mCount * mSize);
     auto* pBlock = findFittingBlock(realSize);
 
 #if defined ADT_DBG_MEMORY
@@ -122,7 +122,7 @@ Arena::malloc(u64 mCount, u64 mSize)
         fprintf(stderr, "[Arena]: allocating more than defaultCapacity (%llu, %llu)\n", m_defaultCapacity, realSize);
 #endif
 
-    if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, realSize*2 + sizeof(ArenaBlock)));
+    if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, realSize*2));
 
     auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
     assert(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize);
@@ -135,7 +135,7 @@ Arena::malloc(u64 mCount, u64 mSize)
 }
 
 inline void*
-Arena::zalloc(u64 mCount, u64 mSize)
+Arena::zalloc(usize mCount, usize mSize)
 {
     auto* p = malloc(mCount, mSize);
     memset(p, 0, align8(mCount * mSize));
@@ -143,12 +143,12 @@ Arena::zalloc(u64 mCount, u64 mSize)
 }
 
 inline void*
-Arena::realloc(void* ptr, u64 mCount, u64 mSize)
+Arena::realloc(void* ptr, usize mCount, usize mSize)
 {
     if (!ptr) return malloc(mCount, mSize);
 
-    u64 requested = mSize * mCount;
-    u64 realSize = align8(requested);
+    usize requested = mSize * mCount;
+    usize realSize = align8(requested);
     auto* pBlock = findBlockFromPtr(static_cast<u8*>(ptr));
 
     assert(pBlock && "[Arena]: pointer doesn't belong to this arena");
@@ -165,9 +165,9 @@ Arena::realloc(void* ptr, u64 mCount, u64 mSize)
     else
     {
         auto* pRet = malloc(mCount, mSize);
-        u64 nBytesUntilEndOfBlock = &pBlock->pMem[pBlock->size] - (u8*)ptr;
-        u64 nBytesToCopy = utils::min(requested, nBytesUntilEndOfBlock); /* out of range memcpy */
-        nBytesToCopy = utils::min(nBytesToCopy, u64((u8*)pRet - (u8*)ptr)); /* overlap memcpy */
+        usize nBytesUntilEndOfBlock = &pBlock->pMem[pBlock->size] - (u8*)ptr;
+        usize nBytesToCopy = utils::min(requested, nBytesUntilEndOfBlock); /* out of range memcpy */
+        nBytesToCopy = utils::min(nBytesToCopy, usize((u8*)pRet - (u8*)ptr)); /* overlap memcpy */
         memcpy(pRet, ptr, nBytesToCopy);
 
         return pRet;

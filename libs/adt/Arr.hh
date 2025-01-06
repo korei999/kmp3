@@ -6,16 +6,17 @@
 #include <cassert>
 #include <initializer_list>
 #include <new> /* IWYU pragma: keep */
+#include <utility>
 
 namespace adt
 {
 
 /* statically sized array */
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 struct Arr
 {
     T m_aData[CAP] {};
-    u32 m_size {};
+    ssize m_size {};
 
     /* */
 
@@ -24,22 +25,23 @@ struct Arr
 
     /* */
 
-    constexpr T& operator[](u32 i) { assert(i < m_size && "[Arr]: out of size access"); return m_aData[i]; }
-    constexpr const T& operator[](u32 i) const { assert(i < CAP && "[Arr]: out of capacity access"); return m_aData[i]; }
+    constexpr T& operator[](ssize i) { assert(i < m_size && "[Arr]: out of size access"); return m_aData[i]; }
+    constexpr const T& operator[](ssize i) const { assert(i < CAP && "[Arr]: out of capacity access"); return m_aData[i]; }
 
     /* */
 
     constexpr T* data() { return m_aData; }
     constexpr const T* data() const { return m_aData; }
     constexpr bool empty() const { return m_size == 0; }
-    constexpr u32 push(const T& x);
-    constexpr u32 fakePush();
+    constexpr ssize push(const T& x);
+    template<typename ...ARGS> requires (std::is_constructible_v<T, ARGS...>) constexpr ssize emplace(ARGS&&... args);
+    constexpr ssize fakePush();
     constexpr T* pop();
     constexpr void fakePop();
-    constexpr u32 getCap() const;
-    constexpr u32 getSize() const;
-    constexpr void setSize(u32 newSize);
-    constexpr u32 idx(const T* p);
+    constexpr ssize getCap() const;
+    constexpr ssize getSize() const;
+    constexpr void setSize(ssize newSize);
+    constexpr ssize idx(const T* p);
     constexpr T& first();
     constexpr const T& first() const;
     constexpr T& last();
@@ -77,8 +79,8 @@ struct Arr
     constexpr const It rend() const { return {m_aData - 1}; }
 };
 
-template<typename T, u32 CAP> requires(CAP > 0)
-constexpr u32
+template<typename T, ssize CAP> requires(CAP > 0)
+constexpr ssize
 Arr<T, CAP>::push(const T& x)
 {
     assert(getSize() < CAP && "[Arr]: pushing over capacity");
@@ -88,8 +90,20 @@ Arr<T, CAP>::push(const T& x)
     return m_size - 1;
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
-constexpr u32
+template<typename T, ssize CAP> requires(CAP > 0)
+template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
+inline constexpr ssize
+Arr<T, CAP>::emplace(ARGS&&... args)
+{
+    assert(getSize() < CAP && "[Arr]: pushing over capacity");
+
+    new(m_aData + m_size++) T(std::forward<ARGS>(args)...);
+
+    return m_size - 1;
+}
+
+template<typename T, ssize CAP> requires(CAP > 0)
+constexpr ssize
 Arr<T, CAP>::fakePush()
 {
     assert(m_size < CAP && "[Arr]: fake push over capacity");
@@ -97,7 +111,7 @@ Arr<T, CAP>::fakePush()
     return m_size - 1;
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 constexpr T*
 Arr<T, CAP>::pop()
 {
@@ -105,7 +119,7 @@ Arr<T, CAP>::pop()
     return &m_aData[--m_size];
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 constexpr void
 Arr<T, CAP>::fakePop()
 {
@@ -113,66 +127,66 @@ Arr<T, CAP>::fakePop()
     --m_size;
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
-constexpr u32
+template<typename T, ssize CAP> requires(CAP > 0)
+constexpr ssize
 Arr<T, CAP>::getCap() const
 {
     return CAP;
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
-constexpr u32
+template<typename T, ssize CAP> requires(CAP > 0)
+constexpr ssize
 Arr<T, CAP>::getSize() const
 {
     return m_size;
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 constexpr void
-Arr<T, CAP>::setSize(u32 newSize)
+Arr<T, CAP>::setSize(ssize newSize)
 {
     assert(newSize <= CAP && "[Arr]: cannot enlarge static array");
     m_size = newSize;
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
-constexpr u32
+template<typename T, ssize CAP> requires(CAP > 0)
+constexpr ssize
 Arr<T, CAP>::idx(const T* p)
 {
-    u32 r = u32(p - m_aData);
+    ssize r = ssize(p - m_aData);
     assert(r < getCap());
     return r;
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 constexpr T&
 Arr<T, CAP>::first()
 {
     return operator[](0);
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 constexpr const T&
 Arr<T, CAP>::first() const
 {
     return operator[](0);
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 constexpr T&
 Arr<T, CAP>::last()
 {
     return operator[](m_size - 1);
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 constexpr const T&
 Arr<T, CAP>::last() const
 {
     return operator[](m_size - 1);
 }
 
-template<typename T, u32 CAP> requires(CAP > 0)
+template<typename T, ssize CAP> requires(CAP > 0)
 constexpr Arr<T, CAP>::Arr(std::initializer_list<T> list)
 {
     for (auto& e : list) push(e);
@@ -181,7 +195,7 @@ constexpr Arr<T, CAP>::Arr(std::initializer_list<T> list)
 namespace sort
 {
 
-template<typename T, u32 CAP, auto FN_CMP = utils::compare<T>>
+template<typename T, ssize CAP, auto FN_CMP = utils::compare<T>>
 constexpr void
 quick(Arr<T, CAP>* pArr)
 {
@@ -190,7 +204,7 @@ quick(Arr<T, CAP>* pArr)
     quick<T, FN_CMP>(pArr->m_aData, 0, pArr->m_size - 1);
 }
 
-template<typename T, u32 CAP, auto FN_CMP = utils::compare<T>>
+template<typename T, ssize CAP, auto FN_CMP = utils::compare<T>>
 constexpr void
 insertion(Arr<T, CAP>* pArr)
 {
@@ -204,8 +218,8 @@ insertion(Arr<T, CAP>* pArr)
 namespace print
 {
 
-template<typename T, u32 CAP>
-inline u32
+template<typename T, ssize CAP>
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Arr<T, CAP>& x)
 {
     if (x.empty())
@@ -216,8 +230,8 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Arr<T, C
     }
 
     char aBuff[1024] {};
-    u32 nRead = 0;
-    for (u32 i = 0; i < x.m_size; ++i)
+    ssize nRead = 0;
+    for (ssize i = 0; i < x.m_size; ++i)
     {
         const char* fmt = i == x.m_size - 1 ? "{}" : "{}, ";
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, x[i]);

@@ -26,7 +26,7 @@ namespace ffmpeg
 struct Decoder : audio::IDecoder
 {
     [[nodiscard]] virtual audio::ERROR writeToBuffer(
-        f32* pBuff, const u32 buffSize, const u32 nFrames, const u32 nChannles,
+        f32* pBuff, const int buffSize, const int nFrames, const int nChannles,
         long* pSamplesWritten, s64* pPcmPos
     ) override final;
 

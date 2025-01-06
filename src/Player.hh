@@ -42,7 +42,7 @@ struct Player
     VecBase<u16> m_aSongIdxs {}; /* index buffer for aShortArgvs */
     long m_focused {};
     long m_selected {};
-    u32 m_longestStringSize {};
+    int m_longestStringSize {};
     PLAYER_REPEAT_METHOD m_eReapetMethod {};
     bool m_bSelectionChanged {};
 
@@ -63,7 +63,7 @@ struct Player
     void focusLast();
     u16 findSongIdxFromSelected();
     void focusSelected();
-    void subStringSearch(Arena* pAlloc, wchar_t* pWBuff, u32 size);
+    void subStringSearch(Arena* pAlloc, wchar_t* pWBuff, int size);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
     void togglePause();

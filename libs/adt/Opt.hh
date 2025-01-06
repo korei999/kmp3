@@ -9,22 +9,23 @@ namespace adt
 template<typename T>
 struct Opt
 {
-    T data {};
-    bool bHasValue = false;
+    T m_data {};
+    bool m_bHasValue = false;
+
+    /* */
 
     constexpr Opt() = default;
-    constexpr Opt(const T& x, bool _bHasValue = true)
+    constexpr Opt(const T& x, bool bHasValue = true)
     {
-        bHasValue = _bHasValue;
-        data = x;
+        m_data = x;
+        m_bHasValue = bHasValue;
     }
 
-    constexpr T& value() { assert(bHasValue && "[Opt]: has no value"); return data; }
+    /* */
 
-    constexpr operator bool() const
-    {
-        return this->bHasValue;
-    }
+    constexpr T& value() { assert(m_bHasValue && "[Opt]: has no value"); return m_data; }
+
+    constexpr operator bool() const { return m_bHasValue; }
 };
 
 } /* namespace adt */

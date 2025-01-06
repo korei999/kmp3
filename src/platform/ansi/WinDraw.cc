@@ -37,8 +37,8 @@ namespace ansi
 void
 Win::clearArea(int x, int y, int width, int height)
 {
-    const int w = utils::minVal(g_termSize.width, width);
-    const int h = utils::minVal(g_termSize.height, height);
+    const int w = utils::min(g_termSize.width, width);
+    const int h = utils::min(g_termSize.height, height);
 
     char* pBuff = (char*)m_pArena->malloc(w + 1, 1);
     memset(pBuff, ' ', w);
@@ -201,7 +201,7 @@ Win::timeSlider()
     /* play/pause indicator */
     {
         bool bPaused = mix.isPaused().load(memory_order_relaxed);
-        const char* ntsIndicator = bPaused ? "II" : "I>";
+        const char* ntsIndicator = bPaused ? "I>" : "II";
 
         tb.movePush(xOff, yOff, ntsIndicator);
 

@@ -15,7 +15,7 @@ struct MutexArena : IAllocator
     /* */
 
     MutexArena() = default;
-    MutexArena(u32 blockCap, IAllocator* pBackAlloc = OsAllocatorGet())
+    MutexArena(ssize blockCap, IAllocator* pBackAlloc = OsAllocatorGet())
         : m_arena(blockCap, pBackAlloc)
     {
         mtx_init(&m_mtx, mtx_plain);
@@ -23,15 +23,15 @@ struct MutexArena : IAllocator
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(u64 mCount, u64 mSize) override final;
-    [[nodiscard]] virtual void* zalloc(u64 mCount, u64 mSize) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, u64 mCount, u64 mSize) override final;
+    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) override final;
+    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) override final;
     virtual void free(void* ptr) override final;
     virtual void freeAll() override final;
 };
 
 inline void*
-MutexArena::malloc(u64 mCount, u64 mSize)
+MutexArena::malloc(usize mCount, usize mSize)
 {
     mtx_lock(&m_mtx);
     auto* r = m_arena.malloc(mCount, mSize);
@@ -41,17 +41,17 @@ MutexArena::malloc(u64 mCount, u64 mSize)
 }
 
 inline void*
-MutexArena::zalloc(u64 mCount, u64 mSize)
+MutexArena::zalloc(usize mCount, usize mSize)
 {
     mtx_lock(&m_mtx);
-    auto* r = m_arena.zalloc(mCount, mSize);
+    auto* r = m_arena.malloc(mCount, mSize);
     mtx_unlock(&m_mtx);
 
     return r;
 }
 
 inline void*
-MutexArena::realloc(void* p, u64 mCount, u64 mSize)
+MutexArena::realloc(void* p, usize mCount, usize mSize)
 {
     mtx_lock(&m_mtx);
     auto* r = m_arena.realloc(p, mCount, mSize);

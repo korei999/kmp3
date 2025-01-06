@@ -34,19 +34,28 @@ struct ListBase
 {
     ListNode<T>* m_pFirst {};
     ListNode<T>* m_pLast {};
-    u32 m_size {};
+    ssize m_size {};
 
     /* */
 
     [[nodiscard]] constexpr bool empty() const { return m_size == 0; }
+
     constexpr void destroy(IAllocator* pA);
+
     constexpr ListNode<T>* pushFront(ListNode<T>* pNew);
+
     constexpr ListNode<T>* pushBack(ListNode<T>* pNew);
+
     constexpr ListNode<T>* pushFront(IAllocator* pA, const T& x);
+
     constexpr ListNode<T>* pushBack(IAllocator* pA, const T& x);
+
     constexpr void remove(ListNode<T>* p);
+
     constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p);
+
     constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p);
+
     template<auto FN_CMP = utils::compare<T>>
     constexpr void sort();
 
@@ -318,13 +327,21 @@ struct List
     /* */
 
     [[nodiscard]] constexpr bool empty() const { return base.empty(); }
+
     constexpr ListNode<T>* pushFront(const T& x) { return base.pushFront(m_pAlloc, x); }
+
     constexpr ListNode<T>* pushBack(const T& x) { return base.pushBack(m_pAlloc, x); }
+
     constexpr void remove(ListNode<T>* p) { base.remove(p); m_pAlloc->free(p); }
+
     constexpr void destroy() { base.destroy(m_pAlloc); }
+
     constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p) { base.insertAfter(pAfter, p); }
+
     constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p) { base.insertBefore(pBefore, p); }
+
     template<auto FN_CMP = utils::compare<T>>
+
     constexpr void sort() { base.template sort<FN_CMP>(); }
 
     /* */
@@ -344,7 +361,7 @@ namespace print
 {
 
 template<typename T>
-inline u32
+inline ssize
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const ListBase<T>& x)
 {
     if (x.empty())
@@ -355,7 +372,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const ListBase
     }
 
     char aBuff[1024] {};
-    u32 nRead = 0;
+    ssize nRead = 0;
     ADT_LIST_FOREACH(&x, it)
     {
         const char* fmt = it == x.m_pLast ? "{}" : "{}, ";
@@ -366,7 +383,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const ListBase
 }
 
 template<typename T>
-inline u32
+inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const List<T>& x)
 {
     return formatToContext(ctx, fmtArgs, x.base);

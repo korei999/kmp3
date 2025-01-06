@@ -100,7 +100,7 @@ Player::setDefaultIdxs()
 }
 
 void
-Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
+Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, int size)
 {
     if (pBuff && wcsnlen(pBuff, size) == 0)
     {
@@ -109,7 +109,7 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
     }
 
     Arr<wchar_t, 64> aUpperRight {};
-    for (u32 i = 0; i < size && i < aUpperRight.getCap() && pBuff[i]; ++i)
+    for (ssize i = 0; i < size && i < aUpperRight.getCap() && pBuff[i]; ++i)
         aUpperRight.push(wchar_t(towupper(pBuff[i])));
 
     Vec<wchar_t> aSongToUpper(pAlloc, m_longestStringSize + 1);
@@ -117,7 +117,7 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
 
     m_aSongIdxs.setSize(m_pAlloc, 0);
     /* 0'th is the name of the program 'argv[0]' */
-    for (u32 i = 1; i < m_aShortArgvs.getSize(); ++i)
+    for (ssize i = 1; i < m_aShortArgvs.getSize(); ++i)
     {
         const auto& song = m_aShortArgvs[i];
         if (!acceptedFormat(song)) continue;
@@ -135,9 +135,9 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, u32 size)
 void
 Player::updateInfo()
 {
-    String s0 = app::g_pMixer->getMetadata("title").data.clone(m_pAlloc);
-    String s1 = app::g_pMixer->getMetadata("album").data.clone(m_pAlloc);
-    String s2 = app::g_pMixer->getMetadata("artist").data.clone(m_pAlloc);
+    String s0 = app::g_pMixer->getMetadata("title").m_data.clone(m_pAlloc);
+    String s1 = app::g_pMixer->getMetadata("album").m_data.clone(m_pAlloc);
+    String s2 = app::g_pMixer->getMetadata("artist").m_data.clone(m_pAlloc);
 
     m_info.title.destroy(m_pAlloc);
     m_info.album.destroy(m_pAlloc);

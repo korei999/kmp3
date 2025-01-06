@@ -15,7 +15,7 @@ enum class IMAGE_PIXEL_FORMAT : int
 struct Image
 {
     u8* pBuff {};
-    u32 width {};
-    u32 height {};
+    int width {};
+    int height {};
     IMAGE_PIXEL_FORMAT eFormat {};
 };

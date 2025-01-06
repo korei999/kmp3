@@ -5,7 +5,7 @@
 #include "defer.hh"
 #include "guard.hh"
 
-#include <stdatomic.h>
+#include <atomic>
 #include <cstdio>
 
 namespace adt
@@ -60,17 +60,21 @@ getNCores()
     return 4;
 }
 
-enum class WAIT_FLAG : u64 { DONT_WAIT, WAIT };
+enum class WAIT_FLAG : u8 { DONT_WAIT, WAIT };
 
 /* wait for individual task completion without ThreadPoolWait */
 struct ThreadPoolLock
 {
-    atomic_bool bSignaled;
-    mtx_t mtx;
-    cnd_t cnd;
+    std::atomic<bool> m_bSignaled;
+    mtx_t m_mtx;
+    cnd_t m_cnd;
+
+    /* */
 
     ThreadPoolLock() = default;
     ThreadPoolLock([[maybe_unused]] INIT_FLAG e) { init(); }
+
+    /* */
 
     void init();
     void wait();
@@ -80,25 +84,25 @@ struct ThreadPoolLock
 inline void
 ThreadPoolLock::init()
 {
-    atomic_store_explicit(&this->bSignaled, false, memory_order_relaxed);
-    mtx_init(&this->mtx, mtx_plain);
-    cnd_init(&this->cnd);
+    m_bSignaled.store(false, std::memory_order_relaxed);
+    mtx_init(&m_mtx, mtx_plain);
+    cnd_init(&m_cnd);
 }
 
 inline void
 ThreadPoolLock::wait()
 {
-    guard::Mtx lock(&this->mtx);
-    cnd_wait(&this->cnd, &this->mtx);
+    guard::Mtx lock(&m_mtx);
+    cnd_wait(&m_cnd, &m_mtx);
     /* notify thread pool's spinlock that we have woken up */
-    atomic_store_explicit(&this->bSignaled, true, memory_order_relaxed);
+    m_bSignaled.store(true, std::memory_order_relaxed);
 }
 
 inline void
 ThreadPoolLock::destroy()
 {
-    mtx_destroy(&this->mtx);
-    cnd_destroy(&this->cnd);
+    mtx_destroy(&m_mtx);
+    cnd_destroy(&m_cnd);
 }
 
 struct ThreadTask
@@ -111,18 +115,22 @@ struct ThreadTask
 
 struct ThreadPool
 {
-    IAllocator* pAlloc {};
-    QueueBase<ThreadTask> qTasks {};
-    VecBase<thrd_t> aThreads {};
-    cnd_t cndQ {}, cndWait {};
-    mtx_t mtxQ {}, mtxWait {};
-    atomic_int nActiveTasks {};
-    atomic_int nActiveThreadsInLoop {};
-    atomic_bool bDone {};
-    bool bStarted {};
+    IAllocator* m_pAlloc {};
+    QueueBase<ThreadTask> m_qTasks {};
+    VecBase<thrd_t> m_aThreads {};
+    cnd_t m_cndQ {}, m_cndWait {};
+    mtx_t m_mtxQ {}, m_mtxWait {};
+    std::atomic<int> m_nActiveTasks {};
+    std::atomic<int> m_nActiveThreadsInLoop {};
+    std::atomic<bool> m_bDone {};
+    bool m_bStarted {};
+
+    /* */
 
     ThreadPool() = default;
     ThreadPool(IAllocator* pAlloc, u32 _nThreads = ADT_GET_NCORES());
+
+    /* */
 
     void destroy();
     void start();
@@ -138,21 +146,21 @@ struct ThreadPool
 
 inline
 ThreadPool::ThreadPool(IAllocator* _pAlloc, u32 _nThreads)
-    : pAlloc(_pAlloc),
-      qTasks(_pAlloc, _nThreads),
-      aThreads(_pAlloc, _nThreads),
-      nActiveTasks(0),
-      nActiveThreadsInLoop(0),
-      bDone(true),
-      bStarted(false)
+    : m_pAlloc(_pAlloc),
+      m_qTasks(_pAlloc, _nThreads),
+      m_aThreads(_pAlloc, _nThreads),
+      m_nActiveTasks(0),
+      m_nActiveThreadsInLoop(0),
+      m_bDone(true),
+      m_bStarted(false)
 {
     assert(_nThreads != 0 && "can't have thread pool with zero threads");
-    aThreads.setSize(_pAlloc, _nThreads);
+    m_aThreads.setSize(_pAlloc, _nThreads);
 
-    cnd_init(&cndQ);
-    mtx_init(&mtxQ, mtx_plain);
-    cnd_init(&cndWait);
-    mtx_init(&mtxWait, mtx_plain);
+    cnd_init(&m_cndQ);
+    mtx_init(&m_mtxQ, mtx_plain);
+    cnd_init(&m_cndWait);
+    mtx_init(&m_mtxWait, mtx_plain);
 }
 
 inline int
@@ -160,37 +168,37 @@ _ThreadPoolLoop(void* p)
 {
     auto* s = (ThreadPool*)p;
 
-    s->nActiveThreadsInLoop.fetch_add(1, memory_order_relaxed);
-    defer( s->nActiveThreadsInLoop.fetch_sub(1, memory_order_relaxed) );
+    s->m_nActiveThreadsInLoop.fetch_add(1, std::memory_order_relaxed);
+    defer( s->m_nActiveThreadsInLoop.fetch_sub(1, std::memory_order_relaxed) );
 
-    while (!s->bDone)
+    while (!s->m_bDone)
     {
         ThreadTask task;
         {
-            guard::Mtx lock(&s->mtxQ);
+            guard::Mtx lock(&s->m_mtxQ);
 
-            while (s->qTasks.empty() && !s->bDone)
-                cnd_wait(&s->cndQ, &s->mtxQ);
+            while (s->m_qTasks.empty() && !s->m_bDone)
+                cnd_wait(&s->m_cndQ, &s->m_mtxQ);
 
-            if (s->bDone) return thrd_success;
+            if (s->m_bDone) return thrd_success;
 
-            task = *s->qTasks.popFront();
+            task = *s->m_qTasks.popFront();
             /* increment before unlocking mtxQ to avoid 0 tasks and 0 q possibility */
-            s->nActiveTasks.fetch_add(1, memory_order_relaxed);
+            s->m_nActiveTasks.fetch_add(1, std::memory_order_relaxed);
         }
 
         task.pfn(task.pArgs);
-        s->nActiveTasks.fetch_sub(1, memory_order_relaxed);
+        s->m_nActiveTasks.fetch_sub(1, std::memory_order_relaxed);
 
         if (task.eWait == WAIT_FLAG::WAIT)
         {
             /* keep signaling until it's truly awakened */
-            while (task.pLock->bSignaled.load(memory_order_relaxed) == false)
-                cnd_signal(&task.pLock->cnd);
+            while (task.pLock->m_bSignaled.load(std::memory_order_relaxed) == false)
+                cnd_signal(&task.pLock->m_cnd);
         }
 
         if (!s->busy())
-            cnd_signal(&s->cndWait);
+            cnd_signal(&s->m_cndWait);
     }
 
     return thrd_success;
@@ -199,14 +207,14 @@ _ThreadPoolLoop(void* p)
 inline void
 ThreadPool::start()
 {
-    this->bStarted = true;
-    atomic_store_explicit(&this->bDone, false, memory_order_relaxed);
+    m_bStarted = true;
+    m_bDone.store(false, std::memory_order_relaxed);
 
 #ifndef NDEBUG
-    fprintf(stderr, "[ThreadPool]: staring %d threads\n", this->aThreads.getSize());
+    fprintf(stderr, "[ThreadPool]: staring %lld threads\n", m_aThreads.getSize());
 #endif
 
-    for (auto& thread : this->aThreads)
+    for (auto& thread : m_aThreads)
     {
         [[maybe_unused]] int t = thrd_create(&thread, _ThreadPoolLoop, this);
 #ifndef NDEBUG
@@ -220,8 +228,8 @@ ThreadPool::busy()
 {
     bool ret;
     {
-        guard::Mtx lock(&this->mtxQ);
-        ret = !this->qTasks.empty() || this->nActiveTasks > 0;
+        guard::Mtx lock(&m_mtxQ);
+        ret = !m_qTasks.empty() || m_nActiveTasks > 0;
     }
 
     return ret;
@@ -231,45 +239,45 @@ inline void
 ThreadPool::submit(ThreadTask task)
 {
     {
-        guard::Mtx lock(&this->mtxQ);
-        this->qTasks.pushBack(this->pAlloc, task);
+        guard::Mtx lock(&m_mtxQ);
+        m_qTasks.pushBack(m_pAlloc, task);
     }
 
-    cnd_signal(&this->cndQ);
+    cnd_signal(&m_cndQ);
 }
 
 inline void
 ThreadPool::submit(thrd_start_t pfnTask, void* pArgs)
 {
-    assert(this->bStarted && "[ThreadPool]: never called ThreadPoolStart()");
+    assert(m_bStarted && "[ThreadPool]: never called ThreadPoolStart()");
 
-    this->submit({pfnTask, pArgs});
+    submit({pfnTask, pArgs});
 }
 
 inline void
 ThreadPool::submitSignal(thrd_start_t pfnTask, void* pArgs, ThreadPoolLock* pTpLock)
 {
-    this->submit({pfnTask, pArgs, WAIT_FLAG::WAIT, pTpLock});
+    submit({pfnTask, pArgs, WAIT_FLAG::WAIT, pTpLock});
 }
 
 inline void
 ThreadPool::wait()
 {
-    assert(this->bStarted && "[ThreadPool]: never called ThreadPoolStart()");
+    assert(m_bStarted && "[ThreadPool]: never called ThreadPoolStart()");
 
-    while (this->busy())
+    while (busy())
     {
-        guard::Mtx lock(&this->mtxWait);
-        cnd_wait(&this->cndWait, &this->mtxWait);
+        guard::Mtx lock(&m_mtxWait);
+        cnd_wait(&m_cndWait, &m_mtxWait);
     }
 }
 
 inline void
 _ThreadPoolStop(ThreadPool* s)
 {
-    s->bStarted = false;
+    s->m_bStarted = false;
 
-    if (s->bDone)
+    if (s->m_bDone)
     {
 #ifndef NDEBUG
         fprintf(stderr, "[ThreadPool]: trying to stop multiple times or stopping without starting at all\n");
@@ -277,13 +285,13 @@ _ThreadPoolStop(ThreadPool* s)
         return;
     }
 
-    atomic_store(&s->bDone, true);
+    atomic_store(&s->m_bDone, true);
 
     /* some threads might not cnd_wait() in time, so keep signaling untill all return from the loop */
-    while (atomic_load_explicit(&s->nActiveThreadsInLoop, memory_order_relaxed) > 0)
-        cnd_broadcast(&s->cndQ);
+    while (s->m_nActiveThreadsInLoop.load(std::memory_order_relaxed) > 0)
+        cnd_broadcast(&s->m_cndQ);
 
-    for (auto& thread : s->aThreads)
+    for (auto& thread : s->m_aThreads)
         thrd_join(thread, nullptr);
 }
 
@@ -292,12 +300,12 @@ ThreadPool::destroy()
 {
     _ThreadPoolStop(this);
 
-    this->aThreads.destroy(this->pAlloc);
-    this->qTasks.destroy(this->pAlloc);
-    cnd_destroy(&this->cndQ);
-    mtx_destroy(&this->mtxQ);
-    cnd_destroy(&this->cndWait);
-    mtx_destroy(&this->mtxWait);
+    m_aThreads.destroy(m_pAlloc);
+    m_qTasks.destroy(m_pAlloc);
+    cnd_destroy(&m_cndQ);
+    mtx_destroy(&m_mtxQ);
+    cnd_destroy(&m_cndWait);
+    mtx_destroy(&m_mtxWait);
 }
 
 } /* namespace adt */
