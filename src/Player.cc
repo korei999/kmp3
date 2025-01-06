@@ -2,6 +2,7 @@
 
 #include "adt/Arr.hh"
 #include "adt/logs.hh"
+#include "adt/file.hh"
 #include "app.hh"
 #include "mpris.hh"
 
@@ -92,34 +93,33 @@ Player::focusSelected()
 void
 Player::setDefaultIdxs()
 {
-    m_aSongIdxs.setSize(m_pAlloc, 0);
+    ssize size = m_aSongs.getSize();
+    m_aSongIdxs.setSize(m_pAlloc, size);
 
-    for (int i = 1; i < app::g_argc; ++i)
-        if (acceptedFormat(app::g_aArgs[i]))
-            m_aSongIdxs.push(m_pAlloc, u16(i));
+    for (ssize i = 0; i < size; ++i)
+        m_aSongIdxs[i] = i;
 }
 
 void
-Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, int size)
+Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
 {
-    if (pBuff && wcsnlen(pBuff, size) == 0)
+    if (spBuff && wcsnlen(spBuff.data(), spBuff.getSize()) == 0)
     {
         setDefaultIdxs();
         return;
     }
 
     Arr<wchar_t, 64> aUpperRight {};
-    for (ssize i = 0; i < size && i < aUpperRight.getCap() && pBuff[i]; ++i)
-        aUpperRight.push(wchar_t(towupper(pBuff[i])));
+    ssize maxLen = utils::min(spBuff.getSize(), aUpperRight.getCap());
+    for (ssize i = 0; i < maxLen && spBuff[i]; ++i)
+        aUpperRight.push(wchar_t(towupper(spBuff[i])));
 
-    Vec<wchar_t> aSongToUpper(pAlloc, m_longestStringSize + 1);
-    aSongToUpper.setSize(m_longestStringSize + 1);
+    Vec<wchar_t> aSongToUpper(pAlloc, m_longestString + 1);
+    aSongToUpper.setSize(m_longestString + 1);
 
     m_aSongIdxs.setSize(m_pAlloc, 0);
-    /* 0'th is the name of the program 'argv[0]' */
-    for (ssize i = 1; i < m_aShortArgvs.getSize(); ++i)
+    for (auto& song : m_aShortSongs)
     {
-        const auto& song = m_aShortArgvs[i];
         if (!acceptedFormat(song)) continue;
 
         aSongToUpper.zeroOut();
@@ -128,7 +128,7 @@ Player::subStringSearch(Arena* pAlloc, wchar_t* pBuff, int size)
             wc = towupper(wc);
 
         if (wcsstr(aSongToUpper.data(), aUpperRight.data()) != nullptr)
-            m_aSongIdxs.push(m_pAlloc, u16(i));
+            m_aSongIdxs.push(m_pAlloc, u16(m_aShortSongs.idx(&song)));
     }
 }
 
@@ -166,7 +166,7 @@ Player::selectFocused()
     m_selected = m_aSongIdxs[m_focused];
     m_bSelectionChanged = true;
 
-    const String& sPath = app::g_aArgs[m_selected];
+    const String& sPath = m_aSongs[m_selected];
     LOG_NOTIFY("selected({}): {}\n", m_selected, sPath);
 
     app::g_pMixer->play(sPath);
@@ -209,7 +209,7 @@ Player::onSongEnd()
     m_selected = m_aSongIdxs[currIdx];
     m_bSelectionChanged = true;
 
-    app::g_pMixer->play(app::g_aArgs[m_selected]);
+    app::g_pMixer->play(m_aSongs[m_selected]);
     updateInfo();
 }
 
@@ -234,7 +234,7 @@ Player::selectNext()
 {
     long currIdx = (findSongIdxFromSelected() + 1) % m_aSongIdxs.getSize();
     m_selected = m_aSongIdxs[currIdx];
-    app::g_pMixer->play(app::g_aArgs[m_selected]);
+    app::g_pMixer->play(m_aSongs[m_selected]);
     updateInfo();
 }
 
@@ -243,7 +243,7 @@ Player::selectPrev()
 {
     long currIdx = (findSongIdxFromSelected() + (m_aSongIdxs.getSize()) - 1) % m_aSongIdxs.getSize();
     m_selected = m_aSongIdxs[currIdx];
-    app::g_pMixer->play(app::g_aArgs[m_selected]);
+    app::g_pMixer->play(m_aSongs[m_selected]);
     updateInfo();
 }
 
@@ -251,4 +251,22 @@ void
 Player::destroy()
 {
     //
+}
+
+Player::Player(IAllocator* p, int nArgs, char** ppArgs)
+    : m_pAlloc(p), m_aSongs(p, nArgs), m_aShortSongs(p, nArgs)
+{
+    for (int i = 0; i < nArgs; ++i)
+    {
+        if (acceptedFormat(ppArgs[i]))
+        {
+            m_aSongs.push(m_pAlloc, ppArgs[i]);
+            m_aShortSongs.push(m_pAlloc, file::getPathEnding(m_aSongs.last()));
+
+            if (m_aSongs.last().getSize() > m_longestString)
+                m_longestString = m_aSongs.last().getSize();
+        }
+    }
+
+    setDefaultIdxs();
 }

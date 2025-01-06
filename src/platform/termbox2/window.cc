@@ -85,21 +85,21 @@ readWChar(tb_event* pEv)
     else if (ev.key == TB_KEY_ENTER) return c::READ_STATUS::DONE;
     else if (ev.key == TB_KEY_CTRL_W)
     {
-        if (c::g_input.idx > 0)
+        if (c::g_input.m_idx > 0)
         {
-            c::g_input.idx = 0;
+            c::g_input.m_idx = 0;
             c::g_input.zeroOutBuff();
         }
     }
     else if (ev.key == TB_KEY_BACKSPACE || ev.key == TB_KEY_BACKSPACE2 || ev.key == TB_KEY_CTRL_H)
     {
-        if (c::g_input.idx > 0)
-            c::g_input.aBuff[--c::g_input.idx] = L'\0';
+        if (c::g_input.m_idx > 0)
+            c::g_input.m_aBuff[--c::g_input.m_idx] = L'\0';
     }
     else if (ev.ch)
     {
-        if (c::g_input.idx < utils::size(c::g_input.aBuff) - 1)
-            c::g_input.aBuff[c::g_input.idx++] = ev.ch;
+        if (c::g_input.m_idx < utils::size(c::g_input.m_aBuff) - 1)
+            c::g_input.m_aBuff[c::g_input.m_idx++] = ev.ch;
     }
 
     return c::READ_STATUS::OK_;
@@ -280,24 +280,6 @@ drawMBString(
     [[maybe_unused]] const int nMaxWraps = 0
 )
 {
-    //wchar_t wc {};
-    //while (it < str.getSize())
-    //{
-    //    if (max >= maxLenMod - 3)
-    //        break;
-
-    //    int charLen = mbtowc(&wc, &str[it], str.getSize() - it);
-
-    //    if (charLen < 0) break;
-
-    //    it += charLen;
-    //    tb_set_cell(xOff + 1 + max, yOff, wc, fg, bg);
-
-    //    int wclen = wcwidth(wc);
-    //    if (wclen < 0) return;
-    //    max += wclen;
-    //}
-
     tb_printf(x, y, fg, bg, "%.*s", str.getSize(), str.data());
 }
 
@@ -309,10 +291,10 @@ drawSongList()
     const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
-    for (u16 h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.m_aSongIdxs.getSize(); ++h, ++i)
+    for (ssize h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.m_aSongIdxs.getSize(); ++h, ++i)
     {
         const u16 songIdx = pl.m_aSongIdxs[h];
-        const String sSong = pl.m_aShortArgvs[songIdx];
+        const String sSong = pl.m_aShortSongs[songIdx];
         const u32 maxLen = tb_width() - 2;
 
         bool bSelected = songIdx == pl.m_selected ? true : false;
@@ -408,7 +390,7 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         if (pl.m_info.title.getSize() > 0)
             print::toBuffer(pBuff, width, "{}", pl.m_info.title);
-        else print::toBuffer(pBuff, width, "{}", pl.m_aShortArgvs[pl.m_selected]);
+        else print::toBuffer(pBuff, width, "{}", pl.m_aShortSongs[pl.m_selected]);
         drawMBString(xOff + n + 1, 1, pBuff, width - 1 - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
     }
 
@@ -452,7 +434,7 @@ drawBottomLine()
     {
         char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortArgvs.getSize() - 1);
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortSongs.getSize() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
@@ -462,22 +444,21 @@ drawBottomLine()
             n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
         }
 
-        // n += print::toBuffer(pBuff + n, width - 1, " | focused: {}", pl.focused);
         drawMBString(width - n - 2, height - 1, pBuff, width - 2);
     }
 
     if (
-        c::g_input.eCurrMode != WINDOW_READ_MODE::NONE ||
-        (c::g_input.eCurrMode == WINDOW_READ_MODE::NONE && wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
+        c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||
+        (c::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE && wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff)) > 0)
     )
     {
-        const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
-        drawWideString(sReadMode.getSize() + 1, height - 1, c::g_input.aBuff, utils::size(c::g_input.aBuff), width - 2);
+        const String sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
+        drawWideString(sReadMode.getSize() + 1, height - 1, c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff), width - 2);
         drawMBString(1, height - 1, sReadMode, width - 2);
 
-        if (c::g_input.eCurrMode != WINDOW_READ_MODE::NONE)
+        if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE)
         {
-            u32 wlen = wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff));
+            u32 wlen = wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff));
             drawWideString(sReadMode.getSize() + wlen + 1, height - 1, common::CURSOR_BLOCK, 1, 3);
         }
     }

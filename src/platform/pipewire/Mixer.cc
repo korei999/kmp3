@@ -180,18 +180,15 @@ Mixer::play(String sPath)
         m_sPath = sPath;
 
         if (m_bDecodes)
-        {
             m_pIDecoder->close();
-        }
 
         auto err = m_pIDecoder->open(sPath);
         if (err != audio::ERROR::OK_)
         {
-            LOG_WARN("DecoderOpen\n");
+            LOG_WARN("decoder::open(): '{}'\n", sPath);
             return;
         }
         m_bDecodes = true;
-
     }
 
     setNChannles(m_pIDecoder->getChannelsCount());

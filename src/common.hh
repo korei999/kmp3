@@ -11,12 +11,15 @@ namespace common
 {
 
 struct InputBuff {
-    wchar_t aBuff[64] {};
-    u32 idx = 0;
-    WINDOW_READ_MODE eCurrMode {};
-    WINDOW_READ_MODE eLastUsedMode {};
+    wchar_t m_aBuff[64] {};
+    u32 m_idx = 0;
+    WINDOW_READ_MODE m_eCurrMode {};
+    WINDOW_READ_MODE m_eLastUsedMode {};
 
-    void zeroOutBuff() { memset(aBuff, 0, sizeof(aBuff)); }
+    /* */
+
+    void zeroOutBuff() { memset(m_aBuff, 0, sizeof(m_aBuff)); }
+    Span<wchar_t> getSpan() { return Span(m_aBuff, utils::size(m_aBuff)); }
 };
 
 extern InputBuff g_input;
@@ -53,9 +56,6 @@ allocTimeString(Arena* pArena, int width)
     u64 t = std::round(mix.getCurrentMS() / 1000.0 * sampleRateRatio);
     u64 totalT = std::round(mix.getTotalMS() / 1000.0 * sampleRateRatio);
 
-    /*u64 t = std::round(f64(mix.getCurrentTimeStamp()) / f64(mix.getNChannels()) / f64(mix.getChangedSampleRate()));*/
-    /*u64 totalT = std::round(f64(mix.getTotalSamplesCount()) / f64(mix.getNChannels()) / f64(mix.getChangedSampleRate()));*/
-
     u64 currMin = t / 60;
     u64 currSec = t - (60 * currMin);
 
@@ -89,7 +89,7 @@ fixFirstIdx(const u16 listHeight, u16* pFirstIdx)
 }
 
 inline void
-procSeekString(const wchar_t* pBuff, u32 size)
+procSeekString(const Span<wchar_t> spBuff)
 {
     bool bPercent = false;
     bool bColon = false;
@@ -97,35 +97,35 @@ procSeekString(const wchar_t* pBuff, u32 size)
     Arr<char, 32> aMinutesBuff {};
     Arr<char, 32> aSecondsBuff {};
 
-    const auto& buff = pBuff;
-    for (long i = 0; buff[i] && i < size; ++i)
+    for (auto& wch : spBuff)
     {
-        if (buff[i] == L'%') bPercent = true;
-        else if (buff[i] == L':')
+        if (wch == L'%') bPercent = true;
+        else if (wch == L':')
         {
             /* leave if there is one more colon or bPercent */
             if (bColon || bPercent) break;
             bColon = true;
         }
-        else if (iswdigit(buff[i]))
+        else if (iswdigit(wch))
         {
             Arr<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
-            if (i < pTargetArray->getCap() - 1)
-                pTargetArray->push(char(buff[i]));
+            if (spBuff.idx(&wch) < pTargetArray->getCap() - 1)
+                pTargetArray->push(char(wch)); /* wdigits are equivalent to char */
         }
     }
 
-    if (aMinutesBuff.getSize() == 0) return;
+    if (aMinutesBuff.getSize() == 0)
+        return;
 
     if (bPercent)
     {
-        long maxMS = app::g_pMixer->getTotalMS();
+        s64 maxMS = app::g_pMixer->getTotalMS();
 
         app::g_pMixer->seekMS(maxMS * (f64(atoll(aMinutesBuff.data())) / 100.0));
     }
     else
     {
-        long sec;
+        ssize sec;
         if (aSecondsBuff.getSize() == 0) sec = atoll(aMinutesBuff.data());
         else sec = atoll(aSecondsBuff.data()) + atoll(aMinutesBuff.data())*60;
 
@@ -145,15 +145,15 @@ subStringSearch(
 {
     auto& pl = *app::g_pPlayer;
 
-    g_input.eLastUsedMode = g_input.eCurrMode = WINDOW_READ_MODE::SEARCH;
-    defer( g_input.eCurrMode = WINDOW_READ_MODE::NONE );
+    g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEARCH;
+    defer( g_input.m_eCurrMode = WINDOW_READ_MODE::NONE );
 
     g_input.zeroOutBuff();
-    g_input.idx = 0;
+    g_input.m_idx = 0;
 
     do
     {
-        pl.subStringSearch(pArena, g_input.aBuff, utils::size(g_input.aBuff));
+        pl.subStringSearch(pArena, {g_input.m_aBuff, utils::size(g_input.m_aBuff)});
         *pFirstIdx = 0;
         pfnDraw(pDrawArg);
 
@@ -172,25 +172,18 @@ seekFromInput(
     void* pDrawArg
 )
 {
-    g_input.eLastUsedMode = g_input.eCurrMode = WINDOW_READ_MODE::SEEK;
-    defer( g_input.eCurrMode = WINDOW_READ_MODE::NONE );
+    g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEEK;
+    defer( g_input.m_eCurrMode = WINDOW_READ_MODE::NONE );
 
     g_input.zeroOutBuff();
-    g_input.idx = 0;
+    g_input.m_idx = 0;
 
     do
     {
         pfnDraw(pDrawArg);
     } while (pfnRead(pReadArg) != READ_STATUS::DONE);
 
-    procSeekString(g_input.aBuff, utils::size(g_input.aBuff));
+    procSeekString(g_input.getSpan());
 }
-
-inline int
-getHorizontalSplitPos(int height)
-{
-    return std::round(f64(height) * (1.0 - app::g_pPlayer->m_statusToInfoWidthRatio));
-}
-
 
 } /* namespace common */

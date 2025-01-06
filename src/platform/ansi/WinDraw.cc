@@ -241,7 +241,7 @@ Win::list()
         if (h < pl.m_aSongIdxs.getSize())
         {
             const u16 songIdx = pl.m_aSongIdxs[h];
-            const String sSong = pl.m_aShortArgvs[songIdx];
+            const String sSong = pl.m_aShortSongs[songIdx];
 
             bool bSelected = songIdx == pl.m_selected ? true : false;
 
@@ -283,7 +283,7 @@ Win::bottomLine()
     {
         char* pBuff = (char*)m_pArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortArgvs.getSize() - 1);
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortSongs.getSize() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
@@ -296,21 +296,21 @@ Win::bottomLine()
         tb.movePush(width - n - 1, height - 1, pBuff, width - 1); }
 
     if (
-        c::g_input.eCurrMode != WINDOW_READ_MODE::NONE ||
-        (c::g_input.eCurrMode == WINDOW_READ_MODE::NONE &&
-         wcsnlen(c::g_input.aBuff, utils::size(c::g_input.aBuff)) > 0)
+        c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||
+        (c::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE &&
+         wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff)) > 0)
     )
     {
-        const String sReadMode = c::readModeToString(c::g_input.eLastUsedMode);
+        const String sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
         tb.movePushGlyphs(1, height - 1, sReadMode, width - 1);
         tb.movePushWString(
             sReadMode.getSize() + 1,
             height - 1,
-            c::g_input.aBuff,
-            utils::size(c::g_input.aBuff) - 2
+            c::g_input.m_aBuff,
+            utils::size(c::g_input.m_aBuff) - 2
         );
 
-        if (c::g_input.eCurrMode != WINDOW_READ_MODE::NONE) tb.hideCursor(false);
+        if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE) tb.hideCursor(false);
         else tb.hideCursor(true);
     }
     else tb.hideCursor(true);

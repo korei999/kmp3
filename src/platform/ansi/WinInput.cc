@@ -143,21 +143,21 @@ Win::readWChar()
     else if (wc == keys::ENTER) return c::READ_STATUS::DONE; /* enter */
     else if (wc == keys::CTRL_W)
     {
-        if (c::g_input.idx > 0)
+        if (c::g_input.m_idx > 0)
         {
-            c::g_input.idx = 0;
+            c::g_input.m_idx = 0;
             c::g_input.zeroOutBuff();
         }
     }
     else if (wc == 127) /* backspace */
     {
-        if (c::g_input.idx > 0)
-            c::g_input.aBuff[--c::g_input.idx] = L'\0';
+        if (c::g_input.m_idx > 0)
+            c::g_input.m_aBuff[--c::g_input.m_idx] = L'\0';
     }
     else if (wc)
     {
-        if (c::g_input.idx < utils::size(c::g_input.aBuff) - 1)
-            c::g_input.aBuff[c::g_input.idx++] = wc;
+        if (c::g_input.m_idx < utils::size(c::g_input.m_aBuff) - 1)
+            c::g_input.m_aBuff[c::g_input.m_idx++] = wc;
     }
 
     return c::READ_STATUS::OK_;

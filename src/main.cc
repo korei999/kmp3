@@ -2,7 +2,6 @@
 
 #include "adt/Vec.hh"
 #include "adt/defer.hh"
-#include "adt/file.hh"
 #include "adt/logs.hh"
 #include "defaults.hh"
 #include "frame.hh"
@@ -100,30 +99,12 @@ main(int argc, char** argv)
     app::g_argc = argc;
     app::g_argv = argv;
 
-    for (int i = 0; i < argc; ++i)
-        app::g_aArgs.push(&freeList, {app::g_argv[i]});
-
     Player player(&freeList, argc, argv);
     app::g_pPlayer = &player;
     defer( player.destroy() );
 
-    player.setDefaultIdxs();
-
-    u32 nAccepted = 0;
-    u32 longsetSize = 0;
-    for (int i = 0; i < app::g_argc; ++i)
-    {
-        player.m_aShortArgvs.push(player.m_pAlloc, file::getPathEnding(app::g_aArgs[i]));
-        if (player.acceptedFormat(player.m_aShortArgvs.last()))
-            ++nAccepted;
-
-        if (app::g_aArgs[i].getSize() > longsetSize)
-            longsetSize = app::g_aArgs[i].getSize();
-    }
-    player.m_longestStringSize = longsetSize;
     player.m_imgHeight = 10;
     player.m_imgWidth = std::round((player.m_imgHeight * (1920.0/1080.0)) / defaults::FONT_ASPECT_RATIO);
-    player.m_statusToInfoWidthRatio = 0.4;
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
@@ -142,7 +123,7 @@ main(int argc, char** argv)
 
     setTermEnv();
 
-    if (nAccepted > 0)
+    if (!player.m_aSongs.empty())
     {
         app::g_bRunning = true;
 

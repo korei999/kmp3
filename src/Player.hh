@@ -5,6 +5,7 @@
 #include "adt/String.hh"
 #include "adt/Vec.hh"
 #include "adt/enum.hh"
+#include "adt/Span.hh"
 
 using namespace adt;
 
@@ -22,35 +23,34 @@ repeatMethodToString(PLAYER_REPEAT_METHOD e)
 struct Player
 {
     IAllocator* m_pAlloc {};
+
     struct {
         String time {};
         String volume {};
         String total {};
     } m_status {};
+
     struct {
         String title {};
         String album {};
         String artist {};
     } m_info {};
-    struct {
-        //
-    } m_bottomBar {};
+
     u8 m_imgHeight {};
     u8 m_imgWidth {};
-    f64 m_statusToInfoWidthRatio {};
-    VecBase<String> m_aShortArgvs {}; /* only the name of the file, without full path */
-    VecBase<u16> m_aSongIdxs {}; /* index buffer for aShortArgvs */
+    VecBase<String> m_aSongs {}; /* full path */
+    VecBase<String> m_aShortSongs {}; /* file name only */
+    VecBase<u16> m_aSongIdxs {}; /* index buffer */
     long m_focused {};
     long m_selected {};
-    int m_longestStringSize {};
+    ssize m_longestString {};
     PLAYER_REPEAT_METHOD m_eReapetMethod {};
     bool m_bSelectionChanged {};
 
     /* */
 
-    Player() = delete;
-    Player(IAllocator* p, int nArgs, [[maybe_unused]] char** ppArgs)
-        : m_pAlloc(p), m_aShortArgvs(p, nArgs), m_aSongIdxs(p, nArgs) {}
+    Player() = default;
+    Player(IAllocator* p, int nArgs, char** ppArgs);
 
     /* */
 
@@ -63,7 +63,7 @@ struct Player
     void focusLast();
     u16 findSongIdxFromSelected();
     void focusSelected();
-    void subStringSearch(Arena* pAlloc, wchar_t* pWBuff, int size);
+    void subStringSearch(Arena* pAlloc, Span<wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
     void togglePause();

@@ -519,7 +519,7 @@ getImageString(Arena* pArena, const ::Image img, int termHeight, int termWidth)
     defer( g_string_free(pGStr, true) );
 
     auto sRet = StringAlloc(pArena, pGStr->str, pGStr->len);
-    assert(sRet.getSize() == pGStr->len);
+    assert(sRet.getSize() == (ssize)pGStr->len);
     return {
         .s = sRet,
         .width = widthCells,

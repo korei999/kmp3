@@ -21,7 +21,6 @@ extern IWindow* g_pWin;
 extern bool g_bRunning;
 extern int g_argc;
 extern char** g_argv;
-extern VecBase<String> g_aArgs;
 
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
