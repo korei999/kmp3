@@ -95,6 +95,7 @@ readWChar(tb_event* pEv)
     {
         if (c::g_input.m_idx > 0)
             c::g_input.m_aBuff[--c::g_input.m_idx] = L'\0';
+        else return c::READ_STATUS::BACKSPACE;
     }
     else if (ev.ch)
     {
@@ -291,9 +292,11 @@ drawSongList()
     const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
-    for (ssize h = g_firstIdx, i = 0; i < listHeight - 1 && h < pl.m_aSongIdxs.getSize(); ++h, ++i)
+    const auto& aIdxBuff = pl.m_aSearchIdxs;
+
+    for (ssize h = g_firstIdx, i = 0; i < listHeight - 1 && h < aIdxBuff.getSize(); ++h, ++i)
     {
-        const u16 songIdx = pl.m_aSongIdxs[h];
+        const u16 songIdx = aIdxBuff[h];
         const String sSong = pl.m_aShortSongs[songIdx];
         const u32 maxLen = tb_width() - 2;
 

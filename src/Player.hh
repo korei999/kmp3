@@ -41,6 +41,7 @@ struct Player
     VecBase<String> m_aSongs {}; /* full path */
     VecBase<String> m_aShortSongs {}; /* file name only */
     VecBase<u16> m_aSongIdxs {}; /* index buffer */
+    VecBase<u16> m_aSearchIdxs {}; /* search index buffer */
     long m_focused {};
     long m_selected {};
     ssize m_longestString {};
@@ -59,7 +60,7 @@ struct Player
     void focusPrev();
     void focus(long i);
     void focusFirst() { focus(0); }
-    void setDefaultIdxs();
+    void setDefaultIdxs(VecBase<u16>* pIdxs);
     void focusLast();
     u16 findSongIdxFromSelected();
     void focusSelected();
@@ -71,6 +72,7 @@ struct Player
     PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward);
     void selectNext();
     void selectPrev();
+    void copySearchIdxs();
     void destroy();
 
     /* */

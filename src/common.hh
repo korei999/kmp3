@@ -24,7 +24,7 @@ struct InputBuff {
 
 extern InputBuff g_input;
 
-enum class READ_STATUS : u8 { OK_, DONE };
+enum class READ_STATUS : u8 { OK_, DONE, BACKSPACE };
 
 constexpr u32 CHAR_TL = L'┏';
 constexpr u32 CHAR_TR = L'┓';
@@ -151,13 +151,22 @@ subStringSearch(
     g_input.zeroOutBuff();
     g_input.m_idx = 0;
 
+
+    READ_STATUS eRead {};
     do
     {
-        pl.subStringSearch(pArena, {g_input.m_aBuff, utils::size(g_input.m_aBuff)});
+        pl.subStringSearch(pArena, g_input.getSpan());
         *pFirstIdx = 0;
         pfnDraw(pDrawArg);
 
-    } while (pfnRead(pReadArg) != READ_STATUS::DONE);
+        eRead = pfnRead(pReadArg);
+        if (eRead == READ_STATUS::BACKSPACE)
+            pl.setDefaultIdxs(&pl.m_aSearchIdxs);
+
+    } while (eRead != READ_STATUS::DONE);
+
+    /* copy back new idxs for recursive search filtering */
+    pl.copySearchIdxs();
 
     /* fix focused if it ends up out of the list range */
     if (pl.m_focused >= pl.m_aSongIdxs.getSize())
@@ -178,10 +187,8 @@ seekFromInput(
     g_input.zeroOutBuff();
     g_input.m_idx = 0;
 
-    do
-    {
-        pfnDraw(pDrawArg);
-    } while (pfnRead(pReadArg) != READ_STATUS::DONE);
+    do pfnDraw(pDrawArg);
+    while (pfnRead(pReadArg) != READ_STATUS::DONE);
 
     procSeekString(g_input.getSpan());
 }

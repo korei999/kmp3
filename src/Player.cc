@@ -78,7 +78,7 @@ Player::findSongIdxFromSelected()
 
     if (res == NPOS16)
     {
-        setDefaultIdxs();
+        setDefaultIdxs(&m_aSongIdxs);
         return findSongIdxFromSelected();
     }
     else return res;
@@ -91,23 +91,20 @@ Player::focusSelected()
 }
 
 void
-Player::setDefaultIdxs()
+Player::setDefaultIdxs(VecBase<u16>* pIdxs)
 {
     ssize size = m_aSongs.getSize();
-    m_aSongIdxs.setSize(m_pAlloc, size);
+    pIdxs->setSize(m_pAlloc, size);
 
     for (ssize i = 0; i < size; ++i)
-        m_aSongIdxs[i] = i;
+        (*pIdxs)[i] = i;
 }
 
 void
 Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
 {
     if (spBuff && wcsnlen(spBuff.data(), spBuff.getSize()) == 0)
-    {
-        setDefaultIdxs();
         return;
-    }
 
     Arr<wchar_t, 64> aUpperRight {};
     ssize maxLen = utils::min(spBuff.getSize(), aUpperRight.getCap());
@@ -117,10 +114,10 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
     Vec<wchar_t> aSongToUpper(pAlloc, m_longestString + 1);
     aSongToUpper.setSize(m_longestString + 1);
 
-    m_aSongIdxs.setSize(m_pAlloc, 0);
-    for (auto& song : m_aShortSongs)
+    m_aSearchIdxs.setSize(m_pAlloc, 0);
+    for (u16 idx : m_aSongIdxs)
     {
-        if (!acceptedFormat(song)) continue;
+        const auto& song = m_aShortSongs[idx];
 
         aSongToUpper.zeroOut();
         mbstowcs(aSongToUpper.data(), song.data(), song.getSize());
@@ -128,7 +125,7 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
             wc = towupper(wc);
 
         if (wcsstr(aSongToUpper.data(), aUpperRight.data()) != nullptr)
-            m_aSongIdxs.push(m_pAlloc, u16(m_aShortSongs.idx(&song)));
+            m_aSearchIdxs.push(m_pAlloc, u16(m_aShortSongs.idx(&song)));
     }
 }
 
@@ -248,13 +245,21 @@ Player::selectPrev()
 }
 
 void
+Player::copySearchIdxs()
+{
+    m_aSongIdxs.setSize(m_pAlloc, 0);
+    for (auto idx : m_aSearchIdxs)
+        m_aSongIdxs.push(m_pAlloc, idx);
+}
+
+void
 Player::destroy()
 {
     //
 }
 
 Player::Player(IAllocator* p, int nArgs, char** ppArgs)
-    : m_pAlloc(p), m_aSongs(p, nArgs), m_aShortSongs(p, nArgs)
+    : m_pAlloc(p), m_aSongs(p, nArgs), m_aShortSongs(p, nArgs), m_aSongIdxs(p, nArgs), m_aSearchIdxs(p, nArgs)
 {
     for (int i = 0; i < nArgs; ++i)
     {
@@ -268,5 +273,6 @@ Player::Player(IAllocator* p, int nArgs, char** ppArgs)
         }
     }
 
-    setDefaultIdxs();
+    setDefaultIdxs(&m_aSongIdxs);
+    setDefaultIdxs(&m_aSearchIdxs);
 }

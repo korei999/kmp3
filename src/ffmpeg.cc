@@ -309,6 +309,9 @@ Decoder::getCurrentSamplePos()
 s64
 Decoder::getTotalSamplesCount()
 {
+    /* FIXME: null sometimes? */
+    if (!m_pFormatCtx) return {};
+
     s64 res = (m_pFormatCtx->duration / (f64)AV_TIME_BASE) * m_pStream->codecpar->sample_rate * m_pStream->codecpar->ch_layout.nb_channels;
     return res;
 }

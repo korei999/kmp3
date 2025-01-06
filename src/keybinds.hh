@@ -82,7 +82,7 @@ inline const Key inl_aKeys[] {
     {{},               L'n',  (void*)app::selectNext,           NONE                           },
 };
 
-inline void
+ADT_NO_UB inline void /* triggers ubsan */
 resolveKey(const keybinds::PFN pfn, const keybinds::Arg arg)
 {
     switch (arg.eType)
