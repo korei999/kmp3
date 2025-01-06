@@ -70,9 +70,9 @@ struct MapBase
 
     [[nodiscard]] bool empty() const { return m_nOccupied == 0; }
 
-    [[nodiscard]] ssize idx(KeyVal<K, V>* p) const;
+    [[nodiscard]] ssize idx(const KeyVal<K, V>* p) const;
 
-    [[nodiscard]] ssize idx(MapResult<K, V> res) const;
+    [[nodiscard]] ssize idx(const MapResult<K, V> res) const;
 
     [[nodiscard]] ssize firstI() const;
 
@@ -145,19 +145,19 @@ public:
 
 template<typename K, typename V>
 inline ssize
-MapBase<K, V>::idx(KeyVal<K, V>* p) const
+MapBase<K, V>::idx(const KeyVal<K, V>* p) const
 {
     auto r = (MapBucket<K, V>*)p - &m_aBuckets[0];
-    assert(r < m_aBuckets.getCap());
+    assert(r >= 0 && r < m_aBuckets.getCap() && "[Map]: out of range");
     return r;
 }
 
 template<typename K, typename V>
 inline ssize
-MapBase<K, V>::idx(MapResult<K, V> res) const
+MapBase<K, V>::idx(const MapResult<K, V> res) const
 {
     auto idx = res.pData - &m_aBuckets[0];
-    assert(idx < m_aBuckets.getCap());
+    assert(idx >= 0 && idx < m_aBuckets.getCap() && "[Map]: out of range");
     return idx;
 }
 
@@ -459,7 +459,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, MAP_RESULT_STA
     };
 
     auto statusIdx = std::underlying_type_t<MAP_RESULT_STATUS>(eStatus);
-    assert(statusIdx < utils::size(map) && "out of range enum");
+    assert(statusIdx >= 0 && statusIdx < utils::size(map) && "out of range enum");
     return printArgs(ctx, map[statusIdx]);
 }
 

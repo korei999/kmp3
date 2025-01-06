@@ -25,7 +25,7 @@ struct Span
 
     constexpr ssize getSize() const { return m_size; }
 
-    constexpr ssize lastI() const { return m_size - 1; }
+    constexpr ssize lastI() const { assert(m_size > 0 && "[Span]: empty"); return m_size - 1; }
 
     constexpr ssize
     idx(const T* pItem) const

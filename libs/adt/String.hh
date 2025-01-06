@@ -60,8 +60,8 @@ struct String
 
     /* */
 
-    constexpr char& operator[](ssize i)             { assert(i < m_size && "[String]: out of size"); return m_pData[i]; }
-    constexpr const char& operator[](ssize i) const { assert(i < m_size && "[String]: out of size"); return m_pData[i]; }
+    constexpr char& operator[](ssize i)             { assert(i >= 0 && i < m_size && "[String]: out of size"); return m_pData[i]; }
+    constexpr const char& operator[](ssize i) const { assert(i >= 0 && i < m_size && "[String]: out of size"); return m_pData[i]; }
 
     const char* data() const { return m_pData; }
     char* data() { return m_pData; }

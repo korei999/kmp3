@@ -40,7 +40,7 @@ private:
     at(ssize x, ssize y)
     {
         ssize idx = y*m_width + x;
-        assert(x < m_width && y < m_height && "[TwoDSpan]: out of range");
+        assert(x >= 0 && x < m_width && y < m_height && "[TwoDSpan]: out of range");
         return m_pData[idx];
     }
 };

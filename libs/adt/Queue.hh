@@ -30,8 +30,8 @@ struct QueueBase
 
     /* */
 
-    T& operator[](int i)             { assert(i < m_cap && "[Queue]: out of capacity"); return m_pData[i]; }
-    const T& operator[](int i) const { assert(i < m_cap && "[Queue]: out of capacity"); return m_pData[i]; }
+    T& operator[](int i)             { assert(i >= 0 && i < m_cap && "[Queue]: out of capacity"); return m_pData[i]; }
+    const T& operator[](int i) const { assert(i >= 0 && i < m_cap && "[Queue]: out of capacity"); return m_pData[i]; }
 
     [[nodiscard]] int nextI(int i) const { return (i + 1) >= m_cap ? 0 : (i + 1); }
     [[nodiscard]] int prevI(int i) const { return (i - 1) < 0 ? m_cap - 1 : (i - 1); }
@@ -154,7 +154,7 @@ template<typename T>
 inline T*
 QueueBase<T>::popFront()
 {
-    assert(m_size > 0);
+    assert(m_size > 0 && "[Queue]: empty");
 
     T* ret = &m_pData[m_first];
     m_first = nextI(m_first);
@@ -167,7 +167,7 @@ template<typename T>
 inline T*
 QueueBase<T>::popBack()
 {
-    assert(m_size > 0);
+    assert(m_size > 0 && "[Queue]: empty");
 
     T* ret = &m_pData[lastI()];
     m_last = prevI(lastI());

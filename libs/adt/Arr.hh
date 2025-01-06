@@ -25,8 +25,8 @@ struct Arr
 
     /* */
 
-    constexpr T& operator[](ssize i) { assert(i < m_size && "[Arr]: out of size access"); return m_aData[i]; }
-    constexpr const T& operator[](ssize i) const { assert(i < CAP && "[Arr]: out of capacity access"); return m_aData[i]; }
+    constexpr T& operator[](ssize i)             { assert(i >= 0 && i < m_size && "[Arr]: out of size access"); return m_aData[i]; }
+    constexpr const T& operator[](ssize i) const { assert(i >= 0 && i < CAP && "[Arr]: out of capacity access"); return m_aData[i]; }
 
     /* */
 
@@ -145,7 +145,7 @@ template<typename T, ssize CAP> requires(CAP > 0)
 constexpr void
 Arr<T, CAP>::setSize(ssize newSize)
 {
-    assert(newSize <= CAP && "[Arr]: cannot enlarge static array");
+    assert(newSize < CAP && "[Arr]: cannot enlarge static array");
     m_size = newSize;
 }
 
@@ -154,7 +154,7 @@ constexpr ssize
 Arr<T, CAP>::idx(const T* p)
 {
     ssize r = ssize(p - m_aData);
-    assert(r < getCap());
+    assert(r >= 0 && r < getCap() && "[Arr]: out of range");
     return r;
 }
 

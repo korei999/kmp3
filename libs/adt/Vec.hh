@@ -32,8 +32,8 @@ struct VecBase
 
     /* */
 
-    T& operator[](ssize i)             { assert(i < m_size && "[Vec] out of size"); return m_pData[i]; }
-    const T& operator[](ssize i) const { assert(i < m_size && "[Vec] out of size"); return m_pData[i]; }
+    T& operator[](ssize i)             { assert(i >= 0 && i < m_size && "[Vec] out of size"); return m_pData[i]; }
+    const T& operator[](ssize i) const { assert(i >= 0 && i < m_size && "[Vec] out of size"); return m_pData[i]; }
 
     [[nodiscard]] bool empty() const { return m_size == 0; }
 
@@ -214,7 +214,7 @@ template<typename T>
 VecBase<T>::idx(const T* x) const
 {
     ssize r = ssize(x - m_pData);
-    assert(r < m_capacity);
+    assert(r >= 0 && r < m_capacity && "[Vec]: out of range");
     return r;
 }
 

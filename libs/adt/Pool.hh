@@ -42,8 +42,8 @@ struct Pool
 
     /* */
 
-    T& operator[](ssize i)             { assert(!m_aNodes[i].bDeleted && "[MemPool]: accessing deleted node"); return m_aNodes[i].data; }
-    const T& operator[](ssize i) const { assert(!m_aNodes[i].bDeleted && "[MemPool]: accessing deleted node"); return m_aNodes[i].data; }
+    T& operator[](ssize i)             { return at(i); }
+    const T& operator[](ssize i) const { return at(i); }
 
     ssize firstI() const;
     ssize lastI() const;
@@ -60,6 +60,12 @@ struct Pool
 
     /* */
 
+private:
+    T& at(ssize i);
+
+    /* */
+
+public:
     struct It
     {
         Pool* s {};
@@ -243,6 +249,15 @@ Pool<T, CAP>::giveBack(PoolHnd hnd)
         assert(!node.bDeleted && "[Pool]: returning already deleted node");
         node.bDeleted = true;
     }
+}
+
+template<typename T, ssize CAP>
+inline T&
+Pool<T, CAP>::at(ssize i)
+{
+    assert(i >= 0 && i < m_aNodes.getSize() && "[Pool]: out of range");
+    assert(!m_aNodes[i].bDeleted && "[Pool]: accessing deleted node");
+    return m_aNodes[i].data;
 }
 
 } /* namespace adt */
