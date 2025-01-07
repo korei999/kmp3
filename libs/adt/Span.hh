@@ -16,7 +16,11 @@ struct Span
     /* */
 
     constexpr Span() = default;
+
     constexpr Span(T* pData, ssize size) : m_pData(pData), m_size(size) {}
+
+    template<ssize N>
+    constexpr Span(T (&aChars)[N]) : m_pData(aChars), m_size(N) {}
 
     /* */
 

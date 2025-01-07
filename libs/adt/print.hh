@@ -2,6 +2,7 @@
 
 #include "String.hh"
 #include "utils.hh"
+#include "Span.hh"
 
 #include <ctype.h> /* win32 */
 
@@ -249,11 +250,11 @@ intToBuffer(INT_T x, char* pDst, ssize dstSize, FormatArgs fmtArgs)
 }
 
 constexpr ssize
-copyBackToBuffer(Context ctx, char* pSrc, ssize srcSize)
+copyBackToBuffer(Context ctx, Span<char> spSrc)
 {
     ssize i = 0;
-    for (; pSrc[i] != '\0' && i < srcSize && ctx.buffIdx < ctx.buffSize; ++i)
-        ctx.pBuff[ctx.buffIdx++] = pSrc[i];
+    for (; spSrc[i] && i < spSrc.getSize() && ctx.buffIdx < ctx.buffSize; ++i)
+        ctx.pBuff[ctx.buffIdx++] = spSrc[i];
 
     return i;
 }
@@ -305,7 +306,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x)
     if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen < utils::size(buff) - 1)
         buff[fmtArgs.maxLen] = '\0';
 
-    return copyBackToBuffer(ctx, p, utils::size(buff));
+    return copyBackToBuffer(ctx, {p, utils::size(buff)});
 }
 
 inline ssize
@@ -316,7 +317,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x)
         snprintf(aBuff, utils::size(aBuff), "%g", x);
     else snprintf(aBuff, utils::size(aBuff), "%.*f", fmtArgs.maxFloatLen, x);
 
-    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
+    return copyBackToBuffer(ctx, {aBuff});
 }
 
 inline ssize
@@ -338,7 +339,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x)
 #pragma GCC diagnostic pop
 #endif
 
-    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
+    return copyBackToBuffer(ctx, {aBuff});
 }
 
 inline ssize
@@ -351,7 +352,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const wchar_t 
     snprintf(aBuff, utils::size(aBuff), "%lc", x);
 #endif
 
-    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
+    return copyBackToBuffer(ctx, {aBuff});
 }
 
 inline ssize
@@ -361,7 +362,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char32_t
     mbstate_t ps {};
     c32rtomb(aBuff, x, &ps);
 
-    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
+    return copyBackToBuffer(ctx, {aBuff});
 }
 
 inline ssize
@@ -370,7 +371,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char x)
     char aBuff[4] {};
     snprintf(aBuff, utils::size(aBuff), "%c", x);
 
-    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
+    return copyBackToBuffer(ctx, {aBuff});
 }
 
 inline ssize

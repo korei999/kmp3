@@ -715,7 +715,7 @@ formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const RBNode<
     const String sCol = node.color() == RB_COLOR::BLACK ? ADT_LOGS_COL_BLUE : ADT_LOGS_COL_RED;
     print::toBuffer(aBuff, utils::size(aBuff), "{}{}" ADT_LOGS_COL_NORM, sCol, node.m_data);
 
-    return copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
+    return copyBackToBuffer(ctx, {aBuff});
 }
 
 } /* namespace print */

@@ -251,7 +251,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const QueueBas
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, it);
     }
 
-    return print::copyBackToBuffer(ctx, aBuff, utils::size(aBuff));
+    return print::copyBackToBuffer(ctx, {aBuff});
 }
 
 template<typename T>
