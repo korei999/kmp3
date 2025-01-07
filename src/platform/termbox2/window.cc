@@ -112,6 +112,12 @@ subStringSearch()
     >(g_pFrameArena, &g_firstIdx, {}, {});
 }
 
+long
+getImgOffset()
+{
+    return app::g_bNoImage ? 2 : app::g_pPlayer->m_imgWidth + 2;
+}
+
 void
 seekFromInput()
 {
@@ -319,7 +325,7 @@ drawVolume()
 {
     auto& pl = *app::g_pPlayer;
     const auto width = tb_width();
-    const int xOff = app::g_bNoImage ? 2 : pl.m_imgWidth + 2;
+    const long xOff = window::getImgOffset();
 
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
@@ -367,7 +373,7 @@ drawInfo()
 {
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
-    const int xOff = app::g_bNoImage ? 2 : pl.m_imgWidth + 2;
+    const long xOff = window::getImgOffset();
 
     /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
 
@@ -460,7 +466,7 @@ drawTimeSlider()
     const auto& mix = *app::g_pMixer;
     const auto& pl = *app::g_pPlayer;
     int width = tb_width();
-    const int xOff = app::g_bNoImage ? 2 : pl.m_imgWidth + 2;
+    const long xOff = window::getImgOffset();
 
     /* time */
     {

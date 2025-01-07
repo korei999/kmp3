@@ -20,6 +20,7 @@ void procEvents();
 void draw();
 void seekFromInput();
 void subStringSearch();
+long getImgOffset();
 
 } /* namespace window */
 
