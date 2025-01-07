@@ -57,7 +57,7 @@ parseArgs(int argc, char** argv)
                 LOG_BAD("--no-image: {}\n", app::g_bNoImage);
             }
         }
-        else break;
+        else return;
     }
 }
 

@@ -214,6 +214,7 @@ Mixer::writeFramesLocked(f32* pBuff, u32 nFrames, long* pSamplesWritten, s64* pP
             nFrames, m_nChannels,
             pSamplesWritten, pPcmPos
         );
+
         if (err == audio::ERROR::END_OF_FILE)
         {
             pause(true);

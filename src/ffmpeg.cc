@@ -48,6 +48,8 @@ Decoder::getCurrentMS()
 s64
 Decoder::getTotalMS()
 {
+    if (!m_pStream) return {};
+
     s64 total = getTotalSamplesCount();
     f64 ret = (av_q2d(m_pStream->time_base) * total) / getChannelsCount() * 1000.0;
 
@@ -58,6 +60,8 @@ Decoder::getTotalMS()
 Opt<String>
 Decoder::getMetadataValue(const String sKey)
 {
+    if (!m_pStream) return {};
+
     char aBuff[64] {};
     strncpy(aBuff, sKey.data(), utils::min(sKey.getSize(), utils::size(aBuff) - 1));
 
@@ -222,6 +226,8 @@ Decoder::writeToBuffer(
     s64* pPcmPos
 )
 {
+    if (!m_pStream) return audio::ERROR::END_OF_FILE;
+
     int err = 0;
     long nWrites = 0;
 
@@ -289,12 +295,16 @@ Decoder::writeToBuffer(
 u32
 Decoder::getSampleRate()
 {
+    if (!m_pStream) return {};
+
     return m_pStream->codecpar->sample_rate;
 }
 
 void
 Decoder::seekMS(f64 ms)
 {
+    if (!m_pCodecCtx) return;
+
 	avcodec_flush_buffers(m_pCodecCtx);
 	s64 pts = av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
     av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);
@@ -309,7 +319,6 @@ Decoder::getCurrentSamplePos()
 s64
 Decoder::getTotalSamplesCount()
 {
-    /* FIXME: null sometimes? */
     if (!m_pFormatCtx) return {};
 
     s64 res = (m_pFormatCtx->duration / (f64)AV_TIME_BASE) * m_pStream->codecpar->sample_rate * m_pStream->codecpar->ch_layout.nb_channels;
@@ -319,6 +328,8 @@ Decoder::getTotalSamplesCount()
 int
 Decoder::getChannelsCount()
 {
+    if (!m_pStream) return {};
+
     return m_pStream->codecpar->ch_layout.nb_channels;
 }
 
