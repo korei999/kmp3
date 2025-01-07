@@ -13,9 +13,7 @@
 #define KEYPAD_ENABLE "\033[?1h\033="
 #define KEYPAD_DISABLE "\033[?1l\033>"
 
-namespace platform
-{
-namespace ansi
+namespace platform::ansi
 {
 
 TermSize g_termSize {};
@@ -144,5 +142,4 @@ Win::subStringSearch()
     );
 }
 
-} /* namespace ansi */
-} /* namespace platform */
+} /* namespace platform::ansi */

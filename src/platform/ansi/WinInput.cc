@@ -4,9 +4,7 @@
 #include "defaults.hh"
 #include "keybinds.hh"
 
-namespace platform
-{
-namespace ansi
+namespace platform::ansi
 {
 
 #define ESC_SEQ '\x1b'
@@ -179,5 +177,4 @@ Win::procInput()
 }
 
 
-} /* namespace ansi */
-} /* namespace platform */
+} /* namespace platform::ansi */

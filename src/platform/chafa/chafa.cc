@@ -15,9 +15,7 @@
 
 #define BUFFER_MAX 4096
 
-namespace platform
-{
-namespace chafa
+namespace platform::chafa
 {
 
 struct TermSize
@@ -527,5 +525,4 @@ getImageString(Arena* pArena, const ::Image img, int termHeight, int termWidth)
     };
 }
 
-} /* namespace chafa */
-} /* namespace platform */
+} /* namespace platform::chafa */

@@ -8,9 +8,7 @@
 #include <termios.h>
 #include <threads.h>
 
-namespace platform
-{
-namespace ansi
+namespace platform::ansi
 {
 
 extern TermSize g_termSize;
@@ -63,5 +61,4 @@ private:
     friend void sigwinchHandler(int sig);
 };
 
-} /* namespace ansi */
-} /* namespace platform */
+} /* namespace platform::ansi */

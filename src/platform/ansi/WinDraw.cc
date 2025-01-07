@@ -29,9 +29,7 @@
 
 using namespace adt;
 
-namespace platform
-{
-namespace ansi
+namespace platform::ansi
 {
 
 void
@@ -364,5 +362,4 @@ Win::update()
     }
 }
 
-} /* namespace ansi */
-} /* namespace platform */
+} /* namespace platform::ansi */

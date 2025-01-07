@@ -8,11 +8,7 @@
 
 #include <cmath>
 
-namespace platform
-{
-namespace termbox2
-{
-namespace input
+namespace platform::termbox2::input
 {
 
 static u16 s_aInputMap[0xffff + 1] {};
@@ -127,6 +123,4 @@ fillInputMap()
     s_aInputMap[TB_KEY_ARROW_RIGHT] = keys::ARROWRIGHT;
 }
 
-} /* namespace input */
-} /* namespace termbox2 */
-} /* namespace platform */
+} /* namespace platform::termbox2::input */

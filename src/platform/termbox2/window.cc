@@ -33,11 +33,7 @@
     #include "platform/chafa/chafa.hh"
 #endif
 
-namespace platform
-{
-namespace termbox2
-{
-namespace window
+namespace platform::termbox2::window
 {
 
 Arena* g_pFrameArena {};
@@ -578,6 +574,4 @@ draw()
     tb_present();
 }
 
-} /* namespace window */
-} /* namespace termbox2 */
-} /* namespace platform */
+} /* platform::termbox2::window */

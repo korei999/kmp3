@@ -4,9 +4,7 @@
 
 #include <sys/ioctl.h>
 
-namespace platform
-{
-namespace ansi
+namespace platform::ansi
 {
 
 struct TermSize
@@ -72,8 +70,7 @@ getTermSize()
     return term;
 }
 
-} /* namespace ansi */
-} /* namespace platform */
+} /* namespace platform::ansi */
 
 namespace adt
 {

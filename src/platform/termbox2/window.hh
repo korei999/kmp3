@@ -4,9 +4,7 @@
 
 using namespace adt;
 
-namespace platform
-{
-namespace termbox2
+namespace platform::termbox2
 {
 namespace window
 {
@@ -34,5 +32,4 @@ struct Win : IWindow
     virtual void subStringSearch() final { window::subStringSearch(); }
 };
 
-} /* namespace termbox2 */
-} /* namespace platform */
+} /* namespace platform::termbox2 */

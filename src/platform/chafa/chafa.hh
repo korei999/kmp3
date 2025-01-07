@@ -8,9 +8,7 @@
 #include <ncurses.h>
 #endif
 
-namespace platform
-{
-namespace chafa
+namespace platform::chafa
 {
 
 struct Image
@@ -36,5 +34,4 @@ showImage(
 
 [[nodiscard]] Image getImageString(Arena* pArena, const ::Image img, int termHeight, int termWidth);
 
-} /* namespace chafa */
-} /* namespace platform */
+} /* namespace platform::chafa */

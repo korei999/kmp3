@@ -22,9 +22,7 @@
     #pragma GCC diagnostic pop
 #endif
 
-namespace platform
-{
-namespace pipewire
+namespace platform::pipewire
 {
 
 struct Device;
@@ -76,5 +74,4 @@ private:
     void onProcess();
 };
 
-} /* namespace pipewire */
-} /* namespace platform */
+} /* namespace platform::pipewire */

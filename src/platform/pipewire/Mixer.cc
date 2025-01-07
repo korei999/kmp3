@@ -14,9 +14,7 @@
 #include <emmintrin.h>
 #include <immintrin.h>
 
-namespace platform
-{
-namespace pipewire
+namespace platform::pipewire
 {
 
 struct PWLockGuard
@@ -423,5 +421,4 @@ Mixer::getTotalMS()
     return m_pIDecoder->getTotalMS();
 }
 
-} /* namespace pipewire */
-} /* namespace platform */
+} /* namespace platform::pipewire */

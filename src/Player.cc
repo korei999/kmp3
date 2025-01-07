@@ -247,9 +247,8 @@ Player::selectPrev()
 void
 Player::copySearchIdxs()
 {
-    m_aSongIdxs.setSize(m_pAlloc, 0);
-    for (auto idx : m_aSearchIdxs)
-        m_aSongIdxs.push(m_pAlloc, idx);
+    m_aSongIdxs.setSize(m_pAlloc, m_aSearchIdxs.getSize());
+    utils::copy(m_aSongIdxs.data(), m_aSearchIdxs.data(), m_aSearchIdxs.getSize());
 }
 
 void
