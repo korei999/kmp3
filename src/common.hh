@@ -19,7 +19,7 @@ struct InputBuff {
     /* */
 
     void zeroOutBuff() { memset(m_aBuff, 0, sizeof(m_aBuff)); }
-    Span<wchar_t> getSpan() { return Span(m_aBuff, utils::size(m_aBuff)); }
+    Span<wchar_t> getSpan() { return Span(m_aBuff); }
 };
 
 extern InputBuff g_input;
@@ -82,7 +82,7 @@ fixFirstIdx(const u16 listHeight, u16* pFirstIdx)
         first = focused - listHeight;
     else if (focused < first)
         first = focused;
-    else if (pl.m_aSongIdxs.getSize() < listHeight)
+    else if (pl.m_vSongIdxs.getSize() < listHeight)
         first = 0;
 
     *pFirstIdx = first;
@@ -173,7 +173,7 @@ subStringSearch(
     pl.copySearchToSongIdxs();
 
     /* fix focused if it ends up out of the list range */
-    if (pl.m_focused >= pl.m_aSongIdxs.getSize())
+    if (pl.m_focused >= pl.m_vSongIdxs.getSize())
         pl.m_focused = *pFirstIdx;
 }
 

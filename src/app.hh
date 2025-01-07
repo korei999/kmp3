@@ -19,6 +19,7 @@ extern String g_sTerm;
 extern TERM g_eTerm;
 extern IWindow* g_pWin;
 extern bool g_bRunning;
+extern bool g_bNoImage;
 extern int g_argc;
 extern char** g_argv;
 

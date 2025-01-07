@@ -38,11 +38,11 @@ struct Player
 
     u8 m_imgHeight {};
     u8 m_imgWidth {};
-    VecBase<String> m_aSongs {}; /* full path */
-    VecBase<String> m_aShortSongs {}; /* file name only */
+    VecBase<String> m_vSongs {}; /* full path */
+    VecBase<String> m_vShortSongs {}; /* file name only */
     /* two index buffers for recursive filtering */
-    VecBase<u16> m_aSongIdxs {}; /* index buffer */
-    VecBase<u16> m_aSearchIdxs {}; /* search index buffer */
+    VecBase<u16> m_vSongIdxs {}; /* index buffer */
+    VecBase<u16> m_vSearchIdxs {}; /* search index buffer */
     long m_focused {};
     long m_selected {};
     ssize m_longestString {};
@@ -61,8 +61,8 @@ struct Player
     void focusPrev();
     void focus(long i);
     void focusFirst() { focus(0); }
-    void setDefaultSongIdxs() { setDefaultIdxs(&m_aSongIdxs); }
-    void setDefaultSearchIdxs() { setDefaultIdxs(&m_aSearchIdxs); }
+    void setDefaultSongIdxs() { setDefaultIdxs(&m_vSongIdxs); }
+    void setDefaultSearchIdxs() { setDefaultIdxs(&m_vSearchIdxs); }
     void focusLast();
     u16 findSongIdxFromSelected();
     void focusSelected();

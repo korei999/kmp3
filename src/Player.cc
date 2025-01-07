@@ -38,7 +38,7 @@ void
 Player::focusNext()
 {
     long ns = m_focused + 1;
-    if (ns >= long(m_aSongIdxs.getSize())) ns = 0;
+    if (ns >= long(m_vSongIdxs.getSize())) ns = 0;
     m_focused = ns;
 }
 
@@ -46,20 +46,20 @@ void
 Player::focusPrev()
 {
     long ns = m_focused - 1;
-    if (ns < 0) ns = m_aSongIdxs.getSize() - 1;
+    if (ns < 0) ns = m_vSongIdxs.getSize() - 1;
     m_focused = ns;
 }
 
 void
 Player::focus(long i)
 {
-    m_focused = utils::clamp(i, 0L, long(m_aSongIdxs.getSize() - 1));
+    m_focused = utils::clamp(i, 0L, long(m_vSongIdxs.getSize() - 1));
 }
 
 void
 Player::focusLast()
 {
-    focus(m_aSongIdxs.getSize() - 1);
+    focus(m_vSongIdxs.getSize() - 1);
 }
 
 u16
@@ -67,18 +67,18 @@ Player::findSongIdxFromSelected()
 {
     u16 res = NPOS16;
 
-    for (const auto& idx : m_aSongIdxs)
+    for (const auto& idx : m_vSongIdxs)
     {
         if (idx == m_selected)
         {
-            res = m_aSongIdxs.idx(&idx);
+            res = m_vSongIdxs.idx(&idx);
             break;
         }
     }
 
     if (res == NPOS16)
     {
-        setDefaultIdxs(&m_aSongIdxs);
+        setDefaultIdxs(&m_vSongIdxs);
         return findSongIdxFromSelected();
     }
     else return res;
@@ -93,7 +93,7 @@ Player::focusSelected()
 void
 Player::setDefaultIdxs(VecBase<u16>* pIdxs)
 {
-    ssize size = m_aSongs.getSize();
+    ssize size = m_vSongs.getSize();
     pIdxs->setSize(m_pAlloc, size);
 
     for (ssize i = 0; i < size; ++i)
@@ -114,10 +114,10 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
     Vec<wchar_t> aSongToUpper(pAlloc, m_longestString + 1);
     aSongToUpper.setSize(m_longestString + 1);
 
-    m_aSearchIdxs.setSize(m_pAlloc, 0);
-    for (u16 songIdx : m_aSongIdxs)
+    m_vSearchIdxs.setSize(m_pAlloc, 0);
+    for (u16 songIdx : m_vSongIdxs)
     {
-        const String song = m_aShortSongs[songIdx];
+        const String song = m_vShortSongs[songIdx];
 
         aSongToUpper.zeroOut();
         mbstowcs(aSongToUpper.data(), song.data(), song.getSize());
@@ -125,7 +125,7 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
             wc = towupper(wc);
 
         if (wcsstr(aSongToUpper.data(), aUpperRight.data()) != nullptr)
-            m_aSearchIdxs.push(m_pAlloc, songIdx);
+            m_vSearchIdxs.push(m_pAlloc, songIdx);
     }
 }
 
@@ -154,16 +154,16 @@ Player::updateInfo()
 void
 Player::selectFocused()
 {
-    if (m_aSongIdxs.getSize() <= m_focused)
+    if (m_vSongIdxs.getSize() <= m_focused)
     {
-        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", m_aSongIdxs.getSize());
+        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", m_vSongIdxs.getSize());
         return;
     }
 
-    m_selected = m_aSongIdxs[m_focused];
+    m_selected = m_vSongIdxs[m_focused];
     m_bSelectionChanged = true;
 
-    const String& sPath = m_aSongs[m_selected];
+    const String& sPath = m_vSongs[m_selected];
     LOG_NOTIFY("selected({}): {}\n", m_selected, sPath);
 
     app::g_pMixer->play(sPath);
@@ -190,7 +190,7 @@ Player::onSongEnd()
     {
         currIdx -= 1;
     }
-    else if (currIdx >= m_aSongIdxs.getSize())
+    else if (currIdx >= m_vSongIdxs.getSize())
     {
         if (m_eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST)
         {
@@ -203,10 +203,10 @@ Player::onSongEnd()
         }
     }
 
-    m_selected = m_aSongIdxs[currIdx];
+    m_selected = m_vSongIdxs[currIdx];
     m_bSelectionChanged = true;
 
-    app::g_pMixer->play(m_aSongs[m_selected]);
+    app::g_pMixer->play(m_vSongs[m_selected]);
     updateInfo();
 }
 
@@ -229,26 +229,26 @@ Player::cycleRepeatMethods(bool bForward)
 void
 Player::selectNext()
 {
-    long currIdx = (findSongIdxFromSelected() + 1) % m_aSongIdxs.getSize();
-    m_selected = m_aSongIdxs[currIdx];
-    app::g_pMixer->play(m_aSongs[m_selected]);
+    long currIdx = (findSongIdxFromSelected() + 1) % m_vSongIdxs.getSize();
+    m_selected = m_vSongIdxs[currIdx];
+    app::g_pMixer->play(m_vSongs[m_selected]);
     updateInfo();
 }
 
 void
 Player::selectPrev()
 {
-    long currIdx = (findSongIdxFromSelected() + (m_aSongIdxs.getSize()) - 1) % m_aSongIdxs.getSize();
-    m_selected = m_aSongIdxs[currIdx];
-    app::g_pMixer->play(m_aSongs[m_selected]);
+    long currIdx = (findSongIdxFromSelected() + (m_vSongIdxs.getSize()) - 1) % m_vSongIdxs.getSize();
+    m_selected = m_vSongIdxs[currIdx];
+    app::g_pMixer->play(m_vSongs[m_selected]);
     updateInfo();
 }
 
 void
 Player::copySearchToSongIdxs()
 {
-    m_aSongIdxs.setSize(m_pAlloc, m_aSearchIdxs.getSize());
-    utils::copy(m_aSongIdxs.data(), m_aSearchIdxs.data(), m_aSearchIdxs.getSize());
+    m_vSongIdxs.setSize(m_pAlloc, m_vSearchIdxs.getSize());
+    utils::copy(m_vSongIdxs.data(), m_vSearchIdxs.data(), m_vSearchIdxs.getSize());
 }
 
 void
@@ -258,17 +258,17 @@ Player::destroy()
 }
 
 Player::Player(IAllocator* p, int nArgs, char** ppArgs)
-    : m_pAlloc(p), m_aSongs(p, nArgs), m_aShortSongs(p, nArgs), m_aSongIdxs(p, nArgs), m_aSearchIdxs(p, nArgs)
+    : m_pAlloc(p), m_vSongs(p, nArgs), m_vShortSongs(p, nArgs), m_vSongIdxs(p, nArgs), m_vSearchIdxs(p, nArgs)
 {
     for (int i = 0; i < nArgs; ++i)
     {
         if (acceptedFormat(ppArgs[i]))
         {
-            m_aSongs.push(m_pAlloc, ppArgs[i]);
-            m_aShortSongs.push(m_pAlloc, file::getPathEnding(m_aSongs.last()));
+            m_vSongs.push(m_pAlloc, ppArgs[i]);
+            m_vShortSongs.push(m_pAlloc, file::getPathEnding(m_vSongs.last()));
 
-            if (m_aSongs.last().getSize() > m_longestString)
-                m_longestString = m_aSongs.last().getSize();
+            if (m_vSongs.last().getSize() > m_longestString)
+                m_longestString = m_vSongs.last().getSize();
         }
     }
 

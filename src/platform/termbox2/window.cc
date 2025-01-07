@@ -38,8 +38,9 @@ namespace platform::termbox2::window
 
 Arena* g_pFrameArena {};
 u16 g_firstIdx = 0;
-f64 g_time {};
+int g_prevImgWidth = 0;
 
+static f64 s_time {};
 static f64 s_lastResizeTime {};
 
 bool
@@ -278,12 +279,12 @@ drawSongList()
     const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
-    const auto& aIdxBuff = pl.m_aSearchIdxs;
+    const auto& aIdxBuff = pl.m_vSearchIdxs;
 
     for (ssize h = g_firstIdx, i = 0; i < listHeight - 1 && h < aIdxBuff.getSize(); ++h, ++i)
     {
         const u16 songIdx = aIdxBuff[h];
-        const String sSong = pl.m_aShortSongs[songIdx];
+        const String sSong = pl.m_vShortSongs[songIdx];
         const u32 maxLen = tb_width() - 2;
 
         bool bSelected = songIdx == pl.m_selected ? true : false;
@@ -318,7 +319,7 @@ drawVolume()
 {
     auto& pl = *app::g_pPlayer;
     const auto width = tb_width();
-    const int xOff = pl.m_imgWidth + 2;
+    const int xOff = g_prevImgWidth + 2;
 
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
@@ -366,7 +367,7 @@ drawInfo()
 {
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
-    const int xOff = pl.m_imgWidth + 2;
+    const int xOff = g_prevImgWidth + 2;
 
     /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
 
@@ -379,7 +380,7 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         if (pl.m_info.title.getSize() > 0)
             print::toBuffer(pBuff, width, "{}", pl.m_info.title);
-        else print::toBuffer(pBuff, width, "{}", pl.m_aShortSongs[pl.m_selected]);
+        else print::toBuffer(pBuff, width, "{}", pl.m_vShortSongs[pl.m_selected]);
         drawMBString(xOff + n + 1, 1, pBuff, width - 1 - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
     }
 
@@ -423,7 +424,7 @@ drawBottomLine()
     {
         char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortSongs.getSize() - 1);
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_vShortSongs.getSize() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
@@ -459,7 +460,7 @@ drawTimeSlider()
     const auto& mix = *app::g_pMixer;
     const auto& pl = *app::g_pPlayer;
     int width = tb_width();
-    const int xOff = pl.m_imgWidth + 2;
+    const int xOff = g_prevImgWidth + 2;
 
     /* time */
     {
@@ -498,7 +499,7 @@ drawCoverImage()
 {
     auto& pl = *app::g_pPlayer;
 
-    if (pl.m_bSelectionChanged && g_time > s_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
+    if (pl.m_bSelectionChanged && s_time > s_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
         pl.m_bSelectionChanged = false;
 
@@ -508,7 +509,7 @@ drawCoverImage()
             /* clear without flickering */
             char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
             tb_send(sKittyClear, sizeof(sKittyClear));
-            clearAreaHARD(1, 1, pl.m_imgWidth, pl.m_imgHeight + 1);
+            clearAreaHARD(1, 1, g_prevImgWidth, pl.m_imgHeight + 1);
 
             auto& img = oCover.value();
 
@@ -533,6 +534,8 @@ drawCoverImage()
             tb_set_cursor(1 + xOff, 1);
             tb_send(chafaImg.s.data(), chafaImg.s.getSize());
             tb_hide_cursor();
+
+            g_prevImgWidth = chafaImg.width;
         }
     }
 }
@@ -546,13 +549,14 @@ draw()
     int height = tb_height();
     int width = tb_width();
 
-    g_time = utils::timeNowMS();
+    s_time = utils::timeNowMS();
 
     tb_clear();
 
     if (height > 9 && width > 9)
     {
-        drawCoverImage();
+        if (!app::g_bNoImage)
+            drawCoverImage();
 
         drawTimeSlider();
         drawSongList();

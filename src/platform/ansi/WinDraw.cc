@@ -233,7 +233,7 @@ Win::list()
     const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
-    const auto& aIdxs = pl.m_aSearchIdxs;
+    const auto& aIdxs = pl.m_vSearchIdxs;
 
     tb.push(NORM);
     for (u16 h = m_firstIdx, i = 0; i < listHeight - 1; ++h, ++i)
@@ -241,7 +241,7 @@ Win::list()
         if (h < aIdxs.getSize())
         {
             const u16 songIdx = aIdxs[h];
-            const String sSong = pl.m_aShortSongs[songIdx];
+            const String sSong = pl.m_vShortSongs[songIdx];
 
             bool bSelected = songIdx == pl.m_selected ? true : false;
 
@@ -283,7 +283,7 @@ Win::bottomLine()
     {
         char* pBuff = (char*)m_pArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_aShortSongs.getSize() - 1);
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_vShortSongs.getSize() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
@@ -352,7 +352,9 @@ Win::update()
     {
         m_bRedraw = false;
 
-        coverImage();
+        if (!app::g_bNoImage)
+            coverImage();
+
         time(); /* redraw if image size changed */
         timeSlider();
 

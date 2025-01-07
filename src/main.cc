@@ -33,6 +33,34 @@ setTermEnv()
     app::g_sTerm = sTerm;
 }
 
+static void
+parseArgs(int argc, char** argv)
+{
+    for (int i = 1; i < argc; ++i)
+    {
+        auto sArg = String(argv[i]);
+        if (sArg.beginsWith("--"))
+        {
+            if (sArg == "--ansi")
+            {
+                app::g_eUIFrontend = app::UI_FRONTEND::ANSI;
+                LOG_NOTIFY("setting HANDMADE ui\n");
+            }
+            else if (sArg == "--termbox")
+            {
+                app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
+                LOG_NOTIFY("setting TERMBOX ui\n");
+            }
+            else if (sArg == "--no-image")
+            {
+                app::g_bNoImage = true;
+                LOG_BAD("--no-image: {}\n", app::g_bNoImage);
+            }
+        }
+        else break;
+    }
+}
+
 int
 main(int argc, char** argv)
 {
@@ -47,27 +75,7 @@ main(int argc, char** argv)
     app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
     app::g_eMixer = app::MIXER::PIPEWIRE;
 
-    if (argc > 1)
-    {
-        if (argv[1] == String("--ansi"))
-        {
-            app::g_eUIFrontend = app::UI_FRONTEND::ANSI;
-            LOG_NOTIFY("setting HANDMADE ui\n");
-        }
-        else if (argv[1] == String("--termbox"))
-        {
-            app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
-            LOG_NOTIFY("setting TERMBOX ui\n");
-        }
-#ifdef USE_NCURSES
-        else if (argv[1] == String("--ncurses"))
-        {
-            app::g_eUIFrontend = app::UI_FRONTEND::NCURSES;
-            LOG_NOTIFY("setting NCURSES ui\n");
-            return 1;
-        }
-#endif
-    }
+    parseArgs(argc, argv);
 
     Vec<String> aInput(&freeList, argc);
     if (argc < 2) /* use stdin instead */
@@ -123,7 +131,7 @@ main(int argc, char** argv)
 
     setTermEnv();
 
-    if (!player.m_aSongs.empty())
+    if (!player.m_vSongs.empty())
     {
         app::g_bRunning = true;
 

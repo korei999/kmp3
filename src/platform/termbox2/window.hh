@@ -11,6 +11,7 @@ namespace window
 
 extern Arena* g_pFrameArena;
 extern u16 g_firstIdx;
+extern int g_prevImgWidth;
 
 /* old api */
 bool init(Arena* pAlloc);

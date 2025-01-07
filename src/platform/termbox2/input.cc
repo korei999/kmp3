@@ -36,7 +36,7 @@ procMouse(tb_event* pEv)
     const long width = tb_width();
     const long height = tb_height();
 
-    const long xOff = pl.m_imgWidth + 2;
+    const long xOff = window::g_prevImgWidth + 2;
     const int yOff = pl.m_imgHeight + 1;
 
     const long listOff = yOff + 1;

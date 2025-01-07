@@ -22,6 +22,7 @@ String g_sTerm {};
 TERM g_eTerm = TERM::XTERM;
 IWindow* g_pWin {};
 bool g_bRunning {};
+bool g_bNoImage {};
 int g_argc {};
 char** g_argv {};
 
