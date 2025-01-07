@@ -319,7 +319,7 @@ drawVolume()
 {
     auto& pl = *app::g_pPlayer;
     const auto width = tb_width();
-    const int xOff = g_prevImgWidth + 2;
+    const int xOff = app::g_bNoImage ? 2 : pl.m_imgWidth + 2;
 
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
@@ -367,7 +367,7 @@ drawInfo()
 {
     const auto width = tb_width();
     const auto& pl = *app::g_pPlayer;
-    const int xOff = g_prevImgWidth + 2;
+    const int xOff = app::g_bNoImage ? 2 : pl.m_imgWidth + 2;
 
     /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
 
@@ -460,7 +460,7 @@ drawTimeSlider()
     const auto& mix = *app::g_pMixer;
     const auto& pl = *app::g_pPlayer;
     int width = tb_width();
-    const int xOff = g_prevImgWidth + 2;
+    const int xOff = app::g_bNoImage ? 2 : pl.m_imgWidth + 2;
 
     /* time */
     {
@@ -509,7 +509,7 @@ drawCoverImage()
             /* clear without flickering */
             char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
             tb_send(sKittyClear, sizeof(sKittyClear));
-            clearAreaHARD(1, 1, g_prevImgWidth, pl.m_imgHeight + 1);
+            clearAreaHARD(1, 1, pl.m_imgWidth, pl.m_imgHeight + 1);
 
             auto& img = oCover.value();
 
