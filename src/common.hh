@@ -168,7 +168,6 @@ subStringSearch(
 
     } while (eRead != READ_STATUS::DONE);
 
-    /* copy back new idxs for recursive search filtering */
     pl.copySearchToSongIdxs();
 
     /* fix focused if it ends up out of the list range */

@@ -83,7 +83,7 @@ inline const Key inl_aKeys[] {
 };
 
 ADT_NO_UB inline void /* triggers ubsan */
-resolveKey(const keybinds::PFN pfn, const keybinds::Arg arg)
+exec(const keybinds::PFN pfn, const keybinds::Arg arg)
 {
     switch (arg.eType)
     {

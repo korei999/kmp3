@@ -40,6 +40,7 @@ struct Player
     u8 m_imgWidth {};
     VecBase<String> m_aSongs {}; /* full path */
     VecBase<String> m_aShortSongs {}; /* file name only */
+    /* two index buffers for recursive filtering */
     VecBase<u16> m_aSongIdxs {}; /* index buffer */
     VecBase<u16> m_aSearchIdxs {}; /* search index buffer */
     long m_focused {};

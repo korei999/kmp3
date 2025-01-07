@@ -233,12 +233,14 @@ Win::list()
     const int split = pl.m_imgHeight + 1;
     const u16 listHeight = height - split - 2;
 
+    const auto& aIdxs = pl.m_aSearchIdxs;
+
     tb.push(NORM);
     for (u16 h = m_firstIdx, i = 0; i < listHeight - 1; ++h, ++i)
     {
-        if (h < pl.m_aSongIdxs.getSize())
+        if (h < aIdxs.getSize())
         {
-            const u16 songIdx = pl.m_aSongIdxs[h];
+            const u16 songIdx = aIdxs[h];
             const String sSong = pl.m_aShortSongs[songIdx];
 
             bool bSelected = songIdx == pl.m_selected ? true : false;
