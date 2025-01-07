@@ -60,7 +60,8 @@ struct Player
     void focusPrev();
     void focus(long i);
     void focusFirst() { focus(0); }
-    void setDefaultIdxs(VecBase<u16>* pIdxs);
+    void setDefaultSongIdxs() { setDefaultIdxs(&m_aSongIdxs); }
+    void setDefaultSearchIdxs() { setDefaultIdxs(&m_aSearchIdxs); }
     void focusLast();
     u16 findSongIdxFromSelected();
     void focusSelected();
@@ -72,11 +73,12 @@ struct Player
     PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward);
     void selectNext();
     void selectPrev();
-    void copySearchIdxs();
+    void copySearchToSongIdxs();
     void destroy();
 
     /* */
 
 private:
     void updateInfo();
+    void setDefaultIdxs(VecBase<u16>* pIdxs);
 };

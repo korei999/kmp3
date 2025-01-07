@@ -161,12 +161,15 @@ subStringSearch(
 
         eRead = pfnRead(pReadArg);
         if (eRead == READ_STATUS::BACKSPACE)
-            pl.setDefaultIdxs(&pl.m_aSearchIdxs);
+        {
+            pl.setDefaultSearchIdxs();
+            pl.copySearchToSongIdxs();
+        }
 
     } while (eRead != READ_STATUS::DONE);
 
     /* copy back new idxs for recursive search filtering */
-    pl.copySearchIdxs();
+    pl.copySearchToSongIdxs();
 
     /* fix focused if it ends up out of the list range */
     if (pl.m_focused >= pl.m_aSongIdxs.getSize())

@@ -115,9 +115,9 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
     aSongToUpper.setSize(m_longestString + 1);
 
     m_aSearchIdxs.setSize(m_pAlloc, 0);
-    for (u16 idx : m_aSongIdxs)
+    for (u16 songIdx : m_aSongIdxs)
     {
-        const auto& song = m_aShortSongs[idx];
+        const String song = m_aShortSongs[songIdx];
 
         aSongToUpper.zeroOut();
         mbstowcs(aSongToUpper.data(), song.data(), song.getSize());
@@ -125,7 +125,7 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
             wc = towupper(wc);
 
         if (wcsstr(aSongToUpper.data(), aUpperRight.data()) != nullptr)
-            m_aSearchIdxs.push(m_pAlloc, u16(m_aShortSongs.idx(&song)));
+            m_aSearchIdxs.push(m_pAlloc, songIdx);
     }
 }
 
@@ -245,7 +245,7 @@ Player::selectPrev()
 }
 
 void
-Player::copySearchIdxs()
+Player::copySearchToSongIdxs()
 {
     m_aSongIdxs.setSize(m_pAlloc, m_aSearchIdxs.getSize());
     utils::copy(m_aSongIdxs.data(), m_aSearchIdxs.data(), m_aSearchIdxs.getSize());
@@ -272,6 +272,6 @@ Player::Player(IAllocator* p, int nArgs, char** ppArgs)
         }
     }
 
-    setDefaultIdxs(&m_aSongIdxs);
-    setDefaultIdxs(&m_aSearchIdxs);
+    setDefaultSongIdxs();
+    setDefaultSearchIdxs();
 }
