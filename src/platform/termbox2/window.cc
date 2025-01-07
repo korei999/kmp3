@@ -1,11 +1,11 @@
 #include "window.hh"
 
 #include "adt/logs.hh"
-#include "app.hh"
-#include "defaults.hh"
-#include "common.hh"
-#include "input.hh"
 #include "adt/math.hh"
+#include "app.hh"
+#include "common.hh"
+#include "defaults.hh"
+#include "input.hh"
 
 #include <cmath>
 #include <stdatomic.h>
@@ -66,6 +66,12 @@ destroy()
 {
     tb_shutdown();
     LOG_NOTIFY("tb_shutdown()\n");
+}
+
+static void
+fixFirstIdx()
+{
+    common::fixFirstIdx(tb_height() - app::g_pPlayer->m_imgHeight - 5, &g_firstIdx);
 }
 
 static common::READ_STATUS
@@ -139,7 +145,6 @@ procEvents()
 {
     tb_event ev;
     tb_peek_event(&ev, defaults::UPDATE_RATE);
-    auto height = tb_height();
 
     switch (ev.type)
     {
@@ -161,7 +166,7 @@ procEvents()
         break;
     }
 
-    common::fixFirstIdx(height - app::g_pPlayer->m_imgHeight - 5, &g_firstIdx);
+    fixFirstIdx();
 }
 
 static void
@@ -314,8 +319,6 @@ drawSongList()
 
         drawMBString(1, i + split + 1, sSong, maxLen, fg, bg);
     }
-
-    /*drawBox(0, split, width - 1, listHeight, TB_BLUE, TB_DEFAULT);*/
 }
 
 using VOLUME_COLOR = int;

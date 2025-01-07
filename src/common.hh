@@ -71,7 +71,7 @@ allocTimeString(Arena* pArena, int width)
 
 /* fix song list range on new focus */
 inline void
-fixFirstIdx(const u16 listHeight, u16* pFirstIdx)
+fixFirstIdx(u16 listHeight, u16* pFirstIdx)
 {
     const auto& pl = *app::g_pPlayer;
 
@@ -82,7 +82,7 @@ fixFirstIdx(const u16 listHeight, u16* pFirstIdx)
         first = focused - listHeight;
     else if (focused < first)
         first = focused;
-    else if (pl.m_vSongIdxs.getSize() < listHeight)
+    else if (pl.m_vSearchIdxs.getSize() < listHeight)
         first = 0;
 
     *pFirstIdx = first;
@@ -153,12 +153,14 @@ subStringSearch(
     g_input.zeroOutBuff();
     g_input.m_idx = 0;
 
-
+    auto savedFirst = *pFirstIdx;
+    int nSearches = 0;
     READ_STATUS eRead {};
+
     do
     {
-        pl.subStringSearch(pArena, g_input.getSpan());
         *pFirstIdx = 0;
+        pl.subStringSearch(pArena, g_input.getSpan());
         FN_DRAW(pDrawArg);
 
         eRead = FN_READ(pReadArg);
@@ -167,14 +169,18 @@ subStringSearch(
             pl.setDefaultSearchIdxs();
             pl.copySearchToSongIdxs();
         }
+        ++nSearches;
     }
     while (eRead != READ_STATUS::DONE);
 
     pl.copySearchToSongIdxs();
 
+    if (nSearches == 1)
+        *pFirstIdx = savedFirst;
+
     /* fix focused if it ends up out of the list range */
     if (pl.m_focused >= pl.m_vSongIdxs.getSize())
-        pl.m_focused = *pFirstIdx;
+        pl.m_focused = 0;
 }
 
 template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
