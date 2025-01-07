@@ -323,7 +323,6 @@ using VOLUME_COLOR = int;
 static VOLUME_COLOR
 drawVolume()
 {
-    auto& pl = *app::g_pPlayer;
     const auto width = tb_width();
     const long xOff = window::getImgOffset();
 
@@ -464,7 +463,6 @@ static void
 drawTimeSlider()
 {
     const auto& mix = *app::g_pMixer;
-    const auto& pl = *app::g_pPlayer;
     int width = tb_width();
     const long xOff = window::getImgOffset();
 
