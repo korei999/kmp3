@@ -72,7 +72,7 @@ struct VecBase
 
     [[nodiscard]] T* data();
 
-    [[nodiscard]] T* const data() const;
+    [[nodiscard]] const T* data() const;
 
     void zeroOut(); /* set size to zero and memset */
 
@@ -254,7 +254,7 @@ VecBase<T>::data()
 }
 
 template<typename T>
-[[nodiscard]] inline T* const
+[[nodiscard]] inline const T*
 VecBase<T>::data() const
 {
     return m_pData;

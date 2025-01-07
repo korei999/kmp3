@@ -72,7 +72,7 @@ Win::start(Arena* pArena)
 
     m_textBuff.clear();
     m_textBuff.hideCursor(true);
-    m_textBuff.push(MOUSE_ENABLE KEYPAD_ENABLE);
+    m_textBuff.push(KEYPAD_ENABLE);
     m_textBuff.flush();
 
     m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
@@ -88,7 +88,7 @@ Win::destroy()
     m_textBuff.hideCursor(false);
     m_textBuff.clear();
     m_textBuff.clearKittyImages();
-    m_textBuff.push(MOUSE_DISABLE KEYPAD_DISABLE);
+    m_textBuff.push(KEYPAD_DISABLE);
     m_textBuff.moveTopLeft();
     m_textBuff.push("\n", 2);
     m_textBuff.flush();
@@ -121,25 +121,19 @@ Win::procEvents()
 void
 Win::seekFromInput()
 {
-    common::seekFromInput(
-        +[](void* pArg) { return ((Win*)pArg)->readWChar(); },
-        this,
-        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; ((Win*)pArg)->update(); },
-        this
-    );
+    common::seekFromInput<
+        [](void* pArg) { return ((Win*)pArg)->readWChar(); },
+        [](void* pArg) { ((Win*)pArg)->m_bRedraw = true; ((Win*)pArg)->update(); }
+    >(this, this);
 }
 
 void
 Win::subStringSearch()
 {
-    common::subStringSearch(
-        this->m_pArena,
-        +[](void* pArg) { return ((Win*)pArg)->readWChar(); },
-        this,
-        +[](void* pArg) { ((Win*)pArg)->m_bRedraw = true; ((Win*)pArg)->update(); },
-        this,
-        &this->m_firstIdx
-    );
+    common::subStringSearch<
+        [](void* pArg) { return ((Win*)pArg)->readWChar(); },
+        [](void* pArg) { auto& self = *((Win*)pArg); self.m_bRedraw = true; self.update(); }
+    >(m_pArena, &m_firstIdx, this, this);
 }
 
 } /* namespace platform::ansi */

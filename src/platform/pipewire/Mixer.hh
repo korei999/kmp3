@@ -45,9 +45,6 @@ protected:
     /* */
 
 public:
-
-    /* */
-
     virtual void init() override final;
     virtual void destroy() override final;
     virtual void play(String sPath) override final;

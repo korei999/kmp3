@@ -1,5 +1,6 @@
 #include "input.hh"
 
+#include "defaults.hh"
 #include "termbox2/termbox2.h"
 
 #include "app.hh"
@@ -94,16 +95,16 @@ procMouse(tb_event* pEv)
         pl.selectFocused();
     }
     else if (ev.key == TB_KEY_MOUSE_WHEEL_UP)
-        pl.focus(pl.m_focused - 22);
+        pl.focus(pl.m_focused - defaults::MOUSE_STEP);
     else if (ev.key == TB_KEY_MOUSE_WHEEL_DOWN)
-        pl.focus(pl.m_focused + 22);
+        pl.focus(pl.m_focused + defaults::MOUSE_STEP);
 }
 
 void
 fillInputMap()
 {
     /* ascii's are all the same */
-    for (u32 i = 0; i < utils::size(s_aInputMap); ++i) s_aInputMap[i] = i;
+    for (ssize i = 0; i < utils::size(s_aInputMap); ++i) s_aInputMap[i] = i;
 
     s_aInputMap[TB_KEY_ENTER] = keys::ENTER;
     s_aInputMap[TB_KEY_CTRL_C] = keys::CTRL_C;

@@ -16,5 +16,6 @@ constexpr f64 MPRIS_UPDATE_RATE = 100.0; /* delay between mpris polls (ms) */
 constexpr u64 MIN_SAMPLE_RATE = 1000;
 constexpr u64 MAX_SAMPLE_RATE = 9999999;
 constexpr f64 FONT_ASPECT_RATIO = 1.0 / 2.0; /* typical monospaced font is 1/2 or 3/5 (width/height) */
+constexpr int MOUSE_STEP = 4;
 
 } /* namespace defaults */

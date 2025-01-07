@@ -105,29 +105,19 @@ readWChar(tb_event* pEv)
 void
 subStringSearch()
 {
-    tb_event ev {};
-
-    common::subStringSearch(
-        g_pFrameArena,
-        +[](void* pArg) { return readWChar((tb_event*)pArg); },
-        &ev,
-        +[](void*) { draw(); },
-        nullptr,
-        &g_firstIdx
-    );
+    common::subStringSearch<
+        [](void*) { tb_event ev {}; return readWChar(&ev); },
+        [](void*) { draw(); }
+    >(g_pFrameArena, &g_firstIdx, {}, {});
 }
 
 void
 seekFromInput()
 {
-    tb_event ev {};
-
-    common::seekFromInput(
-        +[](void* pArg) { return readWChar((tb_event*)pArg); },
-        &ev,
-        +[](void*) { draw(); },
-        nullptr
-    );
+    common::seekFromInput<
+        [](void*) { tb_event ev {}; return readWChar(&ev); },
+        [](void*) { draw(); }
+    >(nullptr, nullptr);
 }
 
 static void

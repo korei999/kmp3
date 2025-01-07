@@ -99,7 +99,10 @@ procSeekString(const Span<wchar_t> spBuff)
 
     for (auto& wch : spBuff)
     {
-        if (wch == L'%') bPercent = true;
+        if (wch == L'%')
+        {
+            bPercent = true;
+        }
         else if (wch == L':')
         {
             /* leave if there is one more colon or bPercent */
@@ -133,14 +136,13 @@ procSeekString(const Span<wchar_t> spBuff)
     }
 }
 
+template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
 inline void
 subStringSearch(
     Arena* pArena,
-    READ_STATUS (*pfnRead)(void*),
+    u16* pFirstIdx,
     void* pReadArg,
-    void (*pfnDraw)(void*),
-    void* pDrawArg,
-    u16* pFirstIdx
+    void* pDrawArg
 )
 {
     auto& pl = *app::g_pPlayer;
@@ -157,16 +159,16 @@ subStringSearch(
     {
         pl.subStringSearch(pArena, g_input.getSpan());
         *pFirstIdx = 0;
-        pfnDraw(pDrawArg);
+        FN_DRAW(pDrawArg);
 
-        eRead = pfnRead(pReadArg);
+        eRead = FN_READ(pReadArg);
         if (eRead == READ_STATUS::BACKSPACE)
         {
             pl.setDefaultSearchIdxs();
             pl.copySearchToSongIdxs();
         }
-
-    } while (eRead != READ_STATUS::DONE);
+    }
+    while (eRead != READ_STATUS::DONE);
 
     pl.copySearchToSongIdxs();
 
@@ -175,13 +177,9 @@ subStringSearch(
         pl.m_focused = *pFirstIdx;
 }
 
+template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
 inline void
-seekFromInput(
-    READ_STATUS (*pfnRead)(void*),
-    void* pReadArg,
-    void (*pfnDraw)(void*),
-    void* pDrawArg
-)
+seekFromInput(void* pReadArg, void* pDrawArg)
 {
     g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEEK;
     defer( g_input.m_eCurrMode = WINDOW_READ_MODE::NONE );
@@ -189,8 +187,8 @@ seekFromInput(
     g_input.zeroOutBuff();
     g_input.m_idx = 0;
 
-    do pfnDraw(pDrawArg);
-    while (pfnRead(pReadArg) != READ_STATUS::DONE);
+    do FN_DRAW(pDrawArg);
+    while (FN_READ(pReadArg) != READ_STATUS::DONE);
 
     procSeekString(g_input.getSpan());
 }

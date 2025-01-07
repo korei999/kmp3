@@ -337,7 +337,7 @@ setLoopStatus(
     LOG("mpris::setLoopStatus(): {}\n", t);
 
     auto eMethod = app::g_pPlayer->m_eReapetMethod;
-    for (u64 i = 0; i < utils::size(mapPlayerRepeatMethodStrings); ++i)
+    for (ssize i = 0; i < utils::size(mapPlayerRepeatMethodStrings); ++i)
         if (t == mapPlayerRepeatMethodStrings[i])
             eMethod = PLAYER_REPEAT_METHOD(i);
 
