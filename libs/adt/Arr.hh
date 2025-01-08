@@ -26,7 +26,7 @@ struct Arr
     /* */
 
     constexpr T& operator[](ssize i)             { assert(i >= 0 && i < m_size && "[Arr]: out of size access"); return m_aData[i]; }
-    constexpr const T& operator[](ssize i) const { assert(i >= 0 && i < CAP && "[Arr]: out of capacity access"); return m_aData[i]; }
+    constexpr const T& operator[](ssize i) const { assert(i >= 0 && i < m_size && "[Arr]: out of size access"); return m_aData[i]; }
 
     /* */
 

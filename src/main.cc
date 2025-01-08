@@ -61,14 +61,9 @@ parseArgs(int argc, char** argv)
     }
 }
 
-int
-main(int argc, char** argv)
+static void
+startup(int argc, char** argv)
 {
-    setlocale(LC_ALL, "");
-#ifdef NDEBUG
-    close(STDERR_FILENO); /* hide mpg123 and other errors */
-#endif
-
     FreeList freeList(SIZE_8M);
     defer( freeList.freeAll() );
 
@@ -142,4 +137,22 @@ main(int argc, char** argv)
         frame::run();
     }
     else CERR("No accepted input provided\n");
+}
+
+int
+main(int argc, char** argv)
+{
+    setlocale(LC_ALL, "");
+#ifdef NDEBUG
+    close(STDERR_FILENO); /* hide mpg123 and other errors */
+#endif
+
+    try
+    {
+        startup(argc, argv);
+    }
+    catch (AllocException& ex)
+    {
+        ex.logErrorMsg();
+    }
 }

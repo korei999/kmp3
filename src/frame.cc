@@ -44,7 +44,7 @@ run()
         return;
     }
 
-    Arena arena(SIZE_8M);
+    Arena arena(SIZE_1M);
     defer( arena.freeAll() );
 
     if (app::g_pWin->start(&arena) == false)
@@ -69,6 +69,7 @@ run()
         app::g_pWin->draw();
         app::g_pWin->procEvents();
 
+        arena.shrinkToFirstBlock();
         arena.reset();
     }
     while (app::g_bRunning);

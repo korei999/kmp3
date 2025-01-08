@@ -36,19 +36,26 @@ class Arena : public IAllocator
 public:
     Arena() = default;
 
-    Arena(usize capacity, IAllocator* pBackingAlloc = OsAllocatorGet())
+    Arena(usize capacity, IAllocator* pBackingAlloc = OsAllocatorGet()) noexcept(false)
         : m_defaultCapacity(align8(capacity)),
           m_pBackAlloc(pBackingAlloc),
           m_pBlocks(allocBlock(m_defaultCapacity)) {}
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) override final;
-    virtual void free(void* ptr) override final;
-    virtual void freeAll() override final;
-    void reset();
+    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
+
+    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
+
+    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override final;
+
+    virtual void free(void* ptr) noexcept override final;
+
+    virtual void freeAll() noexcept override final;
+
+    void reset() noexcept;
+
+    void shrinkToFirstBlock() noexcept;
 
     /* */
 
@@ -94,7 +101,10 @@ Arena::allocBlock(usize size)
 {
     ArenaBlock* pBlock = static_cast<ArenaBlock*>(m_pBackAlloc->zalloc(1, size + sizeof(ArenaBlock)));
 
-    assert(pBlock && "[Arena]: failed to allocate the block (too big size / out of memory)");
+#if defined ADT_DBG_MEMORY
+    fprintf(stderr, "[Arena]: new block of size: %llu\n", size);
+#endif
+
     pBlock->size = size;
     pBlock->pLastAlloc = pBlock->pMem;
 
@@ -175,13 +185,13 @@ Arena::realloc(void* ptr, usize mCount, usize mSize)
 }
 
 inline void
-Arena::free(void*)
+Arena::free(void*) noexcept
 {
     /* noop */
 }
 
 inline void
-Arena::freeAll()
+Arena::freeAll() noexcept
 {
     auto* it = m_pBlocks;
     while (it)
@@ -194,7 +204,7 @@ Arena::freeAll()
 }
 
 inline void
-Arena::reset()
+Arena::reset() noexcept
 {
     auto* it = m_pBlocks;
     while (it)
@@ -205,6 +215,21 @@ Arena::reset()
 
         it = it->pNext;
     }
+}
+
+inline void
+Arena::shrinkToFirstBlock() noexcept
+{
+    auto* it = m_pBlocks;
+    if (!it) return;
+
+    while (it->pNext)
+    {
+        auto* next = it->pNext;
+        m_pBackAlloc->free(it);
+        it = next;
+    }
+    m_pBlocks = it;
 }
 
 } /* namespace adt */

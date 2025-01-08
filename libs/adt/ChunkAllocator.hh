@@ -35,7 +35,7 @@ class ChunkAllocator : public IAllocator
 
 public:
     ChunkAllocator() = default;
-    ChunkAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = OsAllocatorGet())
+    ChunkAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = OsAllocatorGet()) noexcept(false)
         : m_blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
           m_chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
           m_pBackAlloc(pBackAlloc),
@@ -43,11 +43,11 @@ public:
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) override final;
-    void virtual free(void* ptr) override final;
-    void virtual freeAll() override final;
+    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override final;
+    void virtual free(void* ptr) noexcept override final;
+    void virtual freeAll() noexcept override final;
 
     /* */
 
@@ -60,7 +60,7 @@ ChunkAllocator::newBlock()
 {
     usize total = m_blockCap + sizeof(ChunkAllocatorBlock);
     auto* r = (ChunkAllocatorBlock*)m_pBackAlloc->zalloc(1, total);
-    assert(r != nullptr && "[ChunkAllocator]: calloc failed");
+
     r->head = (ChunkAllocatorNode*)r->pMem;
 
     ssize chunks = m_blockCap / m_chunkSize;
@@ -121,7 +121,7 @@ ChunkAllocator::realloc(void*, usize, usize)
 }
 
 inline void
-ChunkAllocator::free(void* p)
+ChunkAllocator::free(void* p) noexcept
 {
     if (!p) return;
 
@@ -144,7 +144,7 @@ ChunkAllocator::free(void* p)
 }
 
 inline void
-ChunkAllocator::freeAll()
+ChunkAllocator::freeAll() noexcept
 {
     ChunkAllocatorBlock* p = m_pBlocks, * next = nullptr;
     while (p)
