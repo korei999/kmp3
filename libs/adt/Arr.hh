@@ -145,7 +145,7 @@ template<typename T, ssize CAP> requires(CAP > 0)
 constexpr void
 Arr<T, CAP>::setSize(ssize newSize)
 {
-    assert(newSize < CAP && "[Arr]: cannot enlarge static array");
+    assert(newSize <= CAP && "[Arr]: cannot enlarge static array");
     m_size = newSize;
 }
 
