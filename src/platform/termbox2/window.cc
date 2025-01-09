@@ -37,14 +37,24 @@ namespace platform::termbox2::window
 {
 
 Arena* g_pFrameArena {};
-u16 g_firstIdx = 0;
+s16 g_firstIdx = 0;
 int g_prevImgWidth = 0;
 
 static f64 s_time {};
 static f64 s_lastResizeTime {};
 
+static u16
+setListHeight()
+{
+    const int split = app::g_pPlayer->m_imgHeight + 1;
+    const u16 listHeight = tb_height() - split - 2;
+    app::g_pWin->m_listHeight = listHeight;
+
+    return listHeight;
+}
+
 bool
-init(Arena* pAlloc)
+start(Arena* pAlloc)
 {
     [[maybe_unused]] int r = tb_init();
     assert(r == 0 && "'tb_init()' failed");
@@ -57,6 +67,7 @@ init(Arena* pAlloc)
     g_pFrameArena = pAlloc;
 
     input::fillInputMap();
+    setListHeight();
 
     return r == 0;
 }
@@ -125,6 +136,11 @@ getImgOffset()
 }
 
 void
+centerSelection()
+{
+}
+
+void
 seekFromInput()
 {
     common::seekFromInput<
@@ -138,6 +154,7 @@ procResize([[maybe_unused]] tb_event* pEv)
 {
     app::g_pPlayer->m_bSelectionChanged = true;
     s_lastResizeTime = utils::timeNowMS();
+    setListHeight();
 }
 
 void
@@ -286,25 +303,25 @@ static void
 drawSongList()
 {
     const auto& pl = *app::g_pPlayer;
+    const auto& win = *app::g_pWin;
     const int height = tb_height();
     const int split = pl.m_imgHeight + 1;
-    const u16 listHeight = height - split - 2;
 
     const auto& aIdxBuff = pl.m_vSearchIdxs;
 
-    for (ssize h = g_firstIdx, i = 0; i < listHeight - 1 && h < aIdxBuff.getSize(); ++h, ++i)
+    for (ssize h = g_firstIdx, i = 0; i < win.m_listHeight - 1 && h < aIdxBuff.getSize(); ++h, ++i)
     {
         const u16 songIdx = aIdxBuff[h];
         const String sSong = pl.m_vShortSongs[songIdx];
         const u32 maxLen = tb_width() - 2;
 
-        bool bSelected = songIdx == pl.m_selected ? true : false;
+        const bool bSelected = songIdx == pl.m_selected ? true : false;
 
         u32 fg = TB_WHITE;
         u32 bg = TB_DEFAULT;
         if (h == pl.m_focused && bSelected)
         {
-            fg = TB_BLACK|TB_BOLD;
+            fg = TB_BLACK | TB_BOLD;
             bg = TB_YELLOW;
         }
         else if (h == pl.m_focused)
@@ -314,7 +331,7 @@ drawSongList()
         }
         else if (bSelected)
         {
-            fg = TB_YELLOW|TB_BOLD;
+            fg = TB_YELLOW | TB_BOLD;
         }
 
         drawMBString(1, i + split + 1, sSong, maxLen, fg, bg);

@@ -66,13 +66,14 @@ struct Player
     void focusLast();
     u16 findSongIdxFromSelected();
     void focusSelected();
+    void focusSelectedCenter();
     void subStringSearch(Arena* pAlloc, Span<wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
     void togglePause();
     void onSongEnd();
     PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward);
-    void select();
+    void select(long i);
     void selectNext();
     void selectPrev();
     void copySearchToSongIdxs();

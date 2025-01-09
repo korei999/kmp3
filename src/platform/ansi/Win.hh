@@ -18,7 +18,7 @@ class Win : public IWindow
     Arena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
-    u16 m_firstIdx {};
+    s16 m_firstIdx {};
     bool m_bClear = false;
     int m_prevImgWidth = 0;
     mtx_t m_mtxUpdate {};
@@ -34,8 +34,11 @@ public:
     virtual void procEvents() final;
     virtual void seekFromInput() final;
     virtual void subStringSearch() final;
+    virtual void centerAroundSelection() final;
 
     /* */
+
+    void updateListHeight();
 
 private:
     void disableRawMode();

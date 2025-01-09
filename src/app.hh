@@ -39,6 +39,7 @@ inline void focusUp(long step) { focus(g_pPlayer->m_focused - step); }
 inline void focusDown(long step) { focus(g_pPlayer->m_focused + step); }
 inline void selectFocused() { g_pPlayer->selectFocused(); }
 inline void focusSelected() { g_pPlayer->focusSelected(); }
+inline void focusSelectedCenter() { g_pPlayer->focusSelectedCenter(); }
 inline void togglePause() { g_pPlayer->togglePause(); }
 inline void volumeDown(const f32 step) { g_pMixer->volumeDown(step); }
 inline void volumeUp(const f32 step) { g_pMixer->volumeUp(step); }

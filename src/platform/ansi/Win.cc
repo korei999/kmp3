@@ -49,6 +49,7 @@ sigwinchHandler([[maybe_unused]] int sig)
     g_termSize = getTermSize();
     LOG_GOOD("term: {}\n", g_termSize);
 
+    s.updateListHeight();
     s.m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
 
     pl.m_bSelectionChanged = true;
@@ -134,6 +135,11 @@ Win::subStringSearch()
         [](void* pArg) { return ((Win*)pArg)->readWChar(); },
         [](void* pArg) { auto& self = *((Win*)pArg); self.m_bRedraw = true; self.update(); }
     >(m_pArena, &m_firstIdx, this, this);
+}
+
+void
+Win::centerAroundSelection()
+{
 }
 
 } /* namespace platform::ansi */

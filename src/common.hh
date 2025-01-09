@@ -73,7 +73,7 @@ allocTimeString(Arena* pArena, int width)
 
 /* fix song list range on new focus */
 inline void
-fixFirstIdx(u16 listHeight, u16* pFirstIdx) noexcept
+fixFirstIdx(u16 listHeight, s16* pFirstIdx) noexcept
 {
     const auto& pl = *app::g_pPlayer;
 
@@ -142,7 +142,7 @@ template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
 inline void
 subStringSearch(
     Arena* pArena,
-    u16* pFirstIdx,
+    s16* pFirstIdx,
     void* pReadArg,
     void* pDrawArg
 )

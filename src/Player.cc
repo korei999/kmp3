@@ -94,6 +94,14 @@ Player::focusSelected()
     focus(findSongIdxFromSelected());
 }
 
+
+void
+Player::focusSelectedCenter()
+{
+    focusSelected();
+    app::g_pWin->centerAroundSelection();
+}
+
 void
 Player::setDefaultIdxs(VecBase<u16>* pIdxs)
 {
@@ -231,26 +239,30 @@ Player::cycleRepeatMethods(bool bForward)
 }
 
 void
-Player::select()
+Player::select(long i)
 {
+    if (m_vSongs.empty() || m_vSearchIdxs.empty())
+        return;
+
+    long idx = utils::clamp(i, 0L, long(m_vSearchIdxs.lastI()));
+    m_selected = m_vSearchIdxs[idx];
+
+    app::g_pMixer->play(m_vSongs[m_selected]);
+    updateInfo();
 }
 
 void
 Player::selectNext()
 {
-    long currIdx = (findSongIdxFromSelected() + 1) % m_vSongIdxs.getSize();
-    m_selected = m_vSongIdxs[currIdx];
-    app::g_pMixer->play(m_vSongs[m_selected]);
-    updateInfo();
+    long idx = (findSongIdxFromSelected() + 1) % m_vSearchIdxs.getSize();
+    select(idx);
 }
 
 void
 Player::selectPrev()
 {
-    long currIdx = (findSongIdxFromSelected() + (m_vSongIdxs.getSize()) - 1) % m_vSongIdxs.getSize();
-    m_selected = m_vSongIdxs[currIdx];
-    app::g_pMixer->play(m_vSongs[m_selected]);
-    updateInfo();
+    long idx = (findSongIdxFromSelected() + (m_vSearchIdxs.getSize()) - 1) % m_vSearchIdxs.getSize();
+    select(idx);
 }
 
 void
