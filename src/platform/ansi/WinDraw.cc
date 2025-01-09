@@ -122,11 +122,14 @@ Win::volume()
     const int off = m_prevImgWidth + 2;
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
-    constexpr String fmt = "volume: %3d";
-    const int maxVolumeBars = (width - off - fmt.getSize() - 2) * vol * 1.0f/defaults::MAX_VOLUME;
+
+    char* pBuff = (char*)m_pArena->zalloc(1, width + 1);
+    u32 n = print::toBuffer(pBuff, width, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
+
+    const int maxVolumeBars = (width - off - n - 2) * vol * 1.0f/defaults::MAX_VOLUME;
 
     auto volumeColor = [&](int i) -> String {
-        f32 col = f32(i) / (f32(width - off - fmt.getSize() - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
+        f32 col = f32(i) / (f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
 
         if (col <= 0.33f) return GREEN;
         else if (col > 0.33f && col <= 0.66f) return GREEN;
@@ -139,8 +142,6 @@ Win::volume()
     tb.push(NORM);
     tb.moveClearLine(off - 1, 6, TEXT_BUFF_ARG::TO_END);
 
-    char* pBuff = (char*)m_pArena->zalloc(1, width + 1);
-    u32 n = snprintf(pBuff, width, fmt.data(), int(std::round(app::g_pMixer->getVolume() * 100.0)));
     tb.push(col);
     tb.push(BOLD);
     tb.movePushGlyphs(off, 6, {pBuff, n}, width - off);

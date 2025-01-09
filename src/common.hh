@@ -18,8 +18,8 @@ struct InputBuff {
 
     /* */
 
-    void zeroOutBuff() { memset(m_aBuff, 0, sizeof(m_aBuff)); }
-    Span<wchar_t> getSpan() { return Span(m_aBuff); }
+    void zeroOutBuff() noexcept { memset(m_aBuff, 0, sizeof(m_aBuff)); }
+    Span<wchar_t> getSpan() noexcept { return Span(m_aBuff); }
 };
 
 extern InputBuff g_input;
@@ -39,7 +39,7 @@ constexpr u32 CHAR_VOL_MUTED = L'▮';
 constexpr wchar_t CURSOR_BLOCK[] {L'█', L'\0'};
 
 [[nodiscard]] inline constexpr String
-readModeToString(WINDOW_READ_MODE e)
+readModeToString(WINDOW_READ_MODE e) noexcept
 {
     constexpr String map[] {"", "searching: ", "time: "};
     return map[int(e)];
@@ -64,14 +64,16 @@ allocTimeString(Arena* pArena, int width)
 
     int n = snprintf(pBuff, width, "time: %llu:%02llu / %llu:%02llu", currMin, currSec, maxMin, maxSec);
     if (mix.getSampleRate() != mix.getChangedSampleRate())
-        snprintf(pBuff + n, width - n, " (%d%% speed)", int(std::round(f64(mix.getChangedSampleRate()) / f64(mix.getSampleRate()) * 100.0)));
+        print::toBuffer(pBuff + n, width - n, " ({}% speed)",
+            int(std::round(f64(mix.getChangedSampleRate()) / f64(mix.getSampleRate()) * 100.0))
+        );
 
     return pBuff;
 }
 
 /* fix song list range on new focus */
 inline void
-fixFirstIdx(u16 listHeight, u16* pFirstIdx)
+fixFirstIdx(u16 listHeight, u16* pFirstIdx) noexcept
 {
     const auto& pl = *app::g_pPlayer;
 
@@ -89,7 +91,7 @@ fixFirstIdx(u16 listHeight, u16* pFirstIdx)
 }
 
 inline void
-procSeekString(const Span<wchar_t> spBuff)
+procSeekString(const Span<wchar_t> spBuff) noexcept
 {
     bool bPercent = false;
     bool bColon = false;

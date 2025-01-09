@@ -331,11 +331,14 @@ drawVolume()
 
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
-    constexpr String sFmt = "volume: %3d";
-    const int maxVolumeBars = (width - xOff - sFmt.getSize() - 2) * vol * 1.0f/defaults::MAX_VOLUME;
+
+    char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
+    u32 n = print::toBuffer(pBuff, width, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
+
+    const int maxVolumeBars = (width - xOff - n - 2) * vol * 1.0f/defaults::MAX_VOLUME;
 
     auto volumeColor = [&](int i) -> VOLUME_COLOR {
-        f32 col = f32(i) / (f32(width - xOff - sFmt.getSize() - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
+        f32 col = f32(i) / (f32(width - xOff - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
 
         if (col <= 0.33f) return TB_GREEN;
         else if (col > 0.33f && col <= 0.66f) return TB_GREEN;
@@ -345,8 +348,6 @@ drawVolume()
 
     const auto col = bMuted ? TB_BLUE : volumeColor(maxVolumeBars - 1) | TB_BOLD;
 
-    char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
-    u32 n = snprintf(pBuff, width, sFmt.data(), int(std::round(app::g_pMixer->getVolume() * 100.0)));
     drawMBString(xOff, 6, pBuff, n, col, TB_DEFAULT);
 
     for (int i = xOff + n + 1, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
