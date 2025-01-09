@@ -304,7 +304,6 @@ drawSongList()
 {
     const auto& pl = *app::g_pPlayer;
     const auto& win = *app::g_pWin;
-    const int height = tb_height();
     const int split = pl.m_imgHeight + 1;
 
     const auto& aIdxBuff = pl.m_vSearchIdxs;

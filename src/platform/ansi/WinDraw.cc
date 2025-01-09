@@ -230,7 +230,6 @@ Win::list()
     const auto& pl = *app::g_pPlayer;
     auto& tb = m_textBuff;
     const int width = g_termSize.width;
-    const int height = g_termSize.height;
     const int split = pl.m_imgHeight + 1;
 
     const auto& aIdxs = pl.m_vSearchIdxs;
