@@ -72,6 +72,7 @@ struct Player
     void togglePause();
     void onSongEnd();
     PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward);
+    void select();
     void selectNext();
     void selectPrev();
     void copySearchToSongIdxs();

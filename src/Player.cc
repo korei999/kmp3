@@ -65,20 +65,24 @@ Player::focusLast()
 u16
 Player::findSongIdxFromSelected()
 {
+    if (m_vSongs.empty())
+        return 0;
+
     u16 res = NPOS16;
 
-    for (const auto& idx : m_vSongIdxs)
+    for (const auto& idx : m_vSearchIdxs)
     {
         if (idx == m_selected)
         {
-            res = m_vSongIdxs.idx(&idx);
+            res = m_vSearchIdxs.idx(&idx);
             break;
         }
     }
 
     if (res == NPOS16)
     {
-        setDefaultIdxs(&m_vSongIdxs);
+        setDefaultSearchIdxs();
+        setDefaultSongIdxs();
         return findSongIdxFromSelected();
     }
     else return res;
@@ -224,6 +228,11 @@ Player::cycleRepeatMethods(bool bForward)
     mpris::loopStatusChanged();
 
     return PLAYER_REPEAT_METHOD(rm);
+}
+
+void
+Player::select()
+{
 }
 
 void
