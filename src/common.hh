@@ -168,8 +168,11 @@ subStringSearch(
         eRead = FN_READ(pReadArg);
         if (eRead == READ_STATUS::BACKSPACE)
         {
-            pl.setDefaultSearchIdxs();
-            pl.copySearchToSongIdxs();
+            if (pl.m_vSearchIdxs.getSize() != pl.m_vSongs.getSize())
+            {
+                pl.setDefaultSearchIdxs();
+                pl.copySearchToSongIdxs();
+            }
         }
         ++nSearches;
     }
