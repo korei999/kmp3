@@ -475,7 +475,7 @@ template<>
 constexpr usize
 hash::func(const String& str)
 {
-    return hash::fnv(str.data(), str.getSize(), hash::FNV1_64_INIT);
+    return hash::func(str.data(), str.getSize());
 }
 
 namespace utils

@@ -10,7 +10,8 @@
 namespace adt
 {
 
-struct FixedAllocator : public IAllocator
+/* Bump allocator, using fixed size buffer memory */
+struct BufferAllocator : public IAllocator
 {
     u8* m_pMemBuffer = nullptr;
     usize m_size = 0;
@@ -20,33 +21,33 @@ struct FixedAllocator : public IAllocator
     
     /* */
 
-    constexpr FixedAllocator() = default;
+    constexpr BufferAllocator() = default;
 
-    constexpr FixedAllocator(u8* pMemory, usize capacity) noexcept
+    constexpr BufferAllocator(u8* pMemory, usize capacity) noexcept
         : m_pMemBuffer(pMemory),
           m_cap(capacity) {}
 
     template<typename T, ssize N>
-    FixedAllocator(T (&aMem)[N]) noexcept
+    BufferAllocator(T (&aMem)[N]) noexcept
         : m_pMemBuffer(static_cast<u8*>(aMem)),
           m_cap(N * sizeof(T)) {}
 
     template<typename T>
-    constexpr FixedAllocator(Span<T> sp) noexcept
-        : FixedAllocator(sp.data(), sp.getSize()) {}
+    constexpr BufferAllocator(Span<T> sp) noexcept
+        : BufferAllocator(sp.data(), sp.getSize()) {}
 
     /* */
 
     [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual constexpr void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override final;
-    constexpr virtual void free(void* ptr) noexcept override final;
-    constexpr virtual void freeAll() noexcept override final;
+    constexpr virtual void free(void* ptr) noexcept override final; /* noop */
+    constexpr virtual void freeAll() noexcept override final; /* same as reset */
     constexpr void reset() noexcept;
 };
 
 constexpr void*
-FixedAllocator::malloc(usize mCount, usize mSize)
+BufferAllocator::malloc(usize mCount, usize mSize)
 {
     usize realSize = align8(mCount * mSize);
 
@@ -62,7 +63,7 @@ FixedAllocator::malloc(usize mCount, usize mSize)
 }
 
 constexpr void*
-FixedAllocator::zalloc(usize mCount, usize mSize)
+BufferAllocator::zalloc(usize mCount, usize mSize)
 {
     auto* p = malloc(mCount, mSize);
     memset(p, 0, align8(mCount * mSize));
@@ -70,7 +71,7 @@ FixedAllocator::zalloc(usize mCount, usize mSize)
 }
 
 constexpr void*
-FixedAllocator::realloc(void* p, usize mCount, usize mSize)
+BufferAllocator::realloc(void* p, usize mCount, usize mSize)
 {
     if (!p) return malloc(mCount, mSize);
 
@@ -101,19 +102,19 @@ FixedAllocator::realloc(void* p, usize mCount, usize mSize)
 }
 
 constexpr void
-FixedAllocator::free(void*) noexcept
+BufferAllocator::free(void*) noexcept
 {
     //
 }
 
 constexpr void
-FixedAllocator::freeAll() noexcept
+BufferAllocator::freeAll() noexcept
 {
     reset();
 }
 
 constexpr void
-FixedAllocator::reset() noexcept
+BufferAllocator::reset() noexcept
 {
     m_size = 0;
     m_pLastAlloc = nullptr;

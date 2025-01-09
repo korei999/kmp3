@@ -13,12 +13,11 @@
 
 #include <type_traits>
 
-namespace adt
-{
-namespace print
+namespace adt::print
 {
 
 enum class BASE : u8 { TWO = 2, EIGHT = 8, TEN = 10, SIXTEEN = 16 };
+enum class JUSTIFY : u8 { RIGHT = '>', LEFT = '<' };
 
 struct FormatArgs
 {
@@ -28,6 +27,7 @@ struct FormatArgs
     bool bHash = false;
     bool bAlwaysShowSign = false;
     bool bArgIsFmt = false;
+    JUSTIFY eJustify = JUSTIFY::LEFT;
 };
 
 /* TODO: implement reallocatable backing buffer */
@@ -42,11 +42,11 @@ struct Context
     bool bUpdateFmtArgs {};
 };
 
-template<typename... ARGS_T> constexpr ssize out(const String fmt, const ARGS_T&... tArgs);
-template<typename... ARGS_T> constexpr ssize err(const String fmt, const ARGS_T&... tArgs);
+template<typename... ARGS_T> inline ssize out(const String fmt, const ARGS_T&... tArgs) noexcept;
+template<typename... ARGS_T> inline ssize err(const String fmt, const ARGS_T&... tArgs) noexcept;
 
-constexpr ssize
-printArgs(Context ctx)
+inline constexpr ssize
+printArgs(Context ctx) noexcept
 {
     ssize nRead = 0;
     for (ssize i = ctx.fmtIdx; i < ctx.fmt.getSize(); ++i, ++nRead)
@@ -58,8 +58,8 @@ printArgs(Context ctx)
     return nRead;
 }
 
-constexpr bool
-oneOfChars(const char x, const String chars)
+inline constexpr bool
+oneOfChars(const char x, const String chars) noexcept
 {
     for (auto ch : chars)
         if (ch == x) return true;
@@ -68,7 +68,7 @@ oneOfChars(const char x, const String chars)
 }
 
 inline ssize
-parseFormatArg(FormatArgs* pArgs, const String fmt, ssize fmtIdx)
+parseFormatArg(FormatArgs* pArgs, const String fmt, ssize fmtIdx) noexcept
 {
     ssize nRead = 1;
     bool bDone = false;
@@ -78,6 +78,7 @@ parseFormatArg(FormatArgs* pArgs, const String fmt, ssize fmtIdx)
     bool bHex = false;
     bool bBinary = false;
     bool bAlwaysShowSign = false;
+    bool bRightJustify = false;
 
     char aBuff[64] {};
     ssize i = fmtIdx + 1;
@@ -126,6 +127,11 @@ parseFormatArg(FormatArgs* pArgs, const String fmt, ssize fmtIdx)
             skipUntil("}");
             pArgs->maxFloatLen = atoi(aBuff);
         }
+        else if (bRightJustify)
+        {
+            bRightJustify = false;
+            pArgs->eJustify = JUSTIFY::RIGHT;
+        }
 
         if (bColon)
         {
@@ -171,6 +177,11 @@ parseFormatArg(FormatArgs* pArgs, const String fmt, ssize fmtIdx)
                 bAlwaysShowSign = true;
                 continue;
             }
+            else if (fmt[i] == '>')
+            {
+                bRightJustify = true;
+                continue;
+            }
         }
 
         if (fmt[i] == '}')
@@ -183,8 +194,8 @@ parseFormatArg(FormatArgs* pArgs, const String fmt, ssize fmtIdx)
 }
 
 template<typename INT_T> requires std::is_integral_v<INT_T>
-constexpr char*
-intToBuffer(INT_T x, char* pDst, ssize dstSize, FormatArgs fmtArgs)
+inline constexpr char*
+intToBuffer(INT_T x, char* pDst, ssize dstSize, FormatArgs fmtArgs) noexcept
 {
     bool bNegative = false;
 
@@ -249,79 +260,96 @@ intToBuffer(INT_T x, char* pDst, ssize dstSize, FormatArgs fmtArgs)
     return pDst;
 }
 
-constexpr ssize
-copyBackToBuffer(Context ctx, Span<char> spSrc)
+inline constexpr ssize
+copyBackToBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept
 {
     ssize i = 0;
-    for (; spSrc[i] && i < spSrc.getSize() && ctx.buffIdx < ctx.buffSize; ++i)
-        ctx.pBuff[ctx.buffIdx++] = spSrc[i];
+
+    auto copySpan = [&]
+    {
+        for (; i < spSrc.getSize() && spSrc[i] && ctx.buffIdx < ctx.buffSize; ++i)
+            ctx.pBuff[ctx.buffIdx++] = spSrc[i];
+    };
+
+    if (fmtArgs.eJustify == JUSTIFY::LEFT)
+    {
+        copySpan();
+
+        if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i)
+        {
+            for (; ctx.buffIdx < ctx.buffSize && i < fmtArgs.maxLen; ++i)
+                ctx.pBuff[ctx.buffIdx++] = ' ';
+        }
+    }
+    else
+    {
+        /* leave space for the string */
+        ssize nSpaces = fmtArgs.maxLen - strnlen(spSrc.data(), spSrc.getSize());
+        ssize j = 0;
+
+        if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i && nSpaces > 0)
+        {
+            for (j = 0; ctx.buffIdx < ctx.buffSize && j < nSpaces; ++j)
+                ctx.pBuff[ctx.buffIdx++] = ' ';
+        }
+
+        copySpan();
+
+        i += j;
+    }
 
     return i;
 }
 
-constexpr ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const String& str)
+inline constexpr ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, const String& str) noexcept
 {
-    auto& pBuff = ctx.pBuff;
-    auto& buffSize = ctx.buffSize;
-    auto& buffIdx = ctx.buffIdx;
-
-    ssize nRead = 0;
-    for (ssize i = 0; buffIdx < buffSize; ++i, ++nRead)
-    {
-        if (i < str.getSize())
-            pBuff[buffIdx++] = str[i];
-        else if (i < fmtArgs.maxLen && fmtArgs.maxLen != NPOS16) /* fill extra space */
-            pBuff[buffIdx++] = ' ';
-        else break;
-    }
-
-    return nRead;
+    return copyBackToBuffer(ctx, fmtArgs, {const_cast<char*>(str.data()), str.getSize()});
 }
 
-constexpr ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const char* str)
+inline constexpr ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, const char* str) noexcept
 {
     return formatToContext(ctx, fmtArgs, String(str));
 }
 
-constexpr ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, char* const& pNullTerm)
+inline constexpr ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, char* const& pNullTerm) noexcept
 {
     return formatToContext(ctx, fmtArgs, String(pNullTerm));
 }
 
-constexpr ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, bool b)
+inline constexpr ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, bool b) noexcept
 {
     return formatToContext(ctx, fmtArgs, b ? "true" : "false");
 }
 
 template<typename INT_T> requires std::is_integral_v<INT_T>
-constexpr ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x)
+inline constexpr ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
 {
     char buff[64] {};
-    char* p = intToBuffer(x, buff, utils::size(buff), fmtArgs);
+    intToBuffer(x, buff, utils::size(buff), fmtArgs);
     if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen < utils::size(buff) - 1)
         buff[fmtArgs.maxLen] = '\0';
 
-    return copyBackToBuffer(ctx, {p, utils::size(buff)});
+    return copyBackToBuffer(ctx, fmtArgs, {buff});
 }
 
 inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x)
+formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
 {
     char aBuff[64] {};
     if (fmtArgs.maxFloatLen == NPOS8)
         snprintf(aBuff, utils::size(aBuff), "%g", x);
     else snprintf(aBuff, utils::size(aBuff), "%.*f", fmtArgs.maxFloatLen, x);
 
-    return copyBackToBuffer(ctx, {aBuff});
+    return copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x)
+formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
 {
 #if defined __GNUC__
 #pragma GCC diagnostic push
@@ -339,11 +367,11 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x)
 #pragma GCC diagnostic pop
 #endif
 
-    return copyBackToBuffer(ctx, {aBuff});
+    return copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const wchar_t x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const wchar_t x) noexcept
 {
     char aBuff[4] {};
 #ifdef _WIN32
@@ -352,37 +380,37 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const wchar_t 
     snprintf(aBuff, utils::size(aBuff), "%lc", x);
 #endif
 
-    return copyBackToBuffer(ctx, {aBuff});
+    return copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char32_t x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char32_t x) noexcept
 {
     char aBuff[MB_LEN_MAX] {};
     mbstate_t ps {};
     c32rtomb(aBuff, x, &ps);
 
-    return copyBackToBuffer(ctx, {aBuff});
+    return copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char x)
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const char x) noexcept
 {
     char aBuff[4] {};
     snprintf(aBuff, utils::size(aBuff), "%c", x);
 
-    return copyBackToBuffer(ctx, {aBuff});
+    return copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, [[maybe_unused]] null nullPtr)
+formatToContext(Context ctx, FormatArgs fmtArgs, [[maybe_unused]] null nullPtr) noexcept
 {
     return formatToContext(ctx, fmtArgs, String("nullptr"));
 }
 
 template<typename PTR_T> requires std::is_pointer_v<PTR_T>
 inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p)
+formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p) noexcept
 {
     if (p == nullptr) return formatToContext(ctx, fmtArgs, nullptr);
 
@@ -392,8 +420,8 @@ formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p)
 }
 
 template<typename T, typename... ARGS_T>
-constexpr ssize
-printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs)
+inline constexpr ssize
+printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
 {
     ssize nRead = 0;
     bool bArg = false;
@@ -468,8 +496,8 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs)
 }
 
 template<ssize SIZE = 512, typename... ARGS_T>
-constexpr ssize
-toFILE(FILE* fp, const String fmt, const ARGS_T&... tArgs)
+inline ssize
+toFILE(FILE* fp, const String fmt, const ARGS_T&... tArgs) noexcept
 {
     /* TODO: allow allocation? */
     char aBuff[SIZE] {};
@@ -480,33 +508,32 @@ toFILE(FILE* fp, const String fmt, const ARGS_T&... tArgs)
 }
 
 template<typename... ARGS_T>
-constexpr ssize
-toBuffer(char* pBuff, ssize buffSize, const String fmt, const ARGS_T&... tArgs)
+inline constexpr ssize
+toBuffer(char* pBuff, ssize buffSize, const String fmt, const ARGS_T&... tArgs) noexcept
 {
     Context ctx {fmt, pBuff, buffSize};
     return printArgs(ctx, tArgs...);
 }
 
 template<typename... ARGS_T>
-constexpr ssize
-toString(String* pDest, const String fmt, const ARGS_T&... tArgs)
+inline constexpr ssize
+toString(String* pDest, const String fmt, const ARGS_T&... tArgs) noexcept
 {
     return toBuffer(pDest->data(), pDest->getSize(), fmt, tArgs...);
 }
 
 template<typename... ARGS_T>
-constexpr ssize
-out(const String fmt, const ARGS_T&... tArgs)
+inline ssize
+out(const String fmt, const ARGS_T&... tArgs) noexcept
 {
     return toFILE(stdout, fmt, tArgs...);
 }
 
 template<typename... ARGS_T>
-constexpr ssize
-err(const String fmt, const ARGS_T&... tArgs)
+inline ssize
+err(const String fmt, const ARGS_T&... tArgs) noexcept
 {
     return toFILE(stderr, fmt, tArgs...);
 }
 
-} /* namespace print */
-} /* namespace adt */
+} /* namespace adt::print */

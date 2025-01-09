@@ -44,15 +44,10 @@ public:
     /* */
 
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-
     [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override final;
-
-    virtual void free(void* ptr) noexcept override final;
-
+    virtual void free(void* ptr) noexcept override final; /* noop */
     virtual void freeAll() noexcept override final;
-
     void reset() noexcept;
 
     void shrinkToFirstBlock() noexcept;
@@ -225,6 +220,9 @@ Arena::shrinkToFirstBlock() noexcept
 
     while (it->pNext)
     {
+#if defined ADT_DBG_MEMORY
+        fprintf(stderr, "[Arena]: shrinking %llu sized block\n", it->size);
+#endif
         auto* next = it->pNext;
         m_pBackAlloc->free(it);
         it = next;

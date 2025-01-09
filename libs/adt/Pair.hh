@@ -8,18 +8,15 @@ namespace adt
 template<typename A, typename B>
 struct Pair
 {
-    A first {};
-    B second {};
+    ADT_NO_UNIQUE_ADDRESS A first {};
+    ADT_NO_UNIQUE_ADDRESS B second {};
 };
 
 template<typename A, typename B>
 constexpr bool
 operator==(const Pair<A, B>& l, const Pair<A, B>& r)
 {
-    auto& [lFirst, lSecond] = l;
-    auto& [rFirst, rSecond] = r;
-
-    return lFirst == rFirst && lSecond == rSecond;
+    return l.first == r.first && l.second == r.second;
 }
 
 template<typename A, typename B>
@@ -33,40 +30,28 @@ template<typename A, typename B>
 constexpr bool
 operator<(const Pair<A, B>& l, const Pair<A, B>& r)
 {
-    auto& [lFirst, lSecond] = l;
-    auto& [rFirst, rSecond] = r;
-
-    return lFirst < rFirst && lSecond < rSecond;
+    return l.first < r.first && l.second < r.second;
 }
 
 template<typename A, typename B>
 constexpr bool
 operator>(const Pair<A, B>& l, const Pair<A, B>& r)
 {
-    auto& [lFirst, lSecond] = l;
-    auto& [rFirst, rSecond] = r;
-
-    return lFirst > rFirst && lSecond > rSecond;
+    return l.first > r.first && l.second > r.second;
 }
 
 template<typename A, typename B>
 constexpr bool
 operator<=(const Pair<A, B>& l, const Pair<A, B>& r)
 {
-    auto& [lFirst, lSecond] = l;
-    auto& [rFirst, rSecond] = r;
-
-    return lFirst <= rFirst && lSecond <= rSecond;
+    return l.first <= r.first && l.second <= r.second;
 }
 
 template<typename A, typename B>
 constexpr bool
 operator>=(const Pair<A, B>& l, const Pair<A, B>& r)
 {
-    auto& [lFirst, lSecond] = l;
-    auto& [rFirst, rSecond] = r;
-
-    return lFirst >= rFirst && lSecond >= rSecond;
+    return l.first >= r.first && l.second >= r.second;
 }
 
 namespace print
@@ -78,8 +63,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Pair<A, 
 {
     ctx.fmt = "[{}, {}]";
     ctx.fmtIdx = 0;
-    auto& [first, second] = x;
-    return printArgs(ctx, first, second);
+    return printArgs(ctx, x.first, x.second);
 }
 
 } /* namespace print */

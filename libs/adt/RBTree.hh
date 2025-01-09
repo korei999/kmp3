@@ -57,7 +57,7 @@ struct RBNode
     RBNode* m_left {};
     RBNode* m_right {};
     RBNode* m_parentColor {}; /* NOTE: color is stored as the least significant bit */
-    T m_data {};
+    ADT_NO_UNIQUE_ADDRESS T m_data {};
 
     /* */
 
@@ -715,7 +715,7 @@ formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const RBNode<
     const String sCol = node.color() == RB_COLOR::BLACK ? ADT_LOGS_COL_BLUE : ADT_LOGS_COL_RED;
     print::toBuffer(aBuff, utils::size(aBuff), "{}{}" ADT_LOGS_COL_NORM, sCol, node.m_data);
 
-    return copyBackToBuffer(ctx, {aBuff});
+    return copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
 
 } /* namespace print */

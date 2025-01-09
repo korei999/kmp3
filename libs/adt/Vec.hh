@@ -32,49 +32,51 @@ struct VecBase
 
     /* */
 
-    T& operator[](ssize i)             { assert(i >= 0 && i < m_size && "[Vec] out of size"); return m_pData[i]; }
-    const T& operator[](ssize i) const { assert(i >= 0 && i < m_size && "[Vec] out of size"); return m_pData[i]; }
+    T& operator[](ssize i)             noexcept { assert(i >= 0 && i < m_size && "[Vec] out of size"); return m_pData[i]; }
+    const T& operator[](ssize i) const noexcept { assert(i >= 0 && i < m_size && "[Vec] out of size"); return m_pData[i]; }
 
-    [[nodiscard]] bool empty() const { return m_size == 0; }
+    [[nodiscard]] bool empty() const noexcept { return m_size == 0; }
 
     ssize push(IAllocator* p, const T& data);
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
         ssize emplace(IAllocator* p, ARGS&&... args);
 
-    [[nodiscard]] T& last();
+    [[nodiscard]] T& last() noexcept;
 
-    [[nodiscard]] const T& last() const;
+    [[nodiscard]] const T& last() const noexcept;
 
-    [[nodiscard]] T& first();
+    [[nodiscard]] T& first() noexcept;
 
-    [[nodiscard]] const T& first() const;
+    [[nodiscard]] const T& first() const noexcept;
 
-    T* pop();
+    T* pop() noexcept;
 
     void setSize(IAllocator* p, ssize size);
 
     void setCap(IAllocator* p, ssize cap);
 
-    void swapWithLast(ssize i);
+    void swapWithLast(ssize i) noexcept;
 
-    void popAsLast(ssize i);
+    void popAsLast(ssize i) noexcept;
 
-    [[nodiscard]] ssize idx(const T* x) const;
+    void removeAndShift(ssize i) noexcept;
 
-    [[nodiscard]] ssize lastI() const;
+    [[nodiscard]] ssize idx(const T* x) const noexcept;
 
-    void destroy(IAllocator* p);
+    [[nodiscard]] ssize lastI() const noexcept;
 
-    [[nodiscard]] ssize getSize() const;
+    void destroy(IAllocator* p) noexcept;
 
-    [[nodiscard]] ssize getCap() const;
+    [[nodiscard]] ssize getSize() const noexcept;
 
-    [[nodiscard]] T* data();
+    [[nodiscard]] ssize getCap() const noexcept;
 
-    [[nodiscard]] const T* data() const;
+    [[nodiscard]] T* data() noexcept;
 
-    void zeroOut(); /* set size to zero and memset */
+    [[nodiscard]] const T* data() const noexcept;
+
+    void zeroOut() noexcept; /* set size to zero and memset */
 
     [[nodiscard]] VecBase<T> clone(IAllocator* pAlloc) const;
 
@@ -94,28 +96,28 @@ public:
 
         It(T* pFirst) : s{pFirst} {}
 
-        T& operator*() { return *s; }
-        T* operator->() { return s; }
+        T& operator*() noexcept { return *s; }
+        T* operator->() noexcept { return s; }
 
-        It operator++() { ++s; return *this; }
-        It operator++(int) { T* tmp = s++; return tmp; }
+        It operator++() noexcept { ++s; return *this; }
+        It operator++(int) noexcept { T* tmp = s++; return tmp; }
 
-        It operator--() { --s; return *this; }
-        It operator--(int) { T* tmp = s--; return tmp; }
+        It operator--() noexcept { --s; return *this; }
+        It operator--(int) noexcept { T* tmp = s--; return tmp; }
 
-        friend constexpr bool operator==(const It& l, const It& r) { return l.s == r.s; }
-        friend constexpr bool operator!=(const It& l, const It& r) { return l.s != r.s; }
+        friend constexpr bool operator==(const It& l, const It& r) noexcept { return l.s == r.s; }
+        friend constexpr bool operator!=(const It& l, const It& r) noexcept { return l.s != r.s; }
     };
 
-    It begin() { return {&m_pData[0]}; }
-    It end() { return {&m_pData[m_size]}; }
-    It rbegin() { return {&m_pData[m_size - 1]}; }
-    It rend() { return {m_pData - 1}; }
+    It begin() noexcept { return {&m_pData[0]}; }
+    It end() noexcept { return {&m_pData[m_size]}; }
+    It rbegin() noexcept { return {&m_pData[m_size - 1]}; }
+    It rend() noexcept { return {m_pData - 1}; }
 
-    const It begin() const { return {&m_pData[0]}; }
-    const It end() const { return {&m_pData[m_size]}; }
-    const It rbegin() const { return {&m_pData[m_size - 1]}; }
-    const It rend() const { return {m_pData - 1}; }
+    const It begin() const noexcept { return {&m_pData[0]}; }
+    const It end() const noexcept { return {&m_pData[m_size]}; }
+    const It rbegin() const noexcept { return {&m_pData[m_size - 1]}; }
+    const It rend() const noexcept { return {m_pData - 1}; }
 };
 
 template<typename T>
@@ -139,35 +141,35 @@ VecBase<T>::emplace(IAllocator* p, ARGS&&... args)
 
 template<typename T>
 [[nodiscard]] inline T&
-VecBase<T>::last()
+VecBase<T>::last() noexcept
 {
     return operator[](m_size - 1);
 }
 
 template<typename T>
 [[nodiscard]] inline const T&
-VecBase<T>::last() const
+VecBase<T>::last() const noexcept
 {
     return operator[](m_size - 1);
 }
 
 template<typename T>
 [[nodiscard]] inline T&
-VecBase<T>::first()
+VecBase<T>::first() noexcept
 {
     return operator[](0);
 }
 
 template<typename T>
 [[nodiscard]] inline const T&
-VecBase<T>::first() const
+VecBase<T>::first() const noexcept
 {
     return operator[](0);
 }
 
 template<typename T>
 inline T*
-VecBase<T>::pop()
+VecBase<T>::pop() noexcept
 {
     assert(m_size > 0 && "[Vec]: pop from empty");
     return &m_pData[--m_size];
@@ -194,7 +196,7 @@ VecBase<T>::setCap(IAllocator* p, ssize cap)
 
 template<typename T>
 inline void
-VecBase<T>::swapWithLast(ssize i)
+VecBase<T>::swapWithLast(ssize i) noexcept
 {
     assert(m_size > 0 && "[Vec]: empty");
     utils::swap(&operator[](i), &operator[](m_size - 1));
@@ -202,7 +204,7 @@ VecBase<T>::swapWithLast(ssize i)
 
 template<typename T>
 inline void
-VecBase<T>::popAsLast(ssize i)
+VecBase<T>::popAsLast(ssize i) noexcept
 {
     assert(m_size > 0 && "[Vec]: empty");
     operator[](i) = last();
@@ -210,8 +212,20 @@ VecBase<T>::popAsLast(ssize i)
 }
 
 template<typename T>
+inline void
+VecBase<T>::removeAndShift(ssize i) noexcept
+{
+    assert(m_size > 0 && "[Vec]: empty");
+
+    if (i != lastI())
+        utils::move(&operator[](i), &operator[](i + 1), (m_size - i - 1));
+
+    --m_size;
+}
+
+template<typename T>
 [[nodiscard]] inline ssize
-VecBase<T>::idx(const T* x) const
+VecBase<T>::idx(const T* x) const noexcept
 {
     ssize r = ssize(x - m_pData);
     assert(r >= 0 && r < m_capacity && "[Vec]: out of range");
@@ -220,49 +234,49 @@ VecBase<T>::idx(const T* x) const
 
 template<typename T>
 [[nodiscard]] inline ssize
-VecBase<T>::lastI() const
+VecBase<T>::lastI() const noexcept
 {
     return idx(&last());
 }
 
 template<typename T>
 inline void
-VecBase<T>::destroy(IAllocator* p)
+VecBase<T>::destroy(IAllocator* p) noexcept
 {
     p->free(m_pData);
 }
 
 template<typename T>
 [[nodiscard]] inline ssize
-VecBase<T>::getSize() const
+VecBase<T>::getSize() const noexcept
 {
     return m_size;
 }
 
 template<typename T>
 inline ssize
-VecBase<T>::getCap() const
+VecBase<T>::getCap() const noexcept
 {
     return m_capacity;
 }
 
 template<typename T>
 [[nodiscard]] inline T*
-VecBase<T>::data()
+VecBase<T>::data() noexcept
 {
     return m_pData;
 }
 
 template<typename T>
 [[nodiscard]] inline const T*
-VecBase<T>::data() const
+VecBase<T>::data() const noexcept
 {
     return m_pData;
 }
 
 template<typename T>
 inline void
-VecBase<T>::zeroOut()
+VecBase<T>::zeroOut() noexcept
 {
     memset(m_pData, 0, m_size * sizeof(T));
 }
@@ -314,51 +328,51 @@ struct Vec
 
     /* */
 
-    T& operator[](ssize i) { return base[i]; }
-    const T& operator[](ssize i) const { return base[i]; }
+    T& operator[](ssize i)             noexcept { return base[i]; }
+    const T& operator[](ssize i) const noexcept { return base[i]; }
 
-    [[nodiscard]] bool empty() const { return base.empty(); }
+    [[nodiscard]] bool empty() const noexcept { return base.empty(); }
 
     ssize push(const T& data) { return base.push(m_pAlloc, data); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
         ssize emplace(ARGS&&... args) { return base.emplace(m_pAlloc, std::forward<ARGS>(args)...); }
 
-    [[nodiscard]] T& VecLast() { return base.last(); }
+    [[nodiscard]] T& last() noexcept { return base.last(); }
 
-    [[nodiscard]] T& last() { return base.last(); }
+    [[nodiscard]] const T& last() const noexcept { return base.last(); }
 
-    [[nodiscard]] const T& last() const { return base.last(); }
+    [[nodiscard]] T& first() noexcept { return base.first(); }
 
-    [[nodiscard]] T& first() { return base.first(); }
+    [[nodiscard]] const T& first() const noexcept { return base.first(); }
 
-    [[nodiscard]] const T& first() const { return base.first(); }
-
-    T* pop() { return base.pop(); }
+    T* pop() noexcept { return base.pop(); }
 
     void setSize(ssize size) { base.setSize(m_pAlloc, size); }
 
     void setCap(ssize cap) { base.setCap(m_pAlloc, cap); }
 
-    void swapWithLast(ssize i) { base.swapWithLast(i); }
+    void swapWithLast(ssize i) noexcept { base.swapWithLast(i); }
 
-    void popAsLast(ssize i) { base.popAsLast(i); }
+    void popAsLast(ssize i) noexcept { base.popAsLast(i); }
 
-    [[nodiscard]] ssize idx(const T* x) const { return base.idx(x); }
+    void removeAndShift(ssize i) noexcept { base.removeAndShift(i); }
 
-    [[nodiscard]] ssize lastI() const { return base.lastI(); }
+    [[nodiscard]] ssize idx(const T* x) const noexcept { return base.idx(x); }
+
+    [[nodiscard]] ssize lastI() const noexcept { return base.lastI(); }
 
     void destroy() { base.destroy(m_pAlloc); }
 
-    [[nodiscard]] ssize getSize() const { return base.getSize(); }
+    [[nodiscard]] ssize getSize() const noexcept { return base.getSize(); }
 
-    [[nodiscard]] ssize getCap() const { return base.getCap(); }
+    [[nodiscard]] ssize getCap() const noexcept { return base.getCap(); }
 
-    [[nodiscard]] T* data() { return base.data(); }
+    [[nodiscard]] T* data() noexcept { return base.data(); }
 
-    [[nodiscard]] const T* data() const { return base.data(); }
+    [[nodiscard]] const T* data() const noexcept { return base.data(); }
 
-    void zeroOut() { base.zeroOut(); }
+    void zeroOut() noexcept { base.zeroOut(); }
 
     [[nodiscard]] Vec<T>
     clone(IAllocator* pAlloc)
@@ -372,15 +386,15 @@ struct Vec
 
     /* */
 
-    VecBase<T>::It begin() { return base.begin(); }
-    VecBase<T>::It end() { return base.end(); }
-    VecBase<T>::It rbegin() { return base.rbegin(); }
-    VecBase<T>::It rend() { return base.rend(); }
+    VecBase<T>::It begin()  noexcept { return base.begin(); }
+    VecBase<T>::It end()    noexcept { return base.end(); }
+    VecBase<T>::It rbegin() noexcept { return base.rbegin(); }
+    VecBase<T>::It rend()   noexcept { return base.rend(); }
 
-    const VecBase<T>::It begin() const { return base.begin(); }
-    const VecBase<T>::It end() const { return base.end(); }
-    const VecBase<T>::It rbegin() const { return base.rbegin(); }
-    const VecBase<T>::It rend() const { return base.rend(); }
+    const VecBase<T>::It begin()  const noexcept { return base.begin(); }
+    const VecBase<T>::It end()    const noexcept { return base.end(); }
+    const VecBase<T>::It rbegin() const noexcept { return base.rbegin(); }
+    const VecBase<T>::It rend()   const noexcept { return base.rend(); }
 };
 
 namespace print
@@ -405,7 +419,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const VecBase<
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, x[i]);
     }
 
-    return print::copyBackToBuffer(ctx, {aBuff});
+    return print::copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
 
 template<typename T>

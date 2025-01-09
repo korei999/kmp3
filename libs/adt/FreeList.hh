@@ -45,7 +45,7 @@ struct FreeListData
 class FreeList : public IAllocator
 {
 public:
-    using Node = RBNode<FreeListData>; /* node is the header + memory chunk of the allocation */
+    using Node = RBNode<FreeListData>; /* node is the header + the memory chunk */
 
     /* */
 

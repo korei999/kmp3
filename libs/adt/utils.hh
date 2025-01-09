@@ -28,9 +28,7 @@
 #include <cassert>
 #include <cmath>
 
-namespace adt
-{
-namespace utils
+namespace adt::utils
 {
 
 /* bit number starts from 0 */
@@ -182,9 +180,16 @@ template<typename T>
 inline void
 copy(T* pDest, T* pSrc, ssize size)
 {
-    assert(pDest != nullptr);
-    assert(pSrc != nullptr);
+    assert(pDest != nullptr && pSrc != nullptr);
     memcpy(pDest, pSrc, size * sizeof(T));
+}
+
+template<typename T>
+inline void
+move(T* pDest, T* pSrc, ssize size)
+{
+    assert(pDest != nullptr && pSrc != nullptr);
+    memmove(pDest, pSrc, size * sizeof(T));
 }
 
 template<typename T>
@@ -243,5 +248,4 @@ reverse(auto* a)
     reverse(a->data(), a->getSize());
 }
 
-} /* namespace utils */
-} /* namespace adt */
+} /* namespace adt::utils */

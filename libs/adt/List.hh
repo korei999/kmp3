@@ -16,7 +16,7 @@ struct ListNode
 {
     ListNode* pPrev;
     ListNode* pNext;
-    T data;
+    ADT_NO_UNIQUE_ADDRESS T data;
 };
 
 template<typename T>
@@ -379,7 +379,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const ListBase
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, it->data);
     }
 
-    return print::copyBackToBuffer(ctx, {aBuff});
+    return print::copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
 
 template<typename T>
