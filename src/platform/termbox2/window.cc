@@ -572,10 +572,10 @@ drawCoverImage()
             }
             else
             {
-                for (ssize lineIdx = 1; lineIdx < chafaImg.uData.vLines.getSize(); ++lineIdx)
+                for (ssize lineIdx = 1, i = 0; lineIdx < chafaImg.uData.vLines.getSize(); ++lineIdx, ++i)
                 {
                     tb_set_cursor(1 + xOff, lineIdx);
-                    const auto& sLine = chafaImg.uData.vLines[lineIdx];
+                    const auto& sLine = chafaImg.uData.vLines[i];
                     tb_send(sLine.data(), sLine.getSize());
                 }
             }

@@ -79,9 +79,9 @@ Win::coverImage()
             }
             else
             {
-                for (ssize lineIdx = 1; lineIdx < chafaImg.uData.vLines.getSize(); ++lineIdx)
+                for (ssize lineIdx = 1, i = 0; lineIdx < chafaImg.uData.vLines.getSize(); ++lineIdx, ++i)
                 {
-                    const auto& sLine = chafaImg.uData.vLines[lineIdx];
+                    const auto& sLine = chafaImg.uData.vLines[i];
                     m_textBuff.movePush(1, lineIdx, sLine);
                 }
             }
