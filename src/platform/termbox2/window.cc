@@ -556,7 +556,12 @@ drawCoverImage()
                 xOff = std::floor(pl.m_imgWidth * move);
             }
 
-            tb_set_cursor(1 + xOff, 1);
+            /* BUG: kitty shifts the image further somehow */
+            if (app::g_eTerm == app::TERM::KITTY)
+                tb_set_cursor(1 + xOff/2, 1);
+            else
+                tb_set_cursor(1 + xOff, 1);
+
             tb_send(chafaImg.s.data(), chafaImg.s.getSize());
             tb_hide_cursor();
         }
