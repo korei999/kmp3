@@ -1733,10 +1733,10 @@ int tb_set_cursor(int cx, int cy) {
     int rv;
     if (cx < 0) cx = 0;
     if (cy < 0) cy = 0;
-    if (global.cursor_x == -1) {
-        if_err_return(rv,
-            bytebuf_puts(&global.out, global.caps[TB_CAP_SHOW_CURSOR]));
-    }
+    // if (global.cursor_x == -1) {
+    //     if_err_return(rv,
+    //         bytebuf_puts(&global.out, global.caps[TB_CAP_SHOW_CURSOR]));
+    // }
     if_err_return(rv, send_cursor_if(cx, cy));
     global.cursor_x = cx;
     global.cursor_y = cy;

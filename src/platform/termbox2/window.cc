@@ -527,24 +527,24 @@ drawCoverImage()
         auto oCover = app::g_pMixer->getCoverImage();
         if (oCover)
         {
+            namespace ch = platform::chafa;
+            auto& img = oCover.value();
+            ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
+
             /* clear without flickering */
             /* BUG: termbox2 still leaves some visible damage */
-            char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
+            const char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
             tb_send(sKittyClear, sizeof(sKittyClear));
-            clearAreaHARD(1, 1, g_prevImgWidth + 1, g_prevImgHeight + 1);
 
-            g_prevImgWidth = pl.m_imgWidth;
-            g_prevImgHeight = pl.m_imgHeight;
-
-            auto& img = oCover.value();
-
-            namespace ch = platform::chafa;
-
-            ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
+            if (g_prevImgWidth != img.width || g_prevImgHeight != img.height)
+                clearAreaHARD(1, 1, pl.m_imgWidth + 1, pl.m_imgHeight + 1);
 
             const auto chafaImg = ch::allocImage(
                 g_pFrameArena, eLayout, img, pl.m_imgHeight, pl.m_imgWidth
             );
+
+            g_prevImgWidth = img.width;
+            g_prevImgHeight = img.height;
 
             f64 asp = (((f64)img.width / (f64)img.height));
             f64 normalAsp = 1920.0 / 1080.0;

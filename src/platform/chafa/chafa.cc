@@ -299,7 +299,7 @@ getRows(
     chafa_canvas_draw_all_pixels(pCanvas, ePixelType, (u8*)pPixels, pixWidth, pixHeight, pixRowStride);
 
     gchar** ppRows = chafa_canvas_print_rows_strv(pCanvas, pTermInfo);
-    defer( chafa_term_info_unref(pTermInfo) ); /* print_rows refs terminfo */
+    defer( chafa_term_info_unref(pTermInfo) ); /* chafa BUG: print_rows refs terminfo */
 
     gint len = 0;
     for (; ppRows[len]; ++len)
