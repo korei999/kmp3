@@ -538,8 +538,12 @@ drawCoverImage()
 
             auto& img = oCover.value();
 
-            const auto chafaImg = platform::chafa::getImageString(
-                g_pFrameArena, img, pl.m_imgHeight, pl.m_imgWidth
+            namespace ch = platform::chafa;
+
+            ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
+
+            const auto chafaImg = ch::allocImage(
+                g_pFrameArena, eLayout, img, pl.m_imgHeight, pl.m_imgWidth
             );
 
             f64 asp = (((f64)img.width / (f64)img.height));
@@ -556,13 +560,26 @@ drawCoverImage()
                 xOff = std::floor(pl.m_imgWidth * move);
             }
 
-            /* BUG: kitty shifts the image further somehow */
-            if (app::g_eTerm == app::TERM::KITTY)
-                tb_set_cursor(1 + xOff/2, 1);
-            else
-                tb_set_cursor(1 + xOff, 1);
+            if (eLayout == ch::IMAGE_LAYOUT::RAW)
+            {
+                /* BUG: kitty shifts the image further somehow */
+                if (app::g_eTerm == app::TERM::KITTY)
+                    tb_set_cursor(1 + xOff/2, 1);
+                else
+                    tb_set_cursor(1 + xOff, 1);
 
-            tb_send(chafaImg.s.data(), chafaImg.s.getSize());
+                tb_send(chafaImg.uData.sRaw.data(), chafaImg.uData.sRaw.getSize());
+            }
+            else
+            {
+                for (ssize lineIdx = 1; lineIdx < chafaImg.uData.vLines.getSize(); ++lineIdx)
+                {
+                    tb_set_cursor(1 + xOff, lineIdx);
+                    const auto& sLine = chafaImg.uData.vLines[lineIdx];
+                    tb_send(sLine.data(), sLine.getSize());
+                }
+            }
+
             tb_hide_cursor();
         }
     }

@@ -89,10 +89,10 @@ private:
 };
 
 template<>
-constexpr s64
+inline constexpr ssize
 utils::compare(const FreeListData& l, const FreeListData& r)
 {
-    return (s64)l.getSize() - (s64)r.getSize();
+    return (ssize)l.getSize() - (ssize)r.getSize();
 }
 
 inline FreeList::Node*
@@ -180,21 +180,21 @@ _FreeListNodeFromPtr(void* p)
 inline FreeList::Node*
 FreeList::findFittingNode(const usize size)
 {
-    auto* it = m_tree.m_pRoot;
-    const s64 realSize = size + sizeof(FreeList::Node);
+    auto* it = m_tree.getRoot();
+    const ssize realSize = size + sizeof(FreeList::Node);
 
     FreeList::Node* pLastFitting {};
     while (it)
     {
         assert(it->m_data.isFree() && "[FreeList]: non free node in the free list");
 
-        s64 nodeSize = it->m_data.getSize();
+        ssize nodeSize = it->m_data.getSize();
 
         if (nodeSize >= realSize)
             pLastFitting = it;
 
         /* save size for the header */
-        s64 cmp = realSize - nodeSize;
+        ssize cmp = realSize - nodeSize;
 
         if (cmp == 0) break;
         else if (cmp < 0) it = it->left();
@@ -249,14 +249,14 @@ FreeList::verify()
 inline FreeList::Node*
 FreeList::splitNode(FreeList::Node* pNode, usize realSize)
 {
-    s64 splitSize = s64(pNode->m_data.getSize()) - s64(realSize);
+    ssize splitSize = ssize(pNode->m_data.getSize()) - ssize(realSize);
 
     assert(splitSize >= 0);
 
     assert(pNode->m_data.isFree() && "splitting non free node (corruption)");
     m_tree.remove(pNode);
 
-    if (splitSize <= (s64)sizeof(FreeList::Node))
+    if (splitSize <= (ssize)sizeof(FreeList::Node))
     {
         pNode->m_data.setFree(false);
         return pNode;
@@ -371,10 +371,10 @@ FreeList::realloc(void* ptr, usize nMembers, usize mSize)
     if (!ptr) return malloc(nMembers, mSize);
 
     auto* pNode = _FreeListNodeFromPtr(ptr);
-    s64 nodeSize = (s64)pNode->m_data.getSize() - (s64)sizeof(FreeList::Node);
+    ssize nodeSize = (ssize)pNode->m_data.getSize() - (ssize)sizeof(FreeList::Node);
     assert(nodeSize > 0 && "[FreeList]: 0 or negative size allocation (corruption)");
 
-    if ((s64)nMembers*(s64)mSize <= nodeSize) return ptr;
+    if ((ssize)nMembers*(ssize)mSize <= nodeSize) return ptr;
 
     assert(!pNode->m_data.isFree() && "[FreeList]: trying to realloc non free node");
 

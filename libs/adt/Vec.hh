@@ -25,7 +25,7 @@ struct VecBase
     /* */
 
     VecBase() = default;
-    VecBase(IAllocator* p, ssize prealloc = 1)
+    VecBase(IAllocator* p, ssize prealloc = SIZE_MIN)
         : m_pData((T*)p->zalloc(prealloc, sizeof(T))),
           m_size(0),
           m_capacity(prealloc) {}

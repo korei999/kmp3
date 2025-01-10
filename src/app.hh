@@ -12,7 +12,7 @@ namespace app
 
 enum class UI_FRONTEND : u8 { DUMMY, ANSI, TERMBOX, NCURSES };
 enum class MIXER : u8 { DUMMY, PIPEWIRE };
-enum class TERM : u8 { XTERM, KITTY, FOOT, GHOSTTY };
+enum class TERM : u8 { ELSE, XTERM, XTERM_256COLOR, KITTY, FOOT, GHOSTTY, ALACRITTY };
 
 extern UI_FRONTEND g_eUIFrontend;
 extern MIXER g_eMixer;
@@ -21,6 +21,7 @@ extern TERM g_eTerm;
 extern IWindow* g_pWin;
 extern bool g_bRunning;
 extern bool g_bNoImage;
+extern bool g_bSixelOrKitty;
 extern int g_argc;
 extern char** g_argv;
 

@@ -65,12 +65,28 @@ Win::coverImage()
         {
             const auto& img = oCoverImg.value();
 
-            const auto chafaImg = platform::chafa::getImageString(
-                m_pArena, img, split, g_termSize.width
+            namespace ch = platform::chafa;
+
+            ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
+
+            const auto chafaImg = ch::allocImage(
+                m_pArena, eLayout, img, split, g_termSize.width
             );
 
+            if (eLayout == ch::IMAGE_LAYOUT::RAW)
+            {
+                m_textBuff.movePush(1, 1, chafaImg.uData.sRaw);
+            }
+            else
+            {
+                for (ssize lineIdx = 1; lineIdx < chafaImg.uData.vLines.getSize(); ++lineIdx)
+                {
+                    const auto& sLine = chafaImg.uData.vLines[lineIdx];
+                    m_textBuff.movePush(1, lineIdx, sLine);
+                }
+            }
+
             m_prevImgWidth = chafaImg.width;
-            m_textBuff.movePush(1, 1, chafaImg.s);
         }
     }
 }

@@ -3,6 +3,9 @@
 #include "adt/Arena.hh"
 #include "adt/String.hh"
 #include "Image.hh"
+#include "adt/Vec.hh"
+
+#include <chafa.h>
 
 #ifdef USE_NCURSES
 #include <ncurses.h>
@@ -11,9 +14,16 @@
 namespace platform::chafa
 {
 
+enum class IMAGE_LAYOUT : u8 { RAW, LINES };
+
 struct Image
 {
-    String s {};
+    IMAGE_LAYOUT eLayout {};
+    union {
+        String sRaw;
+        VecBase<String> vLines;
+    } uData {};
+
     int width {};
     int height {};
 };
@@ -22,16 +32,8 @@ struct Image
 void showImageNCurses(WINDOW* pWin, const ::Image img, const int termHeight, const int termWidth);
 #endif
 
-void
-showImage(
-    Arena* pArena,
-    const Image img,
-    const int termHeight,
-    const int termWidth,
-    const int hOff,
-    const int vOff
-);
+[[nodiscard]] Image allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth);
 
-[[nodiscard]] Image getImageString(Arena* pArena, const ::Image img, int termHeight, int termWidth);
+void detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode, ChafaPixelMode* pPixelMode);
 
 } /* namespace platform::chafa */

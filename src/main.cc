@@ -15,11 +15,15 @@
 #include <clocale>
 #include <fcntl.h>
 
-void
+#ifdef USE_CHAFA
+    #include "platform/chafa/chafa.hh"
+#endif
+
+static void
 setTermEnv()
 {
     const String sTerm = getenv("TERM");
-    LOG_WARN("ntsTerm: '{}'\n", sTerm);
+    app::g_sTerm = sTerm;
 
     if (sTerm == "foot")
         app::g_eTerm = app::TERM::FOOT;
@@ -27,10 +31,24 @@ setTermEnv()
         app::g_eTerm = app::TERM::KITTY;
     else if (sTerm == "xterm-ghostty")
         app::g_eTerm = app::TERM::GHOSTTY;
+    else if (sTerm == "alacritty")
+        app::g_eTerm = app::TERM::ALACRITTY;
+    else if (sTerm == "xterm-256color")
+        app::g_eTerm = app::TERM::XTERM_256COLOR;
     else
-        app::g_eTerm = app::TERM::XTERM;
+        app::g_eTerm = app::TERM::ELSE;
 
-    app::g_sTerm = sTerm;
+#ifdef USE_CHAFA
+    ChafaTermInfo* pTermInfo {};
+    ChafaPixelMode pixelMode;
+    ChafaCanvasMode mode;
+
+    platform::chafa::detectTerminal(&pTermInfo, &mode, &pixelMode);
+    defer( chafa_term_info_unref(pTermInfo) );
+
+    if (pixelMode != CHAFA_PIXEL_MODE_SYMBOLS)
+        app::g_bSixelOrKitty = true;
+#endif
 }
 
 static void

@@ -3,9 +3,8 @@
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "defaults.hh"
-#include "TextBuff.hh"
+#include "adt/Pair.hh"
 
-#include <chafa/chafa.h>
 #include <cmath>
 
 #include <sys/ioctl.h>
@@ -115,18 +114,22 @@ getTTYSize(TermSize* s)
     *s = term_size;
 }
 
-static void
+void
 detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode, ChafaPixelMode* pPixelMode)
 {
     ChafaCanvasMode mode;
     ChafaPixelMode pixelMode;
     ChafaTermInfo* pTermInfo;
     // ChafaTermInfo* pFallbackInfo;
+    ChafaTermDb* pTermDb = chafa_term_db_new();
+    defer( chafa_term_db_unref(pTermDb) );
     gchar** ppEnv;
 
     /* Examine the environment variables and guess what the terminal can do */
     ppEnv = g_get_environ();
-    pTermInfo = chafa_term_db_detect(chafa_term_db_get_default(), ppEnv);
+    defer( g_strfreev(ppEnv) );
+
+    pTermInfo = chafa_term_db_detect(pTermDb, ppEnv);
 
     /* See which control sequences were defined, and use that to pick the most
      * high-quality rendering possible */
@@ -171,9 +174,6 @@ detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode, ChafaPixelMod
     *pPixelMode = pixelMode;
 
     LOG("pixelMode: {}\n", (int)pixelMode);
-
-    /* Cleanup */
-    g_strfreev(ppEnv);
 }
 
 #ifdef USE_NCURSES
@@ -251,6 +251,66 @@ getString(
     chafa_term_info_unref(pTermInfo);
 
     return pGStr;
+}
+
+static Pair<gchar**, gint>
+getRows(
+    const void* pPixels,
+    const int pixWidth,
+    const int pixHeight,
+    const int pixRowStride,
+    const ChafaPixelType ePixelType,
+    const int widthCells,
+    const int heightCells,
+    const int cellWidth,
+    const int cellHeight
+)
+{
+    ChafaTermInfo* pTermInfo;
+    ChafaCanvasMode mode;
+    ChafaPixelMode ePixelMode;
+    ChafaSymbolMap* pSymbolMap;
+    ChafaCanvasConfig* pConfig;
+    ChafaCanvas* pCanvas;
+
+    detectTerminal(&pTermInfo, &mode, &ePixelMode);
+
+    /* Specify the symbols we want */
+    pSymbolMap = chafa_symbol_map_new();
+    chafa_symbol_map_add_by_tags(pSymbolMap, CHAFA_SYMBOL_TAG_BLOCK);
+
+    /* Set up a configuration with the symbols and the canvas size in characters */
+    pConfig = chafa_canvas_config_new();
+    chafa_canvas_config_set_canvas_mode(pConfig, mode);
+    chafa_canvas_config_set_pixel_mode(pConfig, ePixelMode);
+    chafa_canvas_config_set_geometry(pConfig, widthCells, heightCells);
+    chafa_canvas_config_set_symbol_map(pConfig, pSymbolMap);
+
+    if (cellWidth > 0 && cellHeight > 0)
+    {
+        /* We know the pixel dimensions of each cell. Store it in the config. */
+        chafa_canvas_config_set_cell_geometry(pConfig, cellWidth, cellHeight);
+    }
+
+    /* Create canvas */
+    pCanvas = chafa_canvas_new(pConfig);
+
+    /* Draw pixels to the canvas */
+    chafa_canvas_draw_all_pixels(pCanvas, ePixelType, (u8*)pPixels, pixWidth, pixHeight, pixRowStride);
+
+    gchar** ppRows = chafa_canvas_print_rows_strv(pCanvas, pTermInfo);
+    defer( chafa_term_info_unref(pTermInfo) ); /* print_rows refs terminfo */
+
+    gint len = 0;
+    for (; ppRows[len]; ++len)
+        ;
+
+    chafa_canvas_unref(pCanvas);
+    chafa_canvas_config_unref(pConfig);
+    chafa_symbol_map_unref(pSymbolMap);
+    chafa_term_info_unref(pTermInfo);
+
+    return Pair {ppRows, len};
 }
 
 #ifdef USE_NCURSES
@@ -400,81 +460,8 @@ showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, co
 }
 #endif
 
-void
-showImage(Arena* pArena, const ::Image img, const int termHeight, const int termWidth, const int hOff, const int vOff)
-{
-    TermSize termSize {};
-    getTTYSize(&termSize);
-
-    f64 fontRatio = defaults::FONT_ASPECT_RATIO;
-    int cellWidth = -1, cellHeight = -1; /* Size of each character cell, in pixels */
-    int widthCells {}, heightCells {};         /* Size of output image, in cells */
-
-    if (termWidth > 0 && termHeight > 0 && termSize.widthPixels > 0 && termSize.heightPixels > 0)
-    {
-        cellWidth = termSize.widthPixels / termSize.widthCells;
-        cellHeight = termSize.heightPixels / termSize.heightCells;
-        fontRatio = f64(cellWidth) / f64(cellHeight);
-    }
-
-    /*widthCells = termSize.widthCells;*/
-    /*heightCells = termSize.heightCells;*/
-    widthCells = termWidth;
-    heightCells = termHeight;
-
-    chafa_calc_canvas_geometry(
-        img.width, img.height,
-        &widthCells, &heightCells,
-        fontRatio, true, false
-    );
-
-    LOG_WARN("termWidth: {}, termHeight: {}, pixWidth: {}, pixHeigh: {}\n",
-        termWidth, termHeight, termSize.widthPixels, termSize.heightPixels
-    );
-
-    auto* pGStr = getString(
-        img.pBuff,
-        img.width,
-        img.height,
-        img.width * getFormatChannelNumber(img.eFormat),
-        (ChafaPixelType)formatToPixelType(img.eFormat),
-        widthCells,
-        heightCells,
-        cellWidth,
-        cellHeight
-    );
-    defer( g_string_free(pGStr, true) );
-
-    {
-        TextBuff textBuff(pArena);
-        defer( textBuff.flush() );
-
-        auto at = [&](int x, int y) {
-            char aBuff[128] {};
-            u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[H\x1b[{}C\x1b[{}B", x, y);
-            textBuff.push(aBuff, n);
-        };
-
-        //auto clearLine = [&] {
-        //    TextBuffPush(&textBuff, "\x1b[K\r\n");
-        //};
-
-        //at(0, 0);
-        //for (int i = 0; i < heightCells; ++i)
-        //    clearLine();
-
-        /* set centered position */
-        int maxVOff = utils::max(vOff, 0);
-        int maxHOff = utils::max(hOff, 0);
-        at(maxHOff, maxVOff);
-    }
-
-    fputs(pGStr->str, stdout);
-    fputc('\n', stdout);
-}
-
 Image
-getImageString(Arena* pArena, const ::Image img, int termHeight, int termWidth)
+allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth)
 {
     TermSize termSize {};
     getTTYSize(&termSize);
@@ -503,26 +490,59 @@ getImageString(Arena* pArena, const ::Image img, int termHeight, int termWidth)
 
     LOG_GOOD("formatSize: {}\n", getFormatChannelNumber(img.eFormat));
 
-    auto* pGStr = getString(
-        img.pBuff,
-        img.width,
-        img.height,
-        img.width * getFormatChannelNumber(img.eFormat),
-        (ChafaPixelType)formatToPixelType(img.eFormat),
-        widthCells,
-        heightCells,
-        cellWidth,
-        cellHeight
-    );
-    defer( g_string_free(pGStr, true) );
+    if (eLayout == IMAGE_LAYOUT::RAW)
+    {
+        auto* pGStr = getString(
+            img.pBuff,
+            img.width,
+            img.height,
+            img.width * getFormatChannelNumber(img.eFormat),
+            (ChafaPixelType)formatToPixelType(img.eFormat),
+            widthCells,
+            heightCells,
+            cellWidth,
+            cellHeight
+        );
+        defer( g_string_free(pGStr, true) );
 
-    auto sRet = StringAlloc(pArena, pGStr->str, pGStr->len);
-    assert(sRet.getSize() == (ssize)pGStr->len);
-    return {
-        .s = sRet,
-        .width = widthCells,
-        .height = heightCells,
-    };
+        auto sRet = StringAlloc(pArena, pGStr->str, pGStr->len);
+        assert(sRet.getSize() == (ssize)pGStr->len);
+
+        return {
+            .eLayout = IMAGE_LAYOUT::RAW,
+            .uData {.sRaw = sRet},
+            .width = widthCells,
+            .height = heightCells,
+        };
+    }
+    else
+    {
+        Pair<gchar**, gint> ppGStr = getRows(
+            img.pBuff,
+            img.width,
+            img.height,
+            img.width * getFormatChannelNumber(img.eFormat),
+            (ChafaPixelType)formatToPixelType(img.eFormat),
+            widthCells,
+            heightCells,
+            cellWidth,
+            cellHeight
+        );
+        defer( g_strfreev(ppGStr.first) );
+
+        VecBase<String> vLines(pArena, ppGStr.second);
+        vLines.setSize(pArena, ppGStr.second);
+
+        for (ssize i = 0; i < vLines.getSize(); ++i)
+            vLines[i] = StringAlloc(pArena, ppGStr.first[i], strlen(ppGStr.first[i]));
+
+        return {
+            .eLayout = IMAGE_LAYOUT::LINES,
+            .uData {.vLines = vLines},
+            .width = widthCells,
+            .height = heightCells,
+        };
+    }
 }
 
 } /* namespace platform::chafa */

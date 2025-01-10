@@ -23,6 +23,7 @@ TERM g_eTerm = TERM::XTERM;
 IWindow* g_pWin {};
 bool g_bRunning {};
 bool g_bNoImage {};
+bool g_bSixelOrKitty {};
 int g_argc {};
 char** g_argv {};
 
