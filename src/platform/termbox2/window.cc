@@ -394,8 +394,6 @@ drawInfo()
     const auto& pl = *app::g_pPlayer;
     const long xOff = window::getImgOffset();
 
-    /*drawBox(split + 1, 0, tb_width() - split - 2, pl.statusAndInfoHeight + 1, TB_BLUE, TB_DEFAULT);*/
-
     char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
 
     /* title */

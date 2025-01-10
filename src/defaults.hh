@@ -17,5 +17,6 @@ constexpr u64 MIN_SAMPLE_RATE = 1000;
 constexpr u64 MAX_SAMPLE_RATE = 9999999;
 constexpr f64 FONT_ASPECT_RATIO = 1.0 / 2.0; /* typical monospaced font is 1/2 or 3/5 (width/height) */
 constexpr int MOUSE_STEP = 4;
+constexpr u8 IMAGE_HEIGHT = 11; /* terminal rows height */
 
 } /* namespace defaults */
