@@ -39,19 +39,10 @@ namespace platform::termbox2::window
 Arena* g_pFrameArena {};
 s16 g_firstIdx = 0;
 int g_prevImgWidth = 0;
+int g_prevImgHeight = 0;
 
 static f64 s_time {};
 static f64 s_lastResizeTime {};
-
-static u16
-setListHeight()
-{
-    const int split = app::g_pPlayer->m_imgHeight + 1;
-    const u16 listHeight = tb_height() - split - 2;
-    app::g_pWin->m_listHeight = listHeight;
-
-    return listHeight;
-}
 
 bool
 start(Arena* pAlloc)
@@ -67,7 +58,7 @@ start(Arena* pAlloc)
     g_pFrameArena = pAlloc;
 
     input::fillInputMap();
-    setListHeight();
+    adjustListHeight();
 
     return r == 0;
 }
@@ -136,6 +127,14 @@ getImgOffset()
 }
 
 void
+adjustListHeight()
+{
+    const int split = app::g_pPlayer->m_imgHeight + 1;
+    const u16 listHeight = tb_height() - split - 2;
+    app::g_pWin->m_listHeight = listHeight;
+}
+
+void
 centerSelection()
 {
 }
@@ -154,7 +153,7 @@ procResize([[maybe_unused]] tb_event* pEv)
 {
     app::g_pPlayer->m_bSelectionChanged = true;
     s_lastResizeTime = utils::timeNowMS();
-    setListHeight();
+    adjustListHeight();
 }
 
 void
@@ -529,9 +528,13 @@ drawCoverImage()
         if (oCover)
         {
             /* clear without flickering */
+            /* BUG: termbox2 still leaves some visible damage */
             char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
             tb_send(sKittyClear, sizeof(sKittyClear));
-            clearAreaHARD(1, 1, pl.m_imgWidth, pl.m_imgHeight + 1);
+            clearAreaHARD(1, 1, g_prevImgWidth + 1, g_prevImgHeight + 1);
+
+            g_prevImgWidth = pl.m_imgWidth;
+            g_prevImgHeight = pl.m_imgHeight;
 
             auto& img = oCover.value();
 
@@ -556,8 +559,6 @@ drawCoverImage()
             tb_set_cursor(1 + xOff, 1);
             tb_send(chafaImg.s.data(), chafaImg.s.getSize());
             tb_hide_cursor();
-
-            g_prevImgWidth = chafaImg.width;
         }
     }
 }

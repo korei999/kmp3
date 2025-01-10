@@ -19,7 +19,6 @@ class Win : public IWindow
     TextBuff m_textBuff {};
     termios m_termOg {};
     s16 m_firstIdx {};
-    bool m_bClear = false;
     int m_prevImgWidth = 0;
     mtx_t m_mtxUpdate {};
     f64 m_time {};
@@ -35,10 +34,9 @@ public:
     virtual void seekFromInput() final;
     virtual void subStringSearch() final;
     virtual void centerAroundSelection() final;
+    virtual void adjustListHeight() final;
 
     /* */
-
-    void updateListHeight();
 
 private:
     void disableRawMode();

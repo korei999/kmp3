@@ -106,8 +106,7 @@ startup(int argc, char** argv)
     app::g_pPlayer = &player;
     defer( player.destroy() );
 
-    player.m_imgHeight = defaults::IMAGE_HEIGHT;
-    player.m_imgWidth = std::round((player.m_imgHeight * (1920.0/1080.0)) / defaults::FONT_ASPECT_RATIO);
+    player.setImgSize(defaults::IMAGE_HEIGHT);
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 

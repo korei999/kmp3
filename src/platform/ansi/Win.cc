@@ -49,7 +49,7 @@ sigwinchHandler([[maybe_unused]] int sig)
     g_termSize = getTermSize();
     LOG_GOOD("term: {}\n", g_termSize);
 
-    s.updateListHeight();
+    s.adjustListHeight();
     s.m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
 
     pl.m_bSelectionChanged = true;
@@ -77,6 +77,7 @@ Win::start(Arena* pArena)
     m_textBuff.flush();
 
     m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
+    adjustListHeight();
 
     LOG_GOOD("ansi::WinStart()\n");
 
@@ -140,6 +141,14 @@ Win::subStringSearch()
 void
 Win::centerAroundSelection()
 {
+}
+
+void
+Win::adjustListHeight()
+{
+    const int split = app::g_pPlayer->m_imgHeight + 1;
+    const int height = g_termSize.height;
+    m_listHeight = height - split - 2;
 }
 
 } /* namespace platform::ansi */

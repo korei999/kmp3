@@ -4,6 +4,7 @@
 #include "adt/logs.hh"
 #include "adt/file.hh"
 #include "app.hh"
+#include "defaults.hh"
 #include "mpris.hh"
 
 #include <cstdlib>
@@ -270,6 +271,21 @@ Player::copySearchToSongIdxs()
 {
     m_vSongIdxs.setSize(m_pAlloc, m_vSearchIdxs.getSize());
     utils::copy(m_vSongIdxs.data(), m_vSearchIdxs.data(), m_vSearchIdxs.getSize());
+}
+
+void
+Player::setImgSize(long height)
+{
+    if (height < 0) height = 10;
+    m_imgHeight = height;
+    m_imgWidth = std::round((m_imgHeight * (1920.0/1080.0)) / defaults::FONT_ASPECT_RATIO);
+    m_bSelectionChanged = true;
+
+    if (app::g_pWin)
+    {
+        app::g_pWin->m_bClear = true;
+        app::g_pWin->adjustListHeight();
+    }
 }
 
 void

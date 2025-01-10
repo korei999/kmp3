@@ -235,7 +235,8 @@ Win::list()
     const auto& aIdxs = pl.m_vSearchIdxs;
 
     tb.push(NORM);
-    for (u16 h = m_firstIdx, i = 0; i < m_listHeight - 1; ++h, ++i)
+
+    for (ssize h = m_firstIdx, i = 0; i < m_listHeight - 1; ++h, ++i)
     {
         if (h < aIdxs.getSize())
         {
@@ -363,14 +364,6 @@ Win::update()
 
         bottomLine();
     }
-}
-
-void
-Win::updateListHeight()
-{
-    const int split = app::g_pPlayer->m_imgHeight + 1;
-    const int height = g_termSize.height;
-    m_listHeight = height - split - 2;
 }
 
 } /* namespace platform::ansi */

@@ -21,6 +21,7 @@ void draw();
 void seekFromInput();
 void subStringSearch();
 long getImgOffset();
+void adjustListHeight();
 void centerSelection();
 
 } /* namespace window */
@@ -34,6 +35,7 @@ struct Win : IWindow
     virtual void seekFromInput() final { window::seekFromInput(); }
     virtual void subStringSearch() final { window::subStringSearch(); }
     virtual void centerAroundSelection() final { window::centerSelection(); }
+    virtual void adjustListHeight() final { window::adjustListHeight(); }
 };
 
 } /* namespace platform::termbox2 */

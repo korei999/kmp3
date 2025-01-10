@@ -53,5 +53,6 @@ inline void selectNext() { g_pPlayer->selectNext(); }
 inline void toggleMute() { g_pMixer->toggleMute(); }
 inline void seekFromInput() { g_pWin->seekFromInput(); }
 inline void subStringSearch() { g_pWin->subStringSearch(); }
+inline void increaseImageSize(long i) { g_pPlayer->setImgSize(g_pPlayer->m_imgHeight + i); }
 
 } /* namespace app */

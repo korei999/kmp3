@@ -77,6 +77,7 @@ struct Player
     void selectNext();
     void selectPrev();
     void copySearchToSongIdxs();
+    void setImgSize(long height);
     void destroy();
 
     /* */
