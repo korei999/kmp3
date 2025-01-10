@@ -80,8 +80,9 @@ inline const Key inl_aKeys[] {
     {{},               L't',  (void*)app::seekFromInput,        NONE                           },
     {{},               L'p',  (void*)app::selectPrev,           NONE                           },
     {{},               L'n',  (void*)app::selectNext,           NONE                           },
-    {{},               L'i',  (void*)app::increaseImageSize,  {LONG, {.l = 1}}               },
-    {{},               L'I',  (void*)app::increaseImageSize,  {LONG, {.l = -1}}              },
+    {{},               L'i',  (void*)app::increaseImageSize,    {LONG, {.l = 1}}               },
+    {{},               L'I',  (void*)app::increaseImageSize,    {LONG, {.l = -1}}              },
+    {{},               L'o',  (void*)app::restoreImageSize,     NONE                           },
 };
 
 ADT_NO_UB inline void /* triggers ubsan */

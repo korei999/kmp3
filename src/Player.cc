@@ -276,16 +276,27 @@ Player::copySearchToSongIdxs()
 void
 Player::setImgSize(long height)
 {
-    if (height < 0) height = 10;
-    m_imgHeight = height;
-    m_imgWidth = std::round((m_imgHeight * (1920.0/1080.0)) / defaults::FONT_ASPECT_RATIO);
-    m_bSelectionChanged = true;
+    if (height < defaults::MIN_IMAGE_HEIGHT) height = defaults::MIN_IMAGE_HEIGHT;
+    else if (height > defaults::MAX_IMAGE_HEIGHT) height = defaults::MAX_IMAGE_HEIGHT;
 
+    if (m_imgHeight == height)
+        return;
+
+    m_imgHeight = height;
+    adjustImgWidth();
+
+    m_bSelectionChanged = true;
     if (app::g_pWin)
     {
         app::g_pWin->m_bClear = true;
         app::g_pWin->adjustListHeight();
     }
+}
+
+void
+Player::adjustImgWidth()
+{
+    m_imgWidth = std::round((m_imgHeight * (1920.0/1080.0)) / defaults::FONT_ASPECT_RATIO);
 }
 
 void

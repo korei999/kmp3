@@ -106,7 +106,9 @@ startup(int argc, char** argv)
     app::g_pPlayer = &player;
     defer( player.destroy() );
 
-    player.setImgSize(defaults::IMAGE_HEIGHT);
+    player.m_imgHeight = defaults::IMAGE_HEIGHT;
+    player.adjustImgWidth();
+
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
