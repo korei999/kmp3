@@ -264,6 +264,8 @@ getString(
     }
     else
     {
+#ifdef USE_CHAFA_SYMBOLS
+
         gchar** ppRows = chafa_canvas_print_rows_strv(pCanvas, pTermInfo);
         defer( chafa_term_info_unref(pTermInfo) ); /* chafa BUG: print_rows refs terminfo */
 
@@ -272,6 +274,9 @@ getString(
             ;
 
         return {.sppLines = {ppRows, len}};
+#else
+        return {};
+#endif
     }
 }
 

@@ -57,11 +57,16 @@ option(OPT_NCURSES "ncurses support" OFF)
 option(OPT_MPRIS "mpris support" ON)
 option(OPT_SIXEL "sixel support" OFF)
 option(OPT_CHAFA "chafa support" ON)
+option(OPT_CHAFA_SYMBOLS "chafa with nonsixel terminals" ON)
 option(OPT_MARCH_NATIVE OFF)
 
 if (OPT_MARCH_NATIVE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+endif()
+
+if (OPT_CHAFA_SYMBOLS)
+    add_definitions("-DUSE_CHAFA_SYMBOLS")
 endif()
 
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")

@@ -47,7 +47,15 @@ setTermEnv()
     defer( chafa_term_info_unref(pTermInfo) );
 
     if (pixelMode != CHAFA_PIXEL_MODE_SYMBOLS)
+    {
         app::g_bSixelOrKitty = true;
+    }
+    else
+    {
+    #ifndef USE_CHAFA_SYMBOLS
+        app::g_bNoImage = true;
+    #endif
+    }
 #endif
 }
 
