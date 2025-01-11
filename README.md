@@ -23,7 +23,7 @@
 - `[` / `]` playback speed shifting fun. `\` Set original speed back.
 
 ### Dependencies
-Compiler: `clang >= 14.0` or `gcc > 12`
+Compiler: `clang >= 14.0` or `gcc > 12`.\
 Packages: `libpipewire-0.3 libavformat libavcodec libavutil libswresample`.\
 For mpris support: `libsystemd` or `basu`.\
 For image support: `chafa glib-2.0 libswscale`.
