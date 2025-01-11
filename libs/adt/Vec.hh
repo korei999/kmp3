@@ -386,15 +386,15 @@ struct Vec
 
     /* */
 
-    VecBase<T>::It begin()  noexcept { return base.begin(); }
-    VecBase<T>::It end()    noexcept { return base.end(); }
-    VecBase<T>::It rbegin() noexcept { return base.rbegin(); }
-    VecBase<T>::It rend()   noexcept { return base.rend(); }
+    typename VecBase<T>::It begin()  noexcept { return base.begin(); }
+    typename VecBase<T>::It end()    noexcept { return base.end(); }
+    typename VecBase<T>::It rbegin() noexcept { return base.rbegin(); }
+    typename VecBase<T>::It rend()   noexcept { return base.rend(); }
 
-    const VecBase<T>::It begin()  const noexcept { return base.begin(); }
-    const VecBase<T>::It end()    const noexcept { return base.end(); }
-    const VecBase<T>::It rbegin() const noexcept { return base.rbegin(); }
-    const VecBase<T>::It rend()   const noexcept { return base.rend(); }
+    const typename VecBase<T>::It begin()  const noexcept { return base.begin(); }
+    const typename VecBase<T>::It end()    const noexcept { return base.end(); }
+    const typename VecBase<T>::It rbegin() const noexcept { return base.rbegin(); }
+    const typename VecBase<T>::It rend()   const noexcept { return base.rend(); }
 };
 
 namespace print

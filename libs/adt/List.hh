@@ -346,15 +346,15 @@ struct List
 
     /* */
 
-    ListBase<T>::It begin() { return base.begin(); }
-    ListBase<T>::It end() { return base.end(); }
-    ListBase<T>::It rbegin() { return base.rbegin(); }
-    ListBase<T>::It rend() { return base.rend(); }
+    typename ListBase<T>::It begin() { return base.begin(); }
+    typename ListBase<T>::It end() { return base.end(); }
+    typename ListBase<T>::It rbegin() { return base.rbegin(); }
+    typename ListBase<T>::It rend() { return base.rend(); }
 
-    const ListBase<T>::It begin() const { return base.begin(); }
-    const ListBase<T>::It end() const { return base.end(); }
-    const ListBase<T>::It rbegin() const { return base.rbegin(); }
-    const ListBase<T>::It rend() const { return base.rend(); }
+    const typename ListBase<T>::It begin() const { return base.begin(); }
+    const typename ListBase<T>::It end() const { return base.end(); }
+    const typename ListBase<T>::It rbegin() const { return base.rbegin(); }
+    const typename ListBase<T>::It rend() const { return base.rend(); }
 };
 
 namespace print

@@ -217,15 +217,15 @@ struct Queue
 
     /* */
 
-    QueueBase<T>::It begin() { return base.begin(); }
-    QueueBase<T>::It end() { return base.end(); }
-    QueueBase<T>::It rbegin() { return base.rbegin(); }
-    QueueBase<T>::It rend() { return base.rend(); }
+    typename QueueBase<T>::It begin() { return base.begin(); }
+    typename QueueBase<T>::It end() { return base.end(); }
+    typename QueueBase<T>::It rbegin() { return base.rbegin(); }
+    typename QueueBase<T>::It rend() { return base.rend(); }
 
-    const QueueBase<T>::It begin() const { return base.begin(); }
-    const QueueBase<T>::It end() const { return base.end(); }
-    const QueueBase<T>::It rbegin() const { return base.rbegin(); }
-    const QueueBase<T>::It rend() const { return base.rend(); }
+    const typename QueueBase<T>::It begin() const { return base.begin(); }
+    const typename QueueBase<T>::It end() const { return base.end(); }
+    const typename QueueBase<T>::It rbegin() const { return base.rbegin(); }
+    const typename QueueBase<T>::It rend() const { return base.rend(); }
 };
 
 namespace print

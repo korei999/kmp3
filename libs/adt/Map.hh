@@ -439,11 +439,11 @@ struct Map
 
     /* */
 
-    MapBase<K, V, FN_HASH>::It begin() { return base.begin(); }
-    MapBase<K, V, FN_HASH>::It end() { return base.end(); }
+    typename MapBase<K, V, FN_HASH>::It begin() { return base.begin(); }
+    typename MapBase<K, V, FN_HASH>::It end() { return base.end(); }
 
-    const MapBase<K, V, FN_HASH>::It begin() const { return base.begin(); }
-    const MapBase<K, V, FN_HASH>::It end() const { return base.end(); }
+    const typename MapBase<K, V, FN_HASH>::It begin() const { return base.begin(); }
+    const typename MapBase<K, V, FN_HASH>::It end() const { return base.end(); }
 };
 
 namespace print

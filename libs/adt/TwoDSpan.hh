@@ -22,8 +22,8 @@ struct TwoDSpan
 
     /* */
 
-    constexpr T& operator[](ssize x, ssize y) { return at(x, y); }
-    constexpr const T& operator[](ssize x, ssize y) const { return at(x, y); }
+    constexpr T& operator()(ssize x, ssize y) { return at(x, y); }
+    constexpr const T& operator()(ssize x, ssize y) const { return at(x, y); }
 
     constexpr operator bool() const { return m_pData != nullptr; }
 

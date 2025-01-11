@@ -1155,7 +1155,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M4
 } /* namespace print */
 } /* namespace adt */
 
-#ifdef __clang__
+#if defined __clang__
     #pragma clang diagnostic pop
 #elif defined __GNUC__
     #pragma GCC diagnostic pop

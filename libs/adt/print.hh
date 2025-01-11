@@ -351,21 +351,10 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
 {
-#if defined __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-#endif
-
     char aBuff[128] {};
     if (fmtArgs.maxFloatLen == NPOS8)
         snprintf(aBuff, utils::size(aBuff), "%g", x);
     else snprintf(aBuff, utils::size(aBuff), "%.*lf", fmtArgs.maxFloatLen, x);
-
-#if defined __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-#pragma GCC diagnostic pop
-#endif
 
     return copyBackToBuffer(ctx, fmtArgs, {aBuff});
 }
