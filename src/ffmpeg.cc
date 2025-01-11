@@ -218,8 +218,7 @@ Decoder::open(String sPath)
 
 audio::ERROR
 Decoder::writeToBuffer(
-    f32* pBuff,
-    const int buffSize,
+    Span<f32> spBuff,
     const int nFrames,
     [[maybe_unused]] const int nChannles,
     long* pSamplesWritten,
@@ -273,12 +272,12 @@ Decoder::writeToBuffer(
             }
 
             int maxSamples = res.nb_samples * res.ch_layout.nb_channels;
-            if (maxSamples >= buffSize) maxSamples = buffSize - 1;
+            if (maxSamples >= spBuff.getSize()) maxSamples = spBuff.getSize() - 1;
 
             const auto& nFrameChannles = res.ch_layout.nb_channels;
             assert(nFrameChannles > 0);
 
-            utils::copy(pBuff + nWrites, (f32*)(res.data[0]), maxSamples);
+            utils::copy(spBuff.data() + nWrites, (f32*)(res.data[0]), maxSamples);
             nWrites += maxSamples;
 
             if (nWrites >= maxSamples && nWrites >= nFrames * nFrameChannles) /* mul by nChannels */

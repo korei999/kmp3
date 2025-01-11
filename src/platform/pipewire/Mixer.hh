@@ -66,7 +66,7 @@ public:
     /* */
 
 private:
-    void writeFramesLocked(f32* pBuff, u32 nFrames, long* pSamplesWritten, s64* pPcmPos);
+    void writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, s64* pPcmPos);
     void setNChannles(u32 nChannles);
     void onProcess();
 };

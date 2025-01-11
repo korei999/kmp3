@@ -23,7 +23,7 @@ HeapRightI(const ssize i)
     return HeapLeftI(i) + 1;
 }
 
-inline constexpr void
+inline void
 maxHeapify(auto* a, const ssize size, ssize i)
 {
     ssize largest, left, right;

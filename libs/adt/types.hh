@@ -67,7 +67,7 @@ constexpr INIT_FLAG INIT = true;
 
 #if defined __clang__ || __GNUC__
     #define ADT_NO_UNIQUE_ADDRESS [[no_unique_address]]
-#elifdef _MSC_VER
+#elif defined _MSC_VER
     #define ADT_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #endif
 

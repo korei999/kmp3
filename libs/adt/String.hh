@@ -66,7 +66,7 @@ struct String
     const char* data() const { return m_pData; }
     char* data() { return m_pData; }
     ssize getSize() const { return m_size; }
-    [[nodiscard]] constexpr bool beginsWith(const String r) const;
+    [[nodiscard]] bool beginsWith(const String r) const;
     [[nodiscard]] constexpr bool endsWith(const String r) const;
     [[nodiscard]] constexpr ssize lastOf(char c) const;
     void destroy(IAllocator* p);
@@ -158,7 +158,7 @@ struct StringGlyphIt
     const It end() const { return {{}, NPOS, {}}; }
 };
 
-constexpr bool
+inline bool
 String::beginsWith(const String r) const
 {
     const auto& l = *this;
@@ -339,7 +339,7 @@ String::lastOf(char c) const
 inline String
 StringAlloc(IAllocator* p, const char* str, ssize size)
 {
-    if (str == nullptr || size == 0) return {};
+    if (str == nullptr || size <= 0) return {};
 
     char* pData = (char*)p->zalloc(size + 1, sizeof(char));
     strncpy(pData, str, size);
@@ -472,10 +472,10 @@ nGlyphs(const String str)
 }
 
 template<>
-constexpr usize
+inline usize
 hash::func(const String& str)
 {
-    return hash::func(str.data(), str.getSize());
+    return hash::func(str.m_pData, str.getSize());
 }
 
 namespace utils

@@ -8,7 +8,6 @@
 #include "input.hh"
 
 #include <cmath>
-#include <stdatomic.h>
 
 #ifdef __clang__
     #pragma clang diagnostic push
@@ -159,7 +158,7 @@ procResize([[maybe_unused]] tb_event* pEv)
 void
 procEvents()
 {
-    tb_event ev;
+    tb_event ev {};
     tb_peek_event(&ev, defaults::UPDATE_RATE);
 
     switch (ev.type)
@@ -492,7 +491,7 @@ drawTimeSlider()
 
     /* play/pause indicator */
     {
-        bool bPaused = atomic_load_explicit(&mix.isPaused(), memory_order_relaxed);
+        bool bPaused = mix.isPaused().load(std::memory_order_relaxed);
         const char* ntsIndicator = bPaused ? "I>" : "II";
 
         drawMBString(xOff, 10, ntsIndicator, width - 2, TB_BOLD);
@@ -531,11 +530,11 @@ drawCoverImage()
             auto& img = oCover.value();
             ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
 
-            /* clear without flickering */
-            /* BUG: termbox2 still leaves some visible damage */
             char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
             tb_send(sKittyClear, sizeof(sKittyClear));
 
+            /* clear without flickering */
+            /* BUG: termbox2 still leaves some visible damage */
             clearAreaHARD(1, 1, g_prevImgWidth + 1, g_prevImgHeight + 1);
 
             g_prevImgWidth = pl.m_imgWidth;

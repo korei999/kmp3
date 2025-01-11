@@ -26,8 +26,8 @@ namespace ffmpeg
 struct Decoder : audio::IDecoder
 {
     [[nodiscard]] virtual audio::ERROR writeToBuffer(
-        f32* pBuff, const int buffSize, const int nFrames, const int nChannles,
-        long* pSamplesWritten, s64* pPcmPos
+        Span<f32> spBuff, const int nFrames, const int nChannles,
+        long* pSamplesWritten, ssize* pPcmPos
     ) override final;
 
     [[nodiscard]] virtual u32 getSampleRate() override final;

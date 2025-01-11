@@ -3,7 +3,6 @@
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "defaults.hh"
-#include "adt/Pair.hh"
 
 #include <cmath>
 
@@ -13,6 +12,12 @@
 /* https://github.com/hpjansson/chafa/blob/master/examples/adaptive.c */
 
 #define BUFFER_MAX 4096
+
+union StringLines
+{
+    GString* pGStr;
+    Span<gchar*> sppLines;
+};
 
 namespace platform::chafa
 {
@@ -197,8 +202,9 @@ detectCanvasMode()
 }
 #endif
 
-static GString*
+static StringLines
 getString(
+    const IMAGE_LAYOUT eLayout,
     const void* pPixels,
     const int pixWidth,
     const int pixHeight,
@@ -242,75 +248,31 @@ getString(
     /* Draw pixels to the canvas */
     chafa_canvas_draw_all_pixels(pCanvas, ePixelType, (u8*)pPixels, pixWidth, pixHeight, pixRowStride);
 
-    /* Build printable strings */
-    auto* pGStr = chafa_canvas_print(pCanvas, pTermInfo);
+    defer(
+        chafa_canvas_unref(pCanvas);
+        chafa_canvas_config_unref(pConfig);
+        chafa_symbol_map_unref(pSymbolMap);
+        chafa_term_info_unref(pTermInfo);
+    );
 
-    chafa_canvas_unref(pCanvas);
-    chafa_canvas_config_unref(pConfig);
-    chafa_symbol_map_unref(pSymbolMap);
-    chafa_term_info_unref(pTermInfo);
-
-    return pGStr;
-}
-
-static Pair<gchar**, gint>
-getRows(
-    const void* pPixels,
-    const int pixWidth,
-    const int pixHeight,
-    const int pixRowStride,
-    const ChafaPixelType ePixelType,
-    const int widthCells,
-    const int heightCells,
-    const int cellWidth,
-    const int cellHeight
-)
-{
-    ChafaTermInfo* pTermInfo;
-    ChafaCanvasMode mode;
-    ChafaPixelMode ePixelMode;
-    ChafaSymbolMap* pSymbolMap;
-    ChafaCanvasConfig* pConfig;
-    ChafaCanvas* pCanvas;
-
-    detectTerminal(&pTermInfo, &mode, &ePixelMode);
-
-    /* Specify the symbols we want */
-    pSymbolMap = chafa_symbol_map_new();
-    chafa_symbol_map_add_by_tags(pSymbolMap, CHAFA_SYMBOL_TAG_BLOCK);
-
-    /* Set up a configuration with the symbols and the canvas size in characters */
-    pConfig = chafa_canvas_config_new();
-    chafa_canvas_config_set_canvas_mode(pConfig, mode);
-    chafa_canvas_config_set_pixel_mode(pConfig, ePixelMode);
-    chafa_canvas_config_set_geometry(pConfig, widthCells, heightCells);
-    chafa_canvas_config_set_symbol_map(pConfig, pSymbolMap);
-
-    if (cellWidth > 0 && cellHeight > 0)
+    if (eLayout == IMAGE_LAYOUT::RAW)
     {
-        /* We know the pixel dimensions of each cell. Store it in the config. */
-        chafa_canvas_config_set_cell_geometry(pConfig, cellWidth, cellHeight);
+        /* Build printable strings */
+        auto* pGStr = chafa_canvas_print(pCanvas, pTermInfo);
+
+        return {.pGStr = pGStr};
     }
+    else
+    {
+        gchar** ppRows = chafa_canvas_print_rows_strv(pCanvas, pTermInfo);
+        defer( chafa_term_info_unref(pTermInfo) ); /* chafa BUG: print_rows refs terminfo */
 
-    /* Create canvas */
-    pCanvas = chafa_canvas_new(pConfig);
+        gint len = 0;
+        for (; ppRows[len]; ++len)
+            ;
 
-    /* Draw pixels to the canvas */
-    chafa_canvas_draw_all_pixels(pCanvas, ePixelType, (u8*)pPixels, pixWidth, pixHeight, pixRowStride);
-
-    gchar** ppRows = chafa_canvas_print_rows_strv(pCanvas, pTermInfo);
-    defer( chafa_term_info_unref(pTermInfo) ); /* chafa BUG: print_rows refs terminfo */
-
-    gint len = 0;
-    for (; ppRows[len]; ++len)
-        ;
-
-    chafa_canvas_unref(pCanvas);
-    chafa_canvas_config_unref(pConfig);
-    chafa_symbol_map_unref(pSymbolMap);
-    chafa_term_info_unref(pTermInfo);
-
-    return Pair {ppRows, len};
+        return {.sppLines = {ppRows, len}};
+    }
 }
 
 #ifdef USE_NCURSES
@@ -493,6 +455,7 @@ allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeigh
     if (eLayout == IMAGE_LAYOUT::RAW)
     {
         auto* pGStr = getString(
+            eLayout,
             img.pBuff,
             img.width,
             img.height,
@@ -502,7 +465,8 @@ allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeigh
             heightCells,
             cellWidth,
             cellHeight
-        );
+        ).pGStr;
+
         defer( g_string_free(pGStr, true) );
 
         auto sRet = StringAlloc(pArena, pGStr->str, pGStr->len);
@@ -517,7 +481,8 @@ allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeigh
     }
     else
     {
-        Pair<gchar**, gint> ppGStr = getRows(
+        Span<gchar*> ppGStr = getString(
+            eLayout,
             img.pBuff,
             img.width,
             img.height,
@@ -527,14 +492,15 @@ allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeigh
             heightCells,
             cellWidth,
             cellHeight
-        );
-        defer( g_strfreev(ppGStr.first) );
+        ).sppLines;
 
-        VecBase<String> vLines(pArena, ppGStr.second);
-        vLines.setSize(pArena, ppGStr.second);
+        defer( g_strfreev(ppGStr.data()) );
+
+        VecBase<String> vLines(pArena, ppGStr.getSize());
+        vLines.setSize(pArena, ppGStr.getSize());
 
         for (ssize i = 0; i < vLines.getSize(); ++i)
-            vLines[i] = StringAlloc(pArena, ppGStr.first[i], strlen(ppGStr.first[i]));
+            vLines[i] = StringAlloc(pArena, ppGStr[i], strlen(ppGStr[i]));
 
         return {
             .eLayout = IMAGE_LAYOUT::LINES,

@@ -45,7 +45,7 @@ struct Context
 template<typename... ARGS_T> inline ssize out(const String fmt, const ARGS_T&... tArgs) noexcept;
 template<typename... ARGS_T> inline ssize err(const String fmt, const ARGS_T&... tArgs) noexcept;
 
-inline constexpr ssize
+inline ssize
 printArgs(Context ctx) noexcept
 {
     ssize nRead = 0;
@@ -260,7 +260,7 @@ intToBuffer(INT_T x, char* pDst, ssize dstSize, FormatArgs fmtArgs) noexcept
     return pDst;
 }
 
-inline constexpr ssize
+inline ssize
 copyBackToBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept
 {
     ssize i = 0;
@@ -301,25 +301,25 @@ copyBackToBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexce
     return i;
 }
 
-inline constexpr ssize
+inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const String& str) noexcept
 {
     return copyBackToBuffer(ctx, fmtArgs, {const_cast<char*>(str.data()), str.getSize()});
 }
 
-inline constexpr ssize
+inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const char* str) noexcept
 {
     return formatToContext(ctx, fmtArgs, String(str));
 }
 
-inline constexpr ssize
+inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, char* const& pNullTerm) noexcept
 {
     return formatToContext(ctx, fmtArgs, String(pNullTerm));
 }
 
-inline constexpr ssize
+inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, bool b) noexcept
 {
     return formatToContext(ctx, fmtArgs, b ? "true" : "false");

@@ -4,7 +4,6 @@
 #include "app.hh"
 #include "defaults.hh"
 #include "platform/chafa/chafa.hh"
-#include <stdatomic.h>
 
 #define NORM "\x1b[0m"
 #define BOLD "\x1b[1m"
@@ -215,7 +214,7 @@ Win::timeSlider()
 
     /* play/pause indicator */
     {
-        bool bPaused = mix.isPaused().load(memory_order_relaxed);
+        bool bPaused = mix.isPaused().load(std::memory_order_relaxed);
         const char* ntsIndicator = bPaused ? "I>" : "II";
 
         tb.movePush(xOff, yOff, ntsIndicator);

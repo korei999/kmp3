@@ -201,7 +201,7 @@ Mixer::play(String sPath)
 }
 
 void
-Mixer::writeFramesLocked(f32* pBuff, u32 nFrames, long* pSamplesWritten, s64* pPcmPos)
+Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, s64* pPcmPos)
 {
     audio::ERROR err {};
     {
@@ -210,7 +210,7 @@ Mixer::writeFramesLocked(f32* pBuff, u32 nFrames, long* pSamplesWritten, s64* pP
         if (!m_bDecodes) return;
 
         err = m_pIDecoder->writeToBuffer(
-            pBuff, utils::size(s_aPwBuff),
+            spBuff,
             nFrames, m_nChannels,
             pSamplesWritten, pPcmPos
         );
@@ -296,7 +296,7 @@ Mixer::onProcess()
         if (s_nWrites >= s_nDecodedSamples)
         {
             /* ask to fill the buffer when it's empty */
-            writeFramesLocked(s_aPwBuff, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
+            writeFramesLocked({s_aPwBuff}, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
             m_currMs = m_pIDecoder->getCurrentMS();
             s_nWrites = 0;
         }
