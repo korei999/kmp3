@@ -179,10 +179,14 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     endif()
 
     if (OPT_CHAFA)
-        pkg_check_modules(CHAFA REQUIRED chafa libswscale)
-        if (${CHAFA_FOUND})
-            include_directories(BEFORE ${CHAFA_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES})
+        pkg_check_modules(CHAFA REQUIRED chafa>=1.14)
+        pkg_check_modules(SWSCALE REQUIRED libswscale)
+        if (${CHAFA_FOUND} AND ${SWSCALE_FOUND})
+
+            message(STATUS "CHAFA: '${CHAFA_VERSION}'")
+
+            include_directories(BEFORE ${CHAFA_INCLUDE_DIRS} ${SWSCALE_INCLUDE_DIRS})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES} ${SWSCALE_LIBRARIES})
             add_definitions("-DUSE_CHAFA")
             target_sources(
                 ${CMAKE_PROJECT_NAME} PRIVATE
