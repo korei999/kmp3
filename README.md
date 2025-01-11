@@ -16,14 +16,15 @@
 - `/` to search.
 - `9` / `0` change volume, or `(` / `)` for smaller steps.
 - `t` select time: `4:20`, `40` or `60%`.
-- `z` center around currently playing song.
+- `z` focus selected song.
 - `r` / `R` cycle between repeat methods (None, Track, Playlist).
 - `m` mute.
 - `q` quit.
 - `[` / `]` playback speed shifting fun. `\` Set original speed back.
 
 ### Dependencies
-`libpipewire-0.3 libavformat libavcodec libavutil libswresample`.\
+Compiler: `clang >= 14.0` or `gcc > 12`
+Packages: `libpipewire-0.3 libavformat libavcodec libavutil libswresample`.\
 For mpris support: `libsystemd` or `basu`.\
 For image support: `chafa glib-2.0 libswscale`.
 
