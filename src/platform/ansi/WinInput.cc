@@ -3,6 +3,8 @@
 #include "defaults.hh"
 #include "keybinds.hh"
 
+#include <sys/select.h>
+
 namespace platform::ansi
 {
 
