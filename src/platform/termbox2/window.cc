@@ -42,6 +42,7 @@ int g_prevImgHeight = 0;
 
 static f64 s_time {};
 static f64 s_lastResizeTime {};
+static bool s_bNoImage {};
 
 bool
 start(Arena* pAlloc)
@@ -524,18 +525,18 @@ drawCoverImage()
         pl.m_bSelectionChanged = false;
 
         auto oCover = app::g_pMixer->getCoverImage();
+
+        /* clear without flickering */
+        const char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
+        tb_send(sKittyClear, sizeof(sKittyClear));
+        /* BUG: termbox2 still leaves some visible damage */
+        clearAreaHARD(1, 1, g_prevImgWidth + 1, g_prevImgHeight + 1);
+
         if (oCover)
         {
             namespace ch = platform::chafa;
             auto& img = oCover.value();
             ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
-
-            char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
-            tb_send(sKittyClear, sizeof(sKittyClear));
-
-            /* clear without flickering */
-            /* BUG: termbox2 still leaves some visible damage */
-            clearAreaHARD(1, 1, g_prevImgWidth + 1, g_prevImgHeight + 1);
 
             g_prevImgWidth = pl.m_imgWidth;
             g_prevImgHeight = pl.m_imgHeight;
@@ -579,6 +580,11 @@ drawCoverImage()
             }
 
             tb_hide_cursor();
+            s_bNoImage = false;
+        }
+        else
+        {
+            s_bNoImage = true;
         }
     }
 }

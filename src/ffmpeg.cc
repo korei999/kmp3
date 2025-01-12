@@ -15,7 +15,10 @@ covertFormat(int format)
     switch (format)
     {
         default: return IMAGE_PIXEL_FORMAT::NONE;
+
+        case AV_PIX_FMT_YUVJ444P:
         case AV_PIX_FMT_RGB24: return IMAGE_PIXEL_FORMAT::RGB8;
+
         case AV_PIX_FMT_RGBA: return IMAGE_PIXEL_FORMAT::RGBA8_UNASSOCIATED;
     }
 };
@@ -48,12 +51,7 @@ Decoder::getCurrentMS()
 s64
 Decoder::getTotalMS()
 {
-    if (!m_pStream) return {};
-
-    s64 total = getTotalSamplesCount();
-    f64 ret = (av_q2d(m_pStream->time_base) * total) / getChannelsCount() * 1000.0;
-
-    return ret;
+    return (getTotalSamplesCount() / getSampleRate() / getChannelsCount()) * 1000;
 }
 
 
@@ -132,7 +130,8 @@ Decoder::getAttachedPicture()
     m_pSwsCtx = sws_getContext(
         m_pImgFrame->width, m_pImgFrame->height, (AVPixelFormat)m_pImgFrame->format,
         m_pImgFrame->width, m_pImgFrame->height, AV_PIX_FMT_RGB24,
-        SWS_BILINEAR, {}, {}, {}
+        SWS_LANCZOS,
+        {}, {}, {}
     );
 
     m_pConverted = av_frame_alloc();
@@ -143,12 +142,17 @@ Decoder::getAttachedPicture()
     err = av_frame_get_buffer(m_pConverted, 0);
     if (err != 0) { LOG_BAD("av_frame_get_buffer()\n"); return; }
 
+    LOG_BAD("img linesize: [{}]\n", m_pImgFrame->linesize);
+    LOG_BAD("con linesize: [{}]\n", m_pConverted->linesize);
+
     sws_scale(m_pSwsCtx,
-        m_pImgFrame->data, m_pImgFrame->linesize, 0, m_pImgFrame->height,
+        m_pImgFrame->data, m_pImgFrame->linesize,
+        0, m_pImgFrame->height,
         m_pConverted->data, m_pConverted->linesize
     );
 
-    LOG_WARN("width: {}, height: {}, format: {}\n", m_pImgFrame->width, m_pImgFrame->height, m_pImgFrame->format);
+    LOG_WARN("img          : width: {}, height: {}, format: {}\n", m_pImgFrame->width, m_pImgFrame->height, m_pImgFrame->format);
+    LOG_WARN("img converted: width: {}, height: {}, format: {}\n", m_pConverted->width, m_pConverted->height, m_pConverted->format);
 
     m_oCoverImg = Image {
         .pBuff = m_pConverted->data[0],
@@ -306,7 +310,8 @@ Decoder::seekMS(f64 ms)
 
 	avcodec_flush_buffers(m_pCodecCtx);
 	s64 pts = av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
-    av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);
+    /*av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);*/
+    avformat_seek_file(m_pFormatCtx, m_audioStreamIdx, 0, pts, pts, AVSEEK_FLAG_ANY);
 }
 
 s64

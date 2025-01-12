@@ -41,7 +41,7 @@ formatToPixelType(const IMAGE_PIXEL_FORMAT eFormat)
 
         case IMAGE_PIXEL_FORMAT::RGBA8_PREMULTIPLIED:
         case IMAGE_PIXEL_FORMAT::RGBA8_UNASSOCIATED:
-        return CHAFA_PIXEL_RGBA8_PREMULTIPLIED;
+        return CHAFA_PIXEL_RGBA8_UNASSOCIATED;
     }
 
     return -1;
@@ -445,8 +445,6 @@ allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeigh
         fontRatio = f64(cellWidth) / f64(cellHeight);
     }
 
-    /*widthCells = termSize.widthCells;*/
-    /*heightCells = termSize.heightCells;*/
     widthCells = termWidth;
     heightCells = termHeight;
 

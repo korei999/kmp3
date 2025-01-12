@@ -525,4 +525,26 @@ err(const String fmt, const ARGS_T&... tArgs) noexcept
     return toFILE(stderr, fmt, tArgs...);
 }
 
+template<typename T, ssize N>
+inline ssize
+formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const T (&a)[N])
+{
+    if (N <= 0)
+    {
+        ctx.fmt = "{}";
+        ctx.fmtIdx = 0;
+        return printArgs(ctx, "(empty)");
+    }
+
+    char aBuff[1024] {};
+    ssize nRead = 0;
+    for (ssize i = 0; i < N; ++i)
+    {
+        const char* fmt = i == N - 1 ? "{}" : "{}, ";
+        nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, a[i]);
+    }
+
+    return print::copyBackToBuffer(ctx, fmtArgs, {aBuff});
+}
+
 } /* namespace adt::print */

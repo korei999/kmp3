@@ -248,4 +248,34 @@ reverse(auto* a)
     reverse(a->data(), a->getSize());
 }
 
+
+inline constexpr u16
+swapBytes(u16 x)
+{
+    return ((x & 0xff00u) >> 1 * 8) |
+           ((x & 0x00ffu) << 1 * 8);
+}
+
+inline constexpr u32
+swapBytes(u32 x)
+{
+    return ((x & 0xff000000u) >> 3 * 8) |
+           ((x & 0x00ff0000u) >> 1 * 8) |
+           ((x & 0x0000ff00u) << 1 * 8) |
+           ((x & 0x000000ffu) << 3 * 8);
+}
+
+inline constexpr u64
+swapBytes(u64 x)
+{
+    return ((x & 0xff00000000000000llu) >> 7 * 8) |
+           ((x & 0x00ff000000000000llu) >> 5 * 8) |
+           ((x & 0x0000ff0000000000llu) >> 2 * 8) |
+           ((x & 0x000000ff00000000llu) >> 1 * 8) |
+           ((x & 0x00000000ff000000llu) << 1 * 8) |
+           ((x & 0x0000000000ff0000llu) << 3 * 8) |
+           ((x & 0x000000000000ff00llu) << 5 * 8) |
+           ((x & 0x00000000000000ffllu) << 7 * 8);
+}
+
 } /* namespace adt::utils */
