@@ -6,6 +6,13 @@
 #include "adt/types.hh"
 #include "adt/utils.hh"
 
+extern "C"
+{
+
+#include <libavutil/imgutils.h>
+
+}
+
 namespace ffmpeg
 {
 
@@ -137,9 +144,13 @@ Decoder::getAttachedPicture()
     );
 
     m_pConverted = av_frame_alloc();
+    av_image_fill_linesizes(m_pConverted->linesize, AV_PIX_FMT_RGB24, m_pImgFrame->width);
+
     m_pConverted->format = AV_PIX_FMT_RGB24;
     m_pConverted->width = m_pImgFrame->width;
     m_pConverted->height = m_pImgFrame->height;
+
+    LOG_NOTIFY("format: {}, converted format: {}\n", m_pImgFrame->format, m_pConverted->format);
 
     err = av_frame_get_buffer(m_pConverted, 0);
     if (err != 0)

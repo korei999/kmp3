@@ -178,7 +178,7 @@ addNSToTimespec(timespec* const pTs, const ssize nsec)
 
 template<typename T>
 inline void
-copy(T* pDest, T* pSrc, ssize size)
+copy(T* pDest, const T* const pSrc, ssize size)
 {
     assert(pDest != nullptr && pSrc != nullptr);
     memcpy(pDest, pSrc, size * sizeof(T));
@@ -186,10 +186,18 @@ copy(T* pDest, T* pSrc, ssize size)
 
 template<typename T>
 inline void
-move(T* pDest, T* pSrc, ssize size)
+move(T* pDest, const T* const pSrc, ssize size)
 {
     assert(pDest != nullptr && pSrc != nullptr);
     memmove(pDest, pSrc, size * sizeof(T));
+}
+
+template<typename T>
+inline void
+set(T* pDest, int byte, ssize size)
+{
+    assert(pDest != nullptr);
+    memset(pDest, byte, size * sizeof(T));
 }
 
 template<typename T>
