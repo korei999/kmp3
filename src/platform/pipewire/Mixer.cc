@@ -83,7 +83,7 @@ formatByteSize(spa_audio_format eFormat)
 void
 Mixer::init()
 {
-    m_pIDecoder = (ffmpeg::Decoder*)calloc(1, sizeof(ffmpeg::Decoder));
+    m_pIDecoder = (ffmpeg::Decoder*)::calloc(1, sizeof(ffmpeg::Decoder));
     new(m_pIDecoder) ffmpeg::Decoder();
 
     m_bRunning = true;
@@ -132,7 +132,7 @@ Mixer::init()
         m_pStream,
         PW_DIRECTION_OUTPUT,
         PW_ID_ANY,
-        (pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT|PW_STREAM_FLAG_INACTIVE|PW_STREAM_FLAG_MAP_BUFFERS),
+        (pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_INACTIVE | PW_STREAM_FLAG_MAP_BUFFERS),
         aParams,
         utils::size(aParams)
     );

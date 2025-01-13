@@ -16,7 +16,6 @@ covertFormat(int format)
     {
         default: return IMAGE_PIXEL_FORMAT::NONE;
 
-        case AV_PIX_FMT_YUVJ444P:
         case AV_PIX_FMT_RGB24: return IMAGE_PIXEL_FORMAT::RGB8;
 
         case AV_PIX_FMT_RGBA: return IMAGE_PIXEL_FORMAT::RGBA8_UNASSOCIATED;
@@ -125,7 +124,10 @@ Decoder::getAttachedPicture()
     m_pImgFrame = av_frame_alloc();
     err = avcodec_receive_frame(pCodecCtx, m_pImgFrame);
     if (err == AVERROR(EINVAL))
+    {
         LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
+        return;
+    }
 
     m_pSwsCtx = sws_getContext(
         m_pImgFrame->width, m_pImgFrame->height, (AVPixelFormat)m_pImgFrame->format,
@@ -140,19 +142,13 @@ Decoder::getAttachedPicture()
     m_pConverted->height = m_pImgFrame->height;
 
     err = av_frame_get_buffer(m_pConverted, 0);
-    if (err != 0) { LOG_BAD("av_frame_get_buffer()\n"); return; }
+    if (err != 0)
+    {
+        LOG_BAD("av_frame_get_buffer()\n");
+        return;
+    }
 
-    LOG_BAD("img linesize: [{}]\n", m_pImgFrame->linesize);
-    LOG_BAD("con linesize: [{}]\n", m_pConverted->linesize);
-
-    sws_scale(m_pSwsCtx,
-        m_pImgFrame->data, m_pImgFrame->linesize,
-        0, m_pImgFrame->height,
-        m_pConverted->data, m_pConverted->linesize
-    );
-
-    LOG_WARN("img          : width: {}, height: {}, format: {}\n", m_pImgFrame->width, m_pImgFrame->height, m_pImgFrame->format);
-    LOG_WARN("img converted: width: {}, height: {}, format: {}\n", m_pConverted->width, m_pConverted->height, m_pConverted->format);
+    sws_scale_frame(m_pSwsCtx, m_pConverted, m_pImgFrame);
 
     m_oCoverImg = Image {
         .pBuff = m_pConverted->data[0],
@@ -310,8 +306,8 @@ Decoder::seekMS(f64 ms)
 
 	avcodec_flush_buffers(m_pCodecCtx);
 	s64 pts = av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
-    /*av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);*/
-    avformat_seek_file(m_pFormatCtx, m_audioStreamIdx, 0, pts, pts, AVSEEK_FLAG_ANY);
+    av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);
+    /*avformat_seek_file(m_pFormatCtx, m_audioStreamIdx, 0, pts, pts, AVSEEK_FLAG_ANY);*/
 }
 
 s64
