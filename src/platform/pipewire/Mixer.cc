@@ -197,7 +197,9 @@ Mixer::play(String sPath)
 
     pause(false);
 
+#ifdef USE_MPRIS
     m_bUpdateMpris = true; /* mark to update in frame::run() */
+#endif
 }
 
 void

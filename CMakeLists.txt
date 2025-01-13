@@ -43,9 +43,7 @@ add_executable(
     src/frame.cc
     src/Player.cc
     src/ffmpeg.cc
-    src/mpris.cc
     src/common.cc
-    src/platform/pipewire/Mixer.cc
     src/platform/termbox2/window.cc
     src/platform/termbox2/input.cc
     src/platform/ansi/Win.cc
@@ -53,11 +51,12 @@ add_executable(
     src/platform/ansi/WinInput.cc
 )
 
-option(OPT_NCURSES "ncurses support" OFF)
-option(OPT_MPRIS "mpris support" ON)
-option(OPT_SIXEL "sixel support" OFF)
-option(OPT_CHAFA "chafa support" ON)
-option(OPT_MARCH_NATIVE OFF)
+option(OPT_PIPEWIRE "" ON)
+option(OPT_CHAFA "" ON)
+option(OPT_MPRIS "" ON)
+option(OPT_SIXEL "" OFF)
+option(OPT_NCURSES "" OFF)
+option(OPT_MARCH_NATIVE "" OFF)
 
 if (OPT_MARCH_NATIVE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
@@ -76,8 +75,6 @@ if (CMAKE_BUILD_TYPE MATCHES "Release" AND CMAKE_SYSTEM_NAME MATCHES "Windows")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=thin")
     endif()
 endif()
-
-# debug logs defines
 
 if (CMAKE_BUILD_TYPE MATCHES "Asan")
     set(CMAKE_BUILD_TYPE "Debug")
@@ -104,18 +101,10 @@ endif()
 message(STATUS "CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /GR") # disable exceptions
-    # add_definitions("/D_HAS_EXCEPTIONS=0")
-
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4146 /wd4200 /wd4312")
     set(CMAKE_CXX_FLAGS "/utf-8")
     set(CMAKE_C_FLAGS "/utf-8")
 else()
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-threadsafe-statics -fno-rtti -fno-exceptions -fno-unwind-tables")
-    # if (NOT CMAKE_BUILD_TYPE MATCHES "Debug")
-    #     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs -lc -lm")
-    # endif()
-
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fms-extensions -Wno-missing-braces")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -fms-extensions -Wno-missing-braces")
 endif()
@@ -143,12 +132,29 @@ message(STATUS "CMAKE_SOURCE_DIR: '${CMAKE_SOURCE_DIR}'")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LINUX_PKGS REQUIRED libpipewire-0.3 libavformat libavcodec libavutil libswresample)
-    include_directories(BEFORE ${LINUX_PKGS_INCLUDE_DIRS})
+
+    pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswresample)
+    include_directories(BEFORE ${FFMPEG_INCLUDE_DIRS})
     target_link_libraries(
         ${CMAKE_PROJECT_NAME} PRIVATE
-        ${LINUX_PKGS_LIBRARIES}
+        ${FFMPEG_LIBRARIES}
     )
+
+    if (OPT_PIPEWIRE)
+        pkg_check_modules(PIPEWIRE libpipewire-0.3)
+        if (${PIPEWIRE_FOUND})
+            add_definitions("-DUSE_PIPEWIRE")
+            include_directories(BEFORE ${PIPEWIRE_INCLUDE_DIRS})
+            target_link_libraries(
+                ${CMAKE_PROJECT_NAME} PRIVATE
+                ${PIPEWIRE_LIBRARIES}
+            )
+
+            target_sources( ${CMAKE_PROJECT_NAME} PRIVATE
+                "src/platform/pipewire/Mixer.cc"
+            )
+        endif()
+    endif()
 
     if (OPT_SIXEL)
         pkg_check_modules(SIXEL libsixel)
@@ -156,6 +162,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
             include_directories(BEFORE ${SIXEL_INCLUDE_DIRS})
             target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SIXEL_LIBRARIES})
             add_definitions("-DUSE_SIXEL")
+
             target_sources(
                 ${CMAKE_PROJECT_NAME} PRIVATE
                 "src/platform/sixel/Img.cc"
@@ -179,8 +186,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     endif()
 
     if (OPT_CHAFA)
-        pkg_check_modules(CHAFA REQUIRED chafa)
-        pkg_check_modules(SWSCALE REQUIRED libswscale)
+        pkg_check_modules(CHAFA chafa)
+        pkg_check_modules(SWSCALE libswscale)
 
         if (${CHAFA_FOUND} AND ${SWSCALE_FOUND})
             message(STATUS "CHAFA_VERSION: '${CHAFA_VERSION}'")

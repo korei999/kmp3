@@ -2,8 +2,11 @@
 
 #include "adt/logs.hh"
 #include "platform/ansi/Win.hh"
-#include "platform/pipewire/Mixer.hh"
 #include "platform/termbox2/window.hh"
+
+#ifdef USE_PIPEWIRE
+    #include "platform/pipewire/Mixer.hh"
+#endif
 
 #ifdef USE_NCURSES
     #include "platform/ncurses/Win.hh"
@@ -37,7 +40,7 @@ allocWindow(IAllocator* pAlloc)
 
     switch (g_eUIFrontend)
     {
-        case UI_FRONTEND::DUMMY:
+        default:
         {
             DummyWindow* pDummy = (DummyWindow*)pAlloc->zalloc(1, sizeof(*pDummy));
             new(pDummy) DummyWindow();
@@ -85,7 +88,7 @@ allocMixer(IAllocator* pAlloc)
 
     switch (g_eMixer)
     {
-        case MIXER::DUMMY:
+        default:
         {
             audio::DummyMixer* pDummy = (decltype(pDummy))pAlloc->zalloc(1, sizeof(*pDummy));
             new(pDummy) audio::DummyMixer();
@@ -93,6 +96,7 @@ allocMixer(IAllocator* pAlloc)
         }
         break;
 
+#ifdef USE_PIPEWIRE
         case MIXER::PIPEWIRE:
         {
             platform::pipewire::Mixer* pPwMixer = (decltype(pPwMixer))pAlloc->zalloc(1, sizeof(*pPwMixer));
@@ -100,6 +104,7 @@ allocMixer(IAllocator* pAlloc)
             pMix = pPwMixer;
         }
         break;
+#endif
     }
 
     return pMix;
