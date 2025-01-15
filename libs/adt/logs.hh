@@ -61,8 +61,8 @@ constexpr adt::String _ADT_LOG_SEV_STR[] = {
         do                                                                                                             \
         {                                                                                                              \
             assert(SEV >= 0 && SEV < _ADT_LOG_SEV_ENUM_SIZE && "wrong _ADT_LOG_SEV*");                                 \
-            CERR("({}{}, {}): ", _ADT_LOG_SEV_STR[SEV], ADT_LOGS_FILE, __LINE__);                                      \
-            CERR(__VA_ARGS__);                                                                                         \
+            ADT_CERR("({}{}, {}): ", _ADT_LOG_SEV_STR[SEV], ADT_LOGS_FILE, __LINE__);                                  \
+            ADT_CERR(__VA_ARGS__);                                                                                     \
             switch (SEV)                                                                                               \
             {                                                                                                          \
                 default:                                                                                               \

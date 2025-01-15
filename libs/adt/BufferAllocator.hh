@@ -1,7 +1,6 @@
 #pragma once
 
 #include "IAllocator.hh"
-#include "utils.hh"
 #include "Span.hh"
 
 #include <cstring>
@@ -38,15 +37,15 @@ struct BufferAllocator : public IAllocator
 
     /* */
 
-    [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual constexpr void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     constexpr virtual void free(void* ptr) noexcept override final; /* noop */
     constexpr virtual void freeAll() noexcept override final; /* same as reset */
     constexpr void reset() noexcept;
 };
 
-constexpr void*
+inline void*
 BufferAllocator::malloc(usize mCount, usize mSize)
 {
     usize realSize = align8(mCount * mSize);
@@ -62,7 +61,7 @@ BufferAllocator::malloc(usize mCount, usize mSize)
     return ret;
 }
 
-constexpr void*
+inline void*
 BufferAllocator::zalloc(usize mCount, usize mSize)
 {
     auto* p = malloc(mCount, mSize);
@@ -70,14 +69,14 @@ BufferAllocator::zalloc(usize mCount, usize mSize)
     return p;
 }
 
-constexpr void*
-BufferAllocator::realloc(void* p, usize mCount, usize mSize)
+inline void*
+BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 {
-    if (!p) return malloc(mCount, mSize);
+    if (!p) return malloc(newCount, mSize);
 
     assert(p >= m_pMemBuffer && p < m_pMemBuffer + m_cap && "[FixedAllocator]: invalid pointer");
 
-    usize realSize = align8(mCount * mSize);
+    usize realSize = align8(newCount * mSize);
 
     if ((m_size + realSize - m_lastAllocSize) > m_cap)
         throw AllocException("FixedAllocator::realloc(): out of memory");
@@ -92,10 +91,8 @@ BufferAllocator::realloc(void* p, usize mCount, usize mSize)
     }
     else
     {
-        auto* ret = malloc(mCount, mSize);
-        usize nBytesUntilEndOfBlock = m_cap - m_size;
-        usize nBytesToCopy = utils::min(realSize, nBytesUntilEndOfBlock);
-        memcpy(ret, p, nBytesToCopy);
+        auto* ret = malloc(newCount, mSize);
+        memcpy(ret, p, oldCount);
 
         return ret;
     }

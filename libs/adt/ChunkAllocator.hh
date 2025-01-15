@@ -45,7 +45,7 @@ public:
 
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     void virtual free(void* ptr) noexcept override final;
     void virtual freeAll() noexcept override final;
 
@@ -114,7 +114,7 @@ ChunkAllocator::zalloc(usize, usize)
 }
 
 inline void*
-ChunkAllocator::realloc(void*, usize, usize)
+ChunkAllocator::realloc(void*, usize, usize, usize)
 {
     assert(false && "ChunkAllocator can't realloc()");
     return nullptr;

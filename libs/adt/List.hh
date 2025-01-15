@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IAllocator.hh"
-#include "print.hh"
+#include "utils.hh"
 
 #include <new> /* IWYU pragma: keep */
 
@@ -37,6 +37,8 @@ struct ListBase
     ssize m_size {};
 
     /* */
+
+    [[nodiscard]] constexpr ssize getSize() const { return m_size; }
 
     [[nodiscard]] constexpr bool empty() const { return m_size == 0; }
 
@@ -326,6 +328,8 @@ struct List
 
     /* */
 
+    [[nodiscard]] constexpr ssize getSize() const { return base.getSize(); }
+
     [[nodiscard]] constexpr bool empty() const { return base.empty(); }
 
     constexpr ListNode<T>* pushFront(const T& x) { return base.pushFront(m_pAlloc, x); }
@@ -356,39 +360,5 @@ struct List
     const typename ListBase<T>::It rbegin() const { return base.rbegin(); }
     const typename ListBase<T>::It rend() const { return base.rend(); }
 };
-
-namespace print
-{
-
-template<typename T>
-inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const ListBase<T>& x)
-{
-    if (x.empty())
-    {
-        ctx.fmt = "{}";
-        ctx.fmtIdx = 0;
-        return printArgs(ctx, "(empty)");
-    }
-
-    char aBuff[1024] {};
-    ssize nRead = 0;
-    ADT_LIST_FOREACH(&x, it)
-    {
-        const char* fmt = it == x.m_pLast ? "{}" : "{}, ";
-        nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, it->data);
-    }
-
-    return print::copyBackToBuffer(ctx, fmtArgs, {aBuff});
-}
-
-template<typename T>
-inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const List<T>& x)
-{
-    return formatToContext(ctx, fmtArgs, x.base);
-}
-
-} /* namespace print */
 
 } /* namespace adt */

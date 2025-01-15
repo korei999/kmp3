@@ -37,7 +37,7 @@ struct TwoDSpan
 
 private:
     constexpr T&
-    at(ssize x, ssize y)
+    at(ssize x, ssize y) const
     {
         ssize idx = y*m_width + x;
         assert(x >= 0 && x < m_width && y < m_height && "[TwoDSpan]: out of range");

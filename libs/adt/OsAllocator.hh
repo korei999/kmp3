@@ -14,7 +14,7 @@ struct OsAllocator : IAllocator
 {
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     void virtual free(void* ptr) noexcept override final;
     void virtual freeAll() noexcept override final; /* assert(false) */
 };
@@ -43,9 +43,9 @@ OsAllocator::zalloc(usize mCount, usize mSize)
 }
 
 inline void*
-OsAllocator::realloc(void* p, usize mCount, usize mSize)
+OsAllocator::realloc(void* p, usize, usize newCount, usize mSize)
 {
-    auto* r = ::realloc(p, mCount * mSize);
+    auto* r = ::realloc(p, newCount * mSize);
     if (!r) throw AllocException("OsAllocator::realloc()");
     return r;
 }

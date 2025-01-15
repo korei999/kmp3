@@ -20,7 +20,7 @@ using u32 = uint32_t;
 using s64 = int64_t;
 using u64 = uint64_t;
 using pdiff = ptrdiff_t;
-using ssize = ssize_t;
+using ssize = s64;
 using usize = size_t;
 
 constexpr ssize NPOS = -1L;

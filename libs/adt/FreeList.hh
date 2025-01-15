@@ -69,7 +69,7 @@ public:
 
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override;
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override;
     virtual void free(void* ptr) noexcept override;
     virtual void freeAll() noexcept override;
     usize nBytesAllocated();
@@ -366,21 +366,21 @@ FreeList::free(void* ptr) noexcept
 }
 
 inline void*
-FreeList::realloc(void* ptr, usize nMembers, usize mSize)
+FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
 {
-    if (!ptr) return malloc(nMembers, mSize);
+    if (!ptr) return malloc(newCount, mSize);
 
     auto* pNode = _FreeListNodeFromPtr(ptr);
     ssize nodeSize = (ssize)pNode->m_data.getSize() - (ssize)sizeof(FreeList::Node);
     assert(nodeSize > 0 && "[FreeList]: 0 or negative size allocation (corruption)");
 
-    if ((ssize)nMembers*(ssize)mSize <= nodeSize) return ptr;
+    if ((ssize)newCount*(ssize)mSize <= nodeSize) return ptr;
 
     assert(!pNode->m_data.isFree() && "[FreeList]: trying to realloc non free node");
 
     /* try to bump if next is free and can fit */
     {
-        usize requested = align8(nMembers * mSize);
+        usize requested = align8(newCount * mSize);
         usize realSize = requested + sizeof(FreeList::Node);
         auto* pNext = pNode->m_data.m_pNext;
 
@@ -411,8 +411,8 @@ FreeList::realloc(void* ptr, usize nMembers, usize mSize)
         }
     }
 
-    auto* pRet = malloc(nMembers, mSize);
-    memcpy(pRet, ptr, nodeSize);
+    auto* pRet = malloc(newCount, mSize);
+    memcpy(pRet, ptr, oldCount * mSize);
     free(ptr);
 
     return pRet;

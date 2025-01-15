@@ -128,7 +128,7 @@ TextBuff::push(const char* pBuff, const u32 buffSize)
     if (buffSize + m_size >= m_capacity)
     {
         const u32 newCap = utils::max(buffSize + m_size, m_capacity*2);
-        m_pData = (char*)m_pAlloc->realloc(m_pData, newCap, 1);
+        m_pData = (char*)m_pAlloc->realloc(m_pData, m_capacity, newCap, 1);
         m_capacity = newCap;
     }
 

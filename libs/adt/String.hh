@@ -109,15 +109,11 @@ struct String
 /* wchar_t iterator for mutlibyte strings */
 struct StringGlyphIt
 {
-    using Iter = String::It;
+    const String m_s;
 
     /* */
 
-    const String s;
-
-    /* */
-
-    StringGlyphIt(const String _s) : s(_s) {};
+    StringGlyphIt(const String s) : m_s(s) {};
 
     /* */
 
@@ -151,11 +147,74 @@ struct StringGlyphIt
         friend bool operator!=(const It& l, const It& r) { return l.i != r.i; }
     };
 
-    It begin() { return {s.data(), 0, s.getSize()}; }
+    It begin() { return {m_s.data(), 0, m_s.getSize()}; }
     It end() { return {{}, NPOS, {}}; }
 
-    const It begin() const { return {s.data(), 0, s.getSize()}; }
+    const It begin() const { return {m_s.data(), 0, m_s.getSize()}; }
     const It end() const { return {{}, NPOS, {}}; }
+};
+
+/* Separated by delimiter String iterator adapter */
+struct StringWordIt
+{
+    String m_s {};
+    char m_delimiter {};
+
+    /* */
+
+    StringWordIt(const String s, const char delimiter = ' ') : m_s(s), m_delimiter(delimiter) {}
+
+    struct It
+    {
+        String m_sCurrWord {};
+        String m_str;
+        ssize m_i = 0;
+        char m_sep {};
+
+        /* */
+
+        It(String s, ssize pos, char sep)
+            : m_str(s), m_i(pos), m_sep(sep)
+        {
+            if (pos != NPOS)
+                operator++();
+        }
+
+        /* */
+
+        String& operator*() { return m_sCurrWord; }
+        String* operator->() { return &m_sCurrWord; }
+
+        It&
+        operator++()
+        {
+            if (m_i >= m_str.getSize())
+            {
+                m_i = NPOS;
+                return *this;
+            }
+
+            ssize start = m_i;
+            ssize end = m_i;
+
+            while (end < m_str.getSize() && m_str[end] != m_sep)
+                end++;
+
+            m_sCurrWord = {&m_str[start], end - start};
+            m_i = end + 1;
+
+            return *this;
+        }
+
+        friend bool operator==(const It& l, const It& r) { return l.m_i == r.m_i; }
+        friend bool operator!=(const It& l, const It& r) { return l.m_i != r.m_i; }
+    };
+
+    It begin() { return {m_s, 0, m_delimiter}; }
+    It end() { return {m_s, NPOS, m_delimiter}; }
+
+    const It begin() const { return {m_s, 0, m_delimiter}; }
+    const It end() const { return {m_s, NPOS, m_delimiter}; }
 };
 
 inline bool

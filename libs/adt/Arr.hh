@@ -220,24 +220,9 @@ namespace print
 
 template<typename T, ssize CAP>
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Arr<T, CAP>& x)
+formatToContext(Context ctx, FormatArgs fmtArgs, const Arr<T, CAP>& x)
 {
-    if (x.empty())
-    {
-        ctx.fmt = "{}";
-        ctx.fmtIdx = 0;
-        return printArgs(ctx, "(empty)");
-    }
-
-    char aBuff[1024] {};
-    ssize nRead = 0;
-    for (ssize i = 0; i < x.m_size; ++i)
-    {
-        const char* fmt = i == x.m_size - 1 ? "{}" : "{}, ";
-        nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, x[i]);
-    }
-
-    return print::copyBackToBuffer(ctx, fmtArgs, {aBuff});
+    return print::formatToContext(ctx, fmtArgs, Span(x.data(), x.getSize()));
 }
 
 } /* namespace print */

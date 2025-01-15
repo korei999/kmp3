@@ -57,6 +57,7 @@ struct Pool
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) [[nodiscard]] PoolHnd emplace(ARGS&&... args);
     void giveBack(PoolHnd hnd);
     ssize getCap() const { return CAP; }
+    ssize getSize() const { return m_aNodes.getSize(); }
 
     /* */
 
@@ -71,10 +72,14 @@ public:
         Pool* s {};
         ssize i {};
 
-        It(Pool* _self, ssize _i) : s(_self), i(_i) {}
+        /* */
 
-        T& operator*() { return s->m_aNodes[i].data; }
-        T* operator->() { return &s->m_aNodes[i].data; }
+        It(const Pool* _self, ssize _i) : s(const_cast<Pool*>(_self)), i(_i) {}
+
+        /* */
+
+        auto& operator*() { return s->m_aNodes[i].data; }
+        auto* operator->() { return &s->m_aNodes[i].data; }
 
         It
         operator++()
@@ -106,19 +111,15 @@ public:
             return {s, tmp};
         }
 
-        friend bool operator==(It l, It r) { return l.i == r.i; }
-        friend bool operator!=(It l, It r) { return l.i != r.i; }
+        friend bool operator==(const It& l, const It& r) { return l.i == r.i; }
+        friend bool operator!=(const It& l, const It& r) { return l.i != r.i; }
     };
 
     It begin() { return {this, firstI()}; }
-    It end() { return {this, m_aNodes.m_size == 0 ? -1 : lastI() + 1}; }
-    It rbegin() { return {this, lastI()}; }
-    It rend() { return {this, m_aNodes.m_size == 0 ? -1 : firstI() - 1}; }
+    It end() { return {this, getSize() == 0 ? -1 : lastI() + 1}; }
 
     const It begin() const { return {this, firstI()}; }
-    const It end() const { return {this, m_aNodes.m_size == 0 ? -1 : lastI() + 1}; }
-    const It rbegin() const { return {this, lastI()}; }
-    const It rend() const { return {this, m_aNodes.m_size == 0 ? -1 : firstI() - 1}; }
+    const It end() const { return {this, getSize() == 0 ? -1 : lastI() + 1}; }
 };
 
 template<typename T, ssize CAP>
@@ -259,5 +260,18 @@ Pool<T, CAP>::at(ssize i)
     assert(!m_aNodes[i].bDeleted && "[Pool]: accessing deleted node");
     return m_aNodes[i].data;
 }
+
+namespace print
+{
+
+template<typename T, ssize CAP>
+inline ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, const Pool<T, CAP>& x)
+{
+    /* BUG: leaves trailing comma, since formatToContext simply does ++i. */
+    return print::formatToContextTemplSize(ctx, fmtArgs, x, x.getSize());
+}
+
+} /* namespace print */
 
 } /* namespace adt */

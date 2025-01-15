@@ -2,7 +2,6 @@
 
 #include "IAllocator.hh"
 #include "utils.hh"
-#include "print.hh"
 
 #include <cassert>
 #include <new> /* IWYU pragma: keep */
@@ -188,7 +187,7 @@ template<typename T>
 inline void
 VecBase<T>::setCap(IAllocator* p, ssize cap)
 {
-    m_pData = (T*)p->realloc(m_pData, cap, sizeof(T));
+    m_pData = (T*)p->realloc(m_pData, m_capacity, cap, sizeof(T));
     m_capacity = cap;
 
     if (m_size > cap) m_size = cap;
@@ -296,8 +295,8 @@ template<typename T>
 inline void
 VecBase<T>::grow(IAllocator* p, ssize newCapacity)
 {
+    m_pData = (T*)p->realloc(m_pData, m_capacity, newCapacity, sizeof(T));
     m_capacity = newCapacity;
-    m_pData = (T*)p->realloc(m_pData, newCapacity, sizeof(T));
 }
 
 template<typename T>
@@ -396,39 +395,5 @@ struct Vec
     const typename VecBase<T>::It rbegin() const noexcept { return base.rbegin(); }
     const typename VecBase<T>::It rend()   const noexcept { return base.rend(); }
 };
-
-namespace print
-{
-
-template<typename T>
-inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const VecBase<T>& x)
-{
-    if (x.empty())
-    {
-        ctx.fmt = "{}";
-        ctx.fmtIdx = 0;
-        return printArgs(ctx, "(empty)");
-    }
-
-    char aBuff[1024] {};
-    ssize nRead = 0;
-    for (ssize i = 0; i < x.m_size; ++i)
-    {
-        const char* fmt = i == x.m_size - 1 ? "{}" : "{}, ";
-        nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, x[i]);
-    }
-
-    return print::copyBackToBuffer(ctx, fmtArgs, {aBuff});
-}
-
-template<typename T>
-inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const Vec<T>& x)
-{
-    return formatToContext(ctx, fmtArgs, x.base);
-}
-
-} /* namespace print */
 
 } /* namespace adt */

@@ -25,9 +25,14 @@ constexpr ssize SIZE_8G = SIZE_1G * 8;
 struct IAllocator
 {
     [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) = 0;
+
     [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) = 0;
-    [[nodiscard]] virtual constexpr void* realloc(void* p, usize mCount, usize mSize) noexcept(false) = 0;
+
+    /* pass oldCount to simpilify memcpy range */
+    [[nodiscard]] virtual constexpr void* realloc(void* p, usize oldCount, usize newCount, usize mSize) noexcept(false) = 0;
+
     virtual constexpr void free(void* ptr) noexcept = 0;
+
     virtual constexpr void freeAll() noexcept = 0;
 };
 

@@ -25,7 +25,7 @@ struct MutexArena : IAllocator
 
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     virtual void free(void* ptr) noexcept override final;
     virtual void freeAll() noexcept override final;
 };
@@ -51,10 +51,10 @@ MutexArena::zalloc(usize mCount, usize mSize)
 }
 
 inline void*
-MutexArena::realloc(void* p, usize mCount, usize mSize)
+MutexArena::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 {
     mtx_lock(&m_mtx);
-    auto* r = m_arena.realloc(p, mCount, mSize);
+    auto* r = m_arena.realloc(p, oldCount, newCount, mSize);
     mtx_unlock(&m_mtx);
 
     return r;
