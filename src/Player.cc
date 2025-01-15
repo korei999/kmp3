@@ -39,7 +39,7 @@ void
 Player::focusNext()
 {
     long ns = m_focused + 1;
-    if (ns >= long(m_vSongIdxs.getSize())) ns = 0;
+    if (ns >= m_vSongIdxs.getSize()) ns = 0;
     m_focused = ns;
 }
 
@@ -47,7 +47,13 @@ void
 Player::focusPrev()
 {
     long ns = m_focused - 1;
-    if (ns < 0) ns = m_vSongIdxs.getSize() - 1;
+    if (ns < 0)
+    {
+        if (m_vSongIdxs.empty())
+            ns = 0;
+        else
+            ns = m_vSongIdxs.getSize() - 1;
+    }
     m_focused = ns;
 }
 
