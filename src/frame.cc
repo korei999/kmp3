@@ -45,6 +45,7 @@ run()
     }
 
     MiHeap heap(0);
+    defer( heap.freeAll() );
 
     if (app::g_pWin->start(&heap) == false)
     {

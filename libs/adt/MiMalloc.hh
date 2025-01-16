@@ -46,7 +46,7 @@ MiMalloc::zalloc(usize mCount, usize mSize)
 inline void*
 MiMalloc::realloc(void* p, usize, usize newCount, usize mSize)
 {
-    auto* r = ::mi_realloc(p, newCount * mSize);
+    auto* r = ::mi_reallocn(p, newCount, mSize);
     if (!r) throw AllocException("MiMalloc::realloc()");
     return r;
 }
@@ -104,7 +104,7 @@ MiHeap::zalloc(usize mCount, usize mSize)
 inline void*
 MiHeap::realloc(void* p, usize, usize newCount, usize mSize)
 {
-    auto* r = ::mi_realloc(p, newCount * mSize);
+    auto* r = ::mi_reallocn(p, newCount, mSize);
     if (!r) throw AllocException("MiHeap::realloc()");
     return r;
 }

@@ -23,7 +23,6 @@ endif()
 
 include_directories(BEFORE "src")
 include_directories(BEFORE "libs")
-include_directories(BEFORE "libs/mimalloc/include")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     add_definitions("-D_DEFAULT_SOURCE")
@@ -116,6 +115,21 @@ endif()
 message(STATUS "CMAKE_SYSTEM_NAME: '${CMAKE_SYSTEM_NAME}'")
 message(STATUS "CMAKE_SOURCE_DIR: '${CMAKE_SOURCE_DIR}'")
 
+include(FetchContent)
+
+FetchContent_Declare(
+    MIMALLOC
+    GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(MIMALLOC)
+FetchContent_GetProperties(MIMALLOC
+    SOURCE_DIR MIMALLOC_SOURCE_DIR
+)
+
+include_directories(${MIMALLOC_SOURCE_DIR}/include)
+message(STATUS "MIMALLOC_SOURCE_DIR: '${MIMALLOC_SOURCE_DIR}'")
+
 add_executable(
     ${CMAKE_PROJECT_NAME}
     src/main.cc
@@ -132,8 +146,8 @@ add_executable(
 )
 
 target_sources(
-    ${CMAKE_PROJECT_NAME} PUBLIC
-    "libs/mimalloc/src/static.c"
+    ${CMAKE_PROJECT_NAME} PRIVATE
+    ${MIMALLOC_SOURCE_DIR}/src/static.c
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
