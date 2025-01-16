@@ -1907,9 +1907,9 @@ int tb_print_ex(int x, int y, uintattr_t fg, uintattr_t bg, size_t *out_w,
         if (w < 0) {
             return TB_ERR;   // shouldn't happen if iswprint
         } else if (w == 0) { // combining character
-            if (cellbuf_in_bounds(&global.back, x_prev, y)) {
-                if_err_return(rv, tb_extend_cell(x_prev, y, uni));
-            }
+            // if (cellbuf_in_bounds(&global.back, x_prev, y)) {
+            //     if_err_return(rv, tb_extend_cell(x_prev, y, uni));
+            // }
         } else {
             if (cellbuf_in_bounds(&global.back, x, y)) {
                 if_err_return(rv, tb_set_cell(x, y, uni, fg, bg));

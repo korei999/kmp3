@@ -18,8 +18,11 @@
 #endif
 
 #define TB_IMPL
-#define TB_OPT_ATTR_W 32
+#define TB_OPT_ATTR_W 16
 #define TB_OPT_EGC
+#define tb_malloc  mi_malloc
+#define tb_realloc mi_realloc
+#define tb_free    mi_free
 #include "termbox2/termbox2.h"
 
 #ifdef __clang__
@@ -304,6 +307,7 @@ drawSongList()
     const auto& pl = *app::g_pPlayer;
     const auto& win = *app::g_pWin;
     const int split = pl.m_imgHeight + 1;
+    const u32 maxLen = tb_width() - 2;
 
     const auto& aIdxBuff = pl.m_vSearchIdxs;
 
@@ -311,7 +315,6 @@ drawSongList()
     {
         const u16 songIdx = aIdxBuff[h];
         const String sSong = pl.m_vShortSongs[songIdx];
-        const u32 maxLen = tb_width() - 2;
 
         const bool bSelected = songIdx == pl.m_selected ? true : false;
 
