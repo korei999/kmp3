@@ -11,10 +11,6 @@
 #include <cwchar>
 #include <cwctype>
 
-#ifndef NDEBUG
-    #include "adt/FreeList.hh"
-#endif
-
 constexpr String aAcceptedFileEndings[] {
     ".mp2", ".mp3", ".mp4", ".m4a", ".m4b",
     ".fla", ".flac",
