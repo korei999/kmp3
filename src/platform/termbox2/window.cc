@@ -19,7 +19,7 @@
 
 #define TB_IMPL
 #define TB_OPT_ATTR_W 32
-// #define TB_OPT_EGC
+#define TB_OPT_EGC
 #include "termbox2/termbox2.h"
 
 #ifdef __clang__
