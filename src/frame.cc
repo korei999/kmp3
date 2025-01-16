@@ -1,10 +1,10 @@
 #include "frame.hh"
 
-#include "adt/Arena.hh"
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
+#include "adt/MiMalloc.hh"
 
 #ifdef USE_MPRIS
     #include "mpris.hh"
@@ -44,10 +44,9 @@ run()
         return;
     }
 
-    Arena arena(SIZE_1M);
-    defer( arena.freeAll() );
+    MiHeap heap(0);
 
-    if (app::g_pWin->start(&arena) == false)
+    if (app::g_pWin->start(&heap) == false)
     {
         CERR("failed to start window\n");
         return;
@@ -69,8 +68,7 @@ run()
         app::g_pWin->draw();
         app::g_pWin->procEvents();
 
-        arena.shrinkToFirstBlock();
-        arena.reset();
+        heap.reset();
     }
     while (app::g_bRunning);
 }

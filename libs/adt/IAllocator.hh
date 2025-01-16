@@ -37,6 +37,8 @@ struct IAllocator
 };
 
 /* NOTE: allocator can throw on malloc/zalloc/realloc */
+/* TODO: get rid of exceptions in favor of nullptr.
+ * Other classes can receive nullptr and not change their state or replace their state with staticaly allocated stub. */
 struct AllocException : public IException
 {
     const char* m_ntsMsg {};

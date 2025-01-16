@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/Arena.hh"
+#include "adt/MiMalloc.hh"
 #include "adt/types.hh"
 #include "adt/String.hh"
 #include "adt/Vec.hh"
@@ -67,7 +67,7 @@ struct Player
     u16 findSongIdxFromSelected();
     void focusSelected();
     void focusSelectedCenter();
-    void subStringSearch(Arena* pAlloc, Span<wchar_t> pBuff);
+    void subStringSearch(MiHeap* pAlloc, Span<wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
     void togglePause();

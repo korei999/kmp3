@@ -60,7 +60,7 @@ sigwinchHandler([[maybe_unused]] int sig)
 }
 
 bool
-Win::start(Arena* pArena)
+Win::start(MiHeap* pArena)
 {
     this->m_pArena = pArena;
     m_textBuff = TextBuff(pArena);

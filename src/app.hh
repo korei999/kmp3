@@ -28,7 +28,7 @@ extern char** g_argv;
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
 
-IWindow* allocWindow(IAllocator* pArena);
+IWindow* allocWindow(IAllocator* pAlloc);
 audio::IMixer* allocMixer(IAllocator* pAlloc);
 
 inline void quit() { g_bRunning = false; }

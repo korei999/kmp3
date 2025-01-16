@@ -429,7 +429,7 @@ showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, co
 #endif
 
 Image
-allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth)
+allocImage(MiHeap* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth)
 {
     TermSize termSize {};
     getTTYSize(&termSize);

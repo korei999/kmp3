@@ -23,6 +23,7 @@ endif()
 
 include_directories(BEFORE "src")
 include_directories(BEFORE "libs")
+include_directories(BEFORE "libs/mimalloc/include")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     add_definitions("-D_DEFAULT_SOURCE")
@@ -101,6 +102,9 @@ if (CMAKE_BUILD_TYPE MATCHES "Debug")
             -Wno-cast-function-type-mismatch
         )
     endif()
+else()
+    # use fast allocator on non "Debug" builds
+    add_definitions("-DADT_USE_MIMALLOC")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -125,6 +129,11 @@ add_executable(
     src/platform/ansi/Win.cc
     src/platform/ansi/WinDraw.cc
     src/platform/ansi/WinInput.cc
+)
+
+target_sources(
+    ${CMAKE_PROJECT_NAME} PUBLIC
+    "libs/mimalloc/src/static.c"
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")

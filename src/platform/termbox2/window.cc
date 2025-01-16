@@ -35,7 +35,7 @@
 namespace platform::termbox2::window
 {
 
-Arena* g_pFrameArena {};
+MiHeap* g_pFrameArena {};
 s16 g_firstIdx = 0;
 int g_prevImgWidth = 0;
 int g_prevImgHeight = 0;
@@ -45,7 +45,7 @@ static f64 s_lastResizeTime {};
 static bool s_bNoImage {};
 
 bool
-start(Arena* pAlloc)
+start(MiHeap* pAlloc)
 {
     [[maybe_unused]] int r = tb_init();
     assert(r == 0 && "'tb_init()' failed");

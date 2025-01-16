@@ -72,7 +72,7 @@ struct ThreadPoolLock
     /* */
 
     ThreadPoolLock() = default;
-    ThreadPoolLock([[maybe_unused]] INIT_FLAG e) { init(); }
+    ThreadPoolLock(INIT_FLAG) { init(); }
 
     /* */
 

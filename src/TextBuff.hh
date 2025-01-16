@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/Arena.hh"
+#include "adt/MiMalloc.hh"
 #include "adt/String.hh"
 #include "adt/print.hh"
 #include "adt/enum.hh"
@@ -59,7 +59,7 @@ operator!=(const TextBuffCell l, const TextBuffCell r)
 
 struct TextBuff
 {
-    Arena* m_pAlloc {};
+    MiHeap* m_pAlloc {};
     mtx_t m_mtx {};
     char* m_pData {};
     u32 m_size {};
@@ -74,7 +74,7 @@ struct TextBuff
     /* */
 
     TextBuff() = default;
-    TextBuff(Arena* _pAlloc) : m_pAlloc(_pAlloc) { mtx_init(&m_mtx, mtx_plain); }
+    TextBuff(MiHeap* _pAlloc) : m_pAlloc(_pAlloc) { mtx_init(&m_mtx, mtx_plain); }
 
     /* */
 

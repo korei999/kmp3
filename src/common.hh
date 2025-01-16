@@ -46,7 +46,7 @@ readModeToString(WINDOW_READ_MODE e) noexcept
 }
 
 [[nodiscard]] inline String
-allocTimeString(Arena* pArena, int width)
+allocTimeString(MiHeap* pArena, int width)
 {
     auto& mix = *app::g_pMixer;
     char* pBuff = (char*)pArena->zalloc(1, width + 1);
@@ -141,7 +141,7 @@ procSeekString(const Span<wchar_t> spBuff) noexcept
 template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
 inline void
 subStringSearch(
-    Arena* pArena,
+    MiHeap* pArena,
     s16* pFirstIdx,
     void* pReadArg,
     void* pDrawArg

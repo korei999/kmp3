@@ -15,7 +15,7 @@ extern TermSize g_termSize;
 
 class Win : public IWindow
 {
-    Arena* m_pArena {};
+    MiHeap* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
     s16 m_firstIdx {};
@@ -27,7 +27,7 @@ class Win : public IWindow
     /* */
 
 public:
-    virtual bool start(Arena* pArena) final;
+    virtual bool start(MiHeap* pArena) final;
     virtual void destroy() final;
     virtual void draw() final;
     virtual void procEvents() final;

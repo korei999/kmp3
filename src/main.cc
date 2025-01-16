@@ -5,7 +5,6 @@
 #include "adt/logs.hh"
 #include "defaults.hh"
 #include "frame.hh"
-#include "adt/FreeList.hh"
 #include <cmath>
 
 #ifdef USE_MPRIS
@@ -90,15 +89,15 @@ parseArgs(int argc, char** argv)
 static void
 startup(int argc, char** argv)
 {
-    FreeList freeList(SIZE_8M);
-    defer( freeList.freeAll() );
+    MiHeap heap({});
+    defer( heap.freeAll() );
 
     app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
     app::g_eMixer = app::MIXER::PIPEWIRE;
 
     parseArgs(argc, argv);
 
-    Vec<String> aInput(&freeList, argc);
+    Vec<String> aInput(&heap, argc);
     if (argc < 2) /* use stdin instead */
     {
         int flags = fcntl(0, F_GETFL, 0);
@@ -110,7 +109,7 @@ startup(int argc, char** argv)
 
         while ((nread = getline(&line, &len, stdin)) != -1)
         {
-            String s = StringAlloc(&freeList, line, nread);
+            String s = StringAlloc(&heap, line, nread);
             s.removeNLEnd();
             aInput.push(s);
         }
@@ -119,7 +118,7 @@ startup(int argc, char** argv)
 
         /* make fake `argv` so core code works as usual */
         argc = aInput.getSize() + 1;
-        argv = (char**)freeList.zalloc(argc, sizeof(argv));
+        argv = (char**)heap.zalloc(argc, sizeof(argv));
 
         for (int i = 1; i < argc; ++i)
             argv[i] = aInput[i - 1].data();
@@ -128,7 +127,7 @@ startup(int argc, char** argv)
     app::g_argc = argc;
     app::g_argv = argv;
 
-    Player player(&freeList, argc, argv);
+    Player player(&heap, argc, argv);
     app::g_pPlayer = &player;
     defer( player.destroy() );
 
@@ -138,7 +137,7 @@ startup(int argc, char** argv)
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
-    app::g_pMixer = app::allocMixer(&freeList);
+    app::g_pMixer = app::allocMixer(&heap);
     app::g_pMixer->init();
     app::g_pMixer->setVolume(defaults::VOLUME);
     defer( app::g_pMixer->destroy() );

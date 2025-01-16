@@ -5,6 +5,10 @@
 #include <cassert>
 #include <cstdlib>
 
+#ifdef ADT_USE_MIMALLOC
+    #include "mimalloc.h"
+#endif
+
 namespace adt
 {
 
@@ -29,7 +33,11 @@ OsAllocatorGet()
 inline void*
 OsAllocator::malloc(usize mCount, usize mSize)
 {
+#ifdef ADT_USE_MIMALLOC
+    auto* r = ::mi_malloc(mCount * mSize);
+#else
     auto* r = ::malloc(mCount * mSize);
+#endif
     if (!r) throw AllocException("OsAllocator::malloc()");
     return r;
 }
@@ -37,7 +45,12 @@ OsAllocator::malloc(usize mCount, usize mSize)
 inline void*
 OsAllocator::zalloc(usize mCount, usize mSize)
 {
+#ifdef ADT_USE_MIMALLOC
+    auto* r = ::mi_zalloc(mCount * mSize);
+#else
     auto* r = ::calloc(mCount, mSize);
+#endif
+
     if (!r) throw AllocException("OsAllocator::zalloc()");
     return r;
 }
@@ -45,7 +58,12 @@ OsAllocator::zalloc(usize mCount, usize mSize)
 inline void*
 OsAllocator::realloc(void* p, usize, usize newCount, usize mSize)
 {
+#ifdef ADT_USE_MIMALLOC
+    auto* r = ::mi_realloc(p, newCount * mSize);
+#else
     auto* r = ::realloc(p, newCount * mSize);
+#endif
+
     if (!r) throw AllocException("OsAllocator::realloc()");
     return r;
 }
@@ -53,7 +71,11 @@ OsAllocator::realloc(void* p, usize, usize newCount, usize mSize)
 inline void
 OsAllocator::free(void* p) noexcept
 {
+#ifdef ADT_USE_MIMALLOC
+    ::mi_free(p);
+#else
     ::free(p);
+#endif
 }
 
 inline void

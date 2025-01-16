@@ -120,7 +120,7 @@ Player::setDefaultIdxs(VecBase<u16>* pIdxs)
 }
 
 void
-Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
+Player::subStringSearch(MiHeap* pAlloc, Span<wchar_t> spBuff)
 {
     if (spBuff && wcsnlen(spBuff.data(), spBuff.getSize()) == 0)
         return;
@@ -164,10 +164,6 @@ Player::updateInfo()
     m_info.artist = s2;
 
     m_bSelectionChanged = true;
-
-#ifndef NDEBUG
-    LOG_GOOD("freeList.size: {}\n", ((FreeList*)m_pAlloc)->nBytesAllocated());
-#endif
 }
 
 void

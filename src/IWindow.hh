@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/Arena.hh"
+#include "adt/MiMalloc.hh"
 
 using namespace adt;
 
@@ -12,7 +12,7 @@ struct IWindow
     bool m_bRedraw {};
     bool m_bClear {};
 
-    virtual bool start(Arena* pArena) = 0;
+    virtual bool start(MiHeap* pArena) = 0;
     virtual void destroy() = 0;
     virtual void draw() = 0;
     virtual void procEvents() = 0;
@@ -24,7 +24,7 @@ struct IWindow
 
 struct DummyWindow : IWindow
 {
-    virtual bool start(Arena*) final { return true; };
+    virtual bool start(MiHeap*) final { return true; };
     virtual void destroy() final { };
     virtual void draw() final {};
     virtual void procEvents() final {};
