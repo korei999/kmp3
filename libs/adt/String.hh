@@ -74,6 +74,10 @@ struct String
     void removeNLEnd(); /* remove \r\n */
     [[nodiscard]] bool contains(const String r) const;
     [[nodiscard]] String clone(IAllocator* pAlloc) const;
+    [[nodiscard]] char& first();
+    [[nodiscard]] const char& first() const;
+    [[nodiscard]] char& last();
+    [[nodiscard]] const char& last() const;
 
     /* */
 
@@ -485,15 +489,14 @@ String::trimEnd()
 inline void
 String::removeNLEnd()
 {
-    auto oneOf = [&](char c) -> bool {
+    auto oneOf = [&](const char c) -> bool {
         constexpr String chars = "\r\n";
-        for (auto ch : chars)
+        for (const char ch : chars)
             if (c == ch) return true;
         return false;
     };
 
-    usize pos = m_size - 1;
-    while (m_size > 0 && oneOf((*this)[pos]))
+    while (m_size > 0 && oneOf(last()))
         m_pData[--m_size] = '\0';
 }
 
@@ -511,10 +514,34 @@ String::contains(const String r) const
     return false;
 }
 
-[[nodiscard]] inline String
+inline String
 String::clone(IAllocator* pAlloc) const
 {
     return StringAlloc(pAlloc, *this);
+}
+
+inline char&
+String::first()
+{
+    return operator[](0);
+}
+
+inline const char&
+String::first() const
+{
+    return operator[](0);
+}
+
+inline char&
+String::last()
+{
+    return operator[](m_size - 1);
+}
+
+inline const char&
+String::last() const
+{
+    return operator[](m_size - 1);
 }
 
 inline ssize

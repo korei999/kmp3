@@ -11,10 +11,6 @@
 #include <cwchar>
 #include <cwctype>
 
-#ifndef NDEBUG
-    #include "adt/FreeList.hh"
-#endif
-
 constexpr String aAcceptedFileEndings[] {
     ".mp2", ".mp3", ".mp4", ".m4a", ".m4b",
     ".fla", ".flac",
@@ -164,10 +160,6 @@ Player::updateInfo()
     m_info.artist = s2;
 
     m_bSelectionChanged = true;
-
-#ifndef NDEBUG
-    LOG_GOOD("freeList.size: {}\n", ((FreeList*)m_pAlloc)->nBytesAllocated());
-#endif
 }
 
 void
@@ -183,7 +175,7 @@ Player::selectFocused()
     m_bSelectionChanged = true;
 
     const String& sPath = m_vSongs[m_selected];
-    LOG_NOTIFY("selected({}): {}\n", m_selected, sPath);
+    LOG_GOOD("selected({}): {}\n", m_selected, sPath);
 
     app::g_pMixer->play(sPath);
     updateInfo();

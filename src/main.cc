@@ -5,8 +5,7 @@
 #include "adt/logs.hh"
 #include "defaults.hh"
 #include "frame.hh"
-#include "adt/FreeList.hh"
-#include <cmath>
+#include "adt/MiMalloc.hh"
 
 #ifdef USE_MPRIS
     #include "mpris.hh"
@@ -14,6 +13,8 @@
 
 #include <clocale>
 #include <fcntl.h>
+
+#include <cmath>
 
 #ifdef USE_CHAFA
     #include "platform/chafa/chafa.hh"
@@ -90,36 +91,36 @@ parseArgs(int argc, char** argv)
 static void
 startup(int argc, char** argv)
 {
-    FreeList freeList(SIZE_8M);
-    defer( freeList.freeAll() );
+    MiHeap alloc(SIZE_8M);
+    defer( alloc.freeAll() );
 
     app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
     app::g_eMixer = app::MIXER::PIPEWIRE;
 
     parseArgs(argc, argv);
 
-    Vec<String> aInput(&freeList, argc);
+    Vec<String> aInput(&alloc, argc);
     if (argc < 2) /* use stdin instead */
     {
         int flags = fcntl(0, F_GETFL, 0);
         fcntl(0, F_SETFL, flags | O_NONBLOCK);
 
-        char* line = nullptr;
+        char* pLine = nullptr;
         size_t len = 0;
         ssize_t nread = 0;
 
-        while ((nread = getline(&line, &len, stdin)) != -1)
+        while ((nread = getline(&pLine, &len, stdin)) != -1)
         {
-            String s = StringAlloc(&freeList, line, nread);
+            String s = StringAlloc(&alloc, pLine, nread);
             s.removeNLEnd();
             aInput.push(s);
         }
 
-        ::free(line);
+        ::free(pLine);
 
         /* make fake `argv` so core code works as usual */
         argc = aInput.getSize() + 1;
-        argv = (char**)freeList.zalloc(argc, sizeof(argv));
+        argv = (char**)alloc.zalloc(argc, sizeof(argv));
 
         for (int i = 1; i < argc; ++i)
             argv[i] = aInput[i - 1].data();
@@ -128,7 +129,7 @@ startup(int argc, char** argv)
     app::g_argc = argc;
     app::g_argv = argv;
 
-    Player player(&freeList, argc, argv);
+    Player player(&alloc, argc, argv);
     app::g_pPlayer = &player;
     defer( player.destroy() );
 
@@ -138,7 +139,7 @@ startup(int argc, char** argv)
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
-    app::g_pMixer = app::allocMixer(&freeList);
+    app::g_pMixer = app::allocMixer(&alloc);
     app::g_pMixer->init();
     app::g_pMixer->setVolume(defaults::VOLUME);
     defer( app::g_pMixer->destroy() );

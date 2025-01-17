@@ -57,7 +57,13 @@ Decoder::getCurrentMS()
 s64
 Decoder::getTotalMS()
 {
-    return (getTotalSamplesCount() / getSampleRate() / getChannelsCount()) * 1000;
+    auto totalCount = getTotalSamplesCount();
+    auto sr = getSampleRate();
+    auto nChannels = getChannelsCount();
+
+    if (sr == 0 || nChannels == 0)
+        return 0;
+    else return (totalCount / sr / nChannels) * 1000;
 }
 
 
