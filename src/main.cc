@@ -163,7 +163,7 @@ startup(int argc, char** argv)
 
         frame::run();
     }
-    else CERR("No accepted input provided\n");
+    else COUT("No accepted input provided\n");
 }
 
 int
