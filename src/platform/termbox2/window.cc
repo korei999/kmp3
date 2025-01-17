@@ -20,6 +20,9 @@
 #define TB_IMPL
 #define TB_OPT_ATTR_W 32
 #define TB_OPT_EGC
+#define tb_malloc  mi_malloc
+#define tb_realloc mi_realloc
+#define tb_free    mi_free
 #include "termbox2/termbox2.h"
 
 #ifdef __clang__

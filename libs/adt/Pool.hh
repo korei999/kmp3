@@ -57,7 +57,7 @@ struct Pool
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) [[nodiscard]] PoolHnd emplace(ARGS&&... args);
     void giveBack(PoolHnd hnd);
     ssize getCap() const { return CAP; }
-    ssize getSize() const { return m_aNodes.getSize(); }
+    ssize getSize() const { return m_nOccupied; }
 
     /* */
 
@@ -268,7 +268,6 @@ template<typename T, ssize CAP>
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const Pool<T, CAP>& x)
 {
-    /* BUG: leaves trailing comma, since formatToContext simply does ++i. */
     return print::formatToContextTemplSize(ctx, fmtArgs, x, x.getSize());
 }
 

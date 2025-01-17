@@ -101,6 +101,8 @@ if (CMAKE_BUILD_TYPE MATCHES "Debug")
             -Wno-cast-function-type-mismatch
         )
     endif()
+else()
+    add_definitions("-DADT_USE_MIMALLOC")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -111,6 +113,19 @@ endif()
 
 message(STATUS "CMAKE_SYSTEM_NAME: '${CMAKE_SYSTEM_NAME}'")
 message(STATUS "CMAKE_SOURCE_DIR: '${CMAKE_SOURCE_DIR}'")
+
+include(FetchContent)
+FetchContent_Declare(
+    MIMALLOC
+    GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(MIMALLOC)
+FetchContent_GetProperties(MIMALLOC
+    SOURCE_DIR MIMALLOC_SOURCE_DIR
+)
+include_directories(${MIMALLOC_SOURCE_DIR}/include)
+message(STATUS "MIMALLOC_SOURCE_DIR: '${MIMALLOC_SOURCE_DIR}'")
 
 add_executable(
     ${CMAKE_PROJECT_NAME}
@@ -125,6 +140,8 @@ add_executable(
     src/platform/ansi/Win.cc
     src/platform/ansi/WinDraw.cc
     src/platform/ansi/WinInput.cc
+
+    ${MIMALLOC_SOURCE_DIR}/src/static.c
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")

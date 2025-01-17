@@ -6,6 +6,7 @@
 
 #include "Vec.hh"
 #include "hash.hh"
+#include "print.hh"
 
 namespace adt
 {

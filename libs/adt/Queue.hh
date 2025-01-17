@@ -8,8 +8,8 @@
 namespace adt
 {
 
-#define ADT_QUEUE_FOREACH_I(Q, I) for (int I = (Q)->first, __t = 0; __t < (Q)->size; I = (Q)->nextI(I), __t++)
-#define ADT_QUEUE_FOREACH_I_REV(Q, I) for (int I = (Q)->lastI(), __t = 0; __t < (Q)->size; I = (Q)->prevI(I), __t++)
+#define ADT_QUEUE_FOREACH_I(Q, I) for (int I = (Q)->first, _t_ = 0; _t_ < (Q)->size; I = (Q)->nextI(I),++ _t_)
+#define ADT_QUEUE_FOREACH_I_REV(Q, I) for (int I = (Q)->lastI(), _t_ = 0; _t_ < (Q)->size; I = (Q)->prevI(I), ++_t_)
 
 template<typename T>
 struct QueueBase
@@ -158,7 +158,7 @@ QueueBase<T>::popFront()
 
     T* ret = &m_pData[m_first];
     m_first = nextI(m_first);
-    m_size--;
+    --m_size;
 
     return ret;
 }
@@ -171,7 +171,7 @@ QueueBase<T>::popBack()
 
     T* ret = &m_pData[lastI()];
     m_last = prevI(lastI());
-    m_size--;
+    --m_size;
 
     return ret;
 }
@@ -180,7 +180,8 @@ template<typename T>
 inline ssize
 QueueBase<T>::idx(const T* pItem) const
 {
-    auto r = pItem - m_pData;
+    ssize r = pItem - m_pData;
+    assert(r >= 0 && r < m_cap && "[Queue]: out of capacity");
     return r;
 }
 
