@@ -29,8 +29,12 @@ struct QueueBase
 
     /* */
 
-    T& operator[](int i)             { assert(i >= 0 && i < m_cap && "[Queue]: out of capacity"); return m_pData[i]; }
-    const T& operator[](int i) const { assert(i >= 0 && i < m_cap && "[Queue]: out of capacity"); return m_pData[i]; }
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "Out of capacity, i: %lld, m_cap: %lld", i, m_cap);
+
+    T& operator[](int i)             { ADT_RANGE_CHECK; return m_pData[i]; }
+    const T& operator[](int i) const { ADT_RANGE_CHECK; return m_pData[i]; }
+
+#undef ADT_RANGE_CHECK
 
     [[nodiscard]] int nextI(int i) const { return (i + 1) >= m_cap ? 0 : (i + 1); }
     [[nodiscard]] int prevI(int i) const { return (i - 1) < 0 ? m_cap - 1 : (i - 1); }
@@ -102,6 +106,7 @@ inline void
 QueueBase<T>::destroy(IAllocator* p)
 {
     p->free(m_pData);
+    *this = {};
 }
 
 template<typename T>

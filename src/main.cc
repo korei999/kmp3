@@ -5,7 +5,6 @@
 #include "adt/logs.hh"
 #include "defaults.hh"
 #include "frame.hh"
-#include "adt/MiMalloc.hh"
 
 #ifdef USE_MPRIS
     #include "mpris.hh"
@@ -91,8 +90,7 @@ parseArgs(int argc, char** argv)
 static void
 startup(int argc, char** argv)
 {
-    MiHeap alloc(SIZE_8M);
-    defer( alloc.freeAll() );
+    OsAllocator alloc;
 
     app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
     app::g_eMixer = app::MIXER::PIPEWIRE;
@@ -100,6 +98,7 @@ startup(int argc, char** argv)
     parseArgs(argc, argv);
 
     Vec<String> aInput(&alloc, argc);
+    defer( aInput.destroy() );
     if (argc < 2) /* use stdin instead */
     {
         int flags = fcntl(0, F_GETFL, 0);
@@ -181,6 +180,6 @@ main(int argc, char** argv)
     }
     catch (AllocException& ex)
     {
-        ex.logErrorMsg();
+        COUT("{}\n", ex.getMsg());
     }
 }

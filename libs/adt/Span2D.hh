@@ -8,7 +8,7 @@ namespace adt
 {
 
 template<typename T>
-struct TwoDSpan
+struct Span2D
 {
     T* m_pData {};
     ssize m_width {};
@@ -16,8 +16,8 @@ struct TwoDSpan
 
     /* */
 
-    constexpr TwoDSpan() = default;
-    constexpr TwoDSpan(T* pData, ssize width, ssize height)
+    constexpr Span2D() = default;
+    constexpr Span2D(T* pData, ssize width, ssize height)
         : m_pData(pData), m_width(width), m_height(height) {}
 
     /* */
@@ -40,7 +40,10 @@ private:
     at(ssize x, ssize y) const
     {
         ssize idx = y*m_width + x;
-        assert(x >= 0 && x < m_width && y < m_height && "[TwoDSpan]: out of range");
+        ADT_ASSERT(x >= 0 && x < m_width && y >= 0 && y < m_height,
+            "x: %lld, y: %lld, width: %lld, height: %lld",
+            x, y, m_width, m_height
+        );
         return m_pData[idx];
     }
 };

@@ -350,11 +350,11 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept
 {
-    char aBuff[4] {};
+    char aBuff[8] {};
 #ifdef _WIN32
-    snprintf(aBuff, utils::size(aBuff), "%lc", (wint_t)x);
+    snprintf(aBuff, utils::size(aBuff) - 1, "%lc", (wint_t)x);
 #else
-    snprintf(aBuff, utils::size(aBuff), "%lc", x);
+    snprintf(aBuff, utils::size(aBuff) - 1, "%lc", x);
 #endif
 
     return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
@@ -504,6 +504,14 @@ toString(String* pDest, const String fmt, const ARGS_T&... tArgs) noexcept
 }
 
 template<typename ...ARGS_T>
+inline constexpr ssize
+toSpan(Span<char> sp, const String fmt, const ARGS_T&... tArgs) noexcept
+{
+    /* leave 1 byte for '\0' */
+    return toBuffer(sp.data(), sp.getSize() - 1, fmt, tArgs...);
+}
+
+template<typename ...ARGS_T>
 inline ssize
 out(const String fmt, const ARGS_T&... tArgs) noexcept
 {
@@ -580,7 +588,7 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const
     }
 
     char aFmtBuff[64] {};
-    ssize nFmtRead = print::FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
+    ssize nFmtRead = FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
 
     String sFmtArg = aFmtBuff;
     aFmtBuff[nFmtRead++] = ',';
@@ -598,7 +606,7 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const
         ++i;
     }
 
-    return print::copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
 }
 
 template<template<typename, ssize> typename CON_T, typename T, ssize SIZE>
@@ -613,7 +621,7 @@ formatToContextTemplSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE>& 
     }
 
     char aFmtBuff[64] {};
-    ssize nFmtRead = print::FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
+    ssize nFmtRead = FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
 
     String sFmtArg = aFmtBuff;
     aFmtBuff[nFmtRead++] = ',';
@@ -631,7 +639,7 @@ formatToContextTemplSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE>& 
         ++i;
     }
 
-    return print::copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
 }
 
 template<template<typename> typename CON_T, typename T>

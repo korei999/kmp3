@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdio>
+#include <cstdlib>
+
 #ifdef ADT_STD_TYPES
     #include <cstdint>
     #include <limits>
@@ -61,8 +64,10 @@ constexpr INIT_FLAG INIT = true;
 
 #if defined __clang__ || __GNUC__
     #define ADT_NO_UB __attribute__((no_sanitize("undefined")))
+    #define ADT_LOGS_FILE __FILE_NAME__
 #else
     #define ADT_NO_UB
+    #define ADT_LOGS_FILE __FILE__
 #endif
 
 #if defined __clang__ || __GNUC__
@@ -77,5 +82,32 @@ methodPointer(METHOD_T ptr)
 {
     return *reinterpret_cast<void**>(&ptr);
 }
+
+/* TODO: windows messagebox? */
+[[noreturn]] inline void
+assertionFailed(const char* cnd, const char* msg, const char* file, int line, const char* func)
+{
+    char aBuff[128] {};
+
+    snprintf(aBuff, sizeof(aBuff) - 1, "[%s, %d: %s()] assertion( %s ) failed.\n(msg) ", file, line, func, cnd);
+    fputs(aBuff, stderr);
+    fputs(msg, stderr);
+    fputc('\n', stderr);
+    fflush(stderr);
+    abort();
+}
+
+#ifndef NDEBUG
+    #define ADT_ASSERT(CND, ...)                                                                                       \
+        do                                                                                                             \
+        {                                                                                                              \
+            char aMsgBuff[128] {};                                                                                     \
+            snprintf(aMsgBuff, sizeof(aMsgBuff) - 1, __VA_ARGS__);                                                     \
+            if (!static_cast<bool>(CND))                                                                               \
+                assertionFailed(#CND, aMsgBuff, ADT_LOGS_FILE, __LINE__, __FUNCTION__);                                \
+        } while (0)
+#else
+    #define ADT_ASSERT(...) (void)0
+#endif
 
 } /* namespace adt */

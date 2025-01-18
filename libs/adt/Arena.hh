@@ -3,7 +3,6 @@
 #include "OsAllocator.hh"
 #include "utils.hh"
 
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 
@@ -131,7 +130,7 @@ Arena::malloc(usize mCount, usize mSize)
     if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, realSize*2));
 
     auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
-    assert(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize);
+    ADT_ASSERT(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize, "");
 
     pBlock->nBytesOccupied += realSize;
     pBlock->pLastAlloc = pRet;
@@ -157,7 +156,7 @@ Arena::realloc(void* ptr, usize oldCount, usize mCount, usize mSize)
     usize realSize = align8(requested);
     auto* pBlock = findBlockFromPtr(static_cast<u8*>(ptr));
 
-    assert(pBlock && "[Arena]: pointer doesn't belong to this arena");
+    ADT_ASSERT(pBlock, "pointer doesn't belong to this arena");
 
     if (ptr == pBlock->pLastAlloc &&
         pBlock->pLastAlloc + realSize < pBlock->pMem + pBlock->size) /* bump case */

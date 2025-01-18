@@ -31,29 +31,33 @@ struct Span
 
     constexpr ssize getSize() const noexcept { return m_size; }
 
-    constexpr ssize lastI() const noexcept { assert(m_size > 0 && "[Span]: empty"); return m_size - 1; }
+    constexpr ssize lastI() const noexcept { return operator[](m_size - 1); }
+
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
 
     constexpr ssize
     idx(const T* pItem) const noexcept
     {
         ssize i = pItem - m_pData;
-        assert(i >= 0 && i < m_size && "[Span]: out of range");
+        ADT_RANGE_CHECK
         return i;
     }
 
     constexpr T&
     operator[](ssize i) noexcept
     {
-        assert(i >= 0 && i < m_size && "[Span]: out of range");
+        ADT_RANGE_CHECK
         return m_pData[i];
     }
 
     constexpr const T&
     operator[](ssize i) const noexcept
     {
-        assert(i >= 0 && i < m_size && "[Span]: out of range");
+        ADT_RANGE_CHECK
         return m_pData[i];
     }
+
+#undef ADT_RANGE_CHECK
 
     constexpr operator bool() const { return m_pData != nullptr; }
 

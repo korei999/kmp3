@@ -170,7 +170,7 @@ template<typename T, ssize CAP>
 inline ssize
 Pool<T, CAP>::idx(const PoolNode<T>* p) const
 {
-    ssize r = p - &m_aNodes.m_aData[0];
+    ssize r = p - &m_aNodes[0];
     assert(r < CAP && "[Pool]: out of range");
     return r;
 }
@@ -256,8 +256,8 @@ template<typename T, ssize CAP>
 inline T&
 Pool<T, CAP>::at(ssize i)
 {
-    assert(i >= 0 && i < m_aNodes.getSize() && "[Pool]: out of range");
-    assert(!m_aNodes[i].bDeleted && "[Pool]: accessing deleted node");
+    ADT_ASSERT(i >= 0 && i < m_aNodes.getSize(), "i: %lld, size: %lld", i, m_aNodes.getSize());
+    ADT_ASSERT(!m_aNodes[i].bDeleted, "trying to access deleted node");
     return m_aNodes[i].data;
 }
 

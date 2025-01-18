@@ -3,7 +3,6 @@
 #include "print.hh"
 #include "sort.hh"
 
-#include <cassert>
 #include <initializer_list>
 #include <new> /* IWYU pragma: keep */
 #include <utility>
@@ -25,8 +24,12 @@ struct Arr
 
     /* */
 
-    constexpr T& operator[](ssize i)             { assert(i >= 0 && i < m_size && "[Arr]: out of size access"); return m_aData[i]; }
-    constexpr const T& operator[](ssize i) const { assert(i >= 0 && i < m_size && "[Arr]: out of size access"); return m_aData[i]; }
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
+
+    constexpr T& operator[](ssize i)             { ADT_RANGE_CHECK; return m_aData[i]; }
+    constexpr const T& operator[](ssize i) const { ADT_RANGE_CHECK; return m_aData[i]; }
+
+#undef ADT_RANGE_CHECK
 
     /* */
 
@@ -83,7 +86,7 @@ template<typename T, ssize CAP> requires(CAP > 0)
 constexpr ssize
 Arr<T, CAP>::push(const T& x)
 {
-    assert(getSize() < CAP && "[Arr]: pushing over capacity");
+    ADT_ASSERT(getSize() < CAP, "pushing over capacity");
 
     new(m_aData + m_size++) T(x);
 
@@ -95,7 +98,7 @@ template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
 inline constexpr ssize
 Arr<T, CAP>::emplace(ARGS&&... args)
 {
-    assert(getSize() < CAP && "[Arr]: pushing over capacity");
+    ADT_ASSERT(getSize() < CAP, "pushing over capacity");
 
     new(m_aData + m_size++) T(std::forward<ARGS>(args)...);
 
@@ -106,7 +109,7 @@ template<typename T, ssize CAP> requires(CAP > 0)
 constexpr ssize
 Arr<T, CAP>::fakePush()
 {
-    assert(m_size < CAP && "[Arr]: fake push over capacity");
+    ADT_ASSERT(m_size < CAP, "push over capacity");
     ++m_size;
     return m_size - 1;
 }
@@ -115,7 +118,7 @@ template<typename T, ssize CAP> requires(CAP > 0)
 constexpr T*
 Arr<T, CAP>::pop()
 {
-    assert(m_size > 0 && "[Arr]: pop from empty");
+    ADT_ASSERT(m_size > 0, "empty");
     return &m_aData[--m_size];
 }
 
@@ -123,7 +126,7 @@ template<typename T, ssize CAP> requires(CAP > 0)
 constexpr void
 Arr<T, CAP>::fakePop()
 {
-    assert(m_size > 0 && "[Arr]: pop from empty");
+    ADT_ASSERT(m_size > 0, "empty");
     --m_size;
 }
 
@@ -145,7 +148,7 @@ template<typename T, ssize CAP> requires(CAP > 0)
 constexpr void
 Arr<T, CAP>::setSize(ssize newSize)
 {
-    assert(newSize <= CAP && "[Arr]: cannot enlarge static array");
+    ADT_ASSERT(newSize <= CAP, "cannot enlarge static array");
     m_size = newSize;
 }
 
@@ -154,7 +157,7 @@ constexpr ssize
 Arr<T, CAP>::idx(const T* p)
 {
     ssize r = ssize(p - m_aData);
-    assert(r >= 0 && r < getCap() && "[Arr]: out of range");
+    ADT_ASSERT(r >= 0 && r < getSize(), "out of range, r: %lld, size: %lld", r, getSize());
     return r;
 }
 

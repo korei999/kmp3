@@ -50,12 +50,6 @@ constexpr adt::String _ADT_LOG_SEV_STR[] = {
     ADT_LOGS_COL_RED "FATAL: " ADT_LOGS_COL_NORM,
 };
 
-#if defined __clang__ || __GNUC__
-    #define ADT_LOGS_FILE __FILE_NAME__
-#else
-    #define ADT_LOGS_FILE __FILE__
-#endif
-
 #ifdef ADT_LOGS
     #define _ADT_LOG(SEV, ...)                                                                                         \
         do                                                                                                             \

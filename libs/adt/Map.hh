@@ -50,7 +50,7 @@ struct MapResult
     const KeyVal<K, V>&
     data() const
     {
-        assert(eStatus != MAP_RESULT_STATUS::NOT_FOUND && "[Map]: not found");
+        ADT_ASSERT(eStatus != MAP_RESULT_STATUS::NOT_FOUND, "not found");
         return *(KeyVal<K, V>*)pData;
     }
 };
@@ -111,7 +111,7 @@ struct MapBase
     /* */
 
 private:
-    ssize getInsertionIdx(usize hash) const;
+    ssize getInsertionIdx(usize hash, const K& key) const;
 
     /* */
 
@@ -148,8 +148,8 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline ssize
 MapBase<K, V, FN_HASH>::idx(const KeyVal<K, V>* p) const
 {
-    auto r = (MapBucket<K, V>*)p - &m_aBuckets[0];
-    assert(r >= 0 && r < m_aBuckets.getCap() && "[Map]: out of range");
+    ssize r = (MapBucket<K, V>*)p - &m_aBuckets[0];
+    ADT_ASSERT(r >= 0 && r < m_aBuckets.getCap(), "out of range, r: %lld, cap: %lld", r, m_aBuckets.getCap());
     return r;
 }
 
@@ -157,8 +157,8 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline ssize
 MapBase<K, V, FN_HASH>::idx(const MapResult<K, V> res) const
 {
-    auto idx = res.pData - &m_aBuckets[0];
-    assert(idx >= 0 && idx < m_aBuckets.getCap() && "[Map]: out of range");
+    ssize idx = res.pData - &m_aBuckets[0];
+    ADT_ASSERT(idx >= 0 && idx < m_aBuckets.getCap(), "out of range, r: %lld, cap: %lld", idx, m_aBuckets.getCap());
     return idx;
 }
 
@@ -198,7 +198,8 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline MapResult<K, V>
 MapBase<K, V, FN_HASH>::insert(IAllocator* p, const K& key, const V& val)
 {
-    if (m_aBuckets.getCap() == 0) *this = {p};
+    if (m_aBuckets.getCap() == 0)
+        *this = {p};
     else if (loadFactor() >= m_maxLoadFactor)
         rehash(p, m_aBuckets.getCap() * 2);
 
@@ -212,25 +213,37 @@ template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>)
 inline MapResult<K, V>
 MapBase<K, V, FN_HASH>::emplace(IAllocator* p, const K& key, ARGS&&... args)
 {
-    if (m_aBuckets.getCap() == 0) *this = {p};
+    if (m_aBuckets.getCap() == 0)
+        *this = {p};
     else if (loadFactor() >= m_maxLoadFactor)
         rehash(p, m_aBuckets.getCap() * 2);
 
     usize keyHash = FN_HASH(key);
-    ssize idx = getInsertionIdx(keyHash);
+    ssize idx = getInsertionIdx(keyHash, key);
+    auto& bucket = m_aBuckets[idx];
 
-    new(&m_aBuckets[idx].key) K(key);
-    new(&m_aBuckets[idx].val) V(std::forward<ARGS>(args)...);
+    new(&bucket.val) V(std::forward<ARGS>(args)...);
 
-    m_aBuckets[idx].bOccupied = true;
-    m_aBuckets[idx].bDeleted = false;
+    if (bucket.key == key)
+    {
+        return {
+            .pData = &bucket,
+            .hash = keyHash,
+            .eStatus = MAP_RESULT_STATUS::FOUND,
+        };
+    }
+
+    new(&bucket.key) K(key);
+
+    bucket.bOccupied = true;
+    bucket.bDeleted = false;
 
     ++m_nOccupied;
 
     return {
-        .pData = &m_aBuckets[idx],
+        .pData = &bucket,
         .hash = keyHash,
-        .eStatus = MAP_RESULT_STATUS::INSERTED
+        .eStatus = MAP_RESULT_STATUS::INSERTED,
     };
 }
 
@@ -246,8 +259,13 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline void
 MapBase<K, V, FN_HASH>::remove(ssize i)
 {
-    m_aBuckets[i].bDeleted = true;
-    m_aBuckets[i].bOccupied = false;
+    auto& bucket = m_aBuckets[i];
+
+    bucket.key = {};
+    bucket.val = {};
+    bucket.bDeleted = true;
+    bucket.bOccupied = false;
+
     --m_nOccupied;
 }
 
@@ -256,7 +274,7 @@ inline void
 MapBase<K, V, FN_HASH>::remove(const K& key)
 {
     auto f = search(key);
-    assert(f && "[Map]: not found");
+    ADT_ASSERT(f, "not found");
     remove(idx(f));
 }
 
@@ -298,9 +316,8 @@ MapBase<K, V, FN_HASH>::rehash(IAllocator* p, ssize size)
 {
     auto mNew = MapBase<K, V, FN_HASH>(p, size);
 
-    for (ssize i = 0; i < m_aBuckets.getCap(); ++i)
-        if (m_aBuckets[i].bOccupied)
-            mNew.insert(p, m_aBuckets[i].key, m_aBuckets[i].val);
+    for (const auto& [key, val] : *this)
+        mNew.insert(p, key, val);
 
     destroy(p);
     *this = mNew;
@@ -310,18 +327,29 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline MapResult<K, V>
 MapBase<K, V, FN_HASH>::insertHashed(const K& key, const V& val, usize keyHash)
 {
-    const ssize idx = getInsertionIdx(keyHash);
+    const ssize idx = getInsertionIdx(keyHash, key);
+    auto& bucket = m_aBuckets[idx];
 
-    new(&m_aBuckets[idx].key) K(key);
-    new(&m_aBuckets[idx].val) V(val);
+    new(&bucket.val) V(val);
 
-    m_aBuckets[idx].bOccupied = true;
-    m_aBuckets[idx].bDeleted = false;
+    if (bucket.key == key)
+    {
+        return {
+            .pData = &bucket,
+            .hash = keyHash,
+            .eStatus = MAP_RESULT_STATUS::FOUND,
+        };
+    }
+
+    new(&bucket.key) K(key);
+
+    bucket.bOccupied = true;
+    bucket.bDeleted = false;
 
     ++m_nOccupied;
 
     return {
-        .pData = &m_aBuckets[idx],
+        .pData = &bucket,
         .hash = keyHash,
         .eStatus = MAP_RESULT_STATUS::INSERTED
     };
@@ -367,12 +395,15 @@ MapBase<K, V, FN_HASH>::zeroOut()
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline ssize
-MapBase<K, V, FN_HASH>::getInsertionIdx(usize hash) const
+MapBase<K, V, FN_HASH>::getInsertionIdx(usize hash, const K& key) const
 {
     ssize idx = ssize(hash % m_aBuckets.getCap());
 
     while (m_aBuckets[idx].bOccupied)
     {
+        if (m_aBuckets[idx].key == key)
+            break;
+
         ++idx;
         if (idx >= m_aBuckets.getCap())
             idx = 0;
@@ -460,7 +491,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, MAP_RESULT_STA
     };
 
     auto statusIdx = std::underlying_type_t<MAP_RESULT_STATUS>(eStatus);
-    assert(statusIdx >= 0 && statusIdx < utils::size(map) && "out of range enum");
+    ADT_ASSERT(statusIdx >= 0 && statusIdx < utils::size(map), "out of range enum");
     return printArgs(ctx, map[statusIdx]);
 }
 

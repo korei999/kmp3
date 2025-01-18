@@ -300,7 +300,14 @@ Player::adjustImgWidth()
 void
 Player::destroy()
 {
-    //
+    m_info.title.destroy(m_pAlloc);
+    m_info.album.destroy(m_pAlloc);
+    m_info.artist.destroy(m_pAlloc);
+
+    m_vSongs.destroy(m_pAlloc);
+    m_vShortSongs.destroy(m_pAlloc);
+    m_vSongIdxs.destroy(m_pAlloc);
+    m_vSearchIdxs.destroy(m_pAlloc);
 }
 
 Player::Player(IAllocator* p, int nArgs, char** ppArgs)

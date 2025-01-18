@@ -13,6 +13,11 @@ enum class TEXT_BUFF_ARG : u8
     TO_END, TO_BEGINNING, EVERYTHING
 };
 
+struct TextBuffCell
+{
+    wchar_t wc {};
+};
+
 struct TextBuff
 {
     Arena* m_pAlloc {};
@@ -108,7 +113,7 @@ inline void
 TextBuff::up(int steps)
 {
     char aBuff[32] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}A", steps);
+    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}A", steps);
     push(aBuff, n);
 }
 
@@ -116,7 +121,7 @@ inline void
 TextBuff::down(int steps)
 {
     char aBuff[32] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}B", steps);
+    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}B", steps);
     push(aBuff, n);
 }
 
@@ -124,7 +129,7 @@ inline void
 TextBuff::forward(int steps)
 {
     char aBuff[32] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}C", steps);
+    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}C", steps);
     push(aBuff, n);
 }
 
@@ -132,7 +137,7 @@ inline void
 TextBuff::back(int steps)
 {
     char aBuff[32] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}D", steps);
+    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}D", steps);
     push(aBuff, n);
 }
 
@@ -140,7 +145,7 @@ inline void
 TextBuff::move(int x, int y)
 {
     char aBuff[64] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{};{}H", y + 1, x + 1);
+    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{};{}H", y + 1, x + 1);
     push(aBuff, n);
 }
 
@@ -166,7 +171,7 @@ inline void
 TextBuff::clearLine(TEXT_BUFF_ARG eArg)
 {
     char aBuff[32] {};
-    u32 n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}K", int(eArg));
+    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}K", int(eArg));
     push(aBuff, n);
 }
 

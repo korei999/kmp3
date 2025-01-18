@@ -3,7 +3,6 @@
 #include "IAllocator.hh"
 #include "utils.hh"
 
-#include <cassert>
 #include <new> /* IWYU pragma: keep */
 #include <utility>
 
@@ -31,8 +30,12 @@ struct VecBase
 
     /* */
 
-    T& operator[](ssize i)             noexcept { assert(i >= 0 && i < m_size && "[Vec] out of size"); return m_pData[i]; }
-    const T& operator[](ssize i) const noexcept { assert(i >= 0 && i < m_size && "[Vec] out of size"); return m_pData[i]; }
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
+
+    T& operator[](ssize i)             noexcept { ADT_RANGE_CHECK; return m_pData[i]; }
+    const T& operator[](ssize i) const noexcept { ADT_RANGE_CHECK; return m_pData[i]; }
+
+#undef ADT_RANGE_CHECK
 
     [[nodiscard]] bool empty() const noexcept { return m_size == 0; }
 
@@ -170,7 +173,7 @@ template<typename T>
 inline T*
 VecBase<T>::pop() noexcept
 {
-    assert(m_size > 0 && "[Vec]: pop from empty");
+    ADT_ASSERT(m_size > 0, "empty");
     return &m_pData[--m_size];
 }
 
@@ -197,7 +200,7 @@ template<typename T>
 inline void
 VecBase<T>::swapWithLast(ssize i) noexcept
 {
-    assert(m_size > 0 && "[Vec]: empty");
+    ADT_ASSERT(m_size > 0, "empty");
     utils::swap(&operator[](i), &operator[](m_size - 1));
 }
 
@@ -205,7 +208,7 @@ template<typename T>
 inline void
 VecBase<T>::popAsLast(ssize i) noexcept
 {
-    assert(m_size > 0 && "[Vec]: empty");
+    ADT_ASSERT(m_size > 0, "empty");
     operator[](i) = last();
     --m_size;
 }
@@ -214,7 +217,7 @@ template<typename T>
 inline void
 VecBase<T>::removeAndShift(ssize i) noexcept
 {
-    assert(m_size > 0 && "[Vec]: empty");
+    ADT_ASSERT(m_size > 0, "empty");
 
     if (i != lastI())
         utils::move(&operator[](i), &operator[](i + 1), (m_size - i - 1));
@@ -227,7 +230,7 @@ template<typename T>
 VecBase<T>::idx(const T* x) const noexcept
 {
     ssize r = ssize(x - m_pData);
-    assert(r >= 0 && r < m_capacity && "[Vec]: out of range");
+    ADT_ASSERT(r >= 0 && r < m_capacity,"r: %lld, cap: %lld", r, m_capacity);
     return r;
 }
 
@@ -243,6 +246,7 @@ inline void
 VecBase<T>::destroy(IAllocator* p) noexcept
 {
     p->free(m_pData);
+    *this = {};
 }
 
 template<typename T>
@@ -306,7 +310,7 @@ VecBase<T>::growIfNeeded(IAllocator* p)
     if (m_size >= m_capacity)
     {
         ssize newCap = utils::max(decltype(m_capacity)(SIZE_MIN), m_capacity * 2);
-        assert(newCap > m_capacity && "[Vec]: can't grow (capacity overflow)");
+        ADT_ASSERT(newCap > m_capacity, "can't grow (capacity overflow), newCap: %lld, m_capacity: %lld", newCap, m_capacity);
         grow(p, newCap);
     }
 }

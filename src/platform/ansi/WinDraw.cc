@@ -4,6 +4,7 @@
 #include "app.hh"
 #include "defaults.hh"
 #include "platform/chafa/chafa.hh"
+#include "adt/ScratchBuffer.hh"
 
 #define NORM "\x1b[0m"
 #define BOLD "\x1b[1m"
@@ -31,17 +32,20 @@ using namespace adt;
 namespace platform::ansi
 {
 
+thread_local static u8 tls_aMemBuff[SIZE_8K] {};
+thread_local static ScratchBuffer tls_scratch(tls_aMemBuff);
+
 void
 Win::clearArea(int x, int y, int width, int height)
 {
     const int w = utils::min(g_termSize.width, width);
     const int h = utils::min(g_termSize.height, height);
 
-    char* pBuff = (char*)m_pArena->malloc(w + 1, 1);
-    memset(pBuff, ' ', w);
+    auto sp = tls_scratch.getMem<char>(w + 1);
+    memset(sp.data(), ' ', w);
 
     for (int i = y; i < h; ++i)
-        m_textBuff.movePush(x, i, pBuff, w);
+        m_textBuff.movePush(x, i, {sp.data(), w});
 }
 
 void
@@ -98,7 +102,7 @@ Win::info()
     const int hOff = m_prevImgWidth + 2;
     const int width = g_termSize.width;
 
-    char* pBuff = (char*)m_pArena->malloc(width + 1, 1);
+    auto sp = tls_scratch.getMem<char>(width + 1);
 
     auto drawLine = [&](
         const int y,
@@ -108,17 +112,18 @@ Win::info()
     {
         tb.moveClearLine(hOff - 1, y, TEXT_BUFF_ARG::TO_END);
 
-        memset(pBuff, 0, width + 1);
-        u32 n = print::toBuffer(pBuff, width, sPrefix);
+        utils::set(sp.data(), 0, sp.getSize());
+
+        ssize n = print::toSpan(sp, sPrefix);
         tb.push(NORM);
-        tb.movePushGlyphs(hOff, y, pBuff, width - hOff - 1);
+        tb.movePushGlyphs(hOff, y, sp.data(), width - hOff - 1);
 
         if (sLine.getSize() > 0)
         {
-            memset(pBuff, 0, width + 1);
-            print::toBuffer(pBuff, width, "{}", sLine);
+            utils::set(sp.data(), 0, sp.getSize());
+            print::toSpan(sp, "{}", sLine);
             tb.push(sColor);
-            tb.movePushGlyphs(hOff + n, y, pBuff, width - hOff - 1 - n);
+            tb.movePushGlyphs(hOff + n, y, sp.data(), width - hOff - 1 - n);
         }
 
         tb.push(NORM);
@@ -138,12 +143,13 @@ Win::volume()
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
 
-    char* pBuff = (char*)m_pArena->zalloc(1, width + 1);
-    u32 n = print::toBuffer(pBuff, width, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
+    Span sp = tls_scratch.getZMem<char>(width + 1);
+    ssize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
 
-    const int maxVolumeBars = (width - off - n - 2) * vol * 1.0f/defaults::MAX_VOLUME;
+    const int maxVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
 
-    auto volumeColor = [&](int i) -> String {
+    auto volumeColor = [&](int i) -> String
+    {
         f32 col = f32(i) / (f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
 
         if (col <= 0.33f) return GREEN;
@@ -159,7 +165,7 @@ Win::volume()
 
     tb.push(col);
     tb.push(BOLD);
-    tb.movePushGlyphs(off, 6, {pBuff, n}, width - off);
+    tb.movePushGlyphs(off, 6, {sp.data(), n}, width - off);
     tb.push(NORM);
 
     for (int i = off + n + 1, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
@@ -296,19 +302,20 @@ Win::bottomLine()
 
     /* selected / focused */
     {
-        char* pBuff = (char*)m_pArena->zalloc(1, width + 1);
+        Span sp = tls_scratch.getZMem<char>(width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_vShortSongs.getSize() - 1);
+        ssize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.getSize() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
             if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
             else if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
 
-            n += print::toBuffer(pBuff + n, width - n, " (repeat {})", sArg);
+            n += print::toSpan({sp.data() + n, sp.getSize() - 1 - n}, " (repeat {})", sArg);
         }
 
-        tb.movePush(width - n - 1, height - 1, pBuff, width - 1); }
+        tb.movePush(width - n - 1, height - 1, {sp.data(), sp.getSize() - 1});
+    }
 
     if (
         c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||

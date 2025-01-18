@@ -3,7 +3,6 @@
 #include "IAllocator.hh"
 #include "hash.hh"
 
-#include <cassert>
 #include <cstring>
 #include <cstdlib>
 #include <immintrin.h>
@@ -60,8 +59,12 @@ struct String
 
     /* */
 
-    constexpr char& operator[](ssize i)             { assert(i >= 0 && i < m_size && "[String]: out of size"); return m_pData[i]; }
-    constexpr const char& operator[](ssize i) const { assert(i >= 0 && i < m_size && "[String]: out of size"); return m_pData[i]; }
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
+
+    constexpr char& operator[](ssize i)             { ADT_RANGE_CHECK; return m_pData[i]; }
+    constexpr const char& operator[](ssize i) const { ADT_RANGE_CHECK; return m_pData[i]; }
+
+#undef ADT_RANGE_CHECK
 
     const char* data() const { return m_pData; }
     char* data() { return m_pData; }
