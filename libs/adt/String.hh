@@ -131,7 +131,11 @@ struct StringGlyphIt
         ssize size = 0;
         wchar_t wc {};
 
-        constexpr It(const char* pFirst, ssize _i, ssize _size) : p{pFirst}, i(_i), size(_size) {}
+        constexpr It(const char* pFirst, ssize _i, ssize _size)
+            : p{pFirst}, i(_i), size(_size)
+        {
+            operator++();
+        }
 
         wchar_t& operator*() { return wc; }
         wchar_t* operator->() { return &wc; }
@@ -139,7 +143,7 @@ struct StringGlyphIt
         It
         operator++()
         {
-            if (i >= size)
+            if (i < 0 || i >= size)
             {
                 i = NPOS;
                 return *this;

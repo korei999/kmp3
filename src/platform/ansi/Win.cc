@@ -8,11 +8,6 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-#define MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
-#define MOUSE_DISABLE "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
-#define KEYPAD_ENABLE "\033[?1h\033="
-#define KEYPAD_DISABLE "\033[?1l\033>"
-
 namespace platform::ansi
 {
 
@@ -62,7 +57,7 @@ sigwinchHandler([[maybe_unused]] int sig)
 bool
 Win::start(Arena* pArena)
 {
-    this->m_pArena = pArena;
+    m_pArena = pArena;
     m_textBuff = TextBuff(pArena);
     g_termSize = getTermSize();
 
@@ -71,12 +66,8 @@ Win::start(Arena* pArena)
     enableRawMode();
     signal(SIGWINCH, sigwinchHandler);
 
-    m_textBuff.clear();
-    m_textBuff.hideCursor(true);
-    m_textBuff.push(KEYPAD_ENABLE);
-    m_textBuff.flush();
+    m_textBuff.init(g_termSize.width, g_termSize.height);
 
-    m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
     adjustListHeight();
 
     LOG_GOOD("ansi::WinStart()\n");
@@ -90,7 +81,7 @@ Win::destroy()
     m_textBuff.hideCursor(false);
     m_textBuff.clear();
     m_textBuff.clearKittyImages();
-    m_textBuff.push(KEYPAD_DISABLE);
+    m_textBuff.push(TEXT_BUFF_KEYPAD_DISABLE);
     m_textBuff.moveTopLeft();
     m_textBuff.push("\n", 2);
     m_textBuff.flush();
@@ -116,7 +107,7 @@ Win::procEvents()
 
     common::fixFirstIdx(
         g_termSize.height - app::g_pPlayer->m_imgHeight - 5,
-        &this->m_firstIdx
+        &m_firstIdx
     );
 }
 

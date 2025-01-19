@@ -8,7 +8,7 @@
 namespace adt
 {
 
-/* Each getMem invalidates previous getMem span. */
+/* Each nextMem() invalidates previous nextMem() span. */
 struct ScratchBuffer
 {
     Span<u8> m_sp {};
@@ -29,11 +29,11 @@ struct ScratchBuffer
     /* */
 
     template<typename T>
-    [[nodiscard]] Span<T> getMem(ssize mCount) noexcept;
+    [[nodiscard]] Span<T> nextMem(ssize mCount) noexcept;
 
-    /* getMem + memset to zero */
+    /* nextMem() + memset() to zero */
     template<typename T>
-    [[nodiscard]] Span<T> getZMem(ssize mCount) noexcept;
+    [[nodiscard]] Span<T> nextMemZero(ssize mCount) noexcept;
 
     void zeroOut() noexcept;
 
@@ -43,7 +43,7 @@ struct ScratchBuffer
 
 template<typename T>
 inline Span<T>
-ScratchBuffer::getMem(ssize mCount) noexcept
+ScratchBuffer::nextMem(ssize mCount) noexcept
 {
     const ssize realSize = align8(mCount * sizeof(T));
 
@@ -65,9 +65,9 @@ ScratchBuffer::getMem(ssize mCount) noexcept
 
 template<typename T>
 inline Span<T>
-ScratchBuffer::getZMem(ssize mCount) noexcept
+ScratchBuffer::nextMemZero(ssize mCount) noexcept
 {
-    auto sp = getMem<T>(mCount);
+    auto sp = nextMem<T>(mCount);
     memset(sp.data(), 0, sp.getSize() * sizeof(T));
     return sp;
 }

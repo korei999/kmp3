@@ -19,7 +19,7 @@ struct InputBuff {
     /* */
 
     void zeroOutBuff() noexcept { memset(m_aBuff, 0, sizeof(m_aBuff)); }
-    Span<wchar_t> getSpan() noexcept { return Span(m_aBuff); }
+    Span<wchar_t> getSpan() noexcept { return Span{m_aBuff}; }
 };
 
 extern InputBuff g_input;
