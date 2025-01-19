@@ -37,6 +37,8 @@
 #define TEXT_BUFF_BG_CYAN "\x1b[46m"
 #define TEXT_BUFF_BG_WHITE "\x1b[47m"
 
+using namespace adt;
+
 enum class TEXT_BUFF_STYLE_CODE
 {
     NORM = 0,
@@ -60,8 +62,6 @@ enum class TEXT_BUFF_STYLE_CODE
     BG_CYAN = 46,
     BG_WHITE = 47,
 };
-
-using namespace adt;
 
 enum class TEXT_BUFF_ARG : u8
 {
@@ -139,6 +139,7 @@ struct TextBuff
     TextBuff(Arena* _pAlloc) : m_pAlloc(_pAlloc) { mtx_init(&m_mtx, mtx_plain); }
 
     /* direct write api (slow) */
+    void push(const char ch);
     void push(const char* pBuff, const ssize buffSize);
     void push(const String sBuff);
     void reset();
@@ -158,11 +159,6 @@ struct TextBuff
     void movePush(int x, int y, const String str);
     void movePush(int x, int y, const char* pBuff, const ssize size);
     void pushGlyph(wchar_t wc);
-    void pushGlyphs(const String str, const ssize nColumns);
-    void movePushGlyphs(int x, int y, const String str, const ssize nColumns);
-    void pushWString(const wchar_t* pwBuff, const ssize wBuffSize);
-    int pushWChar(wchar_t wc);
-    void movePushWString(int x, int y, const wchar_t* pwBuff, const ssize wBuffSize);
     void clearKittyImages();
     void resizeBuffers(ssize width, ssize height);
     void destroy();
@@ -184,7 +180,28 @@ struct TextBuff
 private:
     Span2D<TextBuffCell> frontBufferSpan();
     Span2D<TextBuffCell> backBufferSpan();
+    void grow(ssize newCap);
 };
+
+inline void
+TextBuff::grow(ssize newCap)
+{
+    m_pData = (char*)m_pAlloc->realloc(m_pData, m_capacity, newCap, 1);
+    ADT_ASSERT(m_pData, "realloc");
+    m_capacity = newCap;
+}
+
+inline void
+TextBuff::push(const char ch)
+{
+    if (m_size >= m_capacity)
+    {
+        const ssize newCap = utils::max(ssize(2), m_capacity*2);
+        grow(newCap);
+    }
+
+    m_pData[m_size++] = ch;
+}
 
 inline void
 TextBuff::push(const char* pBuff, const ssize buffSize)
@@ -192,8 +209,7 @@ TextBuff::push(const char* pBuff, const ssize buffSize)
     if (buffSize + m_size >= m_capacity)
     {
         const ssize newCap = utils::max(buffSize + m_size, m_capacity*2);
-        m_pData = (char*)m_pAlloc->realloc(m_pData, m_capacity, newCap, 1);
-        m_capacity = newCap;
+        grow(newCap);
     }
 
     memcpy(m_pData + m_size, pBuff, buffSize);
@@ -221,7 +237,6 @@ TextBuff::flush()
     if (m_size > 0)
     {
         write(STDOUT_FILENO, m_pData, m_size);
-        fflush(stdout);
     }
 }
 
@@ -330,62 +345,10 @@ TextBuff::pushGlyph(wchar_t wc)
 {
     char aBuff[8] {};
     int len = wctomb(aBuff, wc);
-    push(aBuff, len);
-}
 
-inline void
-TextBuff::pushGlyphs(const String str, const ssize nColumns)
-{
-    if (!str.data())
-        return;
-
-    char* pBuff = (char*)m_pAlloc->zalloc(str.getSize()*2, 1);
-    ssize off = 0;
-
-    ssize totalWidth = 0;
-    for (ssize i = 0; i < str.getSize() && totalWidth < nColumns; )
-    {
-        wchar_t wc {};
-        int wclen = mbtowc(&wc, &str[i], str.getSize() - i);
-        totalWidth += wcwidth(wc);
-        i += wclen;
-
-        off += wctomb(pBuff + off, wc);
-    }
-
-    push(pBuff);
-}
-
-inline void
-TextBuff::movePushGlyphs(int x, int y, const String str, const ssize nColumns)
-{
-    move(x, y);
-    pushGlyphs(str, nColumns);
-}
-
-inline void
-TextBuff::pushWString(const wchar_t* pwBuff, const ssize wBuffSize)
-{
-    char* pBuff = (char*)m_pAlloc->zalloc(wBuffSize, sizeof(wchar_t));
-    wcstombs(pBuff, pwBuff, wBuffSize);
-    push(pBuff);
-}
-
-inline int
-TextBuff::pushWChar(wchar_t wc)
-{
-    char a[10] {};
-    int len = wctomb(a, wc);
-    push(a, len);
-
-    return len;
-}
-
-inline void
-TextBuff::movePushWString(int x, int y, const wchar_t* pwBuff, const ssize wBuffSize)
-{
-    move(x, y);
-    pushWString(pwBuff, wBuffSize);
+    if (len > 1)
+        push(aBuff, len);
+    else push(aBuff[0]);
 }
 
 inline void
@@ -433,46 +396,46 @@ TextBuff::swapBuffers()
 
     ssize row = 0;
     ssize col = 0;
-    ssize lastCol = 0;
+
+    ssize nForwards = 0;
 
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
 
     for (row = 0; row < m_tHeight; ++row)
     {
-        lastCol = -1; /* fix for col == 0 */
+        nForwards = 0;
+        move(0, row);
 
         for (col = 0; col < m_tWidth; ++col)
         {
             auto& front = frontBufferSpan()(col, row);
             auto& back = backBufferSpan()(col, row);
 
+            if (back.eStyle != eLastStyle)
+            {
+                push(styleToString(back.eStyle));
+                eLastStyle = back.eStyle;
+            }
+
             if (front != back)
             {
-                if (lastCol + 1 != col)
+                if (nForwards > 0)
                 {
-                    move(col, row);
-                    lastCol = col;
-                }
-
-                if (back.eStyle != eLastStyle)
-                {
-                    push(styleToString(back.eStyle));
-                    eLastStyle = back.eStyle;
+                    forward(nForwards);
+                    nForwards = 0;
                 }
 
                 pushGlyph(back.wc);
 
                 int colWidth = wcwidth(back.wc);
                 if (colWidth > 1)
+                {
                     col += colWidth - 1;
+                }
             }
             else
             {
-                if (back.eStyle != eLastStyle)
-                {
-                    push(styleToString(back.eStyle));
-                    eLastStyle = back.eStyle;
-                }
+                ++nForwards;
             }
         }
     }
@@ -485,7 +448,7 @@ TextBuff::clearBackBuffer()
 {
     for (auto& cell : m_vBack)
     {
-        if (cell.eStyle != TEXT_BUFF_STYLE::IMAGE)
+        // if (cell.eStyle != TEXT_BUFF_STYLE::IMAGE)
         {
             cell.wc = L' ';
             cell.eStyle = TEXT_BUFF_STYLE::NORM;
