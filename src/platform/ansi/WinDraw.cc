@@ -316,8 +316,8 @@ Win::update()
     {
         m_bRedraw = false;
 
-        if (!app::g_bNoImage)
-            coverImage();
+        // if (!app::g_bNoImage)
+        //     coverImage();
 
         time(); /* redraw if image size changed */
         timeSlider();
