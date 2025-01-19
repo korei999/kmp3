@@ -7,6 +7,8 @@
 #include "adt/Span2D.hh"
 #include "adt/enum.hh"
 
+#include "adt/logs.hh"
+
 #include <threads.h>
 
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
@@ -66,6 +68,8 @@ enum TEXT_BUFF_STYLE : u32
     BG_WHITE = 1 << 16,
 
     IMAGE = 1 << 17,
+
+    FORCE_REDRAW = 1 << 18,
 };
 ADT_ENUM_BITWISE_OPERATORS(TEXT_BUFF_STYLE);
 
@@ -189,6 +193,7 @@ TextBuff::reset()
 inline void
 TextBuff::flush()
 {
+    LOG_GOOD("flush(): m_size: {}\n", m_size);
     if (m_size > 0)
     {
         write(STDOUT_FILENO, m_pData, m_size);
@@ -420,7 +425,7 @@ TextBuff::swapBuffers()
             auto& front = frontBufferSpan()(col, row);
             auto& back = backBufferSpan()(col, row);
 
-            if (front != back && back.eStyle != TEXT_BUFF_STYLE::IMAGE)
+            if (front != back)
             {
                 bResetStyle = true;
 
@@ -446,9 +451,9 @@ TextBuff::swapBuffers()
             {
                 if (bResetStyle)
                 {
+                    bResetStyle = false;
                     eLastStyle = TEXT_BUFF_STYLE::NORM;
                     push(TEXT_BUFF_NORM);
-                    bResetStyle = false;
                 }
             }
         }
@@ -609,19 +614,20 @@ TextBuff::image(int x, int y, int width, int height, const String str)
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
         return;
 
-    movePush(x, y, str);
-
     width = utils::min((ssize)width, m_tWidth);
     height = utils::min((ssize)height, m_tHeight);
 
-    for (ssize row = y; y < height; ++y)
+    for (ssize row = y; row < height; ++row)
     {
-        for (ssize col = x; x < width; ++x)
+        for (ssize col = x; col < width; ++col)
         {
             auto& back = backBufferSpan()(col, row);
             back.eStyle = IMAGE;
+            back.wc = L' ';
         }
     }
+
+    movePush(x, y, str);
 }
 
 inline void
@@ -633,12 +639,12 @@ TextBuff::clearImage(int x, int y, int width, int height)
     width = utils::min((ssize)width, m_tWidth);
     height = utils::min((ssize)height, m_tHeight);
 
-    for (ssize row = y; y < height; ++y)
+    for (ssize row = y; row < height; ++row)
     {
-        for (ssize col = x; x < width; ++x)
+        for (ssize col = x; col < width; ++col)
         {
             auto& back = backBufferSpan()(col, row);
-            back.eStyle &= ~IMAGE;
+            back.eStyle = NORM;
             back.wc = L' ';
         }
     }

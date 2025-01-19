@@ -40,7 +40,7 @@ Win::coverImage()
         const int split = pl.m_imgHeight;
 
         m_textBuff.clearKittyImages(); /* shouldn't hurt if TERM is not kitty */
-        m_textBuff.clearImage(1, 1, m_prevImgWidth, split + 1);
+        m_textBuff.clearImage(1, 1, m_prevImgWidth + 1, split + 1);
 
         Opt<Image> oCoverImg = mix.getCoverImage();
         if (oCoverImg)
@@ -288,7 +288,6 @@ Win::update()
 {
     guard::Mtx lock(&m_mtxUpdate);
 
-    auto& pl = *app::g_pPlayer;
     auto& tb = m_textBuff;
     const int width = g_termSize.width;
     const int height = g_termSize.height;
@@ -314,10 +313,6 @@ Win::update()
 
     tb.clearBackBuffer();
 
-    /*time();*/
-    /*timeSlider();*/
-
-    // if (m_bRedraw || pl.m_bSelectionChanged)
     {
         m_bRedraw = false;
 
