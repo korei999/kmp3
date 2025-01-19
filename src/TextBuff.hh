@@ -3,7 +3,6 @@
 #include "adt/Arena.hh"
 #include "adt/String.hh"
 #include "adt/Vec.hh"
-#include "adt/defer.hh"
 #include "adt/print.hh"
 #include "adt/Span2D.hh"
 #include "adt/enum.hh"
@@ -435,24 +434,20 @@ TextBuff::swapBuffers()
     ssize row = 0;
     ssize col = 0;
     ssize lastCol = 0;
-    bool bResetStyle = true;
 
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
 
     for (row = 0; row < m_tHeight; ++row)
     {
         lastCol = -1; /* fix for col == 0 */
-        col = 0;
 
-        for (; col < m_tWidth; ++col)
+        for (col = 0; col < m_tWidth; ++col)
         {
             auto& front = frontBufferSpan()(col, row);
             auto& back = backBufferSpan()(col, row);
 
             if (front != back)
             {
-                bResetStyle = true;
-
                 if (lastCol + 1 != col)
                 {
                     move(col, row);
@@ -473,11 +468,10 @@ TextBuff::swapBuffers()
             }
             else
             {
-                if (bResetStyle)
+                if (back.eStyle != eLastStyle)
                 {
-                    bResetStyle = false;
-                    eLastStyle = TEXT_BUFF_STYLE::NORM;
-                    push(TEXT_BUFF_NORM);
+                    push(styleToString(back.eStyle));
+                    eLastStyle = back.eStyle;
                 }
             }
         }
