@@ -63,11 +63,11 @@ Win::start(Arena* pArena)
     mtx_init(&m_mtxUpdate, mtx_plain);
 
     enableRawMode();
-    signal(SIGWINCH, sigwinchHandler);
-
     m_textBuff.start(m_pArena, g_termSize.width, g_termSize.height);
 
     adjustListHeight();
+
+    signal(SIGWINCH, sigwinchHandler);
 
     LOG_GOOD("ansi::WinStart()\n");
 
@@ -77,14 +77,6 @@ Win::start(Arena* pArena)
 void
 Win::destroy()
 {
-    m_textBuff.hideCursor(false);
-    m_textBuff.clear();
-    m_textBuff.clearKittyImages();
-    m_textBuff.push(TEXT_BUFF_KEYPAD_DISABLE);
-    m_textBuff.moveTopLeft();
-    m_textBuff.push("\n", 2);
-    m_textBuff.flush();
-
     disableRawMode();
     mtx_destroy(&m_mtxUpdate);
 

@@ -42,10 +42,9 @@ template<typename T>
 inline constexpr void
 swap(T* l, T* r)
 {
-    T t0 = *l;
-    T t1 = *r;
-    *l = t1;
-    *r = t0;
+    T t = *r;
+    *r = *l;
+    *l = t;
 }
 
 inline constexpr void

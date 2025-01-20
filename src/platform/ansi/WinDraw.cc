@@ -68,7 +68,7 @@ Win::info()
     const int hOff = m_prevImgWidth + 2;
     const int width = g_termSize.width;
 
-    auto sp = tls_scratch.nextMem<char>(width + 1);
+    Span sp = tls_scratch.nextMem<char>(width*4);
 
     auto drawLine = [&](
         const int y,
@@ -89,9 +89,11 @@ Win::info()
         }
     };
 
-    drawLine(1, "title: ", pl.m_info.title, BOLD | ITALIC | YELLOW);
-    drawLine(2, "album: ", pl.m_info.album, BOLD);
-    drawLine(3, "artist: ", pl.m_info.artist, BOLD);
+    using STYLE = TEXT_BUFF_STYLE;
+
+    drawLine(1, "title: ", pl.m_info.title, STYLE::BOLD | STYLE::ITALIC | STYLE::YELLOW);
+    drawLine(2, "album: ", pl.m_info.album, STYLE::BOLD);
+    drawLine(3, "artist: ", pl.m_info.artist, STYLE::BOLD);
 }
 
 void
@@ -126,19 +128,19 @@ Win::volume()
     for (int i = off + n + 1, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
     {
         STYLE col;
-        wchar_t wc;
+        wchar_t wc[2] {};
         if (bMuted)
         {
             col = BLUE | NORM;
-            wc = common::CHAR_VOL;
+            wc[0] = common::CHAR_VOL;
         }
         else
         {
             col = volumeColor(nTimes) | BOLD;
-            wc = common::CHAR_VOL_MUTED;
+            wc[0] = common::CHAR_VOL_MUTED;
         }
 
-        tb.wideString(i, 6, col, {&wc, 3});
+        tb.wideString(i, 6, col, {wc, 3});
     }
 }
 
@@ -184,10 +186,10 @@ Win::timeSlider()
 
         for (long i = n + 1, t = 0; i < wMax; ++i, ++t)
         {
-            wchar_t wch = L'━';
-            if (t == std::floor(timePlace)) wch = L'╋';
+            wchar_t wch[2] = {L'━', {}};
+            if (t == std::floor(timePlace)) wch[0] = L'╋';
 
-            tb.wideString(xOff + i, yOff, {}, {&wch, 3});
+            tb.wideString(xOff + i, yOff, {}, {wch, 3});
         }
     }
 }
@@ -279,6 +281,7 @@ Win::update()
     guard::Mtx lock(&m_mtxUpdate);
 
     auto& tb = m_textBuff;
+    /*auto& pl = *app::g_pPlayer;*/
     const int width = g_termSize.width;
     const int height = g_termSize.height;
 
@@ -301,9 +304,10 @@ Win::update()
         tb.clear();
     }
 
-    tb.clearBackBuffer();
-
+    /*if (m_bRedraw || pl.m_bSelectionChanged)*/
     {
+        tb.clearBackBuffer();
+
         m_bRedraw = false;
 
         // if (!app::g_bNoImage)
@@ -317,9 +321,9 @@ Win::update()
         list();
 
         bottomLine();
-    }
 
-    tb.swapBuffers();
+        tb.swapBuffers();
+    }
 }
 
 } /* namespace platform::ansi */

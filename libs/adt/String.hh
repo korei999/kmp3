@@ -143,14 +143,24 @@ struct StringGlyphIt
         It
         operator++()
         {
-            if (i < 0 || i >= size)
+            if (!p || i < 0 || i >= size)
             {
+death:
                 i = NPOS;
                 return *this;
             }
 
-            int len = mbtowc(&wc, &p[i], size - i);
+            int len = 0;
+
+            len = mbtowc(&wc, &p[i], size - i);
+
+            if (len == -1)
+                goto death;
+            else if (len == 0)
+                len = 1;
+
             i += len;
+
             return *this;
         }
 
