@@ -45,7 +45,7 @@ sigwinchHandler([[maybe_unused]] int sig)
     LOG_GOOD("term: {}\n", g_termSize);
 
     s.adjustListHeight();
-    s.m_textBuff.resizeBuffers(g_termSize.width, g_termSize.height);
+    s.m_textBuff.resize(g_termSize.width, g_termSize.height);
 
     pl.m_bSelectionChanged = true;
     s.m_bRedraw = true;

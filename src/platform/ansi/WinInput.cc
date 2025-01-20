@@ -117,8 +117,7 @@ Win::readWChar()
     {
         if (c::g_input.m_idx > 0)
             c::g_input.m_aBuff[--c::g_input.m_idx] = L'\0';
-        else
-            return c::READ_STATUS::BACKSPACE;
+        else return c::READ_STATUS::BACKSPACE;
     }
     else if (wc)
     {

@@ -64,7 +64,6 @@ void
 Win::info()
 {
     const auto& pl = *app::g_pPlayer;
-    auto& tb = m_textBuff;
     const int hOff = m_prevImgWidth + 2;
     const int width = g_termSize.width;
 
@@ -79,13 +78,13 @@ Win::info()
         utils::set(sp.data(), 0, sp.getSize());
 
         ssize n = print::toSpan(sp, sPrefix);
-        tb.string(hOff, y, {}, sp.data());
+        m_textBuff.string(hOff, y, {}, sp.data());
 
         if (sLine.getSize() > 0)
         {
             utils::set(sp.data(), 0, sp.getSize());
             print::toSpan(sp, "{}", sLine);
-            tb.string(hOff + n, y, eStyle, sp.data());
+            m_textBuff.string(hOff + n, y, eStyle, sp.data());
         }
     };
 
@@ -99,7 +98,6 @@ Win::info()
 void
 Win::volume()
 {
-    auto& tb = m_textBuff;
     const auto width = g_termSize.width;
     const int off = m_prevImgWidth + 2;
     const f32 vol = app::g_pMixer->getVolume();
@@ -123,7 +121,7 @@ Win::volume()
     };
 
     const STYLE col = bMuted ? BLUE : volumeColor(maxVolumeBars - 1);
-    tb.string(off, 6, STYLE::BOLD | col, {sp.data(), n});
+    m_textBuff.string(off, 6, STYLE::BOLD | col, {sp.data(), n});
 
     for (int i = off + n + 1, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
     {
@@ -140,25 +138,23 @@ Win::volume()
             wc[0] = common::CHAR_VOL_MUTED;
         }
 
-        tb.wideString(i, 6, col, {wc, 3});
+        m_textBuff.wideString(i, 6, col, {wc, 3});
     }
 }
 
 void
 Win::time()
 {
-    auto& tb = m_textBuff;
     const auto width = g_termSize.width;
     const int off = m_prevImgWidth + 2;
 
     String sTime = common::allocTimeString(m_pArena, width);
-    tb.string(off, 9, {}, sTime);
+    m_textBuff.string(off, 9, {}, sTime);
 }
 
 void
 Win::timeSlider()
 {
-    auto& tb = m_textBuff;
     const auto& mix = *app::g_pMixer;
     const auto width = g_termSize.width;
     const int xOff = m_prevImgWidth + 2;
@@ -172,7 +168,7 @@ Win::timeSlider()
         const String sIndicator = bPaused ? "I>" : "II";
 
         using STYLE = TEXT_BUFF_STYLE;
-        tb.string(xOff, yOff, STYLE::BOLD, sIndicator);
+        m_textBuff.string(xOff, yOff, STYLE::BOLD, sIndicator);
 
         n += sIndicator.getSize();
     }
@@ -189,7 +185,7 @@ Win::timeSlider()
             wchar_t wch[2] = {L'━', {}};
             if (t == std::floor(timePlace)) wch[0] = L'╋';
 
-            tb.wideString(xOff + i, yOff, {}, {wch, 3});
+            m_textBuff.wideString(xOff + i, yOff, {}, {wch, 3});
         }
     }
 }
@@ -198,7 +194,6 @@ void
 Win::list()
 {
     const auto& pl = *app::g_pPlayer;
-    auto& tb = m_textBuff;
     const int split = pl.m_imgHeight + 1;
 
     const auto& aIdxs = pl.m_vSearchIdxs;
@@ -223,7 +218,7 @@ Win::list()
             else if (bSelected)
                 eStyle = STYLE::BOLD | STYLE::YELLOW;
 
-            tb.string(1, i + split + 1, eStyle, sSong);
+            m_textBuff.string(1, i + split + 1, eStyle, sSong);
         }
     }
 }
@@ -234,7 +229,6 @@ Win::bottomLine()
     namespace c = common;
 
     const auto& pl = *app::g_pPlayer;
-    auto& tb = m_textBuff;
     int height = g_termSize.height;
     int width = g_termSize.width;
 
@@ -252,25 +246,24 @@ Win::bottomLine()
             n += print::toSpan({sp.data() + n, sp.getSize() - 1 - n}, " (repeat {})", sArg);
         }
 
-        tb.string(width - n - 1, height - 1, {}, {sp.data(), sp.getSize() - 1});
+        m_textBuff.string(width - n - 1, height - 1, {}, {sp.data(), sp.getSize() - 1});
     }
 
-    if (
-        c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||
+    if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||
         (c::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE &&
          wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff)) > 0)
     )
     {
         const String sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
 
-        tb.string(1, height - 1, {}, sReadMode);
-        tb.wideString(sReadMode.getSize() + 1, height - 1, {}, c::g_input.getSpan());
+        m_textBuff.string(1, height - 1, {}, sReadMode);
+        m_textBuff.wideString(sReadMode.getSize() + 1, height - 1, {}, c::g_input.getSpan());
 
         if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE)
         {
             /* just append the cursor character */
-            Span<wchar_t> spCursor {const_cast<wchar_t*>(common::CURSOR_BLOCK), 3};
-            tb.wideString(sReadMode.getSize() + c::g_input.m_idx + 1, height - 1, {}, spCursor);
+            Span spCursor {const_cast<wchar_t*>(common::CURSOR_BLOCK), 3};
+            m_textBuff.wideString(sReadMode.getSize() + c::g_input.m_idx + 1, height - 1, {}, spCursor);
         }
     }
 }
@@ -280,38 +273,32 @@ Win::update()
 {
     guard::Mtx lock(&m_mtxUpdate);
 
-    auto& tb = m_textBuff;
     /*auto& pl = *app::g_pPlayer;*/
     const int width = g_termSize.width;
     const int height = g_termSize.height;
 
     m_time = utils::timeNowMS();
 
-    defer(
-        tb.flush();
-        tb.reset();
-    );
-
     if (width <= 40 || height <= 15)
     {
-        tb.clear();
+        m_textBuff.erase();
         return;
     }
 
     if (m_bClear)
     {
         m_bClear = false;
-        tb.clear();
+        m_textBuff.erase();
     }
 
     /*if (m_bRedraw || pl.m_bSelectionChanged)*/
     {
-        tb.clearBackBuffer();
+        m_textBuff.clean();
 
         m_bRedraw = false;
 
-        // if (!app::g_bNoImage)
-        //     coverImage();
+        if (!app::g_bNoImage)
+            coverImage();
 
         time(); /* redraw if image size changed */
         timeSlider();
@@ -322,7 +309,7 @@ Win::update()
 
         bottomLine();
 
-        tb.swapBuffers();
+        m_textBuff.present();
     }
 }
 

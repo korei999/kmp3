@@ -1,13 +1,12 @@
 #pragma once
 
 #include "adt/Arena.hh"
+#include "adt/ScratchBuffer.hh"
+#include "adt/Span2D.hh"
 #include "adt/String.hh"
 #include "adt/Vec.hh"
-#include "adt/print.hh"
-#include "adt/Span2D.hh"
 #include "adt/enum.hh"
-#include "adt/ScratchBuffer.hh"
-
+#include "adt/print.hh"
 #include "adt/logs.hh"
 
 #include <threads.h>
@@ -146,7 +145,12 @@ struct TextBuff
     ssize m_tWidth {};
     ssize m_tHeight {};
 
+    ssize m_newTWidth {};
+    ssize m_newTHeight {};
+
+    bool m_bResize {};
     bool m_bChanged {};
+    bool m_bErase {};
 
     VecBase<TextBuffCell> m_vFront {}; /* what to show */
     VecBase<TextBuffCell> m_vBack {}; /* where to draw */
@@ -158,11 +162,10 @@ struct TextBuff
 
     TextBuff() = default;
 
-    /* direct write api (slow) */
+    /* direct write api (cpu heavy) */
     void push(const char ch);
     void push(const char* pBuff, const ssize buffSize);
     void push(const String sBuff);
-    void reset();
     void flush();
     void moveTopLeft();
     void up(int steps);
@@ -170,23 +173,23 @@ struct TextBuff
     void forward(int steps);
     void back(int steps);
     void move(int x, int y);
-    void clearDown();
-    void clearUp();
-    void clear();
+    void clearTermDown();
+    void clearTermUp();
+    void clearTerm();
     void clearLine(TEXT_BUFF_ARG eArg);
     void moveClearLine(int x, int y, TEXT_BUFF_ARG eArg);
     void hideCursor(bool bHide);
     void pushGlyph(wchar_t wc);
     void clearKittyImages();
-    void resizeBuffers(ssize width, ssize height);
-    void destroy();
     /* */
 
-    /* new api (efficient) */
+    /* main api (efficient) */
     void start(Arena* pArena, ssize termWidth, ssize termHeight);
-    void swapBuffers();
-    void clearBackBuffer();
-    void resetBuffers();
+    void destroy();
+    void clean();
+    void present();
+    void erase();
+    void resize(ssize width, ssize height);
 
     void string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp);
@@ -199,6 +202,11 @@ private:
     Span2D<TextBuffCell> frontBufferSpan();
     Span2D<TextBuffCell> backBufferSpan();
     void grow(ssize newCap);
+    void reset();
+    void clearBackBuffer();
+    void pushDiff();
+    void resetBuffers();
+    void resizeBuffers(ssize width, ssize height);
 };
 
 inline void
@@ -250,11 +258,11 @@ TextBuff::reset()
 inline void
 TextBuff::flush()
 {
-    LOG_GOOD("flush(): m_size: {}\n", m_size);
+    LOG_GOOD("m_size: {}\n", m_size);
     if (m_size > 0)
-    {
         write(STDOUT_FILENO, m_pData, m_size);
-    }
+
+    reset();
 }
 
 inline void
@@ -304,19 +312,19 @@ TextBuff::move(int x, int y)
 }
 
 inline void
-TextBuff::clearDown()
+TextBuff::clearTermDown()
 {
     push("\x1b[0J");
 }
 
 inline void
-TextBuff::clearUp()
+TextBuff::clearTermUp()
 {
     push("\x1b[1J");
 }
 
 inline void
-TextBuff::clear()
+TextBuff::clearTerm()
 {
     push("\x1b[2J");
 }
@@ -363,11 +371,25 @@ TextBuff::clearKittyImages()
 inline void
 TextBuff::resizeBuffers(ssize width, ssize height)
 {
-    m_tWidth = width, m_tHeight = height;
     m_vBack.setSize(OsAllocatorGet(), width * height);
     m_vFront.setSize(OsAllocatorGet(), width * height);
+    m_tWidth = width, m_tHeight = height;
 
     resetBuffers();
+}
+
+inline void
+TextBuff::erase()
+{
+    m_bErase = true;
+}
+
+inline void
+TextBuff::resize(ssize width, ssize height)
+{
+    m_bResize = true;
+    m_newTWidth = width;
+    m_newTHeight = height;
 }
 
 inline void
@@ -388,7 +410,6 @@ inline void
 TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 {
     m_pArena = pArena;
-
     mtx_init(&m_mtx, mtx_plain);
 
     push(TEXT_BUFF_ALT_SCREEN_ENABLE);
@@ -400,17 +421,12 @@ TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 }
 
 inline void
-TextBuff::swapBuffers()
+TextBuff::pushDiff()
 {
-    if (!m_bChanged)
-        return;
-
     ssize row = 0;
     ssize col = 0;
     ssize nForwards = 0;
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
-
-    m_bChanged = false;
 
     for (row = 0; row < m_tHeight; ++row)
     {
@@ -450,8 +466,6 @@ TextBuff::swapBuffers()
             }
         }
     }
-
-    utils::swap(&m_vFront, &m_vBack);
 }
 
 inline void
@@ -459,11 +473,8 @@ TextBuff::clearBackBuffer()
 {
     for (auto& cell : m_vBack)
     {
-        // if (cell.eStyle != TEXT_BUFF_STYLE::IMAGE)
-        {
-            cell.wc = L' ';
-            cell.eStyle = TEXT_BUFF_STYLE::NORM;
-        }
+        cell.wc = L' ';
+        cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
 }
 
@@ -476,8 +487,37 @@ TextBuff::resetBuffers()
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
     utils::copy(m_vBack.data(), m_vFront.data(), m_vFront.getSize());
+}
 
-    clear();
+inline void
+TextBuff::clean()
+{
+    if (m_bResize)
+    {
+        m_bResize = false;
+        resizeBuffers(m_newTWidth, m_newTHeight);
+    }
+    else
+    {
+        clearBackBuffer();
+    }
+}
+
+inline void
+TextBuff::present()
+{
+    if (m_bErase)
+    {
+        m_bErase = false;
+        clearTerm();
+    }
+    if (m_bChanged)
+    {
+        m_bChanged = false;
+        pushDiff();
+        utils::swap(&m_vFront, &m_vBack);
+    }
+    flush();
 }
 
 inline Span2D<TextBuffCell>
@@ -517,10 +557,8 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str)
         {
             for (ssize i = 1; i < colWidth; ++i)
             {
-                /*auto& front = fb(x + i, y);*/
                 auto& back = bb(x + i, y);
 
-                /*if (front.wc != wc || front.eStyle != eStyle)*/
                 {
                     back.wc = L' ';
                     back.eStyle = eStyle;
@@ -623,7 +661,6 @@ TextBuff::image(int x, int y, int width, int height, const String str)
         {
             auto& back = backBufferSpan()(col, row);
             back.eStyle = IMAGE;
-            back.wc = L' ';
         }
     }
 
@@ -636,17 +673,4 @@ TextBuff::clearImage(int x, int y, int width, int height)
 {
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
         return;
-
-    width = utils::min((ssize)width, m_tWidth);
-    height = utils::min((ssize)height, m_tHeight);
-
-    for (ssize row = y; row < height; ++row)
-    {
-        for (ssize col = x; col < width; ++col)
-        {
-            auto& back = backBufferSpan()(col, row);
-            back.eStyle = NORM;
-            back.wc = L' ';
-        }
-    }
 }
