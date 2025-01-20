@@ -23,6 +23,8 @@
 #define TEXT_BUFF_UNDERLINE "\x1b[4m"
 #define TEXT_BUFF_BLINK "\x1b[5m"
 #define TEXT_BUFF_REVERSE "\x1b[7m"
+#define TEXT_BUFF_INVIS "\x1b[8m"
+#define TEXT_BUFF_STRIKE "\x1b[9m"
 
 #define TEXT_BUFF_RED "\x1b[31m"
 #define TEXT_BUFF_GREEN "\x1b[32m"
@@ -42,7 +44,7 @@
 
 using namespace adt;
 
-enum class TEXT_BUFF_STYLE_CODE
+enum class TEXT_BUFF_STYLE_CODE : int
 {
     NORM = 0,
     BOLD = 1,
@@ -51,6 +53,8 @@ enum class TEXT_BUFF_STYLE_CODE
     UNRELINE = 4,
     BLINK = 5,
     REVERSE = 7,
+    INVIS = 8,
+    STRIKE = 9,
 
     RED = 31,
     GREEN = 32,
@@ -83,26 +87,28 @@ enum TEXT_BUFF_STYLE : u32
     UNDERLINE = 1 << 3,
     BLINK = 1 << 4,
     REVERSE = 1 << 5,
+    INVIS = 1 << 6,
+    STRIKE = 1 << 7,
 
-    RED = 1 << 6,
-    GREEN = 1 << 7,
-    YELLOW = 1 << 8,
-    BLUE = 1 << 9,
-    MAGENTA = 1 << 10,
-    CYAN = 1 << 11,
-    WHITE = 1 << 12,
+    RED = 1 << 8,
+    GREEN = 1 << 9,
+    YELLOW = 1 << 10,
+    BLUE = 1 << 11,
+    MAGENTA = 1 << 12,
+    CYAN = 1 << 13,
+    WHITE = 1 << 14,
 
-    BG_RED = 1 << 13,
-    BG_GREEN = 1 << 14,
-    BG_YELLOW = 1 << 15,
-    BG_BLUE = 1 << 16,
-    BG_MAGENTA = 1 << 17,
-    BG_CYAN = 1 << 18,
-    BG_WHITE = 1 << 19,
+    BG_RED = 1 << 15,
+    BG_GREEN = 1 << 16,
+    BG_YELLOW = 1 << 17,
+    BG_BLUE = 1 << 18,
+    BG_MAGENTA = 1 << 19,
+    BG_CYAN = 1 << 20,
+    BG_WHITE = 1 << 21,
 
-    IMAGE = 1 << 20,
+    IMAGE = 1 << 22,
 
-    FORCE_REDRAW = 1 << 21,
+    FORCE_REDRAW = 1 << 23,
 };
 ADT_ENUM_BITWISE_OPERATORS(TEXT_BUFF_STYLE);
 
@@ -165,15 +171,13 @@ struct TextBuff
     void clearLine(TEXT_BUFF_ARG eArg);
     void moveClearLine(int x, int y, TEXT_BUFF_ARG eArg);
     void hideCursor(bool bHide);
-    void movePush(int x, int y, const String str);
-    void movePush(int x, int y, const char* pBuff, const ssize size);
     void pushGlyph(wchar_t wc);
     void clearKittyImages();
     void resizeBuffers(ssize width, ssize height);
     void destroy();
     /* */
 
-    /* new api (less slow) */
+    /* new api (efficient) */
     void init(ssize termWidth, ssize termHeight);
     void swapBuffers();
     void clearBackBuffer();
@@ -333,20 +337,6 @@ TextBuff::hideCursor(bool bHide)
 {
     if (bHide) push("\x1b[?25l");
     else push("\x1b[?25h");
-}
-
-inline void
-TextBuff::movePush(int x, int y, const String str)
-{
-    move(x, y);
-    push(str);
-}
-
-inline void
-TextBuff::movePush(int x, int y, const char* pBuff, const ssize size)
-{
-    move(x, y);
-    push(pBuff, size);
 }
 
 inline void
@@ -573,6 +563,10 @@ TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
             n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::BLINK);
         if (eStyle & REVERSE)
             n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::REVERSE);
+        if (eStyle & INVIS)
+            n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::INVIS);
+        if (eStyle & STRIKE)
+            n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::STRIKE);
         if (eStyle & RED)
             n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::RED);
         if (eStyle & GREEN)
@@ -627,7 +621,8 @@ TextBuff::image(int x, int y, int width, int height, const String str)
         }
     }
 
-    movePush(x, y, str);
+    move(x, y);
+    push(str);
 }
 
 inline void

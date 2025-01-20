@@ -15,19 +15,6 @@ thread_local static u8 tls_aMemBuff[SIZE_8K] {};
 thread_local static ScratchBuffer tls_scratch(tls_aMemBuff);
 
 void
-Win::clearArea(int x, int y, int width, int height)
-{
-    const int w = utils::min(g_termSize.width, width);
-    const int h = utils::min(g_termSize.height, height);
-
-    auto sp = tls_scratch.nextMem<char>(w + 1);
-    memset(sp.data(), ' ', w);
-
-    for (int i = y; i < h; ++i)
-        m_textBuff.movePush(x, i, {sp.data(), w});
-}
-
-void
 Win::coverImage()
 {
     auto& pl = *app::g_pPlayer;
