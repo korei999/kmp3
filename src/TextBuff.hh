@@ -18,7 +18,10 @@
 
 #define TEXT_BUFF_NORM "\x1b[0m"
 #define TEXT_BUFF_BOLD "\x1b[1m"
+#define TEXT_BUFF_DIM "\x1b[2m"
 #define TEXT_BUFF_ITALIC "\x1b[3m"
+#define TEXT_BUFF_UNDERLINE "\x1b[4m"
+#define TEXT_BUFF_BLINK "\x1b[5m"
 #define TEXT_BUFF_REVERSE "\x1b[7m"
 
 #define TEXT_BUFF_RED "\x1b[31m"
@@ -43,7 +46,10 @@ enum class TEXT_BUFF_STYLE_CODE
 {
     NORM = 0,
     BOLD = 1,
+    DIM = 2,
     ITALIC = 3,
+    UNRELINE = 4,
+    BLINK = 5,
     REVERSE = 7,
 
     RED = 31,
@@ -72,28 +78,31 @@ enum TEXT_BUFF_STYLE : u32
 {
     NORM = 0,
     BOLD = 1,
-    ITALIC = 1 << 1,
-    REVERSE = 1 << 2,
+    DIM = 1 << 1,
+    ITALIC = 1 << 2,
+    UNDERLINE = 1 << 3,
+    BLINK = 1 << 4,
+    REVERSE = 1 << 5,
 
-    RED = 1 << 3,
-    GREEN = 1 << 4,
-    YELLOW = 1 << 5,
-    BLUE = 1 << 6,
-    MAGENTA = 1 << 7,
-    CYAN = 1 << 8,
-    WHITE = 1 << 9,
+    RED = 1 << 6,
+    GREEN = 1 << 7,
+    YELLOW = 1 << 8,
+    BLUE = 1 << 9,
+    MAGENTA = 1 << 10,
+    CYAN = 1 << 11,
+    WHITE = 1 << 12,
 
-    BG_RED = 1 << 10,
-    BG_GREEN = 1 << 11,
-    BG_YELLOW = 1 << 12,
-    BG_BLUE = 1 << 13,
-    BG_MAGENTA = 1 << 14,
-    BG_CYAN = 1 << 15,
-    BG_WHITE = 1 << 16,
+    BG_RED = 1 << 13,
+    BG_GREEN = 1 << 14,
+    BG_YELLOW = 1 << 15,
+    BG_BLUE = 1 << 16,
+    BG_MAGENTA = 1 << 17,
+    BG_CYAN = 1 << 18,
+    BG_WHITE = 1 << 19,
 
-    IMAGE = 1 << 17,
+    IMAGE = 1 << 20,
 
-    FORCE_REDRAW = 1 << 18,
+    FORCE_REDRAW = 1 << 21,
 };
 ADT_ENUM_BITWISE_OPERATORS(TEXT_BUFF_STYLE);
 
@@ -554,8 +563,14 @@ TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
 
         if (eStyle & BOLD)
             n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::BOLD);
+        if (eStyle & DIM)
+            n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::DIM);
         if (eStyle & ITALIC)
             n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::ITALIC);
+        if (eStyle & UNDERLINE)
+            n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::UNRELINE);
+        if (eStyle & BLINK)
+            n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::BLINK);
         if (eStyle & REVERSE)
             n += print::toBuffer(pBuff + n, size - n, ";{}", (int)CODE::REVERSE);
         if (eStyle & RED)

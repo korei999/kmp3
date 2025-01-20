@@ -222,14 +222,17 @@ Win::list()
             const String sSong = pl.m_vShortSongs[songIdx];
 
             bool bSelected = songIdx == pl.m_selected ? true : false;
-            TEXT_BUFF_STYLE eStyle = TEXT_BUFF_STYLE::NORM;
+
+            using STYLE = TEXT_BUFF_STYLE;
+
+            STYLE eStyle = STYLE::NORM;
 
             if (h == pl.m_focused && bSelected)
-                eStyle = TEXT_BUFF_STYLE::BOLD | TEXT_BUFF_STYLE::YELLOW | TEXT_BUFF_STYLE::REVERSE;
+                eStyle = STYLE::BOLD | STYLE::YELLOW | STYLE::REVERSE;
             else if (h == pl.m_focused)
-                eStyle = TEXT_BUFF_STYLE::REVERSE;
+                eStyle = STYLE::REVERSE;
             else if (bSelected)
-                eStyle = TEXT_BUFF_STYLE::BOLD | TEXT_BUFF_STYLE::YELLOW;
+                eStyle = STYLE::BOLD | STYLE::YELLOW;
 
             tb.string(1, i + split + 1, eStyle, sSong);
         }
