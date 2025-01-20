@@ -200,7 +200,6 @@ inline void
 TextBuff::grow(ssize newCap)
 {
     m_pData = (char*)m_pAlloc->realloc(m_pData, m_capacity, newCap, 1);
-    ADT_ASSERT(m_pData, "realloc");
     m_capacity = newCap;
 }
 
