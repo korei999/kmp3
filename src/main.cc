@@ -178,8 +178,8 @@ main(int argc, char** argv)
     {
         startup(argc, argv);
     }
-    catch (AllocException& ex)
+    catch (IException& ex)
     {
-        COUT("{}\n", ex.getMsg());
+        ex.logErrorMsg(stdout);
     }
 }

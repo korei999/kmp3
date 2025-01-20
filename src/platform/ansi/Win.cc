@@ -17,14 +17,14 @@ void
 Win::disableRawMode()
 {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &m_termOg) == -1)
-        LOG_DIE("tcsetattr\n");
+        throw RuntimeException("tcsetattr() failed");
 }
 
 void
 Win::enableRawMode()
 {
     if (tcgetattr(STDIN_FILENO, &m_termOg) == -1)
-        LOG_DIE("tcgetattr\n");
+        throw RuntimeException("tcsetattr() failed");
 
     struct termios raw = m_termOg;
     raw.c_lflag &= ~(ECHO | ICANON | ISIG);
@@ -32,7 +32,7 @@ Win::enableRawMode()
     /*raw.c_cc[VTIME] = 1;*/
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-        LOG_DIE("tcsetattr\n");
+        throw RuntimeException("tcsetattr() failed");
 }
 
 void
