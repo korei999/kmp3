@@ -132,7 +132,7 @@ operator!=(const TextBuffCell& l, const TextBuffCell& r)
 
 struct TextBuff
 {
-    Arena* m_pAlloc {};
+    Arena* m_pArena {};
 
     mtx_t m_mtx {};
 
@@ -151,7 +151,6 @@ struct TextBuff
     /* */
 
     TextBuff() = default;
-    TextBuff(Arena* _pAlloc) : m_pAlloc(_pAlloc) { mtx_init(&m_mtx, mtx_plain); }
 
     /* direct write api (slow) */
     void push(const char ch);
@@ -178,7 +177,7 @@ struct TextBuff
     /* */
 
     /* new api (efficient) */
-    void init(ssize termWidth, ssize termHeight);
+    void start(Arena* pArena, ssize termWidth, ssize termHeight);
     void swapBuffers();
     void clearBackBuffer();
     void resetBuffers();
@@ -199,7 +198,7 @@ private:
 inline void
 TextBuff::grow(ssize newCap)
 {
-    m_pData = (char*)m_pAlloc->realloc(m_pData, m_capacity, newCap, 1);
+    m_pData = (char*)m_pArena->realloc(m_pData, m_capacity, newCap, 1);
     m_capacity = newCap;
 }
 
@@ -374,8 +373,12 @@ TextBuff::destroy()
 }
 
 inline void
-TextBuff::init(ssize termWidth, ssize termHeight)
+TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 {
+    m_pArena = pArena;
+
+    mtx_init(&m_mtx, mtx_plain);
+
     clear();
     hideCursor(true);
     push(TEXT_BUFF_KEYPAD_ENABLE);
@@ -532,7 +535,7 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
         return;
 
-    auto* pBuff = (char*)m_pAlloc->zalloc(sp.getSize() * 8, sizeof(*sp.data()));
+    auto* pBuff = (char*)m_pArena->zalloc(sp.getSize() * 8, sizeof(*sp.data()));
     int len = wcstombs(pBuff, sp.data(), sp.getSize());
     string(x, y, eStyle, {pBuff, len});
 }
@@ -541,7 +544,7 @@ inline String
 TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
 {
     const ssize size = 127;
-    char* pBuff = (char*)m_pAlloc->zalloc(1, size + 1);
+    char* pBuff = (char*)m_pArena->zalloc(1, size + 1);
     ssize n = 0;
 
     n += print::toBuffer(pBuff + n, size - n, "\x1b[0");

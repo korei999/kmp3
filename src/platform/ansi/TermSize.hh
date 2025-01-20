@@ -39,7 +39,8 @@ getTermSize()
         bool bHaveWINSZ = false;
 
         if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) >= 0 || ioctl(STDERR_FILENO, TIOCGWINSZ, &w) >= 0 ||
-            ioctl(STDIN_FILENO, TIOCGWINSZ, &w) >= 0)
+            ioctl(STDIN_FILENO, TIOCGWINSZ, &w) >= 0
+        )
             bHaveWINSZ = true;
 
         if (bHaveWINSZ)

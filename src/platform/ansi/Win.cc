@@ -58,7 +58,6 @@ bool
 Win::start(Arena* pArena)
 {
     m_pArena = pArena;
-    m_textBuff = TextBuff(pArena);
     g_termSize = getTermSize();
 
     mtx_init(&m_mtxUpdate, mtx_plain);
@@ -66,7 +65,7 @@ Win::start(Arena* pArena)
     enableRawMode();
     signal(SIGWINCH, sigwinchHandler);
 
-    m_textBuff.init(g_termSize.width, g_termSize.height);
+    m_textBuff.start(m_pArena, g_termSize.width, g_termSize.height);
 
     adjustListHeight();
 
