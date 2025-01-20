@@ -150,12 +150,16 @@ Arena::zalloc(usize mCount, usize mSize)
 inline void*
 Arena::realloc(void* ptr, usize oldCount, usize mCount, usize mSize)
 {
-    if (!ptr) return malloc(mCount, mSize);
+    if (!ptr)
+        return malloc(mCount, mSize);
+
+    if (mCount < oldCount)
+        return ptr;
 
     usize requested = mSize * mCount;
     usize realSize = align8(requested);
-    auto* pBlock = findBlockFromPtr(static_cast<u8*>(ptr));
 
+    auto* pBlock = findBlockFromPtr(static_cast<u8*>(ptr));
     ADT_ASSERT(pBlock, "pointer doesn't belong to this arena");
 
     if (ptr == pBlock->pLastAlloc &&

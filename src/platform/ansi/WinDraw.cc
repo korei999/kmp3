@@ -11,8 +11,8 @@ using namespace adt;
 namespace platform::ansi
 {
 
-thread_local static u8 tls_aMemBuff[SIZE_8K] {};
-thread_local static ScratchBuffer tls_scratch(tls_aMemBuff);
+static u8 s_aMemBuff[SIZE_8K] {};
+static ScratchBuffer s_scratch(s_aMemBuff);
 
 void
 Win::coverImage()
@@ -27,7 +27,7 @@ Win::coverImage()
         const int split = pl.m_imgHeight;
 
         m_textBuff.clearKittyImages(); /* shouldn't hurt if TERM is not kitty */
-        m_textBuff.clearImage(1, 1, m_prevImgWidth + 1, split + 1);
+        m_textBuff.forceClean(1, 1, m_prevImgWidth + 1, split + 1);
 
         Opt<Image> oCoverImg = mix.getCoverImage();
         if (oCoverImg)
@@ -42,18 +42,7 @@ Win::coverImage()
                 m_pArena, eLayout, img, split, g_termSize.width
             );
 
-            if (eLayout == ch::IMAGE_LAYOUT::RAW)
-            {
-                m_textBuff.image(1, 1, chafaImg.width, chafaImg.height, chafaImg.uData.sRaw);
-            }
-            else
-            {
-                for (ssize lineIdx = 1, i = 0; lineIdx < chafaImg.uData.vLines.getSize(); ++lineIdx, ++i)
-                {
-                    const auto& sLine = chafaImg.uData.vLines[i];
-                    m_textBuff.image(1, lineIdx, chafaImg.width, chafaImg.height, sLine);
-                }
-            }
+            m_textBuff.image(1, 1, chafaImg);
 
             m_prevImgWidth = chafaImg.width;
         }
@@ -67,7 +56,7 @@ Win::info()
     const int hOff = m_prevImgWidth + 2;
     const int width = g_termSize.width;
 
-    Span sp = tls_scratch.nextMem<char>(width*4);
+    Span sp = s_scratch.nextMem<char>(width*4);
 
     auto drawLine = [&](
         const int y,
@@ -103,7 +92,7 @@ Win::volume()
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
 
-    Span sp = tls_scratch.nextMemZero<char>(width + 1);
+    Span sp = s_scratch.nextMemZero<char>(width + 1);
     ssize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
 
     const int maxVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
@@ -234,7 +223,7 @@ Win::bottomLine()
 
     /* selected / focused */
     {
-        Span sp = tls_scratch.nextMemZero<char>(width + 1);
+        Span sp = s_scratch.nextMemZero<char>(width + 1);
 
         ssize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.getSize() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
@@ -295,12 +284,10 @@ Win::update()
     {
         m_textBuff.clean();
 
-        m_bRedraw = false;
-
         if (!app::g_bNoImage)
             coverImage();
 
-        time(); /* redraw if image size changed */
+        time();
         timeSlider();
 
         volume();
