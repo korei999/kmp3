@@ -44,7 +44,7 @@ run()
         return;
     }
 
-    Arena arena(SIZE_1M);
+    Arena arena(SIZE_1M * 2);
     defer( arena.freeAll() );
 
     if (app::g_pWin->start(&arena) == false)

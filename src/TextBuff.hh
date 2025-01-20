@@ -159,8 +159,7 @@ struct TextBuff
     VecBase<TextBuffCell> m_vBack {}; /* where to draw */
     VecBase<TextBuffImage> m_vImages {};
 
-    u8 m_aScratchMem[SIZE_1K] {};
-    ScratchBuffer m_scratch = {m_aScratchMem};
+    ScratchBuffer m_scratch {};
 
     /* */
 
@@ -199,7 +198,7 @@ struct TextBuff
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp);
     String styleToString(TEXT_BUFF_STYLE eStyle);
     void image(int x, int y, const platform::chafa::Image& img);
-    void forceClean(int x, int y, int width, int height);
+    void forceClean(int x, int y, int width, int height); /* remove images */
     /* */
 
 private:
@@ -211,6 +210,7 @@ private:
     void pushDiff();
     void resetBuffers();
     void resizeBuffers(ssize width, ssize height);
+    void popImages();
 };
 
 inline void
@@ -472,28 +472,33 @@ TextBuff::pushDiff()
         }
     }
 
-    /* now pop all the images */
-    {
-        for (ssize i = 0; i < m_vImages.getSize(); ++i)
-        {
-            auto img = *m_vImages.pop();
+    popImages();
+}
 
-            if (img.img.eLayout == platform::chafa::IMAGE_LAYOUT::RAW)
+inline void
+TextBuff::popImages()
+{
+
+    for (ssize i = 0; i < m_vImages.getSize(); ++i)
+    {
+        auto img = *m_vImages.pop();
+
+        if (img.img.eLayout == platform::chafa::IMAGE_LAYOUT::RAW)
+        {
+            move(img.x, img.y);
+            push(img.img.uData.sRaw);
+        }
+        else
+        {
+            const auto& vLines = img.img.uData.vLines;
+            for (ssize lineIdx = 0; lineIdx < vLines.getSize(); ++lineIdx)
             {
-                move(img.x, img.y);
-                push(img.img.uData.sRaw);
-            }
-            else
-            {
-                const auto& vLines = img.img.uData.vLines;
-                for (ssize lineIdx = 0; lineIdx < vLines.getSize(); ++lineIdx)
-                {
-                    move(img.x, img.y + lineIdx);
-                    push(vLines[lineIdx]);
-                }
+                move(img.x, img.y + lineIdx);
+                push(vLines[lineIdx]);
             }
         }
     }
+
 }
 
 inline void
@@ -529,6 +534,9 @@ TextBuff::clean()
     {
         clearBackBuffer();
     }
+
+    ssize scratchSize = SIZE_1K;
+    m_scratch = Span((char*)m_pArena->malloc(scratchSize, 1), scratchSize);
 }
 
 inline void
