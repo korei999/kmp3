@@ -1,5 +1,10 @@
 #pragma once
 
+#if defined __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
+#endif
+
 namespace adt
 {
 
@@ -49,3 +54,7 @@ struct ReverseIt
 };
 
 } /* namespace adt */
+
+#if defined __GNUC__
+#pragma GCC diagnostic pop
+#endif
