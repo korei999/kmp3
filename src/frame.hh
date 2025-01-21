@@ -1,7 +1,5 @@
 #pragma once
 
-#include <threads.h>
-
 namespace frame
 {
 

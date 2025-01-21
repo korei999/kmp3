@@ -1,9 +1,10 @@
 #pragma once
 
+#include "adt/Thread.hh"
+
 #include "audio.hh"
 
 #include <atomic>
-#include <threads.h>
 
 #ifdef __clang__
     #pragma clang diagnostic push
@@ -40,7 +41,7 @@ protected:
     pw_stream* m_pStream {};
     u32 m_nLastFrames {};
     f64 m_currMs {};
-    mtx_t m_mtxDecoder {};
+    Mutex m_mtxDecoder {};
 
     /* */
 

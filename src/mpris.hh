@@ -1,13 +1,13 @@
 #pragma once
 
-#include <threads.h>
+#include "adt/Thread.hh"
 
 namespace mpris
 {
 
 extern bool g_bReady;
-extern mtx_t g_mtx;
-extern cnd_t g_cnd;
+extern adt::Mutex g_mtx;
+extern adt::CndVar g_cnd;
 
 #ifdef USE_MPRIS
 
@@ -15,8 +15,8 @@ void init();
 void proc();
 void destroy();
 
-inline void initLocks() { mtx_init(&g_mtx, mtx_recursive); cnd_init(&g_cnd); }
-inline void destroyLocks() { mtx_destroy(&g_mtx); cnd_destroy(&g_cnd); }
+inline void initLocks() { g_mtx = adt::Mutex(adt::MUTEX_TYPE::RECURSIVE); g_cnd = adt::CndVar(adt::INIT); }
+inline void destroyLocks() { g_mtx.destroy(); g_cnd.destroy(); }
 
 void playbackStatusChanged();
 void loopStatusChanged();

@@ -106,9 +106,9 @@ else()
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-Wno-class-memaccess)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess -Wno-cast-function-type")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options(-Wno-c99-designator)
+    add_compile_options(-Wno-c99-designator -Wno-cast-function-type-mismatch)
 endif()
 
 message(STATUS "CMAKE_SYSTEM_NAME: '${CMAKE_SYSTEM_NAME}'")

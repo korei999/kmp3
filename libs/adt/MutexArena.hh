@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Arena.hh"
-
-#include <threads.h>
+#include "guard.hh"
 
 namespace adt
 {
@@ -10,16 +9,13 @@ namespace adt
 struct MutexArena : IAllocator
 {
     Arena m_arena {};
-    mtx_t m_mtx {};
+    Mutex m_mtx {};
 
     /* */
 
     MutexArena() = default;
     MutexArena(ssize blockCap, IAllocator* pBackAlloc = OsAllocatorGet())
-        : m_arena(blockCap, pBackAlloc)
-    {
-        mtx_init(&m_mtx, mtx_plain);
-    }
+        : m_arena(blockCap, pBackAlloc), m_mtx(MUTEX_TYPE::PLAIN) {}
 
     /* */
 
@@ -33,9 +29,11 @@ struct MutexArena : IAllocator
 inline void*
 MutexArena::malloc(usize mCount, usize mSize)
 {
-    mtx_lock(&m_mtx);
-    auto* r = m_arena.malloc(mCount, mSize);
-    mtx_unlock(&m_mtx);
+    void* r {};
+    {
+        guard::Mtx lock(&m_mtx);
+        r = m_arena.malloc(mCount, mSize);
+    }
 
     return r;
 }
@@ -43,9 +41,11 @@ MutexArena::malloc(usize mCount, usize mSize)
 inline void*
 MutexArena::zalloc(usize mCount, usize mSize)
 {
-    mtx_lock(&m_mtx);
-    auto* r = m_arena.malloc(mCount, mSize);
-    mtx_unlock(&m_mtx);
+    void* r {};
+    {
+        guard::Mtx lock(&m_mtx);
+        r = m_arena.malloc(mCount, mSize);
+    }
 
     return r;
 }
@@ -53,9 +53,11 @@ MutexArena::zalloc(usize mCount, usize mSize)
 inline void*
 MutexArena::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 {
-    mtx_lock(&m_mtx);
-    auto* r = m_arena.realloc(p, oldCount, newCount, mSize);
-    mtx_unlock(&m_mtx);
+    void* r {};
+    {
+        guard::Mtx lock(&m_mtx);
+        r = m_arena.realloc(p, oldCount, newCount, mSize);
+    }
 
     return r;
 }
@@ -70,7 +72,7 @@ inline void
 MutexArena::freeAll() noexcept
 {
     m_arena.freeAll();
-    mtx_destroy(&m_mtx);
+    m_mtx.destroy();
 }
 
 } /* namespace adt */

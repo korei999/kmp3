@@ -363,11 +363,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const char32_t x) noexcept
 {
-    char aBuff[MB_LEN_MAX] {};
-    mbstate_t ps {};
-    c32rtomb(aBuff, x, &ps);
-
-    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return formatToContext(ctx, fmtArgs, (wchar_t)x);
 }
 
 inline ssize

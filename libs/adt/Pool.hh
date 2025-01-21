@@ -9,8 +9,6 @@
 #include <limits>
 #include <utility>
 
-#include <threads.h>
-
 namespace adt
 {
 
@@ -30,15 +28,12 @@ struct Pool
     Arr<PoolNode<T>, CAP> m_aNodes {};
     Arr<PoolHnd, CAP> m_aFreeIdxs {};
     ssize m_nOccupied {};
-    mtx_t m_mtx;
+    Mutex m_mtx;
 
     /* */
 
     Pool() = default;
-    Pool([[maybe_unused]] INIT_FLAG e)
-    { 
-        mtx_init(&m_mtx, mtx_plain);
-    }
+    Pool(INIT_FLAG) : m_mtx(MUTEX_TYPE::PLAIN) {}
 
     /* */
 
@@ -186,7 +181,7 @@ template<typename T, ssize CAP>
 inline void
 Pool<T, CAP>::destroy()
 {
-    mtx_destroy(&m_mtx);
+    m_mtx.destroy();
 }
 
 template<typename T, ssize CAP>

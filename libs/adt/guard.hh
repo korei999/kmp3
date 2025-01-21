@@ -1,6 +1,6 @@
 #pragma once
 
-#include <threads.h>
+#include "Thread.hh"
 
 namespace adt
 {
@@ -9,11 +9,11 @@ namespace guard
 
 class Mtx
 {
-    mtx_t* mtx;
+    Mutex* pMtx {};
 
 public:
-    Mtx(mtx_t* _mtx) : mtx(_mtx) { mtx_lock(_mtx); }
-    ~Mtx() { mtx_unlock(mtx); }
+    Mtx(Mutex* _pMtx) : pMtx(_pMtx) { pMtx->lock(); }
+    ~Mtx() { pMtx->unlock(); }
 };
 
 } /* namespace guard */

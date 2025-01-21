@@ -1,12 +1,13 @@
 #pragma once
 
+#include "adt/Thread.hh"
+
 #include "IWindow.hh"
 #include "TextBuff.hh"
 #include "TermSize.hh"
 #include "common.hh"
 
 #include <termios.h>
-#include <threads.h>
 
 namespace platform::ansi
 {
@@ -20,7 +21,7 @@ class Win : public IWindow
     termios m_termOg {};
     s16 m_firstIdx {};
     int m_prevImgWidth = 0;
-    mtx_t m_mtxUpdate {};
+    Mutex m_mtxUpdate {};
     f64 m_time {};
     f64 m_lastResizeTime {};
 

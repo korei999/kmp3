@@ -32,8 +32,8 @@ namespace mpris
 {
 
 bool g_bReady = false;
-mtx_t g_mtx;
-cnd_t g_cnd;
+Mutex g_mtx;
+CndVar g_cnd;
 
 static sd_bus* s_pBus {};
 static int s_fdMpris = -1;

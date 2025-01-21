@@ -94,7 +94,7 @@ Mixer::init()
     m_nChannels = 2;
     m_eformat = SPA_AUDIO_FORMAT_F32;
 
-    mtx_init(&m_mtxDecoder, mtx_recursive);
+    m_mtxDecoder = Mutex(MUTEX_TYPE::RECURSIVE);
 
     pw_init(&app::g_argc, &app::g_argv);
 
@@ -159,7 +159,7 @@ Mixer::destroy()
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
     pw_deinit();
 
-    mtx_destroy(&m_mtxDecoder);
+    m_mtxDecoder.destroy();
     LOG_NOTIFY("MixerDestroy()\n");
 
     ::free(m_pIDecoder);
