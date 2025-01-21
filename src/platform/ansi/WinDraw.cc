@@ -38,11 +38,9 @@ Win::coverImage()
 
             ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
 
-            /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
-             * the image might be forceClean()'d and gone by the next iteration.
-             * A separate arena just for the image vector should be sufficient. */
+            /* NOTE: using textBuff's dedicated image arena */
             auto chafaImg = ch::allocImage(
-                &m_textBuff.m_imgHeap, eLayout, img, split, g_termSize.width
+                &m_textBuff.m_imgArena, eLayout, img, split, g_termSize.width
             );
 
             m_textBuff.image(1, 1, chafaImg);

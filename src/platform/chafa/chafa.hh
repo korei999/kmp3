@@ -31,7 +31,7 @@ struct Image
 void showImageNCurses(WINDOW* pWin, const ::Image img, const int termHeight, const int termWidth);
 #endif
 
-[[nodiscard]] Image allocImage(IAllocator* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth);
+[[nodiscard]] Image allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth);
 
 void detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode, ChafaPixelMode* pPixelMode);
 

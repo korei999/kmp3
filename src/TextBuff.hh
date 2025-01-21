@@ -7,7 +7,6 @@
 #include "adt/Vec.hh"
 #include "adt/enum.hh"
 #include "adt/print.hh"
-#include "adt/MiMalloc.hh"
 
 #include "platform/chafa/chafa.hh"
 
@@ -158,7 +157,10 @@ struct TextBuff
     VecBase<TextBuffCell> m_vFront {}; /* what to show */
     VecBase<TextBuffCell> m_vBack {}; /* where to draw */
 
-    MiHeap m_imgHeap {};
+    /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
+     * the image might be forceClean()'d and gone by the next iteration.
+     * A separate arena just for the image vector will be sufficient. */
+    Arena m_imgArena {};
     VecBase<TextBuffImage> m_vImages {};
 
     ScratchBuffer m_scratch {};
@@ -212,7 +214,7 @@ private:
     void pushDiff();
     void resetBuffers();
     void resizeBuffers(ssize width, ssize height);
-    void popImages();
+    void showImages();
 };
 
 inline void
@@ -405,7 +407,7 @@ TextBuff::destroy()
     m_vBack.destroy(OsAllocatorGet());
     m_vFront.destroy(OsAllocatorGet());
 
-    m_imgHeap.freeAll();
+    m_imgArena.freeAll();
 
     hideCursor(false);
     clearKittyImages();
@@ -418,8 +420,7 @@ inline void
 TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 {
     m_pArena = pArena;
-    m_imgHeap = MiHeap(0);
-    /*m_imgHeap = Arena(SIZE_1M);*/
+    m_imgArena = Arena(SIZE_1M);
 
     push(TEXT_BUFF_ALT_SCREEN_ENABLE);
     push(TEXT_BUFF_KEYPAD_ENABLE);
@@ -478,34 +479,34 @@ TextBuff::pushDiff()
 }
 
 inline void
-TextBuff::popImages()
+TextBuff::showImages()
 {
     int nDraws = 0;
-    for (ssize i = 0; i < m_vImages.getSize(); ++i)
-    {
-        auto img = *m_vImages.pop();
-        ++nDraws;
 
-        if (img.img.eLayout == platform::chafa::IMAGE_LAYOUT::RAW)
+    for (const auto& im : m_vImages)
+    {
+        ++nDraws;
+        if (im.img.eLayout == platform::chafa::IMAGE_LAYOUT::RAW)
         {
-            move(img.x, img.y);
-            push(img.img.uData.sRaw);
+            move(im.x, im.y);
+            push(im.img.uData.sRaw);
         }
         else
         {
-            auto& vLines = img.img.uData.vLines;
+            auto& vLines = im.img.uData.vLines;
             for (ssize lineIdx = 0; lineIdx < vLines.getSize(); ++lineIdx)
             {
-                move(img.x, img.y + lineIdx);
-
-                auto& line = vLines[lineIdx];
-                push(line);
+                move(im.x, im.y + lineIdx);
+                push(vLines[lineIdx]);
             }
         }
     }
 
     if (nDraws > 0)
-        m_imgHeap.reset();
+    {
+        m_vImages.destroy(&m_imgArena);
+        m_imgArena.reset();
+    }
 }
 
 inline void
@@ -566,7 +567,7 @@ TextBuff::present()
     {
         m_bChanged = false;
         pushDiff();
-        popImages();
+        showImages();
         utils::swap(&m_vFront, &m_vBack);
     }
 
@@ -703,7 +704,7 @@ TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
 inline void
 TextBuff::image(int x, int y, const platform::chafa::Image& img)
 {
-    m_vImages.emplace(&m_imgHeap, img, x, y);
+    m_vImages.emplace(&m_imgArena, img, x, y);
 }
 
 inline void
