@@ -151,13 +151,17 @@ Player::updateInfo()
     String s1 = app::g_pMixer->getMetadata("album").m_data.clone(m_pAlloc);
     String s2 = app::g_pMixer->getMetadata("artist").m_data.clone(m_pAlloc);
 
-    m_info.title.destroy(m_pAlloc);
-    m_info.album.destroy(m_pAlloc);
-    m_info.artist.destroy(m_pAlloc);
+    String sTmpTitle = m_info.title;
+    String sTmpAlbum = m_info.album;
+    String sTmpArtist = m_info.artist;
 
     m_info.title = s0;
     m_info.album = s1;
     m_info.artist = s2;
+
+    sTmpTitle.destroy(m_pAlloc);
+    sTmpAlbum.destroy(m_pAlloc);
+    sTmpArtist.destroy(m_pAlloc);
 
     m_bSelectionChanged = true;
 }

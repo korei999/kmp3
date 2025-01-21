@@ -5,6 +5,7 @@
 #include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
+#include "adt/Thread.hh"
 
 #ifdef USE_MPRIS
     #include "mpris.hh"
@@ -30,7 +31,7 @@ mprisPollLoop(void*)
         utils::sleepMS(defaults::MPRIS_UPDATE_RATE);
     }
 
-    return thrd_success;
+    return THREAD_STATUS::SUCCESS;
 }
 #endif
 
@@ -58,15 +59,21 @@ run()
 
 #ifdef USE_MPRIS
     mpris::init();
-    thrd_t mprisThrd {};
-    thrd_create(&mprisThrd, mprisPollLoop, {});
-    defer( thrd_join(mprisThrd, {}) );
-#endif
+    /*thrd_t mprisThrd {};*/
+    /*thrd_create(&mprisThrd, mprisPollLoop, {});*/
+
+    Thread thMPris(mprisPollLoop, {});
 
     defer(
+        /* NOTE: prevent deadlock if something throws */
         app::g_bRunning = false;
-        app::g_pWin->destroy();
+        thMPris.join()
     );
+
+    /*defer( thrd_join(mprisThrd, {}) );*/
+#endif
+
+    defer( app::g_pWin->destroy() );
 
     do
     {

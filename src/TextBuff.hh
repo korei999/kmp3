@@ -710,7 +710,7 @@ TextBuff::image(int x, int y, const platform::chafa::Image& img)
 inline void
 TextBuff::forceClean(int x, int y, int width, int height)
 {
-    if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
+    if (x < 0 || y < 0)
         return;
 
     width = utils::min((ssize)width, m_tWidth);
