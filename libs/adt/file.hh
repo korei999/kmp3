@@ -10,21 +10,7 @@ namespace adt
 namespace file
 {
 
-struct Buff
-{
-    u8* m_pData {};
-    ssize m_size {};
-
-    /* */
-
-    u8* data() { return m_pData; }
-    const u8* data() const { return m_pData; }
-    ssize getSize() { return m_size; }
-};
-
-template<typename BUFF_T = String>
-[[nodiscard]]
-inline Opt<BUFF_T>
+[[nodiscard]] inline Opt<String>
 load(IAllocator* pAlloc, String sPath)
 {
     FILE* pf = fopen(sPath.data(), "rb");
@@ -35,7 +21,7 @@ load(IAllocator* pAlloc, String sPath)
     }
     defer(fclose(pf));
 
-    BUFF_T ret {};
+    String ret {};
 
     fseek(pf, 0, SEEK_END);
     ssize size = ftell(pf) + 1;
@@ -49,7 +35,7 @@ load(IAllocator* pAlloc, String sPath)
 }
 
 [[nodiscard]]
-constexpr String
+inline String
 getPathEnding(String sPath)
 {
     ssize lastSlash = sPath.lastOf('/');

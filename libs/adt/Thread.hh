@@ -1,5 +1,7 @@
 #pragma once
 
+#include "adt/types.hh"
+
 #if __has_include(<pthread.h>)
     #include <pthread.h>
     #define ADT_USE_PTHREAD
@@ -17,42 +19,58 @@
 namespace adt
 {
 
+using THREAD_STATUS = usize;
+
 struct Thread
 {
 #ifdef ADT_USE_PTHREAD
     pthread_t m_thread {};
+#elif defined ADT_USE_WIN32THREAD
+    HANDLE m_thread {};
+    DWORD m_id {};
 #else
     #error "No platform threads"
 #endif
 
     Thread() = default;
-    Thread(void* (*pfn)(void*), void* pFnArg);
+    Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg);
 
     /* */
 
-    void* join();
-    int detach();
+    THREAD_STATUS join();
+    THREAD_STATUS detach();
 };
 
 inline
-Thread::Thread(void* (*pfn)(void*), void* pFnArg)
+Thread::Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg)
 {
-    pthread_create(&m_thread, {}, pfn, pFnArg);
+#ifdef ADT_USE_PTHREAD
+    pthread_create(&m_thread, {}, (void* (*)(void*))pfn, pFnArg);
+#elif defined ADT_USE_WIN32THREAD
+    m_thread = CreateThread(nullptr, 0, (DWORD (*)(void*))pfn, pFnArg, 0, &m_id);
+#endif
 }
 
-inline void*
+inline THREAD_STATUS
 Thread::join()
 {
+#ifdef ADT_USE_PTHREAD
     void* pRet {};
     pthread_join(m_thread, &pRet);
 
-    return pRet;
+    return (THREAD_STATUS)pRet;
+#elif defined ADT_USE_WIN32THREAD
+    return WaitForSingleObject(m_thread, INFINITE);
+#endif
 }
 
-inline int
+inline THREAD_STATUS
 Thread::detach()
 {
-    return pthread_detach(m_thread);
+#ifdef ADT_USE_PTHREAD
+    return (THREAD_STATUS)pthread_detach(m_thread);
+#elif defined ADT_USE_WIN32THREAD
+#endif
 }
 
 } /* namespace adt */

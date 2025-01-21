@@ -26,7 +26,7 @@ struct String;
 [[nodiscard]] inline bool operator==(const String& l, const String& r);
 [[nodiscard]] inline bool operator==(const String& l, const char* r);
 [[nodiscard]] inline bool operator!=(const String& l, const String& r);
-[[nodiscard]] constexpr s64 operator-(const String& l, const String& r);
+[[nodiscard]] inline s64 operator-(const String& l, const String& r);
 
 /* StringAlloc() inserts '\0' char */
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str, ssize size);
@@ -61,8 +61,8 @@ struct String
 
 #define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
 
-    constexpr char& operator[](ssize i)             { ADT_RANGE_CHECK; return m_pData[i]; }
-    constexpr const char& operator[](ssize i) const { ADT_RANGE_CHECK; return m_pData[i]; }
+    char& operator[](ssize i)             { ADT_RANGE_CHECK; return m_pData[i]; }
+    const char& operator[](ssize i) const { ADT_RANGE_CHECK; return m_pData[i]; }
 
 #undef ADT_RANGE_CHECK
 
@@ -70,8 +70,8 @@ struct String
     char* data() { return m_pData; }
     ssize getSize() const { return m_size; }
     [[nodiscard]] bool beginsWith(const String r) const;
-    [[nodiscard]] constexpr bool endsWith(const String r) const;
-    [[nodiscard]] constexpr ssize lastOf(char c) const;
+    [[nodiscard]] bool endsWith(const String r) const;
+    [[nodiscard]] ssize lastOf(char c) const;
     void destroy(IAllocator* p);
     void trimEnd();
     void removeNLEnd(); /* remove \r\n */
@@ -131,7 +131,7 @@ struct StringGlyphIt
         ssize size = 0;
         wchar_t wc {};
 
-        constexpr It(const char* pFirst, ssize _i, ssize _size)
+        It(const char* pFirst, ssize _i, ssize _size)
             : p{pFirst}, i(_i), size(_size)
         {
             operator++();
@@ -253,7 +253,7 @@ String::beginsWith(const String r) const
     return true;
 }
 
-constexpr bool
+inline bool
 String::endsWith(const String r) const
 {
     const auto& l = *this;
@@ -393,7 +393,7 @@ operator!=(const String& l, const String& r)
     return !(l == r);
 }
 
-constexpr s64
+inline s64
 operator-(const String& l, const String& r)
 {
     if (l.m_size < r.m_size) return -1;
@@ -406,7 +406,7 @@ operator-(const String& l, const String& r)
     return sum;
 }
 
-constexpr ssize
+inline ssize
 String::lastOf(char c) const
 {
     for (int i = m_size - 1; i >= 0; i--)

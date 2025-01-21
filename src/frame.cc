@@ -15,7 +15,7 @@ namespace frame
 {
 
 #ifdef USE_MPRIS
-static void*
+static THREAD_STATUS
 mprisPollLoop(void*)
 {
     while (app::g_bRunning)
