@@ -101,10 +101,12 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
     #define ADT_ASSERT(CND, ...)                                                                                       \
         do                                                                                                             \
         {                                                                                                              \
-            char aMsgBuff[128] {};                                                                                     \
-            snprintf(aMsgBuff, sizeof(aMsgBuff) - 1, __VA_ARGS__);                                                     \
             if (!static_cast<bool>(CND))                                                                               \
+            {                                                                                                          \
+                char aMsgBuff[128] {};                                                                                 \
+                snprintf(aMsgBuff, sizeof(aMsgBuff) - 1, __VA_ARGS__);                                                 \
                 assertionFailed(#CND, aMsgBuff, ADT_LOGS_FILE, __LINE__, __FUNCTION__);                                \
+            }                                                                                                          \
         } while (0)
 #else
     #define ADT_ASSERT(...) (void)0

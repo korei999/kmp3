@@ -268,7 +268,7 @@ struct CndVar
 
     void destroy();
     void wait(Mutex* pMtx);
-    void timedWait(Mutex* pMtx, ssize ms);
+    void timedWait(Mutex* pMtx, f64 ms);
     void signal();
     void broadcast();
 };
@@ -316,19 +316,19 @@ CndVar::wait(Mutex* pMtx)
 }
 
 inline void
-CndVar::timedWait(Mutex* pMtx, ssize ms)
+CndVar::timedWait(Mutex* pMtx, f64 ms)
 {
 #ifdef ADT_USE_PTHREAD
 
     timespec ts {
-        .tv_sec = ms / 1000,
-        .tv_nsec = (ms & 1000) * 1000'000,
+        .tv_sec = ssize(ms / 1000.0),
+        .tv_nsec = (ssize(ms) % 1000) * 1000'000,
     };
     pthread_cond_timedwait(&m_cnd, &pMtx->m_mtx, &ts);
 
 #elif defined ADT_USE_WIN32THREAD
 
-    SleepConditionVariableCS(&m_cnd, &pMtx->m_mtx, ms);
+    SleepConditionVariableCS(&m_cnd, &pMtx->m_mtx, ssize(ms));
 
 #endif
 }
