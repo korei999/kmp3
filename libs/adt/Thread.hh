@@ -1,56 +1,58 @@
 #pragma once
 
-#include <threads.h>
+#if __has_include(<pthread.h>)
+    #include <pthread.h>
+    #define ADT_USE_PTHREAD
+#elif __has_include(<windows.h>)
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN 1
+    #endif
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #include <windows.h>
+    #define ADT_USE_WIN32THREAD
+#endif
 
 namespace adt
 {
 
-/* Exit and error codes.  */
-enum THREAD_STATUS : int
-{
-    SUCCESS = 0,
-    BUSY = 1,
-    ERROR = 2,
-    NOMEM = 3,
-    TIMEDOUT = 4
-};
-
 struct Thread
 {
-    thrd_t m_thread {};
-    int m_id {};
-
-    /* */
+#ifdef ADT_USE_PTHREAD
+    pthread_t m_thread {};
+#else
+    #error "No platform threads"
+#endif
 
     Thread() = default;
-    Thread(int (*pfn)(void*), void* pFnArg);
+    Thread(void* (*pfn)(void*), void* pFnArg);
 
     /* */
 
-    THREAD_STATUS join();
-    THREAD_STATUS detach();
+    void* join();
+    int detach();
 };
 
 inline
-Thread::Thread(int (*pfn)(void*), void* pFnArg)
+Thread::Thread(void* (*pfn)(void*), void* pFnArg)
 {
-    m_id = thrd_create(&m_thread, pfn, pFnArg);
+    pthread_create(&m_thread, {}, pfn, pFnArg);
 }
 
-inline THREAD_STATUS
+inline void*
 Thread::join()
 {
-    int status {};
-    int err = thrd_join(m_thread, &status);
+    void* pRet {};
+    pthread_join(m_thread, &pRet);
 
-    return (THREAD_STATUS)status;
+    return pRet;
 }
 
-inline THREAD_STATUS
+inline int
 Thread::detach()
 {
-    int err = thrd_detach(m_thread);
-    return (THREAD_STATUS)err;
+    return pthread_detach(m_thread);
 }
 
 } /* namespace adt */

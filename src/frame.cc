@@ -15,7 +15,7 @@ namespace frame
 {
 
 #ifdef USE_MPRIS
-static int
+static void*
 mprisPollLoop(void*)
 {
     while (app::g_bRunning)
@@ -31,7 +31,7 @@ mprisPollLoop(void*)
         utils::sleepMS(defaults::MPRIS_UPDATE_RATE);
     }
 
-    return THREAD_STATUS::SUCCESS;
+    return {};
 }
 #endif
 
@@ -59,18 +59,13 @@ run()
 
 #ifdef USE_MPRIS
     mpris::init();
-    /*thrd_t mprisThrd {};*/
-    /*thrd_create(&mprisThrd, mprisPollLoop, {});*/
 
     Thread thMPris(mprisPollLoop, {});
-
     defer(
         /* NOTE: prevent deadlock if something throws */
         app::g_bRunning = false;
         thMPris.join()
     );
-
-    /*defer( thrd_join(mprisThrd, {}) );*/
 #endif
 
     defer( app::g_pWin->destroy() );
