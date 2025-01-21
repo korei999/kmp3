@@ -429,7 +429,7 @@ showImageNCurses(WINDOW* pWin, const ffmpeg::Image img, const int termHeight, co
 #endif
 
 Image
-allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth)
+allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth)
 {
     TermSize termSize {};
     getTTYSize(&termSize);
@@ -473,7 +473,7 @@ allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeigh
 
         defer( g_string_free(pGStr, true) );
 
-        auto sRet = StringAlloc(pArena, pGStr->str, pGStr->len);
+        auto sRet = StringAlloc(pAlloc, pGStr->str, pGStr->len);
         assert(sRet.getSize() == (ssize)pGStr->len);
 
         return {
@@ -500,11 +500,11 @@ allocImage(Arena* pArena, IMAGE_LAYOUT eLayout, const ::Image img, int termHeigh
 
         defer( g_strfreev(ppGStr.data()) );
 
-        VecBase<String> vLines(pArena, ppGStr.getSize());
-        vLines.setSize(pArena, ppGStr.getSize());
+        VecBase<String> vLines(pAlloc, ppGStr.getSize());
+        vLines.setSize(pAlloc, ppGStr.getSize());
 
         for (ssize i = 0; i < vLines.getSize(); ++i)
-            vLines[i] = StringAlloc(pArena, ppGStr[i], strlen(ppGStr[i]));
+            vLines[i] = StringAlloc(pAlloc, ppGStr[i], strlen(ppGStr[i]));
 
         return {
             .eLayout = IMAGE_LAYOUT::LINES,

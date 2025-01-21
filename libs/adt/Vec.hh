@@ -142,28 +142,28 @@ VecBase<T>::emplace(IAllocator* p, ARGS&&... args)
 }
 
 template<typename T>
-[[nodiscard]] inline T&
+inline T&
 VecBase<T>::last() noexcept
 {
     return operator[](m_size - 1);
 }
 
 template<typename T>
-[[nodiscard]] inline const T&
+inline const T&
 VecBase<T>::last() const noexcept
 {
     return operator[](m_size - 1);
 }
 
 template<typename T>
-[[nodiscard]] inline T&
+inline T&
 VecBase<T>::first() noexcept
 {
     return operator[](0);
 }
 
 template<typename T>
-[[nodiscard]] inline const T&
+inline const T&
 VecBase<T>::first() const noexcept
 {
     return operator[](0);
@@ -226,7 +226,7 @@ VecBase<T>::removeAndShift(ssize i) noexcept
 }
 
 template<typename T>
-[[nodiscard]] inline ssize
+inline ssize
 VecBase<T>::idx(const T* x) const noexcept
 {
     ssize r = ssize(x - m_pData);
@@ -235,7 +235,7 @@ VecBase<T>::idx(const T* x) const noexcept
 }
 
 template<typename T>
-[[nodiscard]] inline ssize
+inline ssize
 VecBase<T>::lastI() const noexcept
 {
     return idx(&last());
@@ -250,7 +250,7 @@ VecBase<T>::destroy(IAllocator* p) noexcept
 }
 
 template<typename T>
-[[nodiscard]] inline ssize
+inline ssize
 VecBase<T>::getSize() const noexcept
 {
     return m_size;
@@ -264,14 +264,14 @@ VecBase<T>::getCap() const noexcept
 }
 
 template<typename T>
-[[nodiscard]] inline T*
+inline T*
 VecBase<T>::data() noexcept
 {
     return m_pData;
 }
 
 template<typename T>
-[[nodiscard]] inline const T*
+inline const T*
 VecBase<T>::data() const noexcept
 {
     return m_pData;
@@ -285,7 +285,7 @@ VecBase<T>::zeroOut() noexcept
 }
 
 template<typename T>
-[[nodiscard]] inline VecBase<T>
+inline VecBase<T>
 VecBase<T>::clone(IAllocator* pAlloc) const
 {
     auto nVec = VecBase<T>(pAlloc, getCap());

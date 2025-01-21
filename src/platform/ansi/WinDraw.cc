@@ -38,8 +38,11 @@ Win::coverImage()
 
             ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
 
-            const auto chafaImg = ch::allocImage(
-                m_pArena, eLayout, img, split, g_termSize.width
+            /* NOTE: not using arena here because if SIGWINCH procs at just before present() 
+             * and there were no changes to the backbuffer, the image will be forceClean()'d and gone by the next iteration.
+             * A separate arena just for the image vector should be sufficient. */
+            auto chafaImg = ch::allocImage(
+                &m_textBuff.m_imgHeap, eLayout, img, split, g_termSize.width
             );
 
             m_textBuff.image(1, 1, chafaImg);
@@ -262,7 +265,6 @@ Win::update()
 {
     guard::Mtx lock(&m_mtxUpdate);
 
-    /*auto& pl = *app::g_pPlayer;*/
     const int width = g_termSize.width;
     const int height = g_termSize.height;
 
@@ -280,24 +282,18 @@ Win::update()
         m_textBuff.erase();
     }
 
-    /*if (m_bRedraw || pl.m_bSelectionChanged)*/
-    {
-        m_textBuff.clean();
+    m_textBuff.clean();
 
-        if (!app::g_bNoImage)
-            coverImage();
+    if (!app::g_bNoImage)
+        coverImage();
+    time();
+    timeSlider();
+    volume();
+    info();
+    list();
+    bottomLine();
 
-        time();
-        timeSlider();
-
-        volume();
-        info();
-        list();
-
-        bottomLine();
-
-        m_textBuff.present();
-    }
+    m_textBuff.present();
 }
 
 } /* namespace platform::ansi */

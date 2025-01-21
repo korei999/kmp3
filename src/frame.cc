@@ -15,7 +15,7 @@ namespace frame
 
 #ifdef USE_MPRIS
 static int
-mprisPollLoop([[maybe_unused]] void* pNull)
+mprisPollLoop(void*)
 {
     while (app::g_bRunning)
     {
@@ -52,7 +52,6 @@ run()
         CERR("failed to start window\n");
         return;
     }
-    defer( app::g_pWin->destroy() );
 
     app::g_pPlayer->m_focused = 0;
     app::g_pPlayer->selectFocused();
@@ -63,6 +62,11 @@ run()
     thrd_create(&mprisThrd, mprisPollLoop, {});
     defer( thrd_join(mprisThrd, {}) );
 #endif
+
+    defer(
+        app::g_bRunning = false;
+        app::g_pWin->destroy();
+    );
 
     do
     {

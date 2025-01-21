@@ -36,7 +36,7 @@ Win::enableRawMode()
 }
 
 void
-sigwinchHandler([[maybe_unused]] int sig)
+sigwinchHandler(int)
 {
     auto& s = *(Win*)app::g_pWin;
     auto& pl = *app::g_pPlayer;
