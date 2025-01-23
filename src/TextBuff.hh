@@ -184,7 +184,6 @@ struct TextBuff
     void clearTermUp();
     void clearTerm();
     void clearLine(TEXT_BUFF_ARG eArg);
-    void moveClearLine(int x, int y, TEXT_BUFF_ARG eArg);
     void hideCursor(bool bHide);
     void pushGlyph(wchar_t wc);
     void clearKittyImages();
@@ -343,13 +342,6 @@ TextBuff::clearLine(TEXT_BUFF_ARG eArg)
     char aBuff[32] {};
     ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}K", int(eArg));
     push(aBuff, n);
-}
-
-inline void
-TextBuff::moveClearLine(int x, int y, TEXT_BUFF_ARG eArg)
-{
-    move(x, y);
-    clearLine(eArg);
 }
 
 inline void
