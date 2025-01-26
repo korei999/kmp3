@@ -98,7 +98,6 @@ if (CMAKE_BUILD_TYPE MATCHES "Debug")
             -Wno-unused-function
             -Wno-unused-but-set-variable
             -Wmissing-field-initializers
-            -Wno-cast-function-type-mismatch
         )
     endif()
 else()

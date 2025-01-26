@@ -696,7 +696,7 @@ TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
 inline void
 TextBuff::image(int x, int y, const platform::chafa::Image& img)
 {
-    m_vImages.emplace(&m_imgArena, img, x, y);
+    m_vImages.push(&m_imgArena, {img, x, y});
 }
 
 inline void
