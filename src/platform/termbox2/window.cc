@@ -7,7 +7,6 @@
 #include "common.hh"
 #include "defaults.hh"
 #include "input.hh"
-#include "mimalloc.h" /* IWYU pragma: keep */
 
 #include <cmath>
 
