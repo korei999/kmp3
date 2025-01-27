@@ -3,8 +3,11 @@
 #include "adt/guard.hh"
 #include "app.hh"
 #include "defaults.hh"
-#include "platform/chafa/chafa.hh"
 #include "adt/ScratchBuffer.hh"
+
+#ifdef USE_CHAFA
+#include "platform/chafa/chafa.hh"
+#endif
 
 using namespace adt;
 
@@ -14,6 +17,7 @@ namespace platform::ansi
 static u8 s_aMemBuff[SIZE_8K] {};
 static ScratchBuffer s_scratch(s_aMemBuff);
 
+#ifdef USE_CHAFA
 void
 Win::coverImage()
 {
@@ -49,6 +53,7 @@ Win::coverImage()
         }
     }
 }
+#endif
 
 void
 Win::info()
@@ -282,8 +287,11 @@ Win::update()
 
     m_textBuff.clean();
 
+#ifdef USE_CHAFA
     if (!app::g_bNoImage)
         coverImage();
+#endif
+
     time();
     timeSlider();
     volume();

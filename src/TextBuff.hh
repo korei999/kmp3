@@ -8,7 +8,9 @@
 #include "adt/enum.hh"
 #include "adt/print.hh"
 
-#include "platform/chafa/chafa.hh"
+#ifdef USE_CHAFA
+    #include "platform/chafa/chafa.hh"
+#endif
 
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
 #define TEXT_BUFF_MOUSE_DISABLE "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
@@ -45,12 +47,14 @@
 
 using namespace adt;
 
+#ifdef USE_CHAFA
 struct TextBuffImage
 {
     platform::chafa::Image img {};
     int x {};
     int y {};
 };
+#endif
 
 enum class TEXT_BUFF_STYLE_CODE : int
 {
@@ -157,11 +161,13 @@ struct TextBuff
     VecBase<TextBuffCell> m_vFront {}; /* what to show */
     VecBase<TextBuffCell> m_vBack {}; /* where to draw */
 
+#ifdef USE_CHAFA
     /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
      * the image might be forceClean()'d and gone by the next iteration.
      * A separate arena just for the image vector will be sufficient. */
     Arena m_imgArena {};
     VecBase<TextBuffImage> m_vImages {};
+#endif
 
     ScratchBuffer m_scratch {};
 
@@ -200,8 +206,10 @@ struct TextBuff
     void string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp);
     String styleToString(TEXT_BUFF_STYLE eStyle);
+#ifdef USE_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);
     void forceClean(int x, int y, int width, int height); /* remove images */
+#endif
     /* */
 
 private:
@@ -213,7 +221,10 @@ private:
     void pushDiff();
     void resetBuffers();
     void resizeBuffers(ssize width, ssize height);
+
+#ifdef USE_CHAFA
     void showImages();
+#endif
 };
 
 inline void
@@ -399,7 +410,9 @@ TextBuff::destroy()
     m_vBack.destroy(OsAllocatorGet());
     m_vFront.destroy(OsAllocatorGet());
 
+#ifdef USE_CHAFA
     m_imgArena.freeAll();
+#endif
 
     hideCursor(false);
     clearKittyImages();
@@ -412,7 +425,9 @@ inline void
 TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 {
     m_pArena = pArena;
+#ifdef USE_CHAFA
     m_imgArena = Arena(SIZE_1M);
+#endif
 
     push(TEXT_BUFF_ALT_SCREEN_ENABLE);
     push(TEXT_BUFF_KEYPAD_ENABLE);
@@ -470,6 +485,7 @@ TextBuff::pushDiff()
     }
 }
 
+#ifdef USE_CHAFA
 inline void
 TextBuff::showImages()
 {
@@ -500,6 +516,7 @@ TextBuff::showImages()
         m_imgArena.reset();
     }
 }
+#endif
 
 inline void
 TextBuff::clearBackBuffer()
@@ -559,7 +576,11 @@ TextBuff::present()
     {
         m_bChanged = false;
         pushDiff();
+
+#ifdef USE_CHAFA
         showImages();
+#endif
+
         utils::swap(&m_vFront, &m_vBack);
     }
 
@@ -693,6 +714,8 @@ TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
     return {sp.data(), n};
 }
 
+
+#ifdef USE_CHAFA
 inline void
 TextBuff::image(int x, int y, const platform::chafa::Image& img)
 {
@@ -724,3 +747,4 @@ TextBuff::forceClean(int x, int y, int width, int height)
         }
     }
 }
+#endif
