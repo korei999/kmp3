@@ -69,12 +69,12 @@ parseArgs(int argc, char** argv)
         {
             if (sArg == "--ansi")
             {
-                app::g_eUIFrontend = app::UI_FRONTEND::ANSI;
+                app::g_eUIFrontend = app::UI::ANSI;
                 LOG_NOTIFY("setting HANDMADE ui\n");
             }
             else if (sArg == "--termbox")
             {
-                app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
+                app::g_eUIFrontend = app::UI::TERMBOX;
                 LOG_NOTIFY("setting TERMBOX ui\n");
             }
             else if (sArg == "--no-image")
@@ -92,7 +92,7 @@ startup(int argc, char** argv)
 {
     OsAllocator alloc;
 
-    app::g_eUIFrontend = app::UI_FRONTEND::TERMBOX;
+    app::g_eUIFrontend = app::UI::TERMBOX;
     app::g_eMixer = app::MIXER::PIPEWIRE;
 
     parseArgs(argc, argv);

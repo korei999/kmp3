@@ -9,17 +9,17 @@
 #include <concepts>
 #include <limits>
 
-#ifdef __clang__
+#if defined __clang__
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wmissing-braces"
-#elif defined __GNUC__
+#endif
+
+#if defined __GNUC__
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wmissing-braces"
 #endif
 
-namespace adt
-{
-namespace math
+namespace adt::math
 {
 
 constexpr f64 PI64 = 3.14159265358979323846;
@@ -57,46 +57,25 @@ constexpr auto cube(const auto& x) { return x*x*x; }
 union V2
 {
     f32 e[2];
-    struct {
-        f32 x, y;
-    };
-    struct {
-        f32 u, v;
-    };
+    struct { f32 x, y; };
+    struct { f32 u, v; };
 };
 
 union V3
 {
     f32 e[3];
-    struct {
-        V2 xy;
-        f32 __v2pad;
-    };
-    struct {
-        f32 x, y, z;
-    };
-    struct {
-        f32 r, g, b;
-    };
+    struct { V2 xy; f32 __v2pad; };
+    struct { f32 x, y, z; };
+    struct { f32 r, g, b; };
 };
 
 union V4
 {
     f32 e[4];
-    struct {
-        V3 xyz;
-        f32 __v3pad;
-    };
-    struct {
-        V2 xy;
-        V2 zw;
-    };
-    struct {
-        f32 x, y, z, w;
-    };
-    struct {
-        f32 r, g, b, a;
-    };
+    struct { V3 xyz; f32 __v3pad; };
+    struct { V2 xy; V2 zw; };
+    struct { f32 x, y, z, w; };
+    struct { f32 r, g, b, a; };
 };
 
 union M2
@@ -118,25 +97,56 @@ union M4
     f32 d[16];
     f32 e[4][4];
     V4 v[4];
+
+    operator M3() const
+    {
+        return {
+            e[0][0], e[0][1], e[0][2],
+            e[1][0], e[1][1], e[1][2],
+            e[2][0], e[2][1], e[2][2]
+        };
+    };
 };
 
 union Qt
 {
     V4 base;
     f32 e[4];
-    struct {
-        f32 x, y, z, w;
-    };
+    struct { f32 x, y, z, w; };
 };
 
-inline M3
-M4ToM3(const M4& s)
+constexpr V4
+V4From(const V4& v)
 {
-    auto& e = s.e;
+    return v;
+}
+
+constexpr V4
+V4From(const V3& xyz, f32 w)
+{
+    V4 res; res.xyz = xyz; res.w = w;
+    return res;
+}
+
+constexpr V4
+V4From(const V2& xy, const V2& zw)
+{
+    V4 res; res.xy = xy; res.zw = zw;
+    return res;
+}
+
+constexpr V4
+V4From(f32 x, const V3& yzw)
+{
+    V4 res; res.x = x; res.y = yzw.x; res.z = yzw.y; res.w = yzw.z;
+    return res;
+}
+
+constexpr V4
+V4From(f32 x, f32 y, f32 z, f32 w)
+{
     return {
-        e[0][0], e[0][1], e[0][2],
-        e[1][0], e[1][1], e[1][2],
-        e[2][0], e[2][1], e[2][2]
+        x, y, z, w
     };
 }
 
@@ -180,6 +190,21 @@ operator*(f32 s, const V2& v)
         .x = v.x * s,
         .y = v.y * s
     };
+}
+
+inline V2
+operator*(const V2& l, const V2& r)
+{
+    return {
+        l.x * r.x,
+        l.y * r.y
+    };
+}
+
+inline V2&
+operator*=(V2& l, const V2& r)
+{
+    return l = l * r;
 }
 
 inline V2
@@ -242,6 +267,22 @@ operator*(const V3& v, f32 s)
         .x = v.x * s,
         .y = v.y * s,
         .z = v.z * s
+    };
+}
+
+inline V3
+operator*(f32 s, const V3& v)
+{
+    return v * s;
+}
+
+inline V3
+operator*(const V3& l, const V3& r)
+{
+    return {
+        l.x * r.x,
+        l.y * r.y,
+        l.z * r.z
     };
 }
 
@@ -628,7 +669,7 @@ operator*(const M4& l, const M4& r)
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             for (int k = 0; k < 4; k++)
-                m.e[j][i] += l.e[k][i] * r.e[j][k];
+                m.e[i][j] += l.e[i][k] * r.e[k][j];
 
     return m;
 }
@@ -638,9 +679,9 @@ operator*(const M4& l, const V4& r)
 {
     V4 res {};
 
-    for (int j = 0; j < 4; j++)
-        for (int i = 0; i < 4; i++)
-            res.e[j] += l.e[j][i] * r.e[i];
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            res.e[i] += l.e[i][j] * r.e[j];
 
     return res;
 }
@@ -783,17 +824,21 @@ V3Dist(const V3& l, const V3& r)
     return sqrtf(sq(r.x - l.x) + sq(r.y - l.y) + sq(r.z - l.z));
 }
 
+constexpr M4
+M4TranslationFrom(const V3& tv)
+{
+    return {
+        1, 0, 0, tv.x,
+        0, 1, 0, tv.y,
+        0, 0, 1, tv.z,
+        0, 0, 0, 1
+    };
+}
+
 inline M4
 M4Translate(const M4& m, const V3& tv)
 {
-    M4 tm {
-        1,    0,    0,    0,
-        0,    1,    0,    0,
-        0,    0,    1,    0,
-        tv.x, tv.y, tv.z, 1
-    };
-
-    return m * tm;
+    return m * M4TranslationFrom(tv);
 }
 
 inline M3
@@ -808,17 +853,38 @@ M3Scale(const M3& m, const f32 s)
     return m * sm;
 }
 
-inline M4
-M4Scale(const M4& m, const f32 s)
+constexpr M4
+M4ScaleFrom(const f32 s)
 {
-    M4 sm {
+    return {
         s, 0, 0, 0,
         0, s, 0, 0,
         0, 0, s, 0,
         0, 0, 0, 1
     };
+}
 
-    return m * sm;
+constexpr M4
+M4ScaleFrom(const V3& v)
+{
+    return {
+        v.x, 0,   0,   0,
+        0,   v.y, 0,   0,
+        0,   0,   v.z, 0,
+        0,   0,   0,   1
+    };
+}
+
+constexpr M4
+M4ScaleFrom(f32 x, f32 y, f32 z)
+{
+    return M4ScaleFrom({x, y, z});
+}
+
+inline M4
+M4Scale(const M4& m, const f32 s)
+{
+    return m * M4ScaleFrom(s);
 }
 
 inline M3
@@ -836,14 +902,7 @@ M3Scale(const M3& m, const V2& s)
 inline M4
 M4Scale(const M4& m, const V3& s)
 {
-    M4 sm {
-        s.x, 0,   0,   0,
-        0,   s.y, 0,   0,
-        0,   0,   s.z, 0,
-        0,   0,   0,   1
-    };
-
-    return m * sm;
+    return m * M4ScaleFrom(s);
 }
 
 inline M4
@@ -856,8 +915,8 @@ M4Pers(const f32 fov, const f32 asp, const f32 n, const f32 f)
     return M4 {
         n / r, 0,     0,                  0,
         0,     n / t, 0,                  0,
-        0,     0,    -(f + n) / (f - n), -1,
-        0,     0,    -(2*f*n) / (f - n),  0
+        0,     0,    -(f + n) / (f - n), -(2*f*n) / (f - n),
+        0,     0,    -1,                  0
     };
 }
 
@@ -865,11 +924,17 @@ inline M4
 M4Ortho(const f32 l, const f32 r, const f32 b, const f32 t, const f32 n, const f32 f)
 {
     return M4 {
-        2/(r-l),       0,            0,           0,
-        0,             2/(t-b),      0,           0,
-        0,             0,           -2/(f-n),     0,
-        -(r+l)/(r-l), -(t+b)/(t-b), -(f+n)/(f-n), 1
+        2/(r-l), 0,        0,       -(r+l)/(r-l),
+        0,       2/(t-b),  0,       -(t+b)/(t-b),
+        0,       0,       -2/(f-n), -(f+n)/(f-n),
+        0,       0,        0,        1
     };
+}
+
+inline f32
+V2Cross(const V2& l, const V2& r)
+{
+    return l.x * r.y - l.y * r.x;
 }
 
 inline V3
@@ -896,7 +961,7 @@ m4LookAt(const V3& R, const V3& U, const V3& D, const V3& P)
 }
 
 inline M4
-M4Rot(const M4& m, const f32 th, const V3& ax)
+M4RotFrom(const f32 th, const V3& ax)
 {
     const f32 c = std::cos(th);
     const f32 s = std::sin(th);
@@ -905,53 +970,69 @@ M4Rot(const M4& m, const f32 th, const V3& ax)
     const f32 y = ax.y;
     const f32 z = ax.z;
 
-    M4 r {
+    return {
         ((1 - c)*sq(x)) + c, ((1 - c)*x*y) - s*z, ((1 - c)*x*z) + s*y, 0,
         ((1 - c)*x*y) + s*z, ((1 - c)*sq(y)) + c, ((1 - c)*y*z) - s*x, 0,
         ((1 - c)*x*z) - s*y, ((1 - c)*y*z) + s*x, ((1 - c)*sq(z)) + c, 0,
         0,                   0,                   0,                   1
     };
-
-    return m * r;
 }
 
 inline M4
-M4RotX(const M4& m, const f32 angle)
+M4Rot(const M4& m, const f32 th, const V3& ax)
 {
-    M4 axisX {
-        1, 0,                0,               0,
-        0, std::cos(angle),  std::sin(angle), 0,
-        0, -std::sin(angle), std::cos(angle), 0,
-        0, 0,                0,               1
-    };
-
-    return m * axisX;
+    return m * M4RotFrom(th, ax);
 }
 
 inline M4
-M4RotY(const M4& m, const f32 angle)
+M4RotXFrom(const f32 th)
 {
-    M4 axisY {
-        std::cos(angle), 0, -std::sin(angle), 0,
-        0,               1, 0,                0,
-        std::sin(angle), 0, std::cos(angle),  0,
-        0,               0, 0,                1
+    return {
+        1, 0,             0,            0,
+        0, std::cos(th), -std::sin(th), 0,
+        0, std::sin(th),  std::cos(th), 0,
+        0, 0,             0,            1
     };
-
-    return m * axisY;
 }
 
 inline M4
-M4RotZ(const M4& m, const f32 angle)
+M4RotX(const M4& m, const f32 th)
 {
-    M4 axisZ {
-        std::cos(angle),  std::sin(angle), 0, 0,
-        -std::sin(angle), std::cos(angle), 0, 0,
-        0,                0,               1, 0,
-        0,                0,               0, 1
-    };
+    return m * M4RotXFrom(th);
+}
 
-    return m * axisZ;
+inline M4
+M4RotYFrom(const f32 th)
+{
+    return {
+        std::cos(th), 0, -std::sin(th),  0,
+        0,            1,  0,             0,
+        std::sin(th), 0,  std::cos(th),  0,
+        0,            0,  0,             1
+    };
+}
+
+inline M4
+M4RotY(const M4& m, const f32 th)
+{
+    return m * M4RotYFrom(th);
+}
+
+inline M4
+M4RotZFrom(const f32 th)
+{
+    return {
+        std::cos(th), -std::sin(th), 0, 0,
+        std::sin(th),  std::cos(th), 0, 0,
+        0,             0,            1, 0,
+        0,             0,            0, 1
+    };
+}
+
+inline M4
+M4RotZ(const M4& m, const f32 th)
+{
+    return m * M4RotZFrom(th);
 }
 
 inline M4
@@ -1081,12 +1162,9 @@ bezier(
     return cube(1-t)*p0 + 3*sq(1-t)*t*p1 + 3*(1-t)*sq(t)*p2 + cube(t)*p3;
 }
 
-} /* namespace math */
-} /* namespace adt */
+} /* namespace adt::math */
 
-namespace adt
-{
-namespace print
+namespace adt::print
 {
 
 inline ssize
@@ -1152,11 +1230,12 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M4
     );
 }
 
-} /* namespace print */
-} /* namespace adt */
+} /* namespace adt::print */
 
 #if defined __clang__
     #pragma clang diagnostic pop
-#elif defined __GNUC__
+#endif
+
+#if defined __GNUC__
     #pragma GCC diagnostic pop
 #endif

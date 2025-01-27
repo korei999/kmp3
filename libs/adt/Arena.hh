@@ -153,7 +153,7 @@ Arena::realloc(void* ptr, usize oldCount, usize mCount, usize mSize)
     if (!ptr)
         return malloc(mCount, mSize);
 
-    if (mCount < oldCount)
+    if (mCount <= oldCount)
         return ptr;
 
     usize requested = mSize * mCount;

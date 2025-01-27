@@ -83,6 +83,15 @@ methodPointer(METHOD_T ptr)
     return *reinterpret_cast<void**>(&ptr);
 }
 
+template<typename ...Ts>
+struct Overloaded : Ts...
+{
+    using Ts::operator()...; /* Inherit the call operators of all bases */
+};
+
+template<typename ...Ts>
+Overloaded(Ts...) -> Overloaded<Ts...>;
+
 /* TODO: windows messagebox? */
 [[noreturn]] inline void
 assertionFailed(const char* cnd, const char* msg, const char* file, int line, const char* func)
@@ -105,7 +114,7 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
             {                                                                                                          \
                 char aMsgBuff[128] {};                                                                                 \
                 snprintf(aMsgBuff, sizeof(aMsgBuff) - 1, __VA_ARGS__);                                                 \
-                assertionFailed(#CND, aMsgBuff, ADT_LOGS_FILE, __LINE__, __FUNCTION__);                                \
+                adt::assertionFailed(#CND, aMsgBuff, ADT_LOGS_FILE, __LINE__, __FUNCTION__);                                \
             }                                                                                                          \
         } while (0)
 #else

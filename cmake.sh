@@ -9,7 +9,7 @@ _clean()
     rm -rf build
 }
 
-release()
+releaseCLANG()
 {
     _clean
 
@@ -19,11 +19,11 @@ release()
     fi
 }
 
-releaseGCC()
+release()
 {
     _clean
 
-    if CC=gcc CXX=g++ cmake -GNinja -S . -B build/ -DCMAKE_BUILD_TYPE=Release "$@"
+    if cmake -GNinja -S . -B build/ -DCMAKE_BUILD_TYPE=Release "$@"
     then
         cmake --build build/ -j -v
     fi
@@ -33,17 +33,17 @@ default()
 {
     _clean
 
-    if CC=clang CXX=clang++ cmake -GNinja -S . -B build/ -DCMAKE_BUILD_TYPE=RelWithDebInfo "$@"
+    if cmake -S . -B build/ -DCMAKE_BUILD_TYPE=RelWithDebInfo "$@"
     then
         cmake --build build/ -j -v
     fi
 }
 
-defaultGCC()
+debugCLANG()
 {
     _clean
 
-    if cmake -GNinja -S . -B build/ -DCMAKE_BUILD_TYPE=RelWithDebInfo "$@"
+    if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
     then
         cmake --build build/ -j -v
     fi
@@ -53,17 +53,17 @@ debug()
 {
     _clean
 
-    if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Debug "$@"
+    if cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
     then
         cmake --build build/ -j -v
     fi
 }
 
-debugGCC()
+asanCLANG()
 {
     _clean
 
-    if CC=gcc CXX=g++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Debug "$@"
+    if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
     then
         cmake --build build/ -j -v
     fi
@@ -73,19 +73,7 @@ asan()
 {
     _clean
 
-    # if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
-    if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan "$@"
-    then
-        cmake --build build/ -j -v
-    fi
-}
-
-asanGCC()
-{
-    _clean
-
-    # if CC=clang CXX=clang++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
-    if CC=gcc CXX=g++ cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan "$@"
+    if cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=Asan -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" "$@" 
     then
         cmake --build build/ -j -v
     fi
@@ -103,9 +91,29 @@ run()
         echo ""
         # ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=leaks.txt ./build/$BIN "$@" # 2> /tmp/$BIN-dbg.txt
         # ASAN_OPTIONS=halt_on_error=0 ./build/$BIN "$@" # 2> /tmp/$BIN-dbg.txt
-        # gamemoderun ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
         # PIPEWIRE_DEBUG=3 ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
-        UBSAN_OPTIONS=print_stacktrace=1 PIPEWIRE_DEBUG=2 ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
+        # ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
+        UBSAN_OPTIONS=print_stacktrace=1 LSAN_OPTIONS=suppressions=leaks.txt ./build/$BIN "$@" 2> /tmp/$BIN-dbg.txt
+    fi
+}
+
+debugMINGW()
+{
+    _clean
+
+    if cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=DebugMingw "$@"
+    then
+        cmake --build build/ -j -v
+    fi
+}
+
+releaseMINGW()
+{
+    _clean
+
+    if cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=ReleaseMingw "$@"
+    then
+        cmake --build build/ -j -v
     fi
 }
 
@@ -128,16 +136,17 @@ cd $(dirname $0)
 
 case "$1" in
     default) default "${@:2}" ;;
-    defaultGCC) defaultGCC "${@:2}" ;;
     run) run "${@:2}" ;;
+    debugCLANG) debugCLANG "${@:2}" ;;
     debug) debug "${@:2}" ;;
-    debugGCC) debugGCC "${@:2}" ;;
+    asanCLANG) asanCLANG "${@:2}" ;;
     asan) asan "${@:2}" ;;
-    asanGCC) asanGCC "${@:2}" ;;
+    releaseCLANG) releaseCLANG "${@:2}";;
     release) release "${@:2}";;
-    releaseGCC) releaseGCC "${@:2}";;
     install) _install ;;
     uninstall) _uninstall ;;
+    debugMingw) debugMINGW ;;
+    releaseMingw) releaseMINGW ;;
     clean) _clean ;;
     test) _test ;;
     *) build ;;

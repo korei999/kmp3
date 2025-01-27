@@ -33,6 +33,7 @@ enum _ADT_LOG_SEV
     _ADT_LOG_SEV_NOTIFY,
     _ADT_LOG_SEV_WARN,
     _ADT_LOG_SEV_BAD,
+    _ADT_LOG_SEV_ERR,
     _ADT_LOG_SEV_EXIT,
     _ADT_LOG_SEV_DIE,
     _ADT_LOG_SEV_FATAL,
@@ -45,6 +46,7 @@ constexpr adt::String _ADT_LOG_SEV_STR[] = {
     ADT_LOGS_COL_CYAN "NOTIFY: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_YELLOW "WARNING: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_RED "BAD: " ADT_LOGS_COL_NORM,
+    ADT_LOGS_COL_MAGENTA "ERR: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_BLUE "EXIT: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_MAGENTA "DIE: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_RED "FATAL: " ADT_LOGS_COL_NORM,
@@ -60,6 +62,9 @@ constexpr adt::String _ADT_LOG_SEV_STR[] = {
             switch (SEV)                                                                                               \
             {                                                                                                          \
                 default:                                                                                               \
+                    break;                                                                                             \
+                case _ADT_LOG_SEV_ERR:                                                                                 \
+                    CERR("\nerrno: ({})\n", strerror(errno));                                                          \
                     break;                                                                                             \
                 case _ADT_LOG_SEV_EXIT:                                                                                \
                     exit(EXIT_FAILURE);                                                                                \
@@ -80,6 +85,7 @@ constexpr adt::String _ADT_LOG_SEV_STR[] = {
 #define ADT_LOG_NOTIFY(...) _ADT_LOG(_ADT_LOG_SEV_NOTIFY, __VA_ARGS__)
 #define ADT_LOG_WARN(...) _ADT_LOG(_ADT_LOG_SEV_WARN, __VA_ARGS__)
 #define ADT_LOG_BAD(...) _ADT_LOG(_ADT_LOG_SEV_BAD, __VA_ARGS__)
+#define ADT_LOG_ERR(...) _ADT_LOG(_ADT_LOG_SEV_ERR, __VA_ARGS__)
 #define ADT_LOG_EXIT(...) _ADT_LOG(_ADT_LOG_SEV_EXIT, __VA_ARGS__)
 #define ADT_LOG_DIE(...) _ADT_LOG(_ADT_LOG_SEV_DIE, __VA_ARGS__)
 #define ADT_LOG_FATAL(...) _ADT_LOG(_ADT_LOG_SEV_FATAL, __VA_ARGS__)
@@ -92,6 +98,7 @@ constexpr adt::String _ADT_LOG_SEV_STR[] = {
     #define LOG_NOTIFY(...) ADT_LOG_NOTIFY(__VA_ARGS__)
     #define LOG_WARN(...) ADT_LOG_WARN(__VA_ARGS__)
     #define LOG_BAD(...) ADT_LOG_BAD(__VA_ARGS__)
+    #define LOG_ERR(...) ADT_LOG_ERR(__VA_ARGS__)
     #define LOG_EXIT(...) ADT_LOG_EXIT(__VA_ARGS__)
     #define LOG_DIE(...) ADT_LOG_DIE(__VA_ARGS__)
     #define LOG_FATAL(...) ADT_LOG_FATAL(__VA_ARGS__)

@@ -181,7 +181,8 @@ template<typename T>
 inline void
 VecBase<T>::setSize(IAllocator* p, ssize size)
 {
-    if (m_capacity < size) grow(p, size);
+    if (m_capacity < size)
+        grow(p, size);
 
     m_size = size;
 }
@@ -190,6 +191,12 @@ template<typename T>
 inline void
 VecBase<T>::setCap(IAllocator* p, ssize cap)
 {
+    if (cap == 0)
+    {
+        destroy(p);
+        return;
+    }
+
     m_pData = (T*)p->realloc(m_pData, m_capacity, cap, sizeof(T));
     m_capacity = cap;
 

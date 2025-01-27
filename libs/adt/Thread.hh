@@ -21,7 +21,17 @@ namespace adt
 
 constexpr ssize THREAD_WAIT_INFINITE = 0xffffffff;
 
-using THREAD_STATUS = usize;
+
+#ifdef ADT_USE_PTHREAD
+
+using THREAD_STATUS = s32;
+
+#elif defined ADT_USE_WIN32THREAD
+
+using THREAD_STATUS = DWORD;
+
+#endif
+
 using ThreadFn = THREAD_STATUS (*)(void*);
 
 struct Thread
@@ -63,6 +73,16 @@ private:
 #endif
 };
 
+#if defined __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wcast-function-type-mismatch"
+#endif
+
+#if defined __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
+
 inline
 Thread::Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg)
 {
@@ -72,10 +92,18 @@ Thread::Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg)
 
 #elif defined ADT_USE_WIN32THREAD
 
-    m_thread = CreateThread(nullptr, 0, (DWORD (*)(void*))pfn, pFnArg, 0, &m_id);
+    m_thread = CreateThread(nullptr, 0, pfn, pFnArg, 0, &m_id);
 
 #endif
 }
+
+#if defined __clang__
+    #pragma clang diagnostic pop
+#endif
+
+#if defined __GNUC__
+    #pragma GCC diagnostic pop
+#endif
 
 inline THREAD_STATUS
 Thread::join()
@@ -103,10 +131,10 @@ Thread::detach()
 inline THREAD_STATUS
 Thread::pthreadJoin()
 {
-    void* pRet {};
-    pthread_join(m_thread, &pRet);
+    u64 ret {};
+    pthread_join(m_thread, (void**)&ret);
 
-    return (THREAD_STATUS)pRet;
+    return static_cast<THREAD_STATUS>(ret);
 }
 
 inline THREAD_STATUS
@@ -151,7 +179,7 @@ struct Mutex
 #endif
 
     /* */
-    
+
     Mutex() = default;
     Mutex(MUTEX_TYPE eType);
 
