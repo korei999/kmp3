@@ -33,7 +33,7 @@ default()
 {
     _clean
 
-    if cmake -S . -B build/ -DCMAKE_BUILD_TYPE=RelWithDebInfo "$@"
+    if cmake -G "Ninja" -S . -B build/ -DCMAKE_BUILD_TYPE=RelWithDebInfo "$@"
     then
         cmake --build build/ -j -v
     fi
