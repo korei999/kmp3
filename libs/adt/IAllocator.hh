@@ -23,6 +23,8 @@ constexpr ssize SIZE_8M = SIZE_1M * 8;
 constexpr ssize SIZE_1G = SIZE_1M * SIZE_1K;
 constexpr ssize SIZE_8G = SIZE_1G * 8;
 
+#define ADT_WARN_LEAK [[deprecated("warning: memory leak")]]
+
 struct IAllocator
 {
     template<typename T, typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
@@ -38,21 +40,21 @@ struct IAllocator
     [[nodiscard]] constexpr T*
     mallocV(ssize mCount)
     {
-        return malloc(mCount, sizeof(T));
+        return reinterpret_cast<T*>(malloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     zallocV(ssize mCount)
     {
-        return zalloc(mCount, sizeof(T));
+        return reinterpret_cast<T*>(zalloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     reallocV(T* ptr, ssize oldCount, ssize newCount)
     {
-        return realloc(ptr, oldCount, newCount, sizeof(T));
+        return reinterpret_cast<T*>(realloc(ptr, oldCount, newCount, sizeof(T)));
     }
 
     [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) = 0;
@@ -82,14 +84,14 @@ struct AllocException : public IException
     /* */
 
     virtual void
-    logErrorMsg(FILE* fp) override
+    printErrorMsg(FILE* fp) const override
     {
         char aBuff[128] {};
         snprintf(aBuff, sizeof(aBuff) - 1, "AllocException: '%s', errno: '%s'\n", m_ntsMsg, strerror(errno));
         fputs(aBuff, fp);
     }
 
-    virtual const char* getMsg() override { return m_ntsMsg; }
+    virtual const char* getMsg() const override { return m_ntsMsg; }
 };
 
 } /* namespace adt */

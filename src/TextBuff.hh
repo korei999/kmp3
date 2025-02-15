@@ -56,6 +56,7 @@ struct TextBuffImage
 };
 #endif
 
+/* ansi code */
 enum class TEXT_BUFF_STYLE_CODE : int
 {
     NORM = 0,
@@ -90,7 +91,7 @@ enum class TEXT_BUFF_ARG : u8
     TO_END, TO_BEGINNING, EVERYTHING
 };
 
-enum TEXT_BUFF_STYLE : u32
+enum class TEXT_BUFF_STYLE : u32
 {
     NORM = 0,
     BOLD = 1,
@@ -121,6 +122,7 @@ enum TEXT_BUFF_STYLE : u32
     DONT_TOUCH = 1 << 22,
 };
 ADT_ENUM_BITWISE_OPERATORS(TEXT_BUFF_STYLE);
+
 
 struct TextBuffCell
 {
@@ -159,7 +161,7 @@ struct TextBuff
     bool m_bErase {};
 
     VecBase<TextBuffCell> m_vFront {}; /* what to show */
-    VecBase<TextBuffCell> m_vBack {}; /* where to draw */
+    VecBase<TextBuffCell> m_vBack {}; /* where to write */
 
 #ifdef USE_CHAFA
     /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
@@ -195,7 +197,7 @@ struct TextBuff
     void clearKittyImages();
     /* */
 
-    /* main api (efficient) */
+    /* main api ('efficient') */
     void start(Arena* pArena, ssize termWidth, ssize termHeight);
     void destroy();
     void clean();
@@ -293,7 +295,7 @@ inline void
 TextBuff::up(int steps)
 {
     char aBuff[32] {};
-    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}A", steps);
+    ssize n = print::toSpan(aBuff, "\x1b[{}A", steps);
     push(aBuff, n);
 }
 
@@ -301,7 +303,7 @@ inline void
 TextBuff::down(int steps)
 {
     char aBuff[32] {};
-    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}B", steps);
+    ssize n = print::toSpan(aBuff, "\x1b[{}B", steps);
     push(aBuff, n);
 }
 
@@ -309,7 +311,7 @@ inline void
 TextBuff::forward(int steps)
 {
     char aBuff[32] {};
-    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}C", steps);
+    ssize n = print::toSpan(aBuff, "\x1b[{}C", steps);
     push(aBuff, n);
 }
 
@@ -317,7 +319,7 @@ inline void
 TextBuff::back(int steps)
 {
     char aBuff[32] {};
-    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}D", steps);
+    ssize n = print::toSpan(aBuff, "\x1b[{}D", steps);
     push(aBuff, n);
 }
 
@@ -325,7 +327,7 @@ inline void
 TextBuff::move(int x, int y)
 {
     char aBuff[32] {};
-    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{};{}H", y + 1, x + 1);
+    ssize n = print::toSpan(aBuff, "\x1b[{};{}H", y + 1, x + 1);
     push(aBuff, n);
 }
 
@@ -351,7 +353,7 @@ inline void
 TextBuff::clearLine(TEXT_BUFF_ARG eArg)
 {
     char aBuff[32] {};
-    ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1, "\x1b[{}K", int(eArg));
+    ssize n = print::toSpan(aBuff, "\x1b[{}K", int(eArg));
     push(aBuff, n);
 }
 
@@ -429,6 +431,8 @@ TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
     m_imgArena = Arena(SIZE_1M);
 #endif
 
+    clearTerm();
+    moveTopLeft();
     push(TEXT_BUFF_ALT_SCREEN_ENABLE);
     push(TEXT_BUFF_KEYPAD_ENABLE);
     hideCursor(true);
@@ -591,13 +595,23 @@ TextBuff::present()
 inline Span2D<TextBuffCell>
 TextBuff::frontBufferSpan()
 {
-    return {m_vFront.data(), m_tWidth, m_tHeight};
+    return {
+        m_vFront.data(),
+        static_cast<int>(m_tWidth),
+        static_cast<int>(m_tHeight),
+        static_cast<int>(m_tWidth)
+    };
 }
 
 inline Span2D<TextBuffCell>
 TextBuff::backBufferSpan()
 {
-    return {m_vBack.data(), m_tWidth, m_tHeight};
+    return {
+        m_vBack.data(),
+        static_cast<int>(m_tWidth),
+        static_cast<int>(m_tHeight),
+        static_cast<int>(m_tWidth)
+    };
 }
 
 inline void
@@ -659,53 +673,53 @@ TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
 
     n += print::toBuffer(sp.data() + n, size - n, "\x1b[0");
 
-    if (eStyle > 0)
+    if (!!eStyle)
     {
         using CODE = TEXT_BUFF_STYLE_CODE;
 
-        if (eStyle & BOLD)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BOLD))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BOLD);
-        if (eStyle & DIM)
+        if (!!(eStyle & TEXT_BUFF_STYLE::DIM))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::DIM);
-        if (eStyle & ITALIC)
+        if (!!(eStyle & TEXT_BUFF_STYLE::ITALIC))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::ITALIC);
-        if (eStyle & UNDERLINE)
+        if (!!(eStyle & TEXT_BUFF_STYLE::UNDERLINE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::UNRELINE);
-        if (eStyle & BLINK)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BLINK))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BLINK);
-        if (eStyle & REVERSE)
+        if (!!(eStyle & TEXT_BUFF_STYLE::REVERSE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::REVERSE);
-        if (eStyle & INVIS)
+        if (!!(eStyle & TEXT_BUFF_STYLE::INVIS))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::INVIS);
-        if (eStyle & STRIKE)
+        if (!!(eStyle & TEXT_BUFF_STYLE::STRIKE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::STRIKE);
-        if (eStyle & RED)
+        if (!!(eStyle & TEXT_BUFF_STYLE::RED))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::RED);
-        if (eStyle & GREEN)
+        if (!!(eStyle & TEXT_BUFF_STYLE::GREEN))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::GREEN);
-        if (eStyle & YELLOW)
+        if (!!(eStyle & TEXT_BUFF_STYLE::YELLOW))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::YELLOW);
-        if (eStyle & BLUE)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BLUE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BLUE);
-        if (eStyle & MAGENTA)
+        if (!!(eStyle & TEXT_BUFF_STYLE::MAGENTA))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::MAGENTA);
-        if (eStyle & CYAN)
+        if (!!(eStyle & TEXT_BUFF_STYLE::CYAN))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::CYAN);
-        if (eStyle & WHITE)
+        if (!!(eStyle & TEXT_BUFF_STYLE::WHITE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::WHITE);
-        if (eStyle & BG_RED)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BG_RED))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_RED);
-        if (eStyle & BG_GREEN)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BG_GREEN))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_GREEN);
-        if (eStyle & BG_YELLOW)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BG_YELLOW))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_YELLOW);
-        if (eStyle & BG_BLUE)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BG_BLUE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_BLUE);
-        if (eStyle & BG_MAGENTA)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BG_MAGENTA))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_MAGENTA);
-        if (eStyle & BG_CYAN)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BG_CYAN))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_CYAN);
-        if (eStyle & BG_WHITE)
+        if (!!(eStyle & TEXT_BUFF_STYLE::BG_WHITE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_WHITE);
     }
 

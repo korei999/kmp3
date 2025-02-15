@@ -2,6 +2,7 @@
 
 #include "IAllocator.hh"
 #include "hash.hh"
+#include "Span.hh"
 
 #include <cstring>
 #include <cstdlib>
@@ -26,7 +27,7 @@ struct String;
 [[nodiscard]] inline bool operator==(const String& l, const String& r);
 [[nodiscard]] inline bool operator==(const String& l, const char* r);
 [[nodiscard]] inline bool operator!=(const String& l, const String& r);
-[[nodiscard]] inline s64 operator-(const String& l, const String& r);
+[[nodiscard]] inline i64 operator-(const String& l, const String& r);
 
 /* StringAlloc() inserts '\0' char */
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const char* str, ssize size);
@@ -35,8 +36,6 @@ struct String;
 [[nodiscard]] inline String StringAlloc(IAllocator* p, const String s);
 
 [[nodiscard]] inline String StringCat(IAllocator* p, const String l, const String r);
-
-[[nodiscard]] inline ssize nGlyphs(const String str);
 
 /* just pointer + size, no allocations */
 struct String
@@ -56,6 +55,9 @@ struct String
 
     constexpr String(char* pStr, ssize len)
         : m_pData(pStr), m_size(len) {}
+
+    constexpr String(Span<char> sp)
+        : String(sp.data(), sp.getSize()) {}
 
     /* */
 
@@ -81,6 +83,10 @@ struct String
     [[nodiscard]] const char& first() const;
     [[nodiscard]] char& last();
     [[nodiscard]] const char& last() const;
+    [[nodiscard]] ssize nGlyphs() const;
+
+    template<typename T>
+    [[nodiscard]] T reinterpret(ssize at) const;
 
     /* */
 
@@ -178,24 +184,24 @@ death:
 /* Separated by delimiter String iterator adapter */
 struct StringWordIt
 {
-    String m_s {};
-    char m_delimiter {};
+    const String m_sv {};
+    const String m_svDelimiters {};
 
     /* */
 
-    StringWordIt(const String s, const char delimiter = ' ') : m_s(s), m_delimiter(delimiter) {}
+    StringWordIt(const String sv, const String svDelimiters = " ") : m_sv(sv), m_svDelimiters(svDelimiters) {}
 
     struct It
     {
-        String m_sCurrWord {};
-        String m_str;
+        String m_svCurrWord {};
+        const String m_svStr;
+        const String m_svSeps {};
         ssize m_i = 0;
-        char m_sep {};
 
         /* */
 
-        It(String s, ssize pos, char sep)
-            : m_str(s), m_i(pos), m_sep(sep)
+        It(const String sv, ssize pos, const String svSeps)
+            : m_svStr(sv), m_svSeps(svSeps),  m_i(pos)
         {
             if (pos != NPOS)
                 operator++();
@@ -203,13 +209,13 @@ struct StringWordIt
 
         /* */
 
-        String& operator*() { return m_sCurrWord; }
-        String* operator->() { return &m_sCurrWord; }
+        auto& operator*() { return m_svCurrWord; }
+        auto* operator->() { return &m_svCurrWord; }
 
         It&
         operator++()
         {
-            if (m_i >= m_str.getSize())
+            if (m_i >= m_svStr.getSize())
             {
                 m_i = NPOS;
                 return *this;
@@ -218,10 +224,19 @@ struct StringWordIt
             ssize start = m_i;
             ssize end = m_i;
 
-            while (end < m_str.getSize() && m_str[end] != m_sep)
+            auto oneOf = [&](char c) -> bool
+            {
+                for (auto sep : m_svSeps)
+                    if (c == sep)
+                        return true;
+
+                return false;
+            };
+
+            while (end < m_svStr.getSize() && !oneOf(m_svStr[end]))
                 end++;
 
-            m_sCurrWord = {&m_str[start], end - start};
+            m_svCurrWord = {const_cast<char*>(&m_svStr[start]), end - start};
             m_i = end + 1;
 
             return *this;
@@ -231,11 +246,11 @@ struct StringWordIt
         friend bool operator!=(const It& l, const It& r) { return l.m_i != r.m_i; }
     };
 
-    It begin() { return {m_s, 0, m_delimiter}; }
-    It end() { return {m_s, NPOS, m_delimiter}; }
+    It begin() { return {m_sv, 0, m_svDelimiters}; }
+    It end() { return {m_sv, NPOS, m_svDelimiters}; }
 
-    const It begin() const { return {m_s, 0, m_delimiter}; }
-    const It end() const { return {m_s, NPOS, m_delimiter}; }
+    const It begin() const { return {m_sv, 0, m_svDelimiters}; }
+    const It end() const { return {m_sv, NPOS, m_svDelimiters}; }
 };
 
 inline bool
@@ -368,16 +383,20 @@ StringCmpAVX2(const String& l, const String& r)
     String nl(const_cast<char*>(&l[i*32]), leftOver);
     String nr(const_cast<char*>(&r[i*32]), leftOver);
 
-    return StringCmpFast(nl, nr);
+    return StringCmpSSE(nl, nr);
 }
 #endif
 
 inline bool
 operator==(const String& l, const String& r)
 {
-    if (l.m_size != r.m_size) return false;
-    if (l.data() == r.data()) return true; /* if points to itself */
-    return strncmp(l.m_pData, r.m_pData, l.m_size) == 0; /* strncmp is pretty fast actually */
+    if (l.data() == r.data())
+        return true;
+
+    if (l.getSize() != r.getSize())
+        return false;
+
+    return strncmp(l.data(), r.data(), l.getSize()) == 0; /* strncmp is as fast as AVX2 version (on my 8700k) */
 }
 
 inline bool
@@ -393,13 +412,13 @@ operator!=(const String& l, const String& r)
     return !(l == r);
 }
 
-inline s64
+inline i64
 operator-(const String& l, const String& r)
 {
     if (l.m_size < r.m_size) return -1;
     else if (l.m_size > r.m_size) return 1;
 
-    s64 sum = 0;
+    i64 sum = 0;
     for (ssize i = 0; i < l.m_size; i++)
         sum += (l[i] - r[i]);
 
@@ -525,7 +544,8 @@ String::contains(const String r) const
     for (ssize i = 0; i < m_size - r.m_size + 1; ++i)
     {
         const String sSub {const_cast<char*>(&(*this)[i]), r.m_size};
-        if (sSub == r) return true;
+        if (sSub == r)
+            return true;
     }
 
     return false;
@@ -562,16 +582,23 @@ String::last() const
 }
 
 inline ssize
-nGlyphs(const String str)
+String::nGlyphs() const
 {
     ssize n = 0;
-    for (ssize i = 0; i < str.m_size; )
+    for (ssize i = 0; i < m_size; )
     {
-        i+= mblen(&str[i], str.m_size - i);
+        i+= mblen(&operator[](i), getSize() - i);
         ++n;
     }
 
     return n;
+}
+
+template<typename T>
+ADT_NO_UB inline T
+String::reinterpret(ssize at) const
+{
+    return *(T*)(&operator[](at));
 }
 
 template<>
@@ -580,16 +607,5 @@ hash::func(const String& str)
 {
     return hash::func(str.m_pData, str.getSize());
 }
-
-namespace utils
-{
-
-[[nodiscard]] constexpr bool
-empty(const String* s)
-{
-    return s->m_size == 0;
-}
-
-} /* namespace utils */
 
 } /* namespace adt */

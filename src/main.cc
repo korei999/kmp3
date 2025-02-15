@@ -35,8 +35,7 @@ setTermEnv()
         app::g_eTerm = app::TERM::ALACRITTY;
     else if (sTerm == "xterm-256color")
         app::g_eTerm = app::TERM::XTERM_256COLOR;
-    else
-        app::g_eTerm = app::TERM::ELSE;
+    else app::g_eTerm = app::TERM::ELSE;
 
 #ifdef USE_CHAFA
     ChafaTermInfo* pTermInfo {};
@@ -174,12 +173,18 @@ main(int argc, char** argv)
     close(STDERR_FILENO); /* hide mpg123 and other errors */
 #endif
 
+    static_assert(defaults::MAX_VOLUME != 0.0f);
+    static_assert(defaults::UPDATE_RATE > 0);
+    static_assert(defaults::IMAGE_UPDATE_RATE_LIMIT > 0);
+    static_assert(defaults::MPRIS_UPDATE_RATE > 0.0);
+    static_assert(defaults::FONT_ASPECT_RATIO > 0.0);
+
     try
     {
         startup(argc, argv);
     }
     catch (IException& ex)
     {
-        ex.logErrorMsg(stdout);
+        ex.printErrorMsg(stdout);
     }
 }

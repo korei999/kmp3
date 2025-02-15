@@ -97,7 +97,7 @@ Win::procEvents()
     procInput();
 
     common::fixFirstIdx(
-        g_termSize.height - app::g_pPlayer->m_imgHeight - 5,
+        (g_termSize.height - app::g_pPlayer->m_imgHeight) - 5 /* some image whitespace + bottom row padding to make it work */,
         &m_firstIdx
     );
 }

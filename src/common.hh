@@ -73,7 +73,7 @@ allocTimeString(Arena* pArena, int width)
 
 /* fix song list range on new focus */
 inline void
-fixFirstIdx(u16 listHeight, s16* pFirstIdx) noexcept
+fixFirstIdx(u16 listHeight, i16* pFirstIdx) noexcept
 {
     const auto& pl = *app::g_pPlayer;
 
@@ -124,7 +124,7 @@ procSeekString(const Span<wchar_t> spBuff) noexcept
 
     if (bPercent)
     {
-        s64 maxMS = app::g_pMixer->getTotalMS();
+        i64 maxMS = app::g_pMixer->getTotalMS();
 
         app::g_pMixer->seekMS(maxMS * (f64(atoll(aMinutesBuff.data())) / 100.0));
     }
@@ -142,7 +142,7 @@ template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
 inline void
 subStringSearch(
     Arena* pArena,
-    s16* pFirstIdx,
+    i16* pFirstIdx,
     void* pReadArg,
     void* pDrawArg
 )

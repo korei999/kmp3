@@ -19,7 +19,7 @@ class Win : public IWindow
     Arena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
-    s16 m_firstIdx {};
+    i16 m_firstIdx {};
     int m_prevImgWidth = 0;
     Mutex m_mtxUpdate {};
     f64 m_time {};

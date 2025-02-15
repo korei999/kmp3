@@ -23,60 +23,143 @@ namespace adt::math
 {
 
 constexpr f64 PI64 = 3.14159265358979323846;
-constexpr f32 PI32 = f32(PI64);
+constexpr f32 PI32 = static_cast<f32>(PI64);
 constexpr f64 EPS64 = std::numeric_limits<f64>::epsilon();
 constexpr f32 EPS32 = std::numeric_limits<f32>::epsilon();
 
-constexpr f64 toDeg(f64 x) { return x * 180.0 / PI64; }
-constexpr f64 toRad(f64 x) { return x * PI64 / 180.0; }
-constexpr f32 toDeg(f32 x) { return x * 180.0f / PI32; }
-constexpr f32 toRad(f32 x) { return x * PI32 / 180.0f; }
+constexpr inline f64 toDeg(f64 x) { return x * 180.0 / PI64; }
+constexpr inline f64 toRad(f64 x) { return x * PI64 / 180.0; }
+constexpr inline f32 toDeg(f32 x) { return x * 180.0f / PI32; }
+constexpr inline f32 toRad(f32 x) { return x * PI32 / 180.0f; }
 
-constexpr f64 toRad(long x) { return toRad(f64(x)); }
-constexpr f64 toDeg(long x) { return toDeg(f64(x)); }
-constexpr f32 toRad(int x) { return toRad(f32(x)); }
-constexpr f32 toDeg(int x) { return toDeg(f32(x)); }
+constexpr inline f64 toRad(i64 x) { return toRad(static_cast<f64>(x)); }
+constexpr inline f64 toDeg(i64 x) { return toDeg(static_cast<f64>(x)); }
+constexpr inline f32 toRad(i32 x) { return toRad(static_cast<f32>(x)); }
+constexpr inline f32 toDeg(i32 x) { return toDeg(static_cast<f32>(x)); }
 
-/* epsilon float comparison */
+template<typename T>
+constexpr inline bool
+eq(const T l, const T r)
+{
+    return l == r;
+}
+
+template<>
 inline bool
-eq(f64 l, f64 r)
+eq(const f64 l, const f64 r)
 {
     return std::abs(l - r) <= EPS64*(std::abs(l) + std::abs(r) + 1.0);
 }
 
-/* epsilon float comparison */
+template<>
 inline bool
-eq(f32 l, f32 r)
+eq(const f32 l, const f32 r)
 {
     return std::abs(l - r) <= EPS32*(std::abs(l) + std::abs(r) + 1.0f);
 }
 
-constexpr auto sq(const auto& x) { return x * x; }
-constexpr auto cube(const auto& x) { return x*x*x; }
+constexpr inline auto sq(const auto& x) { return x * x; }
+constexpr inline auto cube(const auto& x) { return x*x*x; }
+
+constexpr inline i64
+sign(i64 x)
+{
+    return (x > 0) - (x < 0);
+}
+
+union IV2;
 
 union V2
 {
     f32 e[2];
     struct { f32 x, y; };
     struct { f32 u, v; };
+
+    constexpr explicit operator IV2() const;
 };
+
+union IV2
+{
+    int e[2];
+    struct { int x, y; };
+    struct { int u, v; };
+
+    constexpr explicit operator V2() const
+    {
+        return {
+            static_cast<f32>(x),
+            static_cast<f32>(y),
+        };
+    }
+};
+
+constexpr inline
+V2::operator IV2() const
+{
+    return {
+        static_cast<int>(x),
+        static_cast<int>(y),
+    };
+}
 
 union V3
 {
     f32 e[3];
-    struct { V2 xy; f32 __v2pad; };
+    struct { V2 xy; f32 _v2pad; };
     struct { f32 x, y, z; };
     struct { f32 r, g, b; };
 };
 
+union IV3
+{
+    int e[3];
+    struct { IV2 xy; int _v2pad; };
+    struct { int x, y, z; };
+    struct { int r, g, b; };
+};
+
+union IV4;
+
 union V4
 {
     f32 e[4];
-    struct { V3 xyz; f32 __v3pad; };
+    struct { V3 xyz; f32 _v3pad; };
     struct { V2 xy; V2 zw; };
     struct { f32 x, y, z, w; };
     struct { f32 r, g, b, a; };
+
+    constexpr explicit operator IV4() const;
 };
+
+union IV4
+{
+    int e[4];
+    struct { IV3 xyz; int _v3pad; };
+    struct { IV2 xy; IV2 zw; };
+    struct { int x, y, z, w; };
+    struct { int r, g, b, a; };
+
+    constexpr explicit operator V4() const
+    {
+        return {
+            static_cast<f32>(x),
+            static_cast<f32>(y),
+            static_cast<f32>(z),
+            static_cast<f32>(w),
+        };
+    }
+};
+
+constexpr inline
+V4::operator IV4() const
+{
+    return {
+        static_cast<int>(x),
+        static_cast<int>(y),
+        static_cast<int>(z),
+        static_cast<int>(w),
+    };
+}
 
 union M2
 {
@@ -85,11 +168,17 @@ union M2
     V2 v[2];
 };
 
+union M4;
+
 union M3
 {
     f32 d[9];
     f32 e[3][3];
     V3 v[3];
+
+    /* */
+
+    constexpr explicit operator M4() const;
 };
 
 union M4
@@ -98,7 +187,7 @@ union M4
     f32 e[4][4];
     V4 v[4];
 
-    operator M3() const
+    constexpr explicit operator M3() const
     {
         return {
             e[0][0], e[0][1], e[0][2],
@@ -114,6 +203,41 @@ union Qt
     f32 e[4];
     struct { f32 x, y, z, w; };
 };
+
+constexpr
+M3::operator M4() const
+{
+    return {
+        e[0][0], e[0][1], e[0][2], 0,
+        e[1][0], e[1][1], e[1][2], 0,
+        e[2][0], e[2][1], e[2][2], 0,
+        0,       0,       0,       0
+    };
+}
+
+constexpr V2
+V2From(const f32 x, const f32 y)
+{
+    return {x, y};
+}
+
+constexpr V3
+V3From(V2 xy, f32 z)
+{
+    return {xy.x, xy.y, z};
+}
+
+constexpr V3
+V3From(f32 x, V2 yz)
+{
+    return {x, yz.x, yz.y};
+}
+
+constexpr V3
+V3From(f32 x, f32 y, f32 z)
+{
+    return {x, y, z};
+}
 
 constexpr V4
 V4From(const V4& v)
@@ -150,6 +274,15 @@ V4From(f32 x, f32 y, f32 z, f32 w)
     };
 }
 
+inline IV2
+IV2_F24_8(const V2 v)
+{
+    return {
+        .x = static_cast<i32>(std::round(v.x * 256.0f)),
+        .y = static_cast<i32>(std::round(v.y * 256.0f)),
+    };
+}
+
 inline V2
 operator-(const V2& s)
 {
@@ -167,6 +300,15 @@ operator+(const V2& l, const V2& r)
 
 inline V2
 operator-(const V2& l, const V2& r)
+{
+    return {
+        .x = l.x - r.x,
+        .y = l.y - r.y
+    };
+}
+
+inline IV2
+operator-(const IV2& l, const IV2& r)
 {
     return {
         .x = l.x - r.x,
@@ -261,6 +403,14 @@ operator-(const V3& l, const V3& r)
 }
 
 inline V3
+operator-(const V3& v)
+{
+    return {
+        -v.x, -v.y, -v.z
+    };
+}
+
+inline V3
 operator*(const V3& v, f32 s)
 {
     return {
@@ -294,6 +444,21 @@ operator/(const V3& v, f32 s)
         .y = v.y / s,
         .z = v.z / s
     };
+}
+
+inline V3
+operator+(V3 a, f32 b)
+{
+    a.x += b;
+    a.y += b;
+    a.z += b;
+    return a;
+}
+
+inline V3&
+operator+=(V3& a, f32 b)
+{
+    return a = a + b;
 }
 
 inline V3&
@@ -332,6 +497,17 @@ operator+(const V4& l, const V4& r)
 }
 
 inline V4
+operator-(const V4& l)
+{
+    V4 res;
+    res.x = -l.x;
+    res.y = -l.y;
+    res.z = -l.z;
+    res.w = -l.w;
+    return res;
+}
+
+inline V4
 operator-(const V4& l, const V4& r)
 {
     return {
@@ -354,6 +530,12 @@ operator*(const V4& l, f32 r)
 }
 
 inline V4
+operator*(f32 l, const V4& r)
+{
+    return r * l;
+}
+
+inline V4
 operator/(const V4& l, f32 r)
 {
     return {
@@ -362,6 +544,12 @@ operator/(const V4& l, f32 r)
         .z = l.z / r,
         .w = l.w / r
     };
+}
+
+inline V4
+operator/(f32 l, const V4& r)
+{
+    return r * l;
 }
 
 inline V4&
@@ -529,10 +717,10 @@ M4Cofactors(const M4& s)
     M4 m = M4Minors(s);
     auto& e = m.e;
 
-    e[0][0] *= +1.0f, e[0][1] *= -1, e[0][2] *= +1, e[0][3] *= -1;
-    e[1][0] *= -1.0f, e[1][1] *= +1, e[1][2] *= -1, e[1][3] *= +1;
-    e[2][0] *= +1.0f, e[2][1] *= -1, e[2][2] *= +1, e[2][3] *= -1;
-    e[3][0] *= -1.0f, e[3][1] *= +1, e[3][2] *= -1, e[3][3] *= +1;
+    e[0][0] *= +1, e[0][1] *= -1, e[0][2] *= +1, e[0][3] *= -1;
+    e[1][0] *= -1, e[1][1] *= +1, e[1][2] *= -1, e[1][3] *= +1;
+    e[2][0] *= +1, e[2][1] *= -1, e[2][2] *= +1, e[2][3] *= -1;
+    e[3][0] *= -1, e[3][1] *= +1, e[3][2] *= -1, e[3][3] *= +1;
 
     return m;
 }
@@ -594,6 +782,13 @@ operator*(const M4& l, const f32 r)
     return m;
 }
 
+inline M4
+operator*(const M4& a, bool)
+{
+    ADT_ASSERT(false, "mul with bool is no good");
+    return a;
+}
+
 inline M3&
 operator*=(M3& l, const f32 r)
 {
@@ -610,6 +805,13 @@ operator*=(M4& l, const f32 r)
         l.d[i] *= r;
 
     return l;
+}
+
+inline M4&
+operator*=(M4& a, bool)
+{
+    ADT_ASSERT(false, "mul with bool is no good");
+    return a;
 }
 
 inline M3
@@ -642,15 +844,26 @@ M3Normal(const M3& m)
     return M3Transpose(M3Inv(m));
 }
 
+inline V3
+operator*(const M3& l, const V3& r)
+{
+    return l.v[0] * r.x + l.v[1] * r.y + l.v[2] * r.z;
+}
+
+inline V4
+operator*(const M4& l, const V4& r)
+{
+    return l.v[0] * r.x + l.v[1] * r.y + l.v[2] * r.z + l.v[3] * r.w;
+}
+
 inline M3
 operator*(const M3& l, const M3& r)
 {
     M3 m {};
 
-    for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j)
-            for (int k = 0; k < 3; ++k)
-                m.e[j][i] += l.e[k][i] * r.e[j][k];
+    m.v[0] = l * r.v[0];
+    m.v[1] = l * r.v[1];
+    m.v[2] = l * r.v[2];
 
     return m;
 }
@@ -666,24 +879,12 @@ operator*(const M4& l, const M4& r)
 {
     M4 m {};
 
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            for (int k = 0; k < 4; k++)
-                m.e[i][j] += l.e[i][k] * r.e[k][j];
+    m.v[0] = l * r.v[0];
+    m.v[1] = l * r.v[1];
+    m.v[2] = l * r.v[2];
+    m.v[3] = l * r.v[3];
 
     return m;
-}
-
-inline V4
-operator*(const M4& l, const V4& r)
-{
-    V4 res {};
-
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            res.e[i] += l.e[i][j] * r.e[j];
-
-    return res;
 }
 
 inline M4&
@@ -758,10 +959,16 @@ V2Norm(const V2& s)
 }
 
 inline V3
+V3Norm(const V3& s, const f32 len)
+{
+    return V3 {s.x / len, s.y / len, s.z / len};
+}
+
+inline V3
 V3Norm(const V3& s)
 {
     f32 len = V3Length(s);
-    return V3 {s.x / len, s.y / len, s.z / len};
+    return V3Norm(s, len);
 }
 
 inline V4
@@ -828,11 +1035,17 @@ constexpr M4
 M4TranslationFrom(const V3& tv)
 {
     return {
-        1, 0, 0, tv.x,
-        0, 1, 0, tv.y,
-        0, 0, 1, tv.z,
-        0, 0, 0, 1
+        1,    0,    0,    0,
+        0,    1,    0,    0,
+        0,    0,    1,    0,
+        tv.x, tv.y, tv.z, 1
     };
+}
+
+constexpr M4
+M4TranslationFrom(const f32 x, const f32 y, const f32 z)
+{
+    return M4TranslationFrom(V3{x, y, z});
 }
 
 inline M4
@@ -908,26 +1121,24 @@ M4Scale(const M4& m, const V3& s)
 inline M4
 M4Pers(const f32 fov, const f32 asp, const f32 n, const f32 f)
 {
-    /* b(back), l(left) are not needed if viewing volume is symmetric */
-    f32 t = n * std::tan(fov / 2);
-    f32 r = t * asp;
+    M4 res {};
+    res.v[0].x = 1.0f / (asp * std::tan(fov * 0.5f));
+    res.v[1].y = 1.0f / (std::tan(fov * 0.5f));
+    res.v[2].z = -f / (n - f);
+    res.v[3].z = n * f / (n - f);
+    res.v[2].w = 1.0f;
 
-    return M4 {
-        n / r, 0,     0,                  0,
-        0,     n / t, 0,                  0,
-        0,     0,    -(f + n) / (f - n), -(2*f*n) / (f - n),
-        0,     0,    -1,                  0
-    };
+    return res;
 }
 
 inline M4
 M4Ortho(const f32 l, const f32 r, const f32 b, const f32 t, const f32 n, const f32 f)
 {
-    return M4 {
-        2/(r-l), 0,        0,       -(r+l)/(r-l),
-        0,       2/(t-b),  0,       -(t+b)/(t-b),
-        0,       0,       -2/(f-n), -(f+n)/(f-n),
-        0,       0,        0,        1
+    return {
+        2/(r-l),       0,            0,           0,
+        0,             2/(t-b),      0,           0,
+        0,             0,           -2/(f-n),     0,
+        -(r+l)/(r-l), -(t+b)/(t-b), -(f+n)/(f-n), 1
     };
 }
 
@@ -937,10 +1148,16 @@ V2Cross(const V2& l, const V2& r)
     return l.x * r.y - l.y * r.x;
 }
 
+inline i64
+IV2Cross(const IV2& l, const IV2& r)
+{
+    return i64(l.x) * i64(r.y) - i64(l.y) * i64(r.x);
+}
+
 inline V3
 V3Cross(const V3& l, const V3& r)
 {
-    return V3 {
+    return {
         (l.y * r.z) - (r.y * l.z),
         (l.z * r.x) - (r.z * l.x),
         (l.x * r.y) - (r.x * l.y)
@@ -948,7 +1165,7 @@ V3Cross(const V3& l, const V3& r)
 }
 
 inline M4
-m4LookAt(const V3& R, const V3& U, const V3& D, const V3& P)
+M4LookAt(const V3& R, const V3& U, const V3& D, const V3& P)
 {
     M4 m0 {
         R.x,  U.x,  D.x,  0,
@@ -988,10 +1205,10 @@ inline M4
 M4RotXFrom(const f32 th)
 {
     return {
-        1, 0,             0,            0,
-        0, std::cos(th), -std::sin(th), 0,
-        0, std::sin(th),  std::cos(th), 0,
-        0, 0,             0,            1
+        1,  0,            0,            0,
+        0,  std::cos(th), std::sin(th), 0,
+        0, -std::sin(th), std::cos(th), 0,
+        0,  0,            0,            1
     };
 }
 
@@ -1005,9 +1222,9 @@ inline M4
 M4RotYFrom(const f32 th)
 {
     return {
-        std::cos(th), 0, -std::sin(th),  0,
+        std::cos(th), 0,  std::sin(th),  0,
         0,            1,  0,             0,
-        std::sin(th), 0,  std::cos(th),  0,
+       -std::sin(th), 0,  std::cos(th),  0,
         0,            0,  0,             1
     };
 }
@@ -1022,8 +1239,8 @@ inline M4
 M4RotZFrom(const f32 th)
 {
     return {
-        std::cos(th), -std::sin(th), 0, 0,
-        std::sin(th),  std::cos(th), 0, 0,
+        std::cos(th),  std::sin(th), 0, 0,
+       -std::sin(th),  std::cos(th), 0, 0,
         0,             0,            1, 0,
         0,             0,            0, 1
     };
@@ -1036,13 +1253,19 @@ M4RotZ(const M4& m, const f32 th)
 }
 
 inline M4
+M4RotFrom(const f32 x, const f32 y, const f32 z)
+{
+    return M4RotZFrom(z) * M4RotYFrom(y) * M4RotXFrom(x);
+}
+
+inline M4
 M4LookAt(const V3& eyeV, const V3& centerV, const V3& upV)
 {
     V3 camDir = V3Norm(eyeV - centerV);
     V3 camRight = V3Norm(V3Cross(upV, camDir));
     V3 camUp = V3Cross(camDir, camRight);
 
-    return m4LookAt(camRight, camUp, camDir, eyeV);
+    return M4LookAt(camRight, camUp, camDir, eyeV);
 }
 
 inline Qt
@@ -1081,6 +1304,14 @@ QtConj(const Qt& q)
 }
 
 inline Qt
+operator-(const Qt& l)
+{
+    Qt res;
+    res.base = -l.base;
+    return res;
+}
+
+inline Qt
 operator*(const Qt& l, const Qt& r)
 {
     return {
@@ -1094,12 +1325,7 @@ operator*(const Qt& l, const Qt& r)
 inline Qt
 operator*(const Qt& l, const V4& r)
 {
-    return {
-        l.w*r.x + l.x*r.w + l.y*r.z - l.z*r.y,
-        l.w*r.y - l.x*r.z + l.y*r.w + l.z*r.x,
-        l.w*r.z + l.x*r.y - l.y*r.x + l.z*r.w,
-        l.w*r.w - l.x*r.x - l.y*r.y - l.z*r.z,
-    };
+    return l * (*(Qt*)&r);
 }
 
 inline Qt
@@ -1112,6 +1338,19 @@ inline Qt
 operator*=(Qt& l, const V4& r)
 {
     return l = l * r;
+}
+
+inline bool
+operator==(const Qt& a, const Qt& b)
+{
+    return a.base == b.base;
+}
+
+inline Qt
+QtNorm(Qt a)
+{
+    f32 mag = std::sqrt(a.w * a.w + a.x * a.x + a.y * a.y + a.z * a.z);
+    return {a.x / mag, a.y / mag, a.z / mag, a.w / mag};
 }
 
 inline V2
@@ -1132,11 +1371,49 @@ normalize(const V4& v)
     return V4Norm(v);
 }
 
-template<typename T>
-constexpr T
-lerp(const T& l, const T& r, const std::floating_point auto t)
+constexpr inline auto
+lerp(auto& a, auto& b, auto& t)
 {
-    return l + (r - l)*t;
+    return (1.0 - t) * a + t * b;
+}
+
+inline Qt
+slerp(const Qt& q1, const Qt& q2, f32 t)
+{
+    auto dot = V4Dot(q1.base, q2.base);
+
+    Qt q2b = q2;
+    if (dot < 0.0f)
+    {
+        q2b = -q2b;
+        dot = -dot;
+    }
+
+    if (dot > 0.9995f)
+    {
+        Qt res;
+        res.x = q1.x + t * (q2b.x - q1.x);
+        res.y = q1.y + t * (q2b.y - q1.y);
+        res.z = q1.z + t * (q2b.z - q1.z);
+        res.w = q1.w + t * (q2b.w - q1.w);
+        return QtNorm(res);
+    }
+
+    f32 theta0 = std::acos(dot);
+    f32 theta = theta0 * t;
+
+    f32 sinTheta0 = std::sin(theta0);
+    f32 sinTheta = std::sin(theta);
+
+    f32 s1 = std::cos(theta) - dot * (sinTheta / sinTheta0);
+    f32 s2 = sinTheta / sinTheta0;
+
+    Qt res;
+    res.x = (s1 * q1.x) + (s2 * q2b.x);
+    res.y = (s1 * q1.y) + (s2 * q2b.y);
+    res.z = (s1 * q1.z) + (s2 * q2b.z);
+    res.w = (s1 * q1.w) + (s2 * q2b.w);
+    return res;
 }
 
 template<typename T>
@@ -1168,7 +1445,7 @@ namespace adt::print
 {
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V2& x)
+formatToContext(Context ctx, FormatArgs, const math::V2& x)
 {
     ctx.fmt = "[{:.3}, {:.3}]";
     ctx.fmtIdx = 0;
@@ -1176,7 +1453,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V2
 }
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V3& x)
+formatToContext(Context ctx, FormatArgs, const math::V3& x)
 {
     ctx.fmt = "[{:.3}, {:.3}, {:.3}]";
     ctx.fmtIdx = 0;
@@ -1184,7 +1461,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V3
 }
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V4& x)
+formatToContext(Context ctx, FormatArgs, const math::V4& x)
 {
     ctx.fmt = "[{:.3}, {:.3}, {:.3}, {:.3}]";
     ctx.fmtIdx = 0;
@@ -1192,7 +1469,13 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::V4
 }
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M2& x)
+formatToContext(Context ctx, FormatArgs fmtArgs, const math::Qt& x)
+{
+    return formatToContext(ctx, fmtArgs, x.base);
+}
+
+inline ssize
+formatToContext(Context ctx, FormatArgs, const math::M2& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}"
               "\n\t {:.3}, {:.3}]";
@@ -1201,7 +1484,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M2
 }
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M3& x)
+formatToContext(Context ctx, FormatArgs, const math::M3& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}"
               "\n\t {:.3}, {:.3}, {:.3}"
@@ -1215,7 +1498,7 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M3
 }
 
 inline ssize
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const math::M4& x)
+formatToContext(Context ctx, FormatArgs, const math::M4& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}, {:.3}"
               "\n\t {:.3}, {:.3}, {:.3}, {:.3}"

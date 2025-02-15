@@ -73,7 +73,7 @@ msgAppendDictSS(sd_bus_message* m, const char* a, const char* b)
 }
 
 static int
-msgAppendDictSX(sd_bus_message* m, const char* a, s64 i)
+msgAppendDictSX(sd_bus_message* m, const char* a, i64 i)
 {
     return msgAppendDictSimple(m, a, 'x', &i);
 }
@@ -199,7 +199,7 @@ seek(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    s64 val = 0;
+    i64 val = 0;
     CK(sd_bus_message_read_basic(m, 'x', &val));
     f64 fval = f64(val);
     fval /= 1000.0;
@@ -220,7 +220,7 @@ seekAbs(
     sprintf(aBuff, "/%" PRIx64, app::g_pPlayer->m_selected);
 
 	const char *pPath = NULL;
-	s64 val = 0;
+	i64 val = 0;
 	CK(sd_bus_message_read_basic(m, 'o', &pPath));
 	CK(sd_bus_message_read_basic(m, 'x', &val));
 
@@ -391,7 +391,7 @@ position(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    s64 t = app::g_pMixer->getCurrentMS();
+    i64 t = app::g_pMixer->getCurrentMS();
     t *= 1000;
 
     return sd_bus_message_append_basic(reply, 'x', &t);
@@ -695,7 +695,7 @@ seeked()
     guard::Mtx lock(&g_mtx);
 
     if (!s_pBus) return;
-    s64 pos = app::g_pMixer->getCurrentMS() * 1000;
+    i64 pos = app::g_pMixer->getCurrentMS() * 1000;
     sd_bus_emit_signal(s_pBus, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", "Seeked", "x", pos);
 }
 

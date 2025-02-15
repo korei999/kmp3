@@ -46,12 +46,23 @@ struct MapResult
         return pData != nullptr;
     }
 
-    constexpr
-    const KeyVal<K, V>&
+    constexpr const KeyVal<K, V>&
     data() const
     {
         ADT_ASSERT(eStatus != MAP_RESULT_STATUS::NOT_FOUND, "not found");
         return *(KeyVal<K, V>*)pData;
+    }
+
+    constexpr const K&
+    key() const
+    {
+        return data().key;
+    }
+
+    constexpr const V&
+    value() const
+    {
+        return data().val;
     }
 };
 
@@ -91,6 +102,8 @@ struct MapBase
     void remove(ssize i);
 
     void remove(const K& key);
+
+    bool tryRemove(const K& key);
 
     MapResult<K, V> tryInsert(IAllocator* p, const K& key, const V& val);
 
@@ -273,9 +286,25 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline void
 MapBase<K, V, FN_HASH>::remove(const K& key)
 {
-    auto f = search(key);
-    ADT_ASSERT(f, "not found");
-    remove(idx(f));
+    auto found = search(key);
+    ADT_ASSERT(found, "not found");
+    remove(idx(found));
+}
+
+template<typename K, typename V, usize (*FN_HASH)(const K&)>
+inline bool
+MapBase<K, V, FN_HASH>::tryRemove(const K& key)
+{
+    auto found = search(key);
+    if (found)
+    {
+        remove(idx(&found.data()));
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
@@ -458,6 +487,8 @@ struct Map
     void remove(ssize i) { base.remove(i); }
 
     void remove(const K& key) { base.remove(key); }
+
+    bool tryRemove(const K& key) { return base.tryRemove(key); }
 
     MapResult<K, V> tryInsert(const K& key, const V& val) { return base.tryInsert(m_pAlloc, key, val); }
 

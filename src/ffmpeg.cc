@@ -48,13 +48,13 @@ Decoder::close()
     *this = {};
 }
 
-s64
+i64
 Decoder::getCurrentMS()
 {
     return m_currentMS;
 }
 
-s64
+i64
 Decoder::getTotalMS()
 {
     auto totalCount = getTotalSamplesCount();
@@ -239,7 +239,7 @@ Decoder::writeToBuffer(
     const int nFrames,
     [[maybe_unused]] const int nChannles,
     long* pSamplesWritten,
-    s64* pPcmPos
+    i64* pPcmPos
 )
 {
     if (!m_pStream) return audio::ERROR::END_OF_FILE;
@@ -322,22 +322,22 @@ Decoder::seekMS(f64 ms)
     if (!m_pCodecCtx) return;
 
 	avcodec_flush_buffers(m_pCodecCtx);
-	s64 pts = av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
+	i64 pts = av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
     av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);
 }
 
-s64
+i64
 Decoder::getCurrentSamplePos()
 {
     return m_currentSamplePos;
 }
 
-s64
+i64
 Decoder::getTotalSamplesCount()
 {
     if (!m_pFormatCtx) return {};
 
-    s64 res = (m_pFormatCtx->duration / (f64)AV_TIME_BASE) * m_pStream->codecpar->sample_rate * m_pStream->codecpar->ch_layout.nb_channels;
+    i64 res = (m_pFormatCtx->duration / (f64)AV_TIME_BASE) * m_pStream->codecpar->sample_rate * m_pStream->codecpar->ch_layout.nb_channels;
     return res;
 }
 

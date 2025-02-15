@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IAllocator.hh"
+#include "Span.hh"
 #include "utils.hh"
 
 #include <new> /* IWYU pragma: keep */
@@ -11,6 +12,8 @@ namespace adt
 
 #define ADT_VEC_FOREACH_I(A, I) for (ssize I = 0; I < (A)->size; ++I)
 #define ADT_VEC_FOREACH_I_REV(A, I) for (ssize I = (A)->size - 1; I != -1U ; --I)
+
+/* TODO: overflow checks are pretty naive */
 
 /* Dynamic array (aka Vector) */
 template<typename T>
@@ -40,6 +43,8 @@ struct VecBase
     [[nodiscard]] bool empty() const noexcept { return m_size == 0; }
 
     ssize push(IAllocator* p, const T& data);
+
+    void pushSpan(IAllocator* p, const Span<T> sp);
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
         ssize emplace(IAllocator* p, ARGS&&... args);
@@ -129,6 +134,24 @@ VecBase<T>::push(IAllocator* p, const T& data)
     growIfNeeded(p);
     new(m_pData + m_size++) T(data);
     return m_size - 1;
+}
+
+template<typename T>
+inline void
+VecBase<T>::pushSpan(IAllocator* p, const Span<T> sp)
+{
+    ADT_ASSERT(sp.getSize() > 0, "pushing empty span");
+    ADT_ASSERT(m_size + sp.getSize() >= m_size, "overflow");
+
+    if (m_size + sp.getSize() > m_capacity)
+    {
+        ssize newSize = utils::max(static_cast<ssize>((sp.getSize() + m_size)*1.33), m_size*2);
+        ADT_ASSERT(newSize > m_size, "overflow");
+        grow(p, newSize);
+    }
+
+    utils::copy(m_pData + m_size, sp.data(), sp.getSize());
+    m_size += sp.getSize();
 }
 
 template<typename T>
@@ -344,6 +367,8 @@ struct Vec
     [[nodiscard]] bool empty() const noexcept { return base.empty(); }
 
     ssize push(const T& data) { return base.push(m_pAlloc, data); }
+
+    void pushSpan(const Span<T> sp) { base.pushSpan(m_pAlloc, sp); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
         ssize emplace(ARGS&&... args) { return base.emplace(m_pAlloc, std::forward<ARGS>(args)...); }

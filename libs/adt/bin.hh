@@ -1,0 +1,131 @@
+#pragma once
+
+#include "String.hh"
+
+namespace adt::bin
+{
+
+inline constexpr u16
+swapBytes(u16 x)
+{
+    return ((x & 0xff00u) >> 1 * 8) |
+           ((x & 0x00ffu) << 1 * 8);
+}
+
+inline constexpr u32
+swapBytes(u32 x)
+{
+    return ((x & 0xff000000u) >> 3 * 8) |
+           ((x & 0x00ff0000u) >> 1 * 8) |
+           ((x & 0x0000ff00u) << 1 * 8) |
+           ((x & 0x000000ffu) << 3 * 8);
+}
+
+inline constexpr u64
+swapBytes(u64 x)
+{
+    return ((x & 0xff00000000000000llu) >> 7 * 8) |
+           ((x & 0x00ff000000000000llu) >> 5 * 8) |
+           ((x & 0x0000ff0000000000llu) >> 2 * 8) |
+           ((x & 0x000000ff00000000llu) >> 1 * 8) |
+           ((x & 0x00000000ff000000llu) << 1 * 8) |
+           ((x & 0x0000000000ff0000llu) << 3 * 8) |
+           ((x & 0x000000000000ff00llu) << 5 * 8) |
+           ((x & 0x00000000000000ffllu) << 7 * 8);
+}
+
+struct Reader
+{
+    String m_sFile {};
+    ssize m_pos {};
+
+    /* */
+
+    Reader() = default;
+    Reader(String s) : m_sFile(s) {}
+
+    /* */
+
+    void skipBytes(ssize n);
+    String readString(ssize bytes);
+    u8 read8();
+    u16 read16();
+    u16 read16Rev();
+    u32 read32();
+    u32 read32Rev();
+    u64 read64();
+    u64 read64Rev();
+    bool finished();
+};
+
+inline void 
+Reader::skipBytes(ssize n)
+{
+    m_pos += n;
+}
+
+inline String
+Reader::readString(ssize bytes)
+{
+    String ret(&m_sFile[m_pos], bytes);
+    m_pos += bytes;
+    return ret;
+}
+
+inline u8
+Reader::read8()
+{
+    u32 ret = m_sFile.reinterpret<u8>(m_pos);
+    m_pos += 1;
+    return ret;
+}
+
+inline u16
+Reader::read16()
+{
+    u32 ret = m_sFile.reinterpret<u16>(m_pos);
+    m_pos += 2;
+    return ret;
+}
+
+inline u16
+Reader::read16Rev()
+{
+    return swapBytes(read16());
+}
+
+inline u32
+Reader::read32()
+{
+    u32 ret = m_sFile.reinterpret<u32>(m_pos);
+    m_pos += 4;
+    return ret;
+}
+
+inline u32
+Reader::read32Rev()
+{
+    return swapBytes(read32());
+}
+
+inline u64
+Reader::read64()
+{
+    u64 ret = m_sFile.reinterpret<u64>(m_pos);
+    m_pos += 8;
+    return ret;
+}
+
+inline u64
+Reader::read64Rev()
+{
+    return swapBytes(read64());
+}
+
+inline bool
+Reader::finished()
+{
+    return m_pos >= m_sFile.getSize();
+}
+
+} /* namespace adt::bin */

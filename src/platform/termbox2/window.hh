@@ -10,7 +10,7 @@ namespace window
 {
 
 extern Arena* g_pFrameArena;
-extern s16 g_firstIdx;
+extern i16 g_firstIdx;
 extern int g_prevImgWidth;
 
 /* old api */

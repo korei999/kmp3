@@ -107,15 +107,18 @@ Win::volume()
 
     auto volumeColor = [&](int i) -> STYLE
     {
-        f32 col = f32(i) / (f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME));
+        f32 col = f32(i) / ((f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME)));
 
-        if (col <= 0.33f) return GREEN;
-        else if (col > 0.33f && col <= 0.66f) return GREEN;
-        else if (col > 0.66f && col <= 1.00f) return YELLOW;
-        else return RED;
+        if (col <= 0.33f)
+            return TEXT_BUFF_STYLE::GREEN;
+        else if (col > 0.33f && col <= 0.66f)
+            return TEXT_BUFF_STYLE::GREEN;
+        else if (col > 0.66f && col <= 1.00f)
+            return TEXT_BUFF_STYLE::YELLOW;
+        else return TEXT_BUFF_STYLE::RED;
     };
 
-    const STYLE col = bMuted ? BLUE : volumeColor(maxVolumeBars - 1);
+    const STYLE col = bMuted ? STYLE::BLUE : volumeColor(maxVolumeBars - 1);
     m_textBuff.string(off, 6, STYLE::BOLD | col, {sp.data(), n});
 
     for (int i = off + n + 1, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
@@ -124,12 +127,12 @@ Win::volume()
         wchar_t wc[2] {};
         if (bMuted)
         {
-            col = BLUE | NORM;
+            col = STYLE::BLUE | STYLE::NORM;
             wc[0] = common::CHAR_VOL;
         }
         else
         {
-            col = volumeColor(nTimes) | BOLD;
+            col = volumeColor(nTimes) | STYLE::BOLD;
             wc[0] = common::CHAR_VOL_MUTED;
         }
 

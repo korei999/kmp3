@@ -32,10 +32,10 @@ struct Decoder : audio::IDecoder
 
     [[nodiscard]] virtual u32 getSampleRate() override final;
     virtual void seekMS(f64 ms) override final;
-    [[nodiscard]] virtual s64 getCurrentSamplePos() override final;
-    [[nodiscard]] virtual s64 getCurrentMS() override final;
-    [[nodiscard]] virtual s64 getTotalMS() override final;
-    [[nodiscard]] virtual s64 getTotalSamplesCount() override final;
+    [[nodiscard]] virtual i64 getCurrentSamplePos() override final;
+    [[nodiscard]] virtual i64 getCurrentMS() override final;
+    [[nodiscard]] virtual i64 getTotalMS() override final;
+    [[nodiscard]] virtual i64 getTotalSamplesCount() override final;
     [[nodiscard]] virtual int getChannelsCount() override final;
     [[nodiscard]] virtual Opt<String> getMetadataValue(const String sKey) override final;
     [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
@@ -43,7 +43,6 @@ struct Decoder : audio::IDecoder
     virtual void close() override final;
 
     /* */
-
 
 private:
     AVStream* m_pStream {};

@@ -57,8 +57,8 @@ public:
     [[nodiscard]] virtual Opt<String> getMetadata(const String sKey) override final;
     [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
     virtual void setVolume(const f32 volume) override final;
-    [[nodiscard]] virtual s64 getCurrentMS() override final;
-    [[nodiscard]] virtual s64 getTotalMS() override final;
+    [[nodiscard]] virtual i64 getCurrentMS() override final;
+    [[nodiscard]] virtual i64 getTotalMS() override final;
 
     /* */
 
@@ -67,7 +67,7 @@ public:
     /* */
 
 private:
-    void writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, s64* pPcmPos);
+    void writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i64* pPcmPos);
     void setNChannles(u32 nChannles);
     void onProcess();
 };

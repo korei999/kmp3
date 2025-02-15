@@ -2,8 +2,6 @@
 
 #include "types.hh"
 
-#include <cassert>
-
 namespace adt
 {
 
@@ -31,7 +29,13 @@ struct Span
 
     constexpr ssize getSize() const noexcept { return m_size; }
 
-    constexpr ssize lastI() const noexcept { return operator[](m_size - 1); }
+    constexpr ssize lastI() const noexcept { ADT_ASSERT(m_size > 0, "empty: size: %llu", m_size); return m_size - 1; }
+
+    constexpr T& first() noexcept { return operator[](0); }
+    constexpr const T& first() const noexcept { return operator[](0); }
+
+    constexpr T& last() noexcept { return operator[](m_size - 1); }
+    constexpr const T& last() const noexcept { return operator[](m_size - 1); }
 
 #define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
 

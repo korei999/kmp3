@@ -20,7 +20,7 @@ struct OsAllocator : IAllocator
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     void virtual free(void* ptr) noexcept override final;
-    void virtual freeAll() noexcept override final; /* assert(false) */
+    ADT_WARN_LEAK void virtual freeAll() noexcept override final; /* assert(false) */
 };
 
 inline OsAllocator*
@@ -51,7 +51,9 @@ OsAllocator::zalloc(usize mCount, usize mSize)
     auto* r = ::calloc(mCount, mSize);
 #endif
 
-    if (!r) throw AllocException("OsAllocator::zalloc()");
+    if (!r)
+        throw AllocException("OsAllocator::zalloc()");
+
     return r;
 }
 
@@ -64,7 +66,9 @@ OsAllocator::realloc(void* p, usize, usize newCount, usize mSize)
     auto* r = ::realloc(p, newCount * mSize);
 #endif
 
-    if (!r) throw AllocException("OsAllocator::realloc()");
+    if (!r)
+        throw AllocException("OsAllocator::realloc()");
+
     return r;
 }
 
@@ -81,7 +85,7 @@ OsAllocator::free(void* p) noexcept
 inline void
 OsAllocator::freeAll() noexcept
 {
-    assert(false && "[OsAllocator]: no 'freeAll()' method");
+    ADT_ASSERT(false, "no 'freeAll()' method");
 }
 
 } /* namespace adt */

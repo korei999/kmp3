@@ -203,7 +203,7 @@ Mixer::play(String sPath)
 }
 
 void
-Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, s64* pPcmPos)
+Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i64* pPcmPos)
 {
     audio::ERROR err {};
     {
@@ -411,13 +411,13 @@ Mixer::setVolume(const f32 volume)
     mpris::volumeChanged();
 }
 
-s64
+i64
 Mixer::getCurrentMS()
 {
     return m_currMs;
 }
 
-s64
+i64
 Mixer::getTotalMS()
 {
     guard::Mtx lock(&m_mtxDecoder);

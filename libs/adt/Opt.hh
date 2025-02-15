@@ -15,10 +15,10 @@ struct Opt
     /* */
 
     constexpr Opt() = default;
-    constexpr Opt(const T& x, bool bHasValue = true)
+    constexpr Opt(const T& x)
     {
         m_data = x;
-        m_bHasValue = bHasValue;
+        m_bHasValue = true;
     }
 
     /* */

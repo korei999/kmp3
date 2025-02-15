@@ -49,7 +49,7 @@ ScratchBuffer::nextMem(ssize mCount) noexcept
 
     if (realSize >= m_sp.getSize())
     {
-        fprintf(stderr, "ScratchBuffer::getMem(): allocating more than capacity, returing the full buffer\n");
+        fprintf(stderr, "ScratchBuffer::getMem(): allocating more than capacity, returing full buffer\n");
         return {(T*)m_sp.data(), ssize(getCap() / sizeof(T))};
     }
     else if (realSize + m_pos > m_sp.getSize())

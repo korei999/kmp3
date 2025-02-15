@@ -183,6 +183,7 @@ copy(T* pDest, const T* const pSrc, ssize size)
     memcpy(pDest, pSrc, size * sizeof(T));
 }
 
+/* typed memmove (don't mistake for std::move) */
 template<typename T>
 inline void
 move(T* pDest, const T* const pSrc, ssize size)
@@ -283,6 +284,19 @@ swapBytes(u64 x)
            ((x & 0x0000000000ff0000llu) << 3 * 8) |
            ((x & 0x000000000000ff00llu) << 5 * 8) |
            ((x & 0x00000000000000ffllu) << 7 * 8);
+}
+
+template<template<typename> typename CON_T, typename T, typename LAMBDA>
+[[nodiscard]] inline ssize
+search(const CON_T<T>& c, LAMBDA f)
+{
+    for (const auto& el : c)
+    {
+        if (f(el))
+            return c.idx(&el);
+    }
+
+    return NPOS;
 }
 
 } /* namespace adt::utils */

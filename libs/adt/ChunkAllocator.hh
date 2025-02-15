@@ -45,11 +45,15 @@ public:
 
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
+    ADT_WARN_IMPOSSIBLE_OPERATION virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     void virtual free(void* ptr) noexcept override final;
     void virtual freeAll() noexcept override final;
 
     /* */
+
+    template<typename T> ADT_WARN_IMPOSSIBLE_OPERATION constexpr T*
+    reallocV(T* ptr, ssize oldCount, ssize newCount)
+    { ADT_ASSERT_ALWAYS(false, "can't realloc"); return nullptr; };
 
 private:
     [[nodiscard]] ChunkAllocatorBlock* newBlock();
@@ -116,7 +120,7 @@ ChunkAllocator::zalloc(usize, usize)
 inline void*
 ChunkAllocator::realloc(void*, usize, usize, usize)
 {
-    assert(false && "ChunkAllocator can't realloc()");
+    ADT_ASSERT_ALWAYS(false, "can't realloc()");
     return nullptr;
 }
 

@@ -28,8 +28,8 @@ protected:
     u32 m_changedSampleRate = 48000;
     u8 m_nChannels = 2;
     f32 m_volume = 0.5f;
-    s64 m_currentTimeStamp {};
-    s64 m_nTotalSamples {};
+    i64 m_currentTimeStamp {};
+    i64 m_nTotalSamples {};
 
 public:
     virtual void init() = 0;
@@ -43,8 +43,8 @@ public:
     [[nodiscard]] virtual Opt<String> getMetadata(const String sKey) = 0;
     [[nodiscard]] virtual Opt<Image> getCoverImage() = 0;
     virtual void setVolume(const f32 volume) = 0;
-    [[nodiscard]] virtual s64 getCurrentMS() = 0;
-    [[nodiscard]] virtual s64 getTotalMS() = 0;
+    [[nodiscard]] virtual i64 getCurrentMS() = 0;
+    [[nodiscard]] virtual i64 getTotalMS() = 0;
 
     /* */
 
@@ -84,8 +84,8 @@ struct DummyMixer : public IMixer
     virtual Opt<String> getMetadata(const String) override final { return {}; }
     virtual Opt<Image> getCoverImage() override final { return {}; }
     virtual void setVolume(const f32) override final {}
-    virtual s64 getCurrentMS() override final { return {}; };
-    virtual s64 getTotalMS() override final { return {}; };
+    virtual i64 getCurrentMS() override final { return {}; };
+    virtual i64 getTotalMS() override final { return {}; };
 };
 
 enum class ERROR : u8
@@ -112,10 +112,10 @@ struct IDecoder
 
     [[nodiscard]] virtual u32 getSampleRate() = 0;
     virtual void seekMS(f64 ms) = 0;
-    [[nodiscard]] virtual s64 getCurrentSamplePos() = 0;
-    [[nodiscard]] virtual s64 getCurrentMS() = 0;
-    [[nodiscard]] virtual s64 getTotalMS() = 0;
-    [[nodiscard]] virtual s64 getTotalSamplesCount() = 0;
+    [[nodiscard]] virtual i64 getCurrentSamplePos() = 0;
+    [[nodiscard]] virtual i64 getCurrentMS() = 0;
+    [[nodiscard]] virtual i64 getTotalMS() = 0;
+    [[nodiscard]] virtual i64 getTotalSamplesCount() = 0;
     [[nodiscard]] virtual int getChannelsCount() = 0;
     [[nodiscard]] virtual Opt<String> getMetadataValue(const String sKey) = 0;
     [[nodiscard]] virtual Opt<Image> getCoverImage() = 0;

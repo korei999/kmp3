@@ -8,7 +8,7 @@ enum class WINDOW_READ_MODE : u8 { NONE, SEARCH, SEEK };
 
 struct IWindow
 {
-    s16 m_listHeight {};
+    i16 m_listHeight {};
     bool m_bRedraw {};
     bool m_bClear {};
 

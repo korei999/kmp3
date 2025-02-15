@@ -36,7 +36,7 @@ struct xxh64
         return finalize((len >= 32 ? h32bytes(p, len, seed) : seed + PRIME5) + len, p + (len & ~0x1F), len & 0x1F);
     }
 
-  private:
+private:
     static constexpr u64 PRIME1 = 11400714785074694791ULL;
     static constexpr u64 PRIME2 = 14029467366897019727ULL;
     static constexpr u64 PRIME3 = 1609587929392839161ULL;
@@ -154,7 +154,8 @@ template<ssize N>
 constexpr usize
 func(const char (&aChars)[N])
 {
-    return xxh64::hash(aChars, N, 0);
+    /* WARN: string literals include '\0', which completely changes the hash */
+    return xxh64::hash(aChars, N - 1, 0);
 }
 
 template<typename T>

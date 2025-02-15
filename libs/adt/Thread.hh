@@ -3,18 +3,46 @@
 #include "adt/types.hh"
 
 #if __has_include(<windows.h>)
-    #ifndef WIN32_LEAN_AND_MEAN
-        #define WIN32_LEAN_AND_MEAN 1
-    #endif
-    #ifndef NOMINMAX
-        #define NOMINMAX
-    #endif
-    #include <windows.h>
     #define ADT_USE_WIN32THREAD
 #elif __has_include(<pthread.h>)
     #include <pthread.h>
     #define ADT_USE_PTHREAD
 #endif
+
+#ifdef __linux__
+    #include <sys/sysinfo.h>
+
+    #define ADT_GET_NPROCS() get_nprocs()
+#elif _WIN32
+    #include <sysinfoapi.h>
+
+inline DWORD
+getLogicalCoresCountWIN32()
+{
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    return info.dwNumberOfProcessors;
+}
+
+    #define ADT_GET_NCORES() getLogicalCoresCountWIN32()
+#else
+    #define ADT_GET_NCORES() 4
+#endif
+
+inline int
+getNCores()
+{
+#ifdef __linux__
+    return get_nprocs();
+#elif _WIN32
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    return info.dwNumberOfProcessors;
+
+    return info.dwNumberOfProcessors;
+#endif
+    return 4;
+}
 
 namespace adt
 {
@@ -24,7 +52,7 @@ constexpr ssize THREAD_WAIT_INFINITE = 0xffffffff;
 
 #ifdef ADT_USE_PTHREAD
 
-using THREAD_STATUS = s32;
+using THREAD_STATUS = i32;
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -53,6 +81,7 @@ struct Thread
 
     Thread() = default;
     Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg);
+    template<typename LAMBDA> Thread(LAMBDA l);
 
     /* */
 
@@ -93,6 +122,33 @@ Thread::Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg)
 #elif defined ADT_USE_WIN32THREAD
 
     m_thread = CreateThread(nullptr, 0, pfn, pFnArg, 0, &m_id);
+
+#endif
+}
+
+template<typename LAMBDA>
+inline
+Thread::Thread(LAMBDA l)
+{
+#ifdef ADT_USE_PTHREAD
+
+    auto stub = +[](void* pArg) -> void*
+    {
+        (*reinterpret_cast<LAMBDA*>(pArg))();
+        return nullptr;
+    };
+
+    pthread_create(&m_thread, {}, stub, &l);
+
+#elif defined ADT_USE_WIN32THREAD
+
+    auto stub = +[](void* pArg) -> THREAD_STATUS
+    {
+        (*reinterpret_cast<decltype(l)*>(pArg))();
+        return 0;
+    };
+
+    m_thread = CreateThread(nullptr, 0, stub, &l, 0, &m_id);
 
 #endif
 }
@@ -201,7 +257,7 @@ private:
 };
 
 inline
-Mutex::Mutex(MUTEX_TYPE eType)
+Mutex::Mutex([[maybe_unused]] MUTEX_TYPE eType)
 {
 #ifdef ADT_USE_PTHREAD
 
@@ -306,6 +362,7 @@ CndVar::CndVar(INIT_FLAG)
 {
 #ifdef ADT_USE_PTHREAD
 
+    /* @MAN: The LinuxThreads implementation supports no attributes for conditions, hence the cond_attr parameter is actually ignored. */
     pthread_cond_init(&m_cnd, {});
 
 #elif defined ADT_USE_WIN32THREAD
@@ -320,6 +377,9 @@ CndVar::destroy()
 {
 #ifdef ADT_USE_PTHREAD
 
+    /* @MAN:
+     * In the LinuxThreads implementation, no resources are associated with condition variables,
+     * thus pthread_cond_destroy actually does nothing except checking that the condition has no waiting threads. */
     pthread_cond_destroy(&m_cnd);
     *this = {};
 
@@ -334,6 +394,11 @@ CndVar::wait(Mutex* pMtx)
 {
 #ifdef ADT_USE_PTHREAD
 
+    /* @MAN:
+     * pthread_cond_wait atomically unlocks the mutex (as per pthread_unlock_mutex) and waits for the condition variable cond to be signaled. 
+     * The thread  execution  is  suspended and does not consume any CPU time until the condition variable is signaled.
+     * The mutex must be locked by the calling thread on entrance to pthread_cond_wait.
+     * Before returning to the calling thread, pthread_cond_wait re-acquires mutex (as per pthread_lock_mutex). */
     pthread_cond_wait(&m_cnd, &pMtx->m_mtx);
 
 #elif defined ADT_USE_WIN32THREAD
@@ -385,6 +450,61 @@ CndVar::broadcast()
 #elif defined ADT_USE_WIN32THREAD
 
     WakeAllConditionVariable(&m_cnd);
+
+#endif
+}
+
+struct CallOnce
+{
+#ifdef ADT_USE_PTHREAD
+    pthread_once_t m_onceCtrl {};
+
+#elif defined ADT_USE_WIN32THREAD
+
+    INIT_ONCE m_onceCtrl {};
+
+#endif
+
+    /* */
+
+    CallOnce() = default;
+    CallOnce(INIT_FLAG);
+
+    /* */
+
+    int exec(void (*pfn)());
+};
+
+inline
+CallOnce::CallOnce(INIT_FLAG)
+{
+#ifdef ADT_USE_PTHREAD
+
+    m_onceCtrl = PTHREAD_ONCE_INIT;
+
+#elif defined ADT_USE_WIN32THREAD
+
+    InitOnceInitialize(&m_onceCtrl);
+
+#endif
+}
+
+inline int
+CallOnce::exec(void (*pfn)())
+{
+#ifdef ADT_USE_PTHREAD
+
+    return pthread_once(&m_onceCtrl, pfn);
+
+#elif defined ADT_USE_WIN32THREAD
+
+    auto stub = +[](PINIT_ONCE, PVOID Parameter, [[maybe_unused]] PVOID *lpContext) -> BOOL
+    {
+        (reinterpret_cast<void(*)()>(Parameter))();
+        return TRUE;
+    };
+
+    return InitOnceExecuteOnce(&m_onceCtrl, stub, reinterpret_cast<void*>(pfn), nullptr);
 
 #endif
 }

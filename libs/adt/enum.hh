@@ -44,4 +44,8 @@
         return l = static_cast<ENUM>(                                                                                  \
                    static_cast<std::underlying_type_t<ENUM>>(l) ^ static_cast<std::underlying_type_t<ENUM>>(r)         \
                );                                                                                                      \
+    }                                                                                                                  \
+    inline constexpr bool operator!(ENUM s)                                                                            \
+    {                                                                                                                  \
+        return s == static_cast<ENUM>(0);                                                                              \
     }

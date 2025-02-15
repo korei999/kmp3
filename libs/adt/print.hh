@@ -10,7 +10,7 @@
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
-#include <cuchar>
+#include <cuchar> /* IWYU pragma: keep */
 
 #include <type_traits>
 #include <atomic>
@@ -38,7 +38,6 @@ struct FormatArgs
     FMT_FLAGS eFmtFlags {};
 };
 
-/* TODO: implement reallocatable backing buffer */
 struct Context
 {
     String fmt {};
@@ -385,7 +384,8 @@ template<typename PTR_T> requires std::is_pointer_v<PTR_T>
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p) noexcept
 {
-    if (p == nullptr) return formatToContext(ctx, fmtArgs, nullptr);
+    if (p == nullptr)
+        return formatToContext(ctx, fmtArgs, nullptr);
 
     fmtArgs.eFmtFlags |= FMT_FLAGS::HASH;
     fmtArgs.eBase = BASE::SIXTEEN;
@@ -408,7 +408,8 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
 
     for (; i < ctx.fmt.getSize(); ++i, ++nRead)
     {
-        if (ctx.buffIdx >= ctx.buffSize) return nRead;
+        if (ctx.buffIdx >= ctx.buffSize)
+            return nRead;
 
         FormatArgs fmtArgs {};
 
@@ -473,7 +474,6 @@ template<ssize SIZE = 512, typename ...ARGS_T>
 inline ssize
 toFILE(FILE* fp, const String fmt, const ARGS_T&... tArgs) noexcept
 {
-    /* TODO: allow allocation? Nah... */
     char aBuff[SIZE] {};
     Context ctx {fmt, aBuff, utils::size(aBuff) - 1};
     auto r = printArgs(ctx, tArgs...);

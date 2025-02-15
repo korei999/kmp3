@@ -30,8 +30,9 @@ load(IAllocator* pAlloc, String sPath)
     ret.m_pData = (char*)pAlloc->malloc(size, sizeof(char));
     ret.m_size = size - 1;
     fread(ret.data(), 1, ret.getSize(), pf);
+    ret.m_pData[ret.m_size] = '\0';
 
-    return {ret, true};
+    return ret;
 }
 
 [[nodiscard]]
@@ -50,10 +51,23 @@ getPathEnding(String sPath)
 inline String
 replacePathEnding(IAllocator* pAlloc, String sPath, String sEnding)
 {
+    ADT_ASSERT(pAlloc != nullptr, " ");
+
     ssize lastSlash = sPath.lastOf('/');
     String sNoEnding = {&sPath[0], lastSlash + 1};
     String r = StringCat(pAlloc, sNoEnding, sEnding);
     return r;
+}
+
+inline void
+replacePathEnding(Span<char>* pSpBuff, String sPath, String sEnding)
+{
+    ADT_ASSERT(pSpBuff != nullptr, " ");
+
+    ssize lastSlash = sPath.lastOf('/');
+    String sNoEnding = {&sPath[0], lastSlash + 1};
+    ssize n = print::toSpan(*pSpBuff, "{}{}", sNoEnding, sEnding);
+    pSpBuff->m_size = n;
 }
 
 } /* namespace file */

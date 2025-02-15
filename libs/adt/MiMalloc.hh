@@ -17,7 +17,7 @@ struct MiMalloc : IAllocator
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     void virtual free(void* ptr) noexcept override final;
-    void virtual freeAll() noexcept override final; /* assert(false) */
+    ADT_WARN_LEAK void virtual freeAll() noexcept override final; /* assert(false) */
 };
 
 inline MiMalloc*
@@ -31,7 +31,10 @@ inline void*
 MiMalloc::malloc(usize mCount, usize mSize)
 {
     auto* r = ::mi_malloc(mCount * mSize);
-    if (!r) throw AllocException("MiMalloc::malloc()");
+
+    if (!r)
+        throw AllocException("MiMalloc::malloc()");
+
     return r;
 }
 
@@ -39,7 +42,10 @@ inline void*
 MiMalloc::zalloc(usize mCount, usize mSize)
 {
     auto* r = ::mi_calloc(mCount, mSize);
-    if (!r) throw AllocException("MiMalloc::zalloc()");
+
+    if (!r)
+        throw AllocException("MiMalloc::zalloc()");
+
     return r;
 }
 
@@ -47,7 +53,10 @@ inline void*
 MiMalloc::realloc(void* p, usize, usize newCount, usize mSize)
 {
     auto* r = ::mi_reallocn(p, newCount, mSize);
-    if (!r) throw AllocException("MiMalloc::realloc()");
+
+    if (!r)
+        throw AllocException("MiMalloc::realloc()");
+
     return r;
 }
 
@@ -60,7 +69,7 @@ MiMalloc::free(void* p) noexcept
 inline void
 MiMalloc::freeAll() noexcept
 {
-    assert(false && "[MiMalloc]: no 'freeAll()' method");
+    ADT_ASSERT(false, "no 'freeAll()' method");
 }
 
 /* very fast general purpose, non thread safe, allocator. freeAll() is supported. */
@@ -90,7 +99,10 @@ inline void*
 MiHeap::malloc(usize mCount, usize mSize)
 {
     auto* r = ::mi_heap_mallocn(m_pHeap, mCount, mSize);
-    if (!r) throw AllocException("MiHeap::malloc()");
+
+    if (!r)
+        throw AllocException("MiHeap::malloc()");
+
     return r;
 }
 
@@ -98,7 +110,10 @@ inline void*
 MiHeap::zalloc(usize mCount, usize mSize)
 {
     auto* r = ::mi_heap_zalloc(m_pHeap, mCount * mSize);
-    if (!r) throw AllocException("MiHeap::zalloc()");
+
+    if (!r)
+        throw AllocException("MiHeap::zalloc()");
+
     return r;
 }
 
@@ -106,7 +121,10 @@ inline void*
 MiHeap::realloc(void* p, usize, usize newCount, usize mSize)
 {
     auto* r = ::mi_reallocn(p, newCount, mSize);
-    if (!r) throw AllocException("MiHeap::realloc()");
+
+    if (!r)
+        throw AllocException("MiHeap::realloc()");
+
     return r;
 }
 

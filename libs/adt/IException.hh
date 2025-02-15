@@ -14,8 +14,8 @@ struct IException
 
     /* */
 
-    virtual void logErrorMsg(FILE* fp) = 0;
-    virtual const char* getMsg() = 0;
+    virtual void printErrorMsg(FILE* fp) const = 0;
+    virtual const char* getMsg() const = 0;
 };
 
 struct RuntimeException : public IException
@@ -31,14 +31,14 @@ struct RuntimeException : public IException
     /* */
 
     virtual void
-    logErrorMsg(FILE* fp) override
+    printErrorMsg(FILE* fp) const override
     {
         char aBuff[128] {};
         snprintf(aBuff, sizeof(aBuff) - 1, "RuntimeException: '%s'\n", m_ntsMsg);
         fputs(aBuff, fp);
     };
 
-    virtual const char* getMsg() override { return m_ntsMsg; }
+    virtual const char* getMsg() const override { return m_ntsMsg; }
 };
 
 } /* namespace adt */

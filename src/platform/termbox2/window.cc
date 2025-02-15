@@ -37,7 +37,7 @@ namespace platform::termbox2::window
 {
 
 Arena* g_pFrameArena {};
-s16 g_firstIdx = 0;
+i16 g_firstIdx = 0;
 int g_prevImgWidth = 0;
 int g_prevImgHeight = 0;
 
@@ -552,7 +552,7 @@ drawCoverImage()
             int xOff = 0;
 
             /* try to center the image */
-            if (!math::eq(diff, 0))
+            if (!math::eq(diff, 0.0))
             {
                 f64 coef = asp / normalAsp;
                 f64 move = (1.0 - coef) / 2.0;
