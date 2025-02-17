@@ -28,6 +28,9 @@ extern char** g_argv;
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
 
+inline Player& player() { return *g_pPlayer; }
+inline audio::IMixer& mixer() { return *g_pMixer; }
+
 IWindow* allocWindow(IAllocator* pArena);
 audio::IMixer* allocMixer(IAllocator* pAlloc);
 

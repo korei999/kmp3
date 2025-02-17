@@ -133,7 +133,7 @@ subStringSearch()
 long
 getImgOffset()
 {
-    return app::g_bNoImage ? 2 : app::g_pPlayer->m_imgWidth + 2;
+    return (app::g_bNoImage || s_bNoImage) ? 2 : app::g_pPlayer->m_imgWidth + 2;
 }
 
 void
@@ -536,11 +536,19 @@ drawCoverImage()
 
         auto oCover = app::g_pMixer->getCoverImage();
 
-        /* clear without flickering */
-        const char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
-        tb_send(sKittyClear, sizeof(sKittyClear));
-        /* BUG: termbox2 still leaves some visible damage */
-        clearAreaHARD(1, 1, g_prevImgWidth + 1, g_prevImgHeight + 1);
+        /* termbox2 doesn't support image printing, these are bunch of ugly heuristics */
+        if (s_bNoImage && oCover)
+        {
+            tb_invalidate();
+        }
+        else if (oCover || (!s_bNoImage && !oCover))
+        {
+            /* clear without flickering */
+            const char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
+            tb_send(sKittyClear, sizeof(sKittyClear));
+            /* BUG: termbox2 still leaves some visible damage */
+            clearAreaHARD(1, 1, g_prevImgWidth + 1, g_prevImgHeight + 1);
+        }
 
         if (oCover)
         {
