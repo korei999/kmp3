@@ -161,7 +161,7 @@ Mixer::destroy()
     m_mtxDecoder.destroy();
     LOG_NOTIFY("MixerDestroy()\n");
 
-    ::free(m_pIDecoder);
+    OsAllocatorGet()->free(m_pIDecoder);
 }
 
 void

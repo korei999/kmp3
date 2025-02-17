@@ -1,8 +1,5 @@
 #include "app.hh"
 
-#include "adt/Vec.hh"
-#include "adt/defer.hh"
-#include "adt/logs.hh"
 #include "defaults.hh"
 #include "frame.hh"
 
@@ -18,6 +15,10 @@
 #ifdef OPT_CHAFA
     #include "platform/chafa/chafa.hh"
 #endif
+
+#include "adt/Vec.hh"
+#include "adt/defer.hh"
+#include "adt/logs.hh"
 
 static void
 setTermEnv()

@@ -37,6 +37,7 @@ option(OPT_TERMBOX2 "" OFF)
 option(OPT_PIPEWIRE "" ON)
 option(OPT_CHAFA "" ON)
 option(OPT_MPRIS "" ON)
+option(OPT_MIMALLOC "" OFF)
 option(OPT_MARCH_NATIVE "" OFF)
 
 if (OPT_MARCH_NATIVE)
@@ -59,6 +60,7 @@ endif()
 
 if (CMAKE_BUILD_TYPE MATCHES "Asan")
     set(CMAKE_BUILD_TYPE "Debug")
+    add_definitions("-DMI_TRACK_ASAN=ON")
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         add_compile_options(-fsanitize=address)
@@ -122,6 +124,28 @@ add_executable(
     src/platform/ansi/WinDraw.cc
     src/platform/ansi/WinInput.cc
 )
+
+if (OPT_MIMALLOC)
+    include(FetchContent)
+    FetchContent_Declare(
+        MIMALLOC
+        GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
+        GIT_TAG dev3
+    )
+    FetchContent_MakeAvailable(MIMALLOC)
+    FetchContent_GetProperties(MIMALLOC
+        SOURCE_DIR MIMALLOC_SOURCE_DIR
+        BINARY_DIR MIMALLOC_BINARY_DIR
+    )
+    include_directories(${MIMALLOC_SOURCE_DIR}/include)
+    message(STATUS "MIMALLOC_SOURCE_DIR: '${MIMALLOC_SOURCE_DIR}'")
+
+    add_definitions("-DADT_USE_MIMALLOC")
+    # target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${MIMALLOC_SOURCE_DIR}/src/static.c
+    )
+endif()
 
 if (OPT_TERMBOX2)
     add_definitions("-DOPT_TERMBOX2")
