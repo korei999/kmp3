@@ -38,7 +38,7 @@ Decoder::close()
     if (m_pImgPacket) av_packet_free(&m_pImgPacket);
     if (m_pImgFrame) av_frame_free(&m_pImgFrame);
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     if (m_pConverted) av_frame_free(&m_pConverted);
     if (m_pSwsCtx) sws_freeContext(m_pSwsCtx);
 #endif
@@ -90,7 +90,7 @@ Decoder::getMetadataValue(const String sKey)
     }
 }
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
 void
 Decoder::getAttachedPicture()
 {

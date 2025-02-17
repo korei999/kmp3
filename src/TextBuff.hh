@@ -8,7 +8,7 @@
 #include "adt/enum.hh"
 #include "adt/print.hh"
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     #include "platform/chafa/chafa.hh"
 #endif
 
@@ -47,7 +47,7 @@
 
 using namespace adt;
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
 struct TextBuffImage
 {
     platform::chafa::Image img {};
@@ -163,7 +163,7 @@ struct TextBuff
     VecBase<TextBuffCell> m_vFront {}; /* what to show */
     VecBase<TextBuffCell> m_vBack {}; /* where to write */
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
      * the image might be forceClean()'d and gone by the next iteration.
      * A separate arena just for the image vector will be sufficient. */
@@ -208,7 +208,7 @@ struct TextBuff
     void string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp);
     String styleToString(TEXT_BUFF_STYLE eStyle);
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);
     void forceClean(int x, int y, int width, int height); /* remove images */
 #endif
@@ -224,7 +224,7 @@ private:
     void resetBuffers();
     void resizeBuffers(ssize width, ssize height);
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     void showImages();
 #endif
 };
@@ -412,7 +412,7 @@ TextBuff::destroy()
     m_vBack.destroy(OsAllocatorGet());
     m_vFront.destroy(OsAllocatorGet());
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     m_imgArena.freeAll();
 #endif
 
@@ -427,7 +427,7 @@ inline void
 TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 {
     m_pArena = pArena;
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     m_imgArena = Arena(SIZE_1M);
 #endif
 
@@ -489,7 +489,7 @@ TextBuff::pushDiff()
     }
 }
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
 inline void
 TextBuff::showImages()
 {
@@ -581,7 +581,7 @@ TextBuff::present()
         m_bChanged = false;
         pushDiff();
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
         showImages();
 #endif
 
@@ -729,7 +729,7 @@ TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
 }
 
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
 inline void
 TextBuff::image(int x, int y, const platform::chafa::Image& img)
 {

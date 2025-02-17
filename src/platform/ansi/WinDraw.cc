@@ -5,7 +5,7 @@
 #include "defaults.hh"
 #include "adt/ScratchBuffer.hh"
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
 #include "platform/chafa/chafa.hh"
 #endif
 
@@ -17,7 +17,7 @@ namespace platform::ansi
 static u8 s_aMemBuff[SIZE_8K] {};
 static ScratchBuffer s_scratch(s_aMemBuff);
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
 void
 Win::coverImage()
 {
@@ -290,7 +290,7 @@ Win::update()
 
     m_textBuff.clean();
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     if (!app::g_bNoImage)
         coverImage();
 #endif

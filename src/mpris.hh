@@ -9,7 +9,7 @@ extern bool g_bReady;
 extern adt::Mutex g_mtx;
 extern adt::CndVar g_cnd;
 
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
 
 void init();
 void proc();

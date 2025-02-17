@@ -7,7 +7,7 @@
 #include "app.hh"
 #include "defaults.hh"
 
-#ifdef USE_BASU
+#ifdef OPT_BASU
     #include <basu/sd-bus.h>
 #else
     #include <systemd/sd-bus.h>

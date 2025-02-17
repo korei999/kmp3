@@ -46,7 +46,7 @@ private:
     /* draw */
     void clearArea(int x, int y, int width, int height);
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     void coverImage();
 #endif
 

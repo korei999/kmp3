@@ -29,7 +29,7 @@
     #pragma GCC diagnostic pop
 #endif
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     #include "platform/chafa/chafa.hh"
 #endif
 
@@ -524,11 +524,11 @@ drawTimeSlider()
     }
 }
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
 static void
 drawCoverImage()
 {
-    auto& pl = *app::g_pPlayer;
+    auto& pl = app::player();
 
     if (pl.m_bSelectionChanged && s_time > s_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {

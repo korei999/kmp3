@@ -1,19 +1,10 @@
 #include "app.hh"
 
-#include "adt/logs.hh"
 #include "platform/ansi/Win.hh"
 #include "platform/termbox2/window.hh"
 
-#ifdef USE_PIPEWIRE
+#ifdef OPT_PIPEWIRE
     #include "platform/pipewire/Mixer.hh"
-#endif
-
-#ifdef USE_NCURSES
-    #include "platform/ncurses/Win.hh"
-#endif
-
-#ifdef USE_NOTCURSES
-    #include "platform/notcurses/Win.hh"
 #endif
 
 namespace app
@@ -41,31 +32,15 @@ allocWindow(IAllocator* pAlloc)
     switch (g_eUIFrontend)
     {
         default:
-        {
-            pRet = pAlloc->alloc<DummyWindow>();
-        }
+        pRet = pAlloc->alloc<DummyWindow>();
         break;
 
         case UI::ANSI:
-        {
-            pRet = pAlloc->alloc<platform::ansi::Win>();
-        }
+        pRet = pAlloc->alloc<platform::ansi::Win>();
         break;
 
         case UI::TERMBOX:
-        {
-            pRet = pAlloc->alloc<platform::termbox2::Win>();
-        }
-        break;
-
-        case UI::NCURSES:
-        {
-#ifdef USE_NCURSES
-#else
-            CERR("UI_BACKEND::NCURSES: not available\n");
-            exit(1);
-#endif
-        }
+        pRet = pAlloc->alloc<platform::termbox2::Win>();
         break;
     }
 
@@ -80,16 +55,12 @@ allocMixer(IAllocator* pAlloc)
     switch (g_eMixer)
     {
         default:
-        {
-            pMix = pAlloc->alloc<audio::DummyMixer>();
-        }
+        pMix = pAlloc->alloc<audio::DummyMixer>();
         break;
 
-#ifdef USE_PIPEWIRE
+#ifdef OPT_PIPEWIRE
         case MIXER::PIPEWIRE:
-        {
-            pMix = pAlloc->alloc<platform::pipewire::Mixer>();
-        }
+        pMix = pAlloc->alloc<platform::pipewire::Mixer>();
         break;
 #endif
     }

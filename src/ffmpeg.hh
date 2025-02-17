@@ -12,7 +12,7 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
 #include <libswscale/swscale.h>
 #endif
 
@@ -57,7 +57,7 @@ private:
     AVFrame* m_pImgFrame {};
     Opt<Image> m_oCoverImg {};
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     SwsContext* m_pSwsCtx {};
     AVFrame* m_pConverted {};
 #endif

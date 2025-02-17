@@ -6,10 +6,6 @@
 
 #include <chafa.h>
 
-#ifdef USE_NCURSES
-#include <ncurses.h>
-#endif
-
 namespace platform::chafa
 {
 
@@ -26,10 +22,6 @@ struct Image
     int width {};
     int height {};
 };
-
-#ifdef USE_NCURSES
-void showImageNCurses(WINDOW* pWin, const ::Image img, const int termHeight, const int termWidth);
-#endif
 
 [[nodiscard]] Image allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth);
 

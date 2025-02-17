@@ -97,10 +97,10 @@ Mixer::init()
 
     pw_init(&app::g_argc, &app::g_argv);
 
-    u8 setupBuffer[1024] {};
+    u8 aSetupBuffer[1024] {};
     const spa_pod* aParams[1] {};
     spa_pod_builder b {};
-    spa_pod_builder_init(&b, setupBuffer, sizeof(setupBuffer));
+    spa_pod_builder_init(&b, aSetupBuffer, sizeof(aSetupBuffer));
 
     m_pThrdLoop = pw_thread_loop_new("kmp3PwThreadLoop", {});
 
@@ -196,7 +196,7 @@ Mixer::play(String sPath)
 
     pause(false);
 
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
     m_bUpdateMpris = true; /* mark to update in frame::run() */
 #endif
 }
@@ -295,9 +295,9 @@ Mixer::onProcess()
             *pDest++ = s_aPwBuff[s_nWrites++] * vol;
         }
 
+        /* fill the buffer when it's empty */
         if (s_nWrites >= s_nDecodedSamples)
         {
-            /* ask to fill the buffer when it's empty */
             writeFramesLocked({s_aPwBuff}, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
             m_currMs = m_pIDecoder->getCurrentMS();
             s_nWrites = 0;

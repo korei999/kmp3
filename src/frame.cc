@@ -7,14 +7,14 @@
 #include "defaults.hh"
 #include "adt/Thread.hh"
 
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
     #include "mpris.hh"
 #endif
 
 namespace frame
 {
 
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
 static THREAD_STATUS
 mprisPollLoop(void*)
 {
@@ -57,7 +57,7 @@ run()
     app::g_pPlayer->m_focused = 0;
     app::g_pPlayer->selectFocused();
 
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
     mpris::init();
 
     Thread thMPris(mprisPollLoop, {});

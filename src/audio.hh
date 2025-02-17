@@ -19,7 +19,7 @@ class IMixer
 {
 protected:
     std::atomic<bool> m_bPaused = false;
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
     std::atomic<bool> m_bUpdateMpris {};
 #endif
     bool m_bMuted = false;
@@ -65,7 +65,7 @@ public:
     void changeSampleRateUp(int ms, bool bSave) { changeSampleRate(m_changedSampleRate + ms, bSave); }
     void restoreSampleRate() { changeSampleRate(m_sampleRate, false); }
 
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
     const std::atomic<bool>& mprisHasToUpdate() const { return m_bUpdateMpris; }
     void mprisSetToUpdate(bool b) { m_bUpdateMpris = b; }
 #endif

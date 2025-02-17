@@ -10,7 +10,7 @@ using namespace adt;
 namespace app
 {
 
-enum class UI : u8 { DUMMY, ANSI, TERMBOX, NCURSES };
+enum class UI : u8 { DUMMY, ANSI, TERMBOX };
 enum class MIXER : u8 { DUMMY, PIPEWIRE };
 enum class TERM : u8 { ELSE, XTERM, XTERM_256COLOR, KITTY, FOOT, GHOSTTY, ALACRITTY };
 

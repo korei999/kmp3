@@ -36,8 +36,6 @@ endif()
 option(OPT_PIPEWIRE "" ON)
 option(OPT_CHAFA "" ON)
 option(OPT_MPRIS "" ON)
-option(OPT_SIXEL "" OFF)
-option(OPT_NCURSES "" OFF)
 option(OPT_MARCH_NATIVE "" OFF)
 
 if (OPT_MARCH_NATIVE)
@@ -139,7 +137,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     if (OPT_PIPEWIRE)
         pkg_check_modules(PIPEWIRE libpipewire-0.3)
         if (PIPEWIRE_FOUND)
-            add_definitions("-DUSE_PIPEWIRE")
+            add_definitions("-DOPT_PIPEWIRE")
             include_directories(BEFORE ${PIPEWIRE_INCLUDE_DIRS})
             target_link_libraries(
                 ${CMAKE_PROJECT_NAME} PRIVATE
@@ -152,35 +150,6 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         endif()
     endif()
 
-    if (OPT_SIXEL)
-        pkg_check_modules(SIXEL libsixel)
-        if (SIXEL_FOUND)
-            include_directories(BEFORE ${SIXEL_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SIXEL_LIBRARIES})
-            add_definitions("-DUSE_SIXEL")
-
-            target_sources(
-                ${CMAKE_PROJECT_NAME} PRIVATE
-                "src/platform/sixel/Img.cc"
-            )
-        endif()
-    endif()
-
-    if (OPT_NCURSES)
-        pkg_check_modules(NCURSES ncursesw)
-        if (NCURSES_FOUND)
-            include_directories(BEFORE ${NCURSES_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${NCURSES_LIBRARIES})
-            add_definitions("-DUSE_NCURSES")
-            add_definitions("-DNCURSES_WIDECHAR")
-            target_sources(
-                ${CMAKE_PROJECT_NAME} PRIVATE
-                "src/platform/ncurses/Win.cc"
-                "src/platform/ncurses/input.cc"
-            )
-        endif()
-    endif()
-
     if (OPT_CHAFA)
         pkg_check_modules(CHAFA chafa)
         pkg_check_modules(SWSCALE libswscale)
@@ -188,12 +157,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
         if (CHAFA_FOUND AND SWSCALE_FOUND)
             message(STATUS "CHAFA_VERSION: '${CHAFA_VERSION}'")
             if (${CHAFA_VERSION} VERSION_GREATER_EQUAL 1.14)
-                add_definitions("-DUSE_CHAFA_SYMBOLS")
+                add_definitions("-DOPT_CHAFA_SYMBOLS")
             endif()
 
             include_directories(BEFORE ${CHAFA_INCLUDE_DIRS} ${SWSCALE_INCLUDE_DIRS})
             target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES} ${SWSCALE_LIBRARIES})
-            add_definitions("-DUSE_CHAFA")
+            add_definitions("-DOPT_CHAFA")
             target_sources(
                 ${CMAKE_PROJECT_NAME} PRIVATE
                 "src/platform/chafa/chafa.cc"
@@ -207,14 +176,14 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
             include_directories(BEFORE ${SYSTEMD_INCLUDE_DIRS})
             target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
             target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
-            add_definitions("-DUSE_MPRIS")
+            add_definitions("-DOPT_MPRIS")
         else()
             pkg_check_modules(BASU basu)
             if (${BASU_FOUND})
                 include_directories(BEFORE ${BASU_INCLUDE_DIRS})
                 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARIES})
                 target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
-                add_definitions("-DUSE_MPRIS -DUSE_BASU")
+                add_definitions("-DOPT_MPRIS -DOPT_BASU")
             endif()
         endif()
     endif()

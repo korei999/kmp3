@@ -6,7 +6,7 @@
 #include "defaults.hh"
 #include "frame.hh"
 
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
     #include "mpris.hh"
 #endif
 
@@ -15,7 +15,7 @@
 
 #include <cmath>
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     #include "platform/chafa/chafa.hh"
 #endif
 
@@ -37,7 +37,7 @@ setTermEnv()
         app::g_eTerm = app::TERM::XTERM_256COLOR;
     else app::g_eTerm = app::TERM::ELSE;
 
-#ifdef USE_CHAFA
+#ifdef OPT_CHAFA
     ChafaTermInfo* pTermInfo {};
     ChafaPixelMode pixelMode;
     ChafaCanvasMode mode;
@@ -51,7 +51,7 @@ setTermEnv()
     }
     else
     {
-    #ifndef USE_CHAFA_SYMBOLS
+    #ifndef OPT_CHAFA_SYMBOLS
         app::g_bNoImage = true;
     #endif
     }
@@ -142,7 +142,7 @@ startup(int argc, char** argv)
     app::g_pMixer->setVolume(defaults::VOLUME);
     defer( app::g_pMixer->destroy() );
 
-#ifdef USE_MPRIS
+#ifdef OPT_MPRIS
     mpris::initLocks();
     defer(
         if (mpris::g_bReady) mpris::destroy();
