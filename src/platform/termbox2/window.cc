@@ -85,16 +85,25 @@ readWChar(tb_event* pEv)
     const auto& ev = *pEv;
     tb_peek_event(pEv, defaults::READ_TIMEOUT);
 
-    if (ev.type == 0) return c::READ_STATUS::DONE;
-    else if (ev.key == TB_KEY_ESC) return c::READ_STATUS::DONE;
-    else if (ev.key == TB_KEY_CTRL_C) return c::READ_STATUS::DONE;
-    else if (ev.key == TB_KEY_ENTER) return c::READ_STATUS::DONE;
+    if (ev.type == 0)
+    {
+        return c::READ_STATUS::DONE;
+    }
+    else if (ev.key == TB_KEY_ESC || ev.key == TB_KEY_CTRL_C)
+    {
+        c::g_input.zeroOut();
+        return c::READ_STATUS::DONE;
+    }
+    else if (ev.key == TB_KEY_ENTER)
+    {
+        return c::READ_STATUS::DONE;
+    }
     else if (ev.key == TB_KEY_CTRL_W)
     {
         if (c::g_input.m_idx > 0)
         {
             c::g_input.m_idx = 0;
-            c::g_input.zeroOutBuff();
+            c::g_input.zeroOut();
         }
     }
     else if (ev.key == TB_KEY_BACKSPACE || ev.key == TB_KEY_BACKSPACE2 || ev.key == TB_KEY_CTRL_H)

@@ -99,18 +99,21 @@ Win::readWChar()
 
     int wc = readFromStdin(this, defaults::READ_TIMEOUT);
 
-    if (wc == keys::ESC)
-        return c::READ_STATUS::DONE; /* esc */
-    else if (wc == keys::CTRL_C)
+    if (wc == keys::CTRL_C || wc == keys::ESC)
+    {
+        c::g_input.zeroOut();
         return c::READ_STATUS::DONE;
+    }
     else if (wc == keys::ENTER)
+    {
         return c::READ_STATUS::DONE; /* enter */
+    }
     else if (wc == keys::CTRL_W)
     {
         if (c::g_input.m_idx > 0)
         {
             c::g_input.m_idx = 0;
-            c::g_input.zeroOutBuff();
+            c::g_input.zeroOut();
         }
     }
     else if (wc == 127) /* backspace */

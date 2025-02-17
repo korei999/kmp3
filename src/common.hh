@@ -18,7 +18,7 @@ struct InputBuff {
 
     /* */
 
-    void zeroOutBuff() noexcept { memset(m_aBuff, 0, sizeof(m_aBuff)); }
+    void zeroOut() noexcept { memset(m_aBuff, 0, sizeof(m_aBuff)); }
     Span<wchar_t> getSpan() noexcept { return Span{m_aBuff}; }
 };
 
@@ -152,7 +152,7 @@ subStringSearch(
     g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEARCH;
     defer( g_input.m_eCurrMode = WINDOW_READ_MODE::NONE );
 
-    g_input.zeroOutBuff();
+    g_input.zeroOut();
     g_input.m_idx = 0;
 
     auto savedFirst = *pFirstIdx;
@@ -195,7 +195,7 @@ seekFromInput(void* pReadArg, void* pDrawArg)
     g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEEK;
     defer( g_input.m_eCurrMode = WINDOW_READ_MODE::NONE );
 
-    g_input.zeroOutBuff();
+    g_input.zeroOut();
     g_input.m_idx = 0;
 
     do FN_DRAW(pDrawArg);
