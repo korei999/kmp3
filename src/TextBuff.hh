@@ -208,6 +208,7 @@ struct TextBuff
     void string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp);
     String styleToString(TEXT_BUFF_STYLE eStyle);
+
 #ifdef OPT_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);
     void forceClean(int x, int y, int width, int height); /* remove images */
@@ -420,6 +421,7 @@ TextBuff::destroy()
     clearKittyImages();
     push(TEXT_BUFF_KEYPAD_DISABLE);
     push(TEXT_BUFF_ALT_SCREEN_DISABLE);
+    push(TEXT_BUFF_MOUSE_DISABLE);
     flush();
 }
 
@@ -435,6 +437,7 @@ TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
     moveTopLeft();
     push(TEXT_BUFF_ALT_SCREEN_ENABLE);
     push(TEXT_BUFF_KEYPAD_ENABLE);
+    push(TEXT_BUFF_MOUSE_ENABLE);
     hideCursor(true);
     flush();
 
@@ -727,7 +730,6 @@ TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
 
     return {sp.data(), n};
 }
-
 
 #ifdef OPT_CHAFA
 inline void

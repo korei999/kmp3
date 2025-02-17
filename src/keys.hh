@@ -113,12 +113,12 @@ enum : int
     CTRL_C = 3,
 
     ESC = 27,
+    BACKSPACE = 127,
 
     MOUSELEFT = 4,
     MOUSERIGHT = 4096,
     MOUSEUP = 65536,
     MOUSEDOWN = 2097152,
-
 };
 
 } /* namespace keys */

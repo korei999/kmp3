@@ -10,32 +10,276 @@ namespace platform::ansi
 
 #define ESC_SEQ '\x1b'
 
-enum class MOUSE : u16
+/* https://github.com/termbox/termbox2/blob/master/termbox2.h */
+Win::MouseInput
+Win::parseMouse(Span<char> spBuff, ssize_t nRead)
 {
-    LEFT = 48,
-    MID = 49,
-    RIGHT = 50,
-    SCROLL = 54,
-};
+    enum
+    {
+        TYPE_VT200 = 0,
+        TYPE_1006,
+        TYPE_1015,
+        TYPE_MAX
+    };
 
-enum class SCROLL_DIR : char
+    const char* aCmpMap[TYPE_MAX] {
+        "\x1b[M",
+        "\x1b[<",
+        "\x1b["
+    };
+
+    int type = 0;
+
+    for (; type < TYPE_MAX; type++)
+    {
+        ssize size = strlen(aCmpMap[type]);
+
+        if (spBuff.getSize() >= size && (strncmp(aCmpMap[type], spBuff.data(), size)) == 0)
+            break;
+    }
+
+    if (type == TYPE_MAX)
+        return INVALID_MOUSE;
+
+    MouseInput ret = INVALID_MOUSE;
+
+    switch (type)
+    {
+        case TYPE_VT200:
+            if (nRead >= 6)
+            {
+                int b = spBuff[3] - 0x20;
+                int fail = 0;
+
+                switch (b & 3)
+                {
+                    case 0:
+                    ret.eKey = ((b & 64) != 0) ? MouseInput::KEY::WHEEL_UP : MouseInput::KEY::LEFT;
+                    break;
+
+                    case 1:
+                    ret.eKey = ((b & 64) != 0) ? MouseInput::KEY::WHEEL_DOWN : MouseInput::KEY::MIDDLE;
+                    break;
+
+                    case 2:
+                    ret.eKey = MouseInput::KEY::RIGHT;
+                    break;
+
+                    case 3:
+                    ret.eKey = MouseInput::KEY::RELEASE;
+                    break;
+
+                    default:
+                    ret = INVALID_MOUSE;
+                    fail = 1;
+                    break;
+                }
+
+                if (!fail)
+                {
+                    if ((b & 32) != 0)
+                    {
+                        /*event->mod |= TB_MOD_MOTION;*/
+                    }
+
+                    // the coord is 1,1 for upper left
+                    ret.x = ((uint8_t)spBuff[4]) - 0x21;
+                    ret.y = ((uint8_t)spBuff[5]) - 0x21;
+                }
+            }
+            break;
+        case TYPE_1006:
+            // fallthrough
+        case TYPE_1015: {
+            ssize indexFail = -1;
+
+            enum
+            {
+                FIRST_M = 0,
+                FIRST_SEMICOLON,
+                LAST_SEMICOLON,
+                FIRST_LAST_MAX
+            };
+
+            ssize aIndices[FIRST_LAST_MAX] = {indexFail, indexFail, indexFail};
+            bool bCapital = 0;
+
+            for (ssize i = 0; i < spBuff.getSize(); ++i)
+            {
+                if (spBuff[i] == ';')
+                {
+                    if (aIndices[FIRST_SEMICOLON] == indexFail)
+                    {
+                        aIndices[FIRST_SEMICOLON] = i;
+                    }
+                    else
+                    {
+                        aIndices[LAST_SEMICOLON] = i;
+                    }
+                }
+                else if (aIndices[FIRST_M] == indexFail)
+                {
+                    if (spBuff[i] == 'm' || spBuff[i] == 'M')
+                    {
+                        bCapital = (spBuff[i] == 'M');
+                        aIndices[FIRST_M] = i;
+                    }
+                }
+            }
+
+            if (aIndices[FIRST_M] == indexFail || aIndices[FIRST_SEMICOLON] == indexFail ||
+                aIndices[LAST_SEMICOLON] == indexFail)
+            {
+                return INVALID_MOUSE;
+            }
+            else
+            {
+                int start = (type == TYPE_1015 ? 2 : 3);
+
+                unsigned n1 = strtoul(&spBuff[start], nullptr, 10);
+                unsigned n2 = strtoul(&spBuff[aIndices[FIRST_SEMICOLON] + 1], nullptr, 10);
+                unsigned n3 = strtoul(&spBuff[aIndices[LAST_SEMICOLON] + 1], nullptr, 10);
+
+                if (type == TYPE_1015)
+                {
+                    n1 -= 0x20;
+                }
+
+                int fail = 0;
+
+                switch (n1 & 3)
+                {
+                    case 0:
+                    ret.eKey = ((n1 & 64) != 0) ? MouseInput::KEY::WHEEL_UP : MouseInput::KEY::LEFT;
+                    break;
+
+                    case 1:
+                    ret.eKey = ((n1 & 64) != 0) ? MouseInput::KEY::WHEEL_DOWN : MouseInput::KEY::MIDDLE;
+                    break;
+
+                    case 2:
+                    ret.eKey = MouseInput::KEY::RIGHT;
+                    break;
+
+                    case 3:
+                    ret.eKey = MouseInput::KEY::RELEASE;
+                    break;
+
+                    default:
+                    fail = 1;
+                    break;
+                }
+
+                if (!fail)
+                {
+                    if (!bCapital)
+                    {
+                        ret.eKey = MouseInput::KEY::RELEASE;
+                    }
+
+                    ret.x = ((uint8_t)n2) - 1;
+                    ret.y = ((uint8_t)n3) - 1;
+                }
+            }
+        }
+        break;
+    }
+
+    return ret;
+}
+
+void
+Win::procMouse(MouseInput in)
 {
-    UP = 52,
-    DOWN = 53,
-};
+    auto& pl = app::player();
+    const long width = g_termSize.width;
+    const long height = g_termSize.height;
 
-enum class BUTTON_STATE : u16
-{
-    PRESS = 19764,
-    RELEASE = 27961,
-};
+    const long xOff = m_prevImgWidth + 2;
+    const int yOff = pl.m_imgHeight + 1;
 
-[[nodiscard]] ADT_NO_UB static int
-parseSeq([[maybe_unused]] Win* s, char* aBuff, [[maybe_unused]] u32 buffSize, ssize_t nRead)
+    const long listOff = yOff + 1;
+    const long sliderOff = 10;
+    const long volumeOff = 6;
+
+    /* click on slider */
+    if (in.y == sliderOff && in.x >= xOff)
+    {
+        if (in.eKey == MouseInput::KEY::LEFT)
+        {
+            /* click on indicator */
+            if (in.x >= xOff && in.x <= xOff + 2)
+            {
+                app::togglePause();
+                return;
+            }
+
+            if (width - xOff - 4 > 0)
+            {
+                f64 target = f64(in.x - xOff - 2) / f64(width - xOff - 4);
+                target *= app::mixer().getTotalMS();
+                app::mixer().seekMS(target);
+            }
+
+            return;
+        }
+        else if (in.eKey == MouseInput::KEY::WHEEL_UP)
+        {
+            app::seekOff(10000);
+        }
+        else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
+        {
+            app::seekOff(10000);
+        }
+
+        return;
+    }
+
+    /* scroll ontop of volume */
+    if (in.y == volumeOff && in.x >= xOff)
+    {
+        if (in.eKey == MouseInput::KEY::WHEEL_DOWN) app::volumeDown(0.1f);
+        else if (in.eKey == MouseInput::KEY::WHEEL_UP) app::volumeUp(0.1f);
+        else if (in.eKey == MouseInput::KEY::LEFT) app::toggleMute();
+
+        return;
+    }
+
+    /* click on song list */
+    if (in.y < listOff || in.y >= height - 2) return;
+
+    long target = m_firstIdx + in.y - listOff;
+    target = utils::clamp(
+        target,
+        long(m_firstIdx),
+        long(m_firstIdx + height - listOff - 3)
+    );
+
+    if (in.eKey == MouseInput::KEY::LEFT)
+    {
+        pl.focus(target);
+    }
+    if (in.eKey == MouseInput::KEY::RIGHT)
+    {
+        pl.focus(target);
+        pl.selectFocused();
+    }
+    else if (in.eKey == MouseInput::KEY::WHEEL_UP)
+    {
+        pl.focus(pl.m_focused - defaults::MOUSE_STEP);
+    }
+    else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
+    {
+        pl.focus(pl.m_focused + defaults::MOUSE_STEP);
+    }
+}
+
+int
+Win::parseSeq(Span<char> spBuff, ssize_t nRead)
 {
     if (nRead <= 5)
     {
-        switch (*(int*)(aBuff + 1))
+        switch (*(int*)(&spBuff[1]))
         {
             case 17487:
             return keys::ARROWLEFT;
@@ -66,8 +310,8 @@ parseSeq([[maybe_unused]] Win* s, char* aBuff, [[maybe_unused]] u32 buffSize, ss
     return 0;
 }
 
-static int
-readFromStdin(Win* s, const int timeoutMS)
+Win::Input
+Win::readFromStdin(const int timeoutMS)
 {
     char aBuff[128] {};
     fd_set fds {};
@@ -82,14 +326,34 @@ readFromStdin(Win* s, const int timeoutMS)
 
     if (nRead > 1)
     {
-        int k = parseSeq(s, aBuff, sizeof(aBuff), nRead);
-        if (k != 0) return k;
+        MouseInput mouse = parseMouse({aBuff, sizeof(aBuff)}, nRead);
+        if (mouse != INVALID_MOUSE)
+        {
+            return {
+                .mouse = mouse,
+                .key = 0,
+                .eType = Input::TYPE::MOUSE,
+            };
+        }
+
+        int k = parseSeq({aBuff, sizeof(aBuff)}, nRead);
+        if (k != 0)
+        {
+            return {
+                .key = k,
+                .eType = Input::TYPE::KB,
+            };
+        }
     }
 
     wchar_t wc {};
     mbtowc(&wc, aBuff, sizeof(aBuff));
 
-    return wc;
+    return {
+        .mouse = INVALID_MOUSE,
+        .key = static_cast<int>(wc),
+        .eType = Input::TYPE::KB,
+    };
 }
 
 common::READ_STATUS
@@ -97,8 +361,9 @@ Win::readWChar()
 {
     namespace c = common;
 
-    int wc = readFromStdin(this, defaults::READ_TIMEOUT);
+    Input in = readFromStdin(defaults::READ_TIMEOUT);
 
+    int wc = in.key;
     if (wc == keys::CTRL_C || wc == keys::ESC)
     {
         c::g_input.zeroOut();
@@ -106,7 +371,7 @@ Win::readWChar()
     }
     else if (wc == keys::ENTER)
     {
-        return c::READ_STATUS::DONE; /* enter */
+        return c::READ_STATUS::DONE;
     }
     else if (wc == keys::CTRL_W)
     {
@@ -116,7 +381,7 @@ Win::readWChar()
             c::g_input.zeroOut();
         }
     }
-    else if (wc == 127) /* backspace */
+    else if (wc == keys::BACKSPACE)
     {
         if (c::g_input.m_idx > 0)
             c::g_input.m_aBuff[--c::g_input.m_idx] = L'\0';
@@ -134,17 +399,28 @@ Win::readWChar()
 void
 Win::procInput()
 {
-    int wc = readFromStdin(this, defaults::UPDATE_RATE);
+    Input in = readFromStdin(defaults::UPDATE_RATE);
 
-    for (const auto& k : keybinds::inl_aKeys)
+    switch (in.eType)
     {
-        if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
+        case Input::TYPE::KB:
         {
-            keybinds::exec(k.pfn, k.arg);
-            m_bRedraw = true;
+            int wc = in.key;
+            for (const auto& k : keybinds::inl_aKeys)
+            {
+                if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
+                {
+                    keybinds::exec(k.pfn, k.arg);
+                    m_bRedraw = true;
+                }
+            }
         }
+        break;
+
+        case Input::TYPE::MOUSE:
+        procMouse(in.mouse);
+        break;
     }
 }
-
 
 } /* namespace platform::ansi */

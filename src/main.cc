@@ -73,10 +73,15 @@ parseArgs(int argc, char** argv)
                 app::g_eUIFrontend = app::UI::ANSI;
                 LOG_NOTIFY("setting HANDMADE ui\n");
             }
-            else if (sArg == "--termbox")
+            else if (sArg == "--termbox2")
             {
+#ifdef OPT_TERMBOX2
                 app::g_eUIFrontend = app::UI::TERMBOX;
                 LOG_NOTIFY("setting TERMBOX ui\n");
+#else
+                print::out("compiled without termbox2\n");
+                exit(0);
+#endif
             }
             else if (sArg == "--no-image")
             {
@@ -93,10 +98,15 @@ startup(int argc, char** argv)
 {
     OsAllocator alloc;
 
-    app::g_eUIFrontend = app::UI::TERMBOX;
+    app::g_eUIFrontend = app::UI::ANSI;
     app::g_eMixer = app::MIXER::PIPEWIRE;
 
     parseArgs(argc, argv);
+
+    setlocale(LC_ALL, "");
+#ifdef NDEBUG
+    close(STDERR_FILENO); /* hide mpg123 and other errors */
+#endif
 
     Vec<String> aInput(&alloc, argc);
     defer( aInput.destroy() );
@@ -164,17 +174,12 @@ startup(int argc, char** argv)
 
         frame::run();
     }
-    else COUT("No accepted input provided\n");
+    else print::out("No accepted input provided\n");
 }
 
 int
 main(int argc, char** argv)
 {
-    setlocale(LC_ALL, "");
-#ifdef NDEBUG
-    close(STDERR_FILENO); /* hide mpg123 and other errors */
-#endif
-
     static_assert(defaults::MAX_VOLUME != 0.0f);
     static_assert(defaults::UPDATE_RATE > 0);
     static_assert(defaults::IMAGE_UPDATE_RATE_LIMIT > 0);

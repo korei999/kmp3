@@ -1,7 +1,10 @@
 #include "app.hh"
 
 #include "platform/ansi/Win.hh"
-#include "platform/termbox2/window.hh"
+
+#ifdef OPT_TERMBOX2
+    #include "platform/termbox2/window.hh"
+#endif
 
 #ifdef OPT_PIPEWIRE
     #include "platform/pipewire/Mixer.hh"
@@ -10,7 +13,7 @@
 namespace app
 {
 
-UI g_eUIFrontend = UI::TERMBOX;
+UI g_eUIFrontend = UI::ANSI;
 MIXER g_eMixer = MIXER::PIPEWIRE;
 String g_sTerm {};
 TERM g_eTerm = TERM::XTERM;
@@ -39,9 +42,11 @@ allocWindow(IAllocator* pAlloc)
         pRet = pAlloc->alloc<platform::ansi::Win>();
         break;
 
+#ifdef OPT_TERMBOX2
         case UI::TERMBOX:
         pRet = pAlloc->alloc<platform::termbox2::Win>();
         break;
+#endif
     }
 
     return pRet;

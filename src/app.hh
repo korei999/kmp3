@@ -10,8 +10,25 @@ using namespace adt;
 namespace app
 {
 
-enum class UI : u8 { DUMMY, ANSI, TERMBOX };
-enum class MIXER : u8 { DUMMY, PIPEWIRE };
+enum class UI : u8
+{
+    DUMMY,
+    ANSI,
+
+#ifdef OPT_TERMBOX2
+    TERMBOX
+#endif
+};
+
+enum class MIXER : u8
+{
+    DUMMY,
+
+#ifdef OPT_PIPEWIRE
+    PIPEWIRE
+#endif
+};
+
 enum class TERM : u8 { ELSE, XTERM, XTERM_256COLOR, KITTY, FOOT, GHOSTTY, ALACRITTY };
 
 extern UI g_eUIFrontend;

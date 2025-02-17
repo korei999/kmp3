@@ -33,6 +33,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 endif()
 
+option(OPT_TERMBOX2 "" OFF)
 option(OPT_PIPEWIRE "" ON)
 option(OPT_CHAFA "" ON)
 option(OPT_MPRIS "" ON)
@@ -117,12 +118,19 @@ add_executable(
     src/Player.cc
     src/ffmpeg.cc
     src/common.cc
-    src/platform/termbox2/window.cc
-    src/platform/termbox2/input.cc
     src/platform/ansi/Win.cc
     src/platform/ansi/WinDraw.cc
     src/platform/ansi/WinInput.cc
 )
+
+if (OPT_TERMBOX2)
+    add_definitions("-DOPT_TERMBOX2")
+
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        "src/platform/termbox2/window.cc"
+        "src/platform/termbox2/input.cc"
+    )
+endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(PkgConfig REQUIRED)
