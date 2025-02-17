@@ -1,8 +1,5 @@
 #include "Player.hh"
 
-#include "adt/Arr.hh"
-#include "adt/logs.hh"
-#include "adt/file.hh"
 #include "app.hh"
 #include "defaults.hh"
 #include "mpris.hh"
@@ -10,6 +7,10 @@
 #include <cstdlib>
 #include <cwchar>
 #include <cwctype>
+
+#include "adt/Arr.hh"
+#include "adt/logs.hh"
+#include "adt/file.hh"
 
 constexpr String aAcceptedFileEndings[] {
     ".mp2", ".mp3", ".mp4", ".m4a", ".m4b",
@@ -42,15 +43,14 @@ Player::focusNext()
 void
 Player::focusPrev()
 {
-    long ns = m_focused - 1;
-    if (ns < 0)
+    long prev = m_focused - 1;
+    if (prev < 0)
     {
         if (m_vSongIdxs.empty())
-            ns = 0;
-        else
-            ns = m_vSongIdxs.getSize() - 1;
+            prev = 0;
+        else prev = m_vSongIdxs.getSize() - 1;
     }
-    m_focused = ns;
+    m_focused = prev;
 }
 
 void
@@ -123,6 +123,7 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
 
     Arr<wchar_t, 64> aUpperRight {};
     ssize maxLen = utils::min(spBuff.getSize(), aUpperRight.getCap());
+
     for (ssize i = 0; i < maxLen && spBuff[i]; ++i)
         aUpperRight.push(wchar_t(towupper(spBuff[i])));
 
@@ -147,21 +148,24 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
 void
 Player::updateInfo()
 {
-    String s0 = app::g_pMixer->getMetadata("title").m_data.clone(m_pAlloc);
-    String s1 = app::g_pMixer->getMetadata("album").m_data.clone(m_pAlloc);
-    String s2 = app::g_pMixer->getMetadata("artist").m_data.clone(m_pAlloc);
+    String sNewTitle = app::g_pMixer->getMetadata("title").m_data.clone(m_pAlloc);
+    String sNewAlbum = app::g_pMixer->getMetadata("album").m_data.clone(m_pAlloc);
+    String sNewArtist = app::g_pMixer->getMetadata("artist").m_data.clone(m_pAlloc);
 
     String sTmpTitle = m_info.title;
     String sTmpAlbum = m_info.album;
     String sTmpArtist = m_info.artist;
 
-    m_info.title = s0;
-    m_info.album = s1;
-    m_info.artist = s2;
+    m_info.title = sNewTitle;
+    m_info.album = sNewAlbum;
+    m_info.artist = sNewArtist;
 
     sTmpTitle.destroy(m_pAlloc);
     sTmpAlbum.destroy(m_pAlloc);
     sTmpArtist.destroy(m_pAlloc);
+
+    if (m_info.title.getSize() == 0)
+        m_info.title = m_vShortSongs[m_selected].clone(m_pAlloc);
 
     m_bSelectionChanged = true;
 }
