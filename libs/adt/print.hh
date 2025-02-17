@@ -607,7 +607,7 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const
 
 template<template<typename, ssize> typename CON_T, typename T, ssize SIZE>
 inline ssize
-formatToContextTemplSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE>& x, const ssize contSize) noexcept
+formatToContextTemplateSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE>& x, const ssize contSize) noexcept
 {
     if (contSize <= 0)
     {

@@ -6,7 +6,6 @@
 
 #include <cstring>
 #include <cstdlib>
-#include <immintrin.h>
 
 namespace adt
 {
@@ -282,110 +281,6 @@ String::endsWith(const String r) const
 
     return true;
 }
-
-constexpr bool
-StringCmpSlow(const String l, const String r)
-{
-    if (l.m_size != r.m_size) return false;
-
-    for (ssize i = 0; i < l.m_size; ++i)
-        if (l[i] != r[i]) return false;
-
-    return true;
-}
-
-ADT_NO_UB inline bool
-StringCmpFast(const String& l, const String& r)
-{
-    if (l.m_size != r.m_size) return false;
-
-    const usize* p0 = (usize*)l.m_pData;
-    const usize* p1 = (usize*)r.m_pData;
-    ssize len = l.m_size / 8;
-
-    ssize i = 0;
-    for (; i < len; ++i)
-        if (p0[i] - p1[i] != 0) return false;
-
-    if (l.m_size > 8)
-    {
-        const usize* t0 = (usize*)&l.m_pData[l.m_size - 9];
-        const usize* t1 = (usize*)&r.m_pData[l.m_size - 9];
-        return *t0 == *t1;
-    }
-
-    ssize leftOver = l.m_size - i*8;
-    String nl(&l.m_pData[i*8], leftOver);
-    String nr(&r.m_pData[i*8], leftOver);
-
-    return StringCmpSlow(nl, nr);
-}
-
-#ifdef ADT_SSE4_2
-inline bool
-StringCmpSSE(const String& l, const String& r)
-{
-    if (l.getSize() != r.getSize()) return false;
-
-    const __m128i* p0 = (__m128i*)l.data();
-    const __m128i* p1 = (__m128i*)r.data();
-    ssize len = l.getSize() / 16;
-
-    ssize i = 0;
-    for (; i < len; ++i)
-    {
-        auto res = _mm_xor_si128(_mm_loadu_si128(&p0[i]), _mm_loadu_si128(&p1[i]));
-        if (_mm_testz_si128(res, res) != 1) return false;
-    }
-
-    if (l.getSize() > 16)
-    {
-        auto lv = _mm_loadu_si128((__m128i*)&l[l.getSize() - 17]);
-        auto rv = _mm_loadu_si128((__m128i*)&r[l.getSize() - 17]);
-        auto res = _mm_xor_si128(lv, rv);
-        return _mm_testz_si128(res, res) == 1;
-    }
-
-    ssize leftOver = l.getSize() - i*16;
-    String nl(const_cast<char*>(&l[i*16]), leftOver);
-    String nr(const_cast<char*>(&r[i*16]), leftOver);
-
-    return StringCmpFast(nl, nr);
-}
-#endif
-
-#ifdef ADT_AVX2
-inline bool
-StringCmpAVX2(const String& l, const String& r)
-{
-    if (l.getSize() != r.getSize()) return false;
-
-    const __m256i* p0 = (__m256i*)l.data();
-    const __m256i* p1 = (__m256i*)r.data();
-    ssize len = l.getSize() / 32;
-
-    ssize i = 0;
-    for (; i < len; ++i)
-    {
-        __m256i res = _mm256_xor_si256(_mm256_loadu_si256(&p0[i]), _mm256_loadu_si256(&p1[i]));
-        if (_mm256_testz_si256(res, res) != 1) return false;
-    }
-
-    if (l.getSize() > 32)
-    {
-        auto lv = _mm256_loadu_si256((__m256i*)&l[l.getSize() - 33]);
-        auto rv = _mm256_loadu_si256((__m256i*)&r[l.getSize() - 33]);
-        __m256i res = _mm256_xor_si256(lv, rv);
-        return _mm256_testz_si256(res, res) == 1;
-    }
-
-    ssize leftOver = l.getSize() - i*32;
-    String nl(const_cast<char*>(&l[i*32]), leftOver);
-    String nr(const_cast<char*>(&r[i*32]), leftOver);
-
-    return StringCmpSSE(nl, nr);
-}
-#endif
 
 inline bool
 operator==(const String& l, const String& r)

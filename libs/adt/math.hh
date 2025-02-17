@@ -128,16 +128,20 @@ union V4
     struct { f32 x, y, z, w; };
     struct { f32 r, g, b, a; };
 
+    /* */
+
     constexpr explicit operator IV4() const;
 };
 
 union IV4
 {
-    int e[4];
-    struct { IV3 xyz; int _v3pad; };
+    i32 e[4];
+    struct { IV3 xyz; i32 _v3pad; };
     struct { IV2 xy; IV2 zw; };
-    struct { int x, y, z, w; };
-    struct { int r, g, b, a; };
+    struct { i32 x, y, z, w; };
+    struct { i32 r, g, b, a; };
+
+    /* */
 
     constexpr explicit operator V4() const
     {
@@ -150,14 +154,42 @@ union IV4
     }
 };
 
+union IV4u16
+{
+    u16 e[4];
+    struct { u16 x, y, z, w; };
+
+    /* */
+
+    constexpr explicit operator IV4() const
+    {
+        return {
+            static_cast<i32>(x),
+            static_cast<i32>(y),
+            static_cast<i32>(z),
+            static_cast<i32>(w)
+        };
+    }
+
+    constexpr explicit operator V4() const
+    {
+        return {
+            static_cast<f32>(x),
+            static_cast<f32>(y),
+            static_cast<f32>(z),
+            static_cast<f32>(w)
+        };
+    }
+};
+
 constexpr inline
 V4::operator IV4() const
 {
     return {
-        static_cast<int>(x),
-        static_cast<int>(y),
-        static_cast<int>(z),
-        static_cast<int>(w),
+        static_cast<i32>(x),
+        static_cast<i32>(y),
+        static_cast<i32>(z),
+        static_cast<i32>(w),
     };
 }
 
@@ -1447,7 +1479,7 @@ namespace adt::print
 inline ssize
 formatToContext(Context ctx, FormatArgs, const math::V2& x)
 {
-    ctx.fmt = "[{:.3}, {:.3}]";
+    ctx.fmt = "{:.3}, {:.3}";
     ctx.fmtIdx = 0;
     return printArgs(ctx, x.x, x.y);
 }
@@ -1455,7 +1487,7 @@ formatToContext(Context ctx, FormatArgs, const math::V2& x)
 inline ssize
 formatToContext(Context ctx, FormatArgs, const math::V3& x)
 {
-    ctx.fmt = "[{:.3}, {:.3}, {:.3}]";
+    ctx.fmt = "{:.3}, {:.3}, {:.3}";
     ctx.fmtIdx = 0;
     return printArgs(ctx, x.x, x.y, x.z);
 }
@@ -1463,9 +1495,23 @@ formatToContext(Context ctx, FormatArgs, const math::V3& x)
 inline ssize
 formatToContext(Context ctx, FormatArgs, const math::V4& x)
 {
-    ctx.fmt = "[{:.3}, {:.3}, {:.3}, {:.3}]";
+    ctx.fmt = "{:.3}, {:.3}, {:.3}, {:.3}";
     ctx.fmtIdx = 0;
     return printArgs(ctx, x.x, x.y, x.z, x.w);
+}
+
+inline ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4& x)
+{
+    i32 aBuff[4] {x.x, x.y, x.z, x.w};
+    return formatToContext(ctx, fmtArgs, aBuff);
+}
+
+inline ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x)
+{
+    u16 aBuff[4] {x.x, x.y, x.z, x.w};
+    return formatToContext(ctx, fmtArgs, aBuff);
 }
 
 inline ssize

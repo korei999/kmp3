@@ -59,7 +59,7 @@ using pdiff = long long;
 using ssize = long long;
 using usize = unsigned long long;
 
-constexpr ssize NPOS = -1LL;
+constexpr int NPOS = -1;
 constexpr u16 NPOS8 = u8(-1);
 constexpr u16 NPOS16 = u16(-1);
 constexpr u32 NPOS32 = u32(-1U);

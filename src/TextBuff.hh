@@ -473,13 +473,13 @@ TextBuff::pushDiff()
                     nForwards = 0;
                 }
 
-                pushGlyph(back.wc);
-
                 int colWidth = wcwidth(back.wc);
+
+                if (col + colWidth <= m_tWidth)
+                    pushGlyph(back.wc);
+
                 if (colWidth > 1)
-                {
                     col += colWidth - 1;
-                }
             }
             else
             {
@@ -639,12 +639,12 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str)
         {
             for (ssize i = 1; i < colWidth; ++i)
             {
-                auto& back = bb(x + i, y);
+                if (x + i >= bb.getWidth() || y >= bb.getHeight())
+                    return;
 
-                {
-                    back.wc = L' ';
-                    back.eStyle = eStyle;
-                }
+                auto& back = bb(x + i, y);
+                back.wc = L' ';
+                back.eStyle = eStyle;
             }
         }
 

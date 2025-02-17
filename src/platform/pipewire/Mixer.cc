@@ -35,7 +35,7 @@ static const pw_stream_events s_streamEvents {
     .param_changed {},
     .add_buffer {},
     .remove_buffer {},
-    .process = decltype(pw_stream_events::process)(Mixer::getOnProcessPFN()), /* hack but will work */
+    .process = decltype(pw_stream_events::process)(Mixer::getOnProcessPFN()),
     .drained {},
     .command {},
     .trigger_done {},
@@ -83,8 +83,7 @@ formatByteSize(spa_audio_format eFormat)
 void
 Mixer::init()
 {
-    m_pIDecoder = (ffmpeg::Decoder*)::calloc(1, sizeof(ffmpeg::Decoder));
-    new(m_pIDecoder) ffmpeg::Decoder();
+    m_pIDecoder = OsAllocatorGet()->alloc<ffmpeg::Decoder>();
 
     m_bRunning = true;
     m_bMuted = false;
@@ -225,11 +224,12 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
         }
     }
 
-    if (err == audio::ERROR::END_OF_FILE) app::g_pPlayer->onSongEnd();
+    if (err == audio::ERROR::END_OF_FILE)
+        app::g_pPlayer->onSongEnd();
 }
 
 void
-Mixer::setNChannles([[maybe_unused]] u32 nChannles)
+Mixer::setNChannles(u32 nChannles)
 {
     m_nChannels = nChannles;
 
@@ -245,11 +245,11 @@ Mixer::setNChannles([[maybe_unused]] u32 nChannles)
     spa_pod_builder b {};
     spa_pod_builder_init(&b, aSetupBuff, sizeof(aSetupBuff));
 
-    const spa_pod* aParams[1] {};
-    aParams[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
+    const spa_pod* pParams {};
+    pParams = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
 
     PWLockGuard lock(m_pThrdLoop);
-    pw_stream_update_params(m_pStream, aParams, utils::size(aParams));
+    pw_stream_update_params(m_pStream, &pParams, 1);
     /* won't apply without this */
     pw_stream_set_active(m_pStream, m_bPaused);
     pw_stream_set_active(m_pStream, !m_bPaused);
@@ -364,7 +364,8 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     pw_stream_set_active(m_pStream, m_bPaused);
     pw_stream_set_active(m_pStream, !m_bPaused);
 
-    if (bSave) m_sampleRate = sampleRate;
+    if (bSave)
+        m_sampleRate = sampleRate;
 
     m_changedSampleRate = sampleRate;
 }
@@ -373,7 +374,8 @@ void
 Mixer::seekMS(f64 ms)
 {
     guard::Mtx lock(&m_mtxDecoder);
-    if (!m_bDecodes) return;
+    if (!m_bDecodes)
+        return;
 
     ms = utils::clamp(ms, 0.0, (f64)getTotalMS());
     m_pIDecoder->seekMS(ms);

@@ -24,7 +24,7 @@ struct ArenaBlock
 };
 
 /* fast region based allocator, only freeAll() free's memory, free() does nothing */
-class Arena : public IAllocator
+struct Arena : public IAllocator
 {
     usize m_defaultCapacity {};
     IAllocator* m_pBackAlloc {};
@@ -32,7 +32,6 @@ class Arena : public IAllocator
 
     /* */
 
-public:
     Arena() = default;
 
     Arena(usize capacity, IAllocator* pBackingAlloc = OsAllocatorGet()) noexcept(false)
