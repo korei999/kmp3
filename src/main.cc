@@ -55,6 +55,8 @@ setTermEnv()
         app::g_bNoImage = true;
     #endif
     }
+#else
+    app::g_bNoImage = true;
 #endif
 }
 

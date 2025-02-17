@@ -1,7 +1,6 @@
 #include "window.hh"
 
 #include "adt/logs.hh"
-#include "adt/math.hh"
 
 #include "app.hh"
 #include "common.hh"
@@ -31,6 +30,7 @@
 
 #ifdef OPT_CHAFA
     #include "platform/chafa/chafa.hh"
+    #include "adt/math.hh"
 #endif
 
 namespace platform::termbox2::window
@@ -206,6 +206,7 @@ clearArea(int x, int y, int width, int height)
             tb_set_cell(i, j, ' ', TB_DEFAULT, TB_DEFAULT);
 }
 
+#if defined OPT_CHAFA
 static void
 clearAreaHARD(int x, int y, int width, int height)
 {
@@ -225,6 +226,7 @@ clearAreaHARD(int x, int y, int width, int height)
     }
     tb_hide_cursor();
 }
+#endif
 
 [[maybe_unused]] static void
 drawBox(
