@@ -15,7 +15,7 @@ namespace app
 
 UI g_eUIFrontend = UI::ANSI;
 MIXER g_eMixer = MIXER::PIPEWIRE;
-String g_sTerm {};
+StringView g_svTerm {};
 TERM g_eTerm = TERM::XTERM;
 IWindow* g_pWin {};
 bool g_bRunning {};

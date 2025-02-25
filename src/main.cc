@@ -23,8 +23,8 @@
 static void
 setTermEnv()
 {
-    const String sTerm = getenv("TERM");
-    app::g_sTerm = sTerm;
+    const StringView sTerm = getenv("TERM");
+    app::g_svTerm = sTerm;
 
     if (sTerm == "foot")
         app::g_eTerm = app::TERM::FOOT;
@@ -66,7 +66,7 @@ parseArgs(int argc, char** argv)
 {
     for (int i = 1; i < argc; ++i)
     {
-        auto sArg = String(argv[i]);
+        auto sArg = StringView(argv[i]);
         if (sArg.beginsWith("--"))
         {
             if (sArg == "--ansi")
@@ -109,7 +109,7 @@ startup(int argc, char** argv)
     close(STDERR_FILENO); /* hide mpg123 and other errors */
 #endif
 
-    Vec<String> aInput(&alloc, argc);
+    VecManaged<String> aInput(&alloc, argc);
     defer( aInput.destroy() );
     if (argc < 2) /* use stdin instead */
     {
@@ -122,7 +122,7 @@ startup(int argc, char** argv)
 
         while ((nread = getline(&pLine, &len, stdin)) != -1)
         {
-            String s = StringAlloc(&alloc, pLine, nread);
+            String s = String(&alloc, pLine, nread);
             s.removeNLEnd();
             aInput.push(s);
         }
@@ -130,7 +130,7 @@ startup(int argc, char** argv)
         ::free(pLine);
 
         /* make fake `argv` so core code works as usual */
-        argc = aInput.getSize() + 1;
+        argc = aInput.size() + 1;
         argv = (char**)alloc.zalloc(argc, sizeof(argv));
 
         for (int i = 1; i < argc; ++i)

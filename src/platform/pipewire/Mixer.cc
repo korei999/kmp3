@@ -22,7 +22,7 @@ struct PWLockGuard
     pw_thread_loop* p {};
 
     PWLockGuard() = delete;
-    PWLockGuard(pw_thread_loop* _p) : p(_p) { pw_thread_loop_lock(_p); }
+    PWLockGuard(pw_thread_loop* _p) : p(_p) { pw_thread_loop_lock(p); }
     ~PWLockGuard() { pw_thread_loop_unlock(p); }
 };
 
@@ -93,7 +93,7 @@ Mixer::init()
     m_nChannels = 2;
     m_eformat = SPA_AUDIO_FORMAT_F32;
 
-    m_mtxDecoder = Mutex(MUTEX_TYPE::RECURSIVE);
+    m_mtxDecoder = Mutex(Mutex::TYPE::RECURSIVE);
 
     pw_init(&app::g_argc, &app::g_argv);
 
@@ -165,7 +165,7 @@ Mixer::destroy()
 }
 
 void
-Mixer::play(String sPath)
+Mixer::play(StringView sPath)
 {
     const f64 prevSpeed = f64(m_changedSampleRate) / f64(m_sampleRate);
 
@@ -225,7 +225,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
     }
 
     if (err == audio::ERROR::END_OF_FILE)
-        app::g_pPlayer->onSongEnd();
+        app::player().onSongEnd();
 }
 
 void
@@ -394,8 +394,8 @@ Mixer::seekOff(f64 offset)
     seekMS(time);
 }
 
-Opt<String>
-Mixer::getMetadata(const String sKey)
+Opt<StringView>
+Mixer::getMetadata(const StringView sKey)
 {
     return m_pIDecoder->getMetadataValue(sKey);
 }

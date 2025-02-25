@@ -1,20 +1,25 @@
 #pragma once
 
-#include "types.hh"
-#include "Arr.hh"
+#include "Array.hh"
 
 #include <cstdio>
 #include <cassert>
-#include <utility>
 
 namespace adt
 {
 
+template<typename T>
 struct PoolHandle
 {
-    ssize i {}; /* index of m_aNodes */
+    using ResourceType = T;
 
-    explicit operator ssize() const { return i; }
+    /* */
+
+    ssize i = NPOS; /* index of m_aNodes */
+
+    /* */
+
+    explicit operator bool() const { return i != -1; }
 };
 
 template<typename T>
@@ -28,19 +33,19 @@ struct PoolNode
 template<typename T, ssize CAP>
 struct Pool
 {
-    Arr<PoolNode<T>, CAP> m_aNodes {};
-    Arr<PoolHandle, CAP> m_aFreeIdxs {};
+    Array<PoolNode<T>, CAP> m_aNodes {};
+    Array<PoolHandle<T>, CAP> m_aFreeIdxs {};
     ssize m_nOccupied {};
 
     /* */
 
     ADT_WARN_INIT Pool() = default;
-    Pool(INIT_FLAG);
+    explicit Pool(InitFlag);
 
     /* */
 
-    T& operator[](PoolHandle h)             { return at(h); }
-    const T& operator[](PoolHandle h) const { return at(h); }
+    T& operator[](PoolHandle<T> h)             { return at(h); }
+    const T& operator[](PoolHandle<T> h) const { return at(h); }
 
     ssize firstI() const;
     ssize lastI() const;
@@ -50,26 +55,24 @@ struct Pool
     ssize idx(const PoolNode<T>* p) const;
     ssize idx(const T* p) const;
 
-    void destroy();
-
-    [[nodiscard]] PoolHandle getHandle();
-    [[nodiscard]] PoolHandle push(const T& value);
+    [[nodiscard]] PoolHandle<T> getHandle();
+    [[nodiscard]] PoolHandle<T> push(const T& value); /* push resource and get handle back */
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-    [[nodiscard]] PoolHandle emplace(ARGS&&... args);
+    [[nodiscard]] PoolHandle<T> emplace(ARGS&&... args);
 
-    void giveBack(PoolHandle hnd);
+    void giveBack(PoolHandle<T> hnd);
     void giveBack(T* hnd);
 
-    ssize getCap() const { return CAP; }
-    ssize getSize() const { return m_nOccupied; }
+    ssize cap() const { return CAP; }
+    ssize size() const { return m_nOccupied; }
 
-    bool empty() const { return getSize() == 0; }
+    bool empty() const { return size() == 0; }
 
     /* */
 
 private:
-    T& at(PoolHandle h);
+    T& at(PoolHandle<T> h);
 
     /* */
 
@@ -123,14 +126,14 @@ public:
     };
 
     It begin() { return {this, firstI()}; }
-    It end() { return {this, getSize() == 0 ? -1 : lastI() + 1}; }
+    It end() { return {this, size() == 0 ? -1 : lastI() + 1}; }
 
     const It begin() const { return {this, firstI()}; }
-    const It end() const { return {this, getSize() == 0 ? -1 : lastI() + 1}; }
+    const It end() const { return {this, size() == 0 ? -1 : lastI() + 1}; }
 };
 
 template<typename T, ssize CAP>
-Pool<T, CAP>::Pool(INIT_FLAG)
+Pool<T, CAP>::Pool(InitFlag)
 {
     for (ssize i = 0; i < CAP; ++i)
         m_aNodes.m_aData[i].bDeleted = true;
@@ -197,10 +200,10 @@ Pool<T, CAP>::idx(const T* p) const
 }
 
 template<typename T, ssize CAP>
-inline PoolHandle
+inline PoolHandle<T>
 Pool<T, CAP>::getHandle()
 {
-    PoolHandle ret {.i = -1};
+    PoolHandle<T> ret {.i = -1};
 
     if (m_nOccupied >= CAP)
     {
@@ -221,7 +224,7 @@ Pool<T, CAP>::getHandle()
 }
 
 template<typename T, ssize CAP>
-inline PoolHandle
+inline PoolHandle<T>
 Pool<T, CAP>::push(const T& value)
 {
     auto idx = getHandle();
@@ -231,7 +234,7 @@ Pool<T, CAP>::push(const T& value)
 
 template<typename T, ssize CAP>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-inline PoolHandle
+inline PoolHandle<T>
 Pool<T, CAP>::emplace(ARGS&&... args)
 {
     auto idx = getHandle();
@@ -241,7 +244,7 @@ Pool<T, CAP>::emplace(ARGS&&... args)
 
 template<typename T, ssize CAP>
 inline void
-Pool<T, CAP>::giveBack(PoolHandle hnd)
+Pool<T, CAP>::giveBack(PoolHandle<T> hnd)
 {
     ADT_ASSERT(m_nOccupied > 0, "nothing to return");
     --m_nOccupied;
@@ -256,14 +259,14 @@ template<typename T, ssize CAP>
 inline void
 Pool<T, CAP>::giveBack(T* hnd)
 {
-    giveBack(PoolHandle(idx(hnd)));
+    giveBack(PoolHandle<T>(idx(hnd)));
 }
 
 template<typename T, ssize CAP>
 inline T&
-Pool<T, CAP>::at(PoolHandle h)
+Pool<T, CAP>::at(PoolHandle<T> h)
 {
-    ADT_ASSERT(h.i >= 0 && h.i < m_aNodes.getSize(), "i: %lld, size: %lld", h.i, m_aNodes.getSize());
+    ADT_ASSERT(h.i >= 0 && h.i < m_aNodes.size(), "i: %lld, size: %lld", h.i, m_aNodes.size());
     ADT_ASSERT(!m_aNodes[h.i].bDeleted, "trying to access deleted node");
     return m_aNodes[h.i].data;
 }
@@ -275,11 +278,12 @@ template<typename T, ssize CAP>
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const Pool<T, CAP>& x)
 {
-    return print::formatToContextTemplateSize(ctx, fmtArgs, x, x.getSize());
+    return print::formatToContextTemplateSize(ctx, fmtArgs, x, x.size());
 }
 
+template<typename T>
 inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const PoolHandle& x)
+formatToContext(Context ctx, FormatArgs fmtArgs, const PoolHandle<T>& x)
 {
     return formatToContext(ctx, fmtArgs, x.i);
 }

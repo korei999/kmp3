@@ -36,18 +36,18 @@ swapBytes(u64 x)
 
 struct Reader
 {
-    String m_sFile {};
+    StringView m_svFile {};
     ssize m_pos {};
 
     /* */
 
     Reader() = default;
-    Reader(String s) : m_sFile(s) {}
+    Reader(StringView s) : m_svFile(s) {}
 
     /* */
 
     void skipBytes(ssize n);
-    String readString(ssize bytes);
+    StringView readString(ssize bytes);
     u8 read8();
     u16 read16();
     u16 read16Rev();
@@ -64,10 +64,10 @@ Reader::skipBytes(ssize n)
     m_pos += n;
 }
 
-inline String
+inline StringView
 Reader::readString(ssize bytes)
 {
-    String ret(&m_sFile[m_pos], bytes);
+    StringView ret(&m_svFile[m_pos], bytes);
     m_pos += bytes;
     return ret;
 }
@@ -75,7 +75,7 @@ Reader::readString(ssize bytes)
 inline u8
 Reader::read8()
 {
-    u32 ret = m_sFile.reinterpret<u8>(m_pos);
+    u32 ret = m_svFile.reinterpret<u8>(m_pos);
     m_pos += 1;
     return ret;
 }
@@ -83,7 +83,7 @@ Reader::read8()
 inline u16
 Reader::read16()
 {
-    u32 ret = m_sFile.reinterpret<u16>(m_pos);
+    u32 ret = m_svFile.reinterpret<u16>(m_pos);
     m_pos += 2;
     return ret;
 }
@@ -97,7 +97,7 @@ Reader::read16Rev()
 inline u32
 Reader::read32()
 {
-    u32 ret = m_sFile.reinterpret<u32>(m_pos);
+    u32 ret = m_svFile.reinterpret<u32>(m_pos);
     m_pos += 4;
     return ret;
 }
@@ -111,7 +111,7 @@ Reader::read32Rev()
 inline u64
 Reader::read64()
 {
-    u64 ret = m_sFile.reinterpret<u64>(m_pos);
+    u64 ret = m_svFile.reinterpret<u64>(m_pos);
     m_pos += 8;
     return ret;
 }
@@ -125,7 +125,7 @@ Reader::read64Rev()
 inline bool
 Reader::finished()
 {
-    return m_pos >= m_sFile.getSize();
+    return m_pos >= m_svFile.size();
 }
 
 } /* namespace adt::bin */

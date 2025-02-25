@@ -177,7 +177,7 @@ addNSToTimespec(timespec* const pTs, const ssize nsec)
 
 template<typename T>
 inline void
-copy(T* pDest, const T* const pSrc, ssize size)
+memCopy(T* pDest, const T* const pSrc, ssize size)
 {
     assert(pDest != nullptr && pSrc != nullptr);
     memcpy(pDest, pSrc, size * sizeof(T));
@@ -186,7 +186,7 @@ copy(T* pDest, const T* const pSrc, ssize size)
 /* typed memmove (don't mistake for std::move) */
 template<typename T>
 inline void
-move(T* pDest, const T* const pSrc, ssize size)
+memMove(T* pDest, const T* const pSrc, ssize size)
 {
     assert(pDest != nullptr && pSrc != nullptr);
     memmove(pDest, pSrc, size * sizeof(T));
@@ -194,7 +194,7 @@ move(T* pDest, const T* const pSrc, ssize size)
 
 template<typename T>
 inline void
-set(T* pDest, int byte, ssize size)
+memSet(T* pDest, int byte, ssize size)
 {
     assert(pDest != nullptr);
     memset(pDest, byte, size * sizeof(T));
@@ -253,7 +253,7 @@ reverse(auto* a, const ssize size)
 inline constexpr void
 reverse(auto* a)
 {
-    reverse(a->data(), a->getSize());
+    reverse(a->data(), a->size());
 }
 
 

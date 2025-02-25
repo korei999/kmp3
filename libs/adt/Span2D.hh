@@ -31,9 +31,9 @@ struct Span2D
     constexpr T* data() { return m_pData; }
     constexpr const T* data() const { return m_pData; }
 
-    constexpr int getWidth() const { return m_width; }
-    constexpr int getHeight() const { return m_height; }
-    constexpr int getStride() const { return m_stride; }
+    constexpr int width() const { return m_width; }
+    constexpr int height() const { return m_height; }
+    constexpr int stride() const { return m_stride; }
 
     /* */
 

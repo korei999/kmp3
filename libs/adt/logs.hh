@@ -40,7 +40,7 @@ enum _ADT_LOG_SEV
     _ADT_LOG_SEV_ENUM_SIZE,
 };
 
-constexpr adt::String _ADT_LOG_SEV_STR[] = {
+constexpr adt::StringView _ADT_LOG_SEV_STR[] = {
     "",
     ADT_LOGS_COL_GREEN "GOOD: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_CYAN "NOTIFY: " ADT_LOGS_COL_NORM,

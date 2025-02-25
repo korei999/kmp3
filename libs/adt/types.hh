@@ -72,8 +72,8 @@ using f64 = double;
 
 using null = decltype(nullptr);
 
-using INIT_FLAG = bool;
-constexpr INIT_FLAG INIT = true;
+struct InitFlag {};
+constexpr InitFlag INIT {};
 
 #define ADT_WARN_INIT [[deprecated("warning: should be initialized with (INIT)")]]
 #define ADT_WARN_DONT_USE [[deprecated("warning: don't use!")]]

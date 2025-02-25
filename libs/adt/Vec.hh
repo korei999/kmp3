@@ -17,7 +17,7 @@ namespace adt
 
 /* Dynamic array (aka Vector) */
 template<typename T>
-struct VecBase
+struct Vec
 {
     T* m_pData = nullptr;
     ssize m_size = 0;
@@ -25,8 +25,9 @@ struct VecBase
 
     /* */
 
-    VecBase() = default;
-    VecBase(IAllocator* p, ssize prealloc = SIZE_MIN)
+    Vec() = default;
+
+    Vec(IAllocator* p, ssize prealloc = SIZE_MIN)
         : m_pData((T*)p->zalloc(prealloc, sizeof(T))),
           m_size(0),
           m_capacity(prealloc) {}
@@ -75,9 +76,9 @@ struct VecBase
 
     void destroy(IAllocator* p) noexcept;
 
-    [[nodiscard]] ssize getSize() const noexcept;
+    [[nodiscard]] ssize size() const noexcept;
 
-    [[nodiscard]] ssize getCap() const noexcept;
+    [[nodiscard]] ssize cap() const noexcept;
 
     [[nodiscard]] T* data() noexcept;
 
@@ -85,7 +86,9 @@ struct VecBase
 
     void zeroOut() noexcept; /* set size to zero and memset */
 
-    [[nodiscard]] VecBase<T> clone(IAllocator* pAlloc) const;
+    [[nodiscard]] Vec<T> clone(IAllocator* pAlloc) const;
+
+    [[nodiscard]] bool search(const T& x) const;
 
     /* */
 
@@ -129,7 +132,7 @@ public:
 
 template<typename T>
 inline ssize
-VecBase<T>::push(IAllocator* p, const T& data)
+Vec<T>::push(IAllocator* p, const T& data)
 {
     growIfNeeded(p);
     new(m_pData + m_size++) T(data);
@@ -138,26 +141,26 @@ VecBase<T>::push(IAllocator* p, const T& data)
 
 template<typename T>
 inline void
-VecBase<T>::pushSpan(IAllocator* p, const Span<T> sp)
+Vec<T>::pushSpan(IAllocator* p, const Span<T> sp)
 {
-    ADT_ASSERT(sp.getSize() > 0, "pushing empty span");
-    ADT_ASSERT(m_size + sp.getSize() >= m_size, "overflow");
+    ADT_ASSERT(sp.size() > 0, "pushing empty span");
+    ADT_ASSERT(m_size + sp.size() >= m_size, "overflow");
 
-    if (m_size + sp.getSize() > m_capacity)
+    if (m_size + sp.size() > m_capacity)
     {
-        ssize newSize = utils::max(static_cast<ssize>((sp.getSize() + m_size)*1.33), m_size*2);
+        ssize newSize = utils::max(static_cast<ssize>((sp.size() + m_size)*1.33), m_size*2);
         ADT_ASSERT(newSize > m_size, "overflow");
         grow(p, newSize);
     }
 
-    utils::copy(m_pData + m_size, sp.data(), sp.getSize());
-    m_size += sp.getSize();
+    utils::memCopy(m_pData + m_size, sp.data(), sp.size());
+    m_size += sp.size();
 }
 
 template<typename T>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
 inline ssize
-VecBase<T>::emplace(IAllocator* p, ARGS&&... args)
+Vec<T>::emplace(IAllocator* p, ARGS&&... args)
 {
     growIfNeeded(p);
     new(m_pData + m_size++) T(std::forward<ARGS>(args)...);
@@ -166,35 +169,35 @@ VecBase<T>::emplace(IAllocator* p, ARGS&&... args)
 
 template<typename T>
 inline T&
-VecBase<T>::last() noexcept
+Vec<T>::last() noexcept
 {
     return operator[](m_size - 1);
 }
 
 template<typename T>
 inline const T&
-VecBase<T>::last() const noexcept
+Vec<T>::last() const noexcept
 {
     return operator[](m_size - 1);
 }
 
 template<typename T>
 inline T&
-VecBase<T>::first() noexcept
+Vec<T>::first() noexcept
 {
     return operator[](0);
 }
 
 template<typename T>
 inline const T&
-VecBase<T>::first() const noexcept
+Vec<T>::first() const noexcept
 {
     return operator[](0);
 }
 
 template<typename T>
 inline T*
-VecBase<T>::pop() noexcept
+Vec<T>::pop() noexcept
 {
     ADT_ASSERT(m_size > 0, "empty");
     return &m_pData[--m_size];
@@ -202,7 +205,7 @@ VecBase<T>::pop() noexcept
 
 template<typename T>
 inline void
-VecBase<T>::setSize(IAllocator* p, ssize size)
+Vec<T>::setSize(IAllocator* p, ssize size)
 {
     if (m_capacity < size)
         grow(p, size);
@@ -212,7 +215,7 @@ VecBase<T>::setSize(IAllocator* p, ssize size)
 
 template<typename T>
 inline void
-VecBase<T>::setCap(IAllocator* p, ssize cap)
+Vec<T>::setCap(IAllocator* p, ssize cap)
 {
     if (cap == 0)
     {
@@ -228,7 +231,7 @@ VecBase<T>::setCap(IAllocator* p, ssize cap)
 
 template<typename T>
 inline void
-VecBase<T>::swapWithLast(ssize i) noexcept
+Vec<T>::swapWithLast(ssize i) noexcept
 {
     ADT_ASSERT(m_size > 0, "empty");
     utils::swap(&operator[](i), &operator[](m_size - 1));
@@ -236,7 +239,7 @@ VecBase<T>::swapWithLast(ssize i) noexcept
 
 template<typename T>
 inline void
-VecBase<T>::popAsLast(ssize i) noexcept
+Vec<T>::popAsLast(ssize i) noexcept
 {
     ADT_ASSERT(m_size > 0, "empty");
     operator[](i) = last();
@@ -245,19 +248,19 @@ VecBase<T>::popAsLast(ssize i) noexcept
 
 template<typename T>
 inline void
-VecBase<T>::removeAndShift(ssize i) noexcept
+Vec<T>::removeAndShift(ssize i) noexcept
 {
     ADT_ASSERT(m_size > 0, "empty");
 
     if (i != lastI())
-        utils::move(&operator[](i), &operator[](i + 1), (m_size - i - 1));
+        utils::memMove(&operator[](i), &operator[](i + 1), (m_size - i - 1));
 
     --m_size;
 }
 
 template<typename T>
 inline ssize
-VecBase<T>::idx(const T* x) const noexcept
+Vec<T>::idx(const T* x) const noexcept
 {
     ssize r = ssize(x - m_pData);
     ADT_ASSERT(r >= 0 && r < m_capacity,"r: %lld, cap: %lld", r, m_capacity);
@@ -266,14 +269,14 @@ VecBase<T>::idx(const T* x) const noexcept
 
 template<typename T>
 inline ssize
-VecBase<T>::lastI() const noexcept
+Vec<T>::lastI() const noexcept
 {
     return idx(&last());
 }
 
 template<typename T>
 inline void
-VecBase<T>::destroy(IAllocator* p) noexcept
+Vec<T>::destroy(IAllocator* p) noexcept
 {
     p->free(m_pData);
     *this = {};
@@ -281,53 +284,63 @@ VecBase<T>::destroy(IAllocator* p) noexcept
 
 template<typename T>
 inline ssize
-VecBase<T>::getSize() const noexcept
+Vec<T>::size() const noexcept
 {
     return m_size;
 }
 
 template<typename T>
 inline ssize
-VecBase<T>::getCap() const noexcept
+Vec<T>::cap() const noexcept
 {
     return m_capacity;
 }
 
 template<typename T>
 inline T*
-VecBase<T>::data() noexcept
+Vec<T>::data() noexcept
 {
     return m_pData;
 }
 
 template<typename T>
 inline const T*
-VecBase<T>::data() const noexcept
+Vec<T>::data() const noexcept
 {
     return m_pData;
 }
 
 template<typename T>
 inline void
-VecBase<T>::zeroOut() noexcept
+Vec<T>::zeroOut() noexcept
 {
     memset(m_pData, 0, m_size * sizeof(T));
 }
 
 template<typename T>
-inline VecBase<T>
-VecBase<T>::clone(IAllocator* pAlloc) const
+inline Vec<T>
+Vec<T>::clone(IAllocator* pAlloc) const
 {
-    auto nVec = VecBase<T>(pAlloc, getCap());
-    memcpy(nVec.data(), data(), getSize() * sizeof(T));
-    nVec.m_size = getSize();
+    auto nVec = Vec<T>(pAlloc, cap());
+    memcpy(nVec.data(), data(), size() * sizeof(T));
+    nVec.m_size = size();
 
     return nVec;
 }
 
 template<typename T>
+inline bool
+Vec<T>::search(const T& x) const
+{
+    for (const auto& el : *this)
+        if (el == x)
+            return true;
+    return false;
+}
+
+template<typename T>
 inline void
-VecBase<T>::grow(IAllocator* p, ssize newCapacity)
+Vec<T>::grow(IAllocator* p, ssize newCapacity)
 {
     m_pData = (T*)p->realloc(m_pData, m_capacity, newCapacity, sizeof(T));
     m_capacity = newCapacity;
@@ -335,7 +348,7 @@ VecBase<T>::grow(IAllocator* p, ssize newCapacity)
 
 template<typename T>
 inline void
-VecBase<T>::growIfNeeded(IAllocator* p)
+Vec<T>::growIfNeeded(IAllocator* p)
 {
     if (m_size >= m_capacity)
     {
@@ -346,9 +359,9 @@ VecBase<T>::growIfNeeded(IAllocator* p)
 }
 
 template<typename T>
-struct Vec
+struct VecManaged
 {
-    VecBase<T> base {};
+    Vec<T> base {};
 
     /* */
 
@@ -356,8 +369,8 @@ struct Vec
 
     /* */
 
-    Vec() = default;
-    Vec(IAllocator* p, ssize prealloc = 1) : base(p, prealloc), m_pAlloc(p) {}
+    VecManaged() = default;
+    VecManaged(IAllocator* p, ssize prealloc = 1) : base(p, prealloc), m_pAlloc(p) {}
 
     /* */
 
@@ -399,9 +412,9 @@ struct Vec
 
     void destroy() { base.destroy(m_pAlloc); }
 
-    [[nodiscard]] ssize getSize() const noexcept { return base.getSize(); }
+    [[nodiscard]] ssize size() const noexcept { return base.size(); }
 
-    [[nodiscard]] ssize getCap() const noexcept { return base.getCap(); }
+    [[nodiscard]] ssize cap() const noexcept { return base.cap(); }
 
     [[nodiscard]] T* data() noexcept { return base.data(); }
 
@@ -409,27 +422,29 @@ struct Vec
 
     void zeroOut() noexcept { base.zeroOut(); }
 
-    [[nodiscard]] Vec<T>
+    [[nodiscard]] VecManaged<T>
     clone(IAllocator* pAlloc)
     {
         auto nBase = base.clone(pAlloc);
-        Vec<T> nVec;
+        VecManaged<T> nVec;
         nVec.base = nBase;
         nVec.m_pAlloc = pAlloc;
         return nVec;
     }
 
+    [[nodiscard]] bool search(const T& x) const { return base.search(x); }
+
     /* */
 
-    typename VecBase<T>::It begin()  noexcept { return base.begin(); }
-    typename VecBase<T>::It end()    noexcept { return base.end(); }
-    typename VecBase<T>::It rbegin() noexcept { return base.rbegin(); }
-    typename VecBase<T>::It rend()   noexcept { return base.rend(); }
+    typename Vec<T>::It begin()  noexcept { return base.begin(); }
+    typename Vec<T>::It end()    noexcept { return base.end(); }
+    typename Vec<T>::It rbegin() noexcept { return base.rbegin(); }
+    typename Vec<T>::It rend()   noexcept { return base.rend(); }
 
-    const typename VecBase<T>::It begin()  const noexcept { return base.begin(); }
-    const typename VecBase<T>::It end()    const noexcept { return base.end(); }
-    const typename VecBase<T>::It rbegin() const noexcept { return base.rbegin(); }
-    const typename VecBase<T>::It rend()   const noexcept { return base.rend(); }
+    const typename Vec<T>::It begin()  const noexcept { return base.begin(); }
+    const typename Vec<T>::It end()    const noexcept { return base.end(); }
+    const typename Vec<T>::It rbegin() const noexcept { return base.rbegin(); }
+    const typename Vec<T>::It rend()   const noexcept { return base.rend(); }
 };
 
 } /* namespace adt */

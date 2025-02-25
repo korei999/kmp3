@@ -66,18 +66,18 @@ Win::info()
 
     auto drawLine = [&](
         const int y,
-        const String sPrefix,
-        const String sLine,
+        const StringView sPrefix,
+        const StringView sLine,
         const TEXT_BUFF_STYLE eStyle)
     {
-        utils::set(sp.data(), 0, sp.getSize());
+        utils::memSet(sp.data(), 0, sp.size());
 
         ssize n = print::toSpan(sp, sPrefix);
         m_textBuff.string(hOff, y, {}, sp.data());
 
-        if (sLine.getSize() > 0)
+        if (sLine.size() > 0)
         {
-            utils::set(sp.data(), 0, sp.getSize());
+            utils::memSet(sp.data(), 0, sp.size());
             print::toSpan(sp, "{}", sLine);
             m_textBuff.string(hOff + n, y, eStyle, sp.data());
         }
@@ -85,9 +85,9 @@ Win::info()
 
     using STYLE = TEXT_BUFF_STYLE;
 
-    drawLine(1, "title: ", pl.m_info.title, STYLE::BOLD | STYLE::ITALIC | STYLE::YELLOW);
-    drawLine(2, "album: ", pl.m_info.album, STYLE::BOLD);
-    drawLine(3, "artist: ", pl.m_info.artist, STYLE::BOLD);
+    drawLine(1, "title: ", pl.m_info.sTitle, STYLE::BOLD | STYLE::ITALIC | STYLE::YELLOW);
+    drawLine(2, "album: ", pl.m_info.sAlbum, STYLE::BOLD);
+    drawLine(3, "artist: ", pl.m_info.sArtist, STYLE::BOLD);
 }
 
 void
@@ -146,7 +146,7 @@ Win::time()
     const auto width = g_termSize.width;
     const int off = m_prevImgWidth + 2;
 
-    String sTime = common::allocTimeString(m_pArena, width);
+    StringView sTime = common::allocTimeString(m_pArena, width);
     m_textBuff.string(off, 9, {}, sTime);
 }
 
@@ -163,12 +163,12 @@ Win::timeSlider()
     /* play/pause indicator */
     {
         bool bPaused = mix.isPaused().load(std::memory_order_relaxed);
-        const String sIndicator = bPaused ? "I>" : "II";
+        const StringView sIndicator = bPaused ? "I>" : "II";
 
         using STYLE = TEXT_BUFF_STYLE;
         m_textBuff.string(xOff, yOff, STYLE::BOLD, sIndicator);
 
-        n += sIndicator.getSize();
+        n += sIndicator.size();
     }
 
     /* time slider */
@@ -198,10 +198,10 @@ Win::list()
 
     for (ssize h = m_firstIdx, i = 0; i < m_listHeight - 1; ++h, ++i)
     {
-        if (h < aIdxs.getSize())
+        if (h < aIdxs.size())
         {
             const u16 songIdx = aIdxs[h];
-            const String sSong = pl.m_vShortSongs[songIdx];
+            const StringView sSong = pl.m_vShortSongs[songIdx];
 
             bool bSelected = songIdx == pl.m_selected ? true : false;
 
@@ -234,17 +234,17 @@ Win::bottomLine()
     {
         Span sp = s_scratch.nextMemZero<char>(width + 1);
 
-        ssize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.getSize() - 1);
+        ssize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
             if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
             else if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
 
-            n += print::toSpan({sp.data() + n, sp.getSize() - 1 - n}, " (repeat {})", sArg);
+            n += print::toSpan({sp.data() + n, sp.size() - 1 - n}, " (repeat {})", sArg);
         }
 
-        m_textBuff.string(width - n - 1, height - 1, {}, {sp.data(), sp.getSize() - 1});
+        m_textBuff.string(width - n - 1, height - 1, {}, {sp.data(), sp.size() - 1});
     }
 
     if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||
@@ -252,16 +252,16 @@ Win::bottomLine()
          wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff)) > 0)
     )
     {
-        const String sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
+        const StringView sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
 
         m_textBuff.string(1, height - 1, {}, sReadMode);
-        m_textBuff.wideString(sReadMode.getSize() + 1, height - 1, {}, c::g_input.getSpan());
+        m_textBuff.wideString(sReadMode.size() + 1, height - 1, {}, c::g_input.getSpan());
 
         if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE)
         {
             /* just append the cursor character */
             Span spCursor {const_cast<wchar_t*>(common::CURSOR_BLOCK), 3};
-            m_textBuff.wideString(sReadMode.getSize() + c::g_input.m_idx + 1, height - 1, {}, spCursor);
+            m_textBuff.wideString(sReadMode.size() + c::g_input.m_idx + 1, height - 1, {}, spCursor);
         }
     }
 }

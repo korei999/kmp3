@@ -74,7 +74,7 @@ sorted(const auto* a, const ssize size, const ORDER eOrder = INC)
 inline constexpr bool
 sorted(const auto& a, const ORDER eOrder = INC)
 {
-    return sorted(a.data(), a.getSize(), eOrder);
+    return sorted(a.data(), a.size(), eOrder);
 }
 
 template<typename T, ssize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
@@ -96,9 +96,9 @@ template<template<typename> typename CON_T, typename T, ssize (*FN_CMP)(const T&
 inline constexpr void
 insertion(CON_T<T>* a)
 {
-    if (a->getSize() <= 1) return;
+    if (a->size() <= 1) return;
 
-    insertion<T, FN_CMP>(a->data(), 0, a->getSize() - 1);
+    insertion<T, FN_CMP>(a->data(), 0, a->size() - 1);
 }
 
 inline constexpr void
@@ -146,7 +146,7 @@ quick(T a[], ssize l, ssize r)
 {
     if (l < r)
     {
-        if ((r - l + 1) < 64)
+        if ((r - l + 1) <= 64)
         {
             insertion<T, FN_CMP>(a, l, r);
             return;
@@ -172,8 +172,8 @@ template<template<typename> typename CON_T, typename T, ssize (*FN_CMP)(const T&
 inline constexpr void
 quick(CON_T<T>* pArrayContainer)
 {
-    if (pArrayContainer->getSize() <= 1) return;
-    quick<T, FN_CMP>(pArrayContainer->data(), 0, pArrayContainer->getSize() - 1);
+    if (pArrayContainer->size() <= 1) return;
+    quick<T, FN_CMP>(pArrayContainer->data(), 0, pArrayContainer->size() - 1);
 }
 
 } /* namespace sort */

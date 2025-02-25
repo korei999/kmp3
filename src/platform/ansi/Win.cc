@@ -60,7 +60,7 @@ Win::start(Arena* pArena)
     m_pArena = pArena;
     g_termSize = getTermSize();
 
-    m_mtxUpdate = Mutex(MUTEX_TYPE::PLAIN);
+    m_mtxUpdate = Mutex(Mutex::TYPE::PLAIN);
 
     enableRawMode();
     m_textBuff.start(m_pArena, g_termSize.width, g_termSize.height);

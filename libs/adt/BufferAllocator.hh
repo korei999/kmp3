@@ -33,7 +33,7 @@ struct BufferAllocator : public IAllocator
 
     template<typename T>
     constexpr BufferAllocator(Span<T> sp) noexcept
-        : BufferAllocator((T*)sp.data(), sp.getSize() * sizeof(T)) {}
+        : BufferAllocator((T*)sp.data(), sp.size() * sizeof(T)) {}
 
     /* */
 

@@ -19,7 +19,7 @@ struct ThreadPoolTask
 struct ThreadPool
 {
     IAllocator* m_pAlloc {};
-    QueueBase<ThreadPoolTask> m_qTasks {};
+    Queue<ThreadPoolTask> m_qTasks {};
     Span<Thread> m_spThreads {};
     Mutex m_mtxQ {};
     CndVar m_cndQ {};
@@ -38,7 +38,10 @@ struct ThreadPool
     void destroy();
     void add(ThreadPoolTask task);
     void add(ThreadFn pfn, void* pArg);
-    template<typename LAMBDA> void add(LAMBDA t);
+    template<typename LAMBDA> void addLambda(LAMBDA& t);
+
+    template<typename LAMBDA> requires(std::is_rvalue_reference_v<LAMBDA&&>)
+    [[deprecated("rvalue lambdas cause use after free")]] void addLambda(LAMBDA&& t) = delete;
 
 private:
     THREAD_STATUS loop(void* pArg);
@@ -49,7 +52,7 @@ ThreadPool::ThreadPool(IAllocator* pAlloc, int nThreads)
     : m_pAlloc(pAlloc),
       m_qTasks(pAlloc, nThreads * 2),
       m_spThreads(pAlloc->zallocV<Thread>(nThreads), nThreads),
-      m_mtxQ(MUTEX_TYPE::PLAIN),
+      m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
       m_bDone(false)
@@ -147,14 +150,14 @@ ThreadPool::add(ThreadFn pfn, void* pArg)
 
 template<typename LAMBDA>
 inline void
-ThreadPool::add(LAMBDA t)
+ThreadPool::addLambda(LAMBDA& t)
 {
     add(+[](void* pArg) -> THREAD_STATUS
         {
-            (*reinterpret_cast<decltype(t)*>(pArg))();
+            reinterpret_cast<LAMBDA*>(pArg)->operator()();
             return 0;
         },
-        &t
+        (void*)(&t)
     );
 }
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cassert>
-#include <new> /* IWYU pragma: keep */
+#include "types.hh"
+
+#include <utility>
 
 namespace adt
 {
@@ -23,9 +24,17 @@ struct Opt
 
     /* */
 
-    constexpr T& value() { assert(m_bHasValue && "[Opt]: has no value"); return m_data; }
+    constexpr T& value() { ADT_ASSERT(m_bHasValue, "no value"); return m_data; }
+    constexpr T& valueOrZero() { return m_data; }
 
-    constexpr operator bool() const { return m_bHasValue; }
+    constexpr T&
+    valueOr(T&& v)
+    {
+        if (m_bHasValue) return m_data;
+        else return std::forward<T>(v);
+    }
+
+    explicit constexpr operator bool() const { return m_bHasValue; }
 };
 
 } /* namespace adt */

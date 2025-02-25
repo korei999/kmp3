@@ -12,7 +12,7 @@ namespace adt
 #define ADT_QUEUE_FOREACH_I_REV(Q, I) for (int I = (Q)->lastI(), _t_ = 0; _t_ < (Q)->size; I = (Q)->prevI(I), ++_t_)
 
 template<typename T>
-struct QueueBase
+struct Queue
 {
     T* m_pData {};
     int m_size {};
@@ -22,8 +22,8 @@ struct QueueBase
 
     /* */
 
-    QueueBase() = default;
-    QueueBase(IAllocator* pAlloc, ssize prealloc = SIZE_MIN)
+    Queue() = default;
+    Queue(IAllocator* pAlloc, ssize prealloc = SIZE_MIN)
         : m_pData {(T*)pAlloc->malloc(prealloc, sizeof(T))},
           m_cap (prealloc) {}
 
@@ -51,17 +51,17 @@ struct QueueBase
     T* popFront();
     T* popBack();
     ssize idx(const T* pItem) const;
-    ssize getSize() const { return m_size; }
+    ssize size() const { return m_size; }
 
     /* */
 
     struct It
     {
-        const QueueBase* s = nullptr;
+        const Queue* s = nullptr;
         int i = 0;
         int counter = 0; /* inc each iteration */
 
-        It(const QueueBase* _s, int _i, int _counter) : s(_s), i(_i), counter(_counter) {}
+        It(const Queue* _s, int _i, int _counter) : s(_s), i(_i), counter(_counter) {}
 
         T& operator*() const { return s->m_pData[i]; }
         T* operator->() const { return &s->m_pData[i]; }
@@ -103,7 +103,7 @@ struct QueueBase
 
 template<typename T>
 inline void
-QueueBase<T>::destroy(IAllocator* p)
+Queue<T>::destroy(IAllocator* p)
 {
     p->free(m_pData);
     *this = {};
@@ -111,7 +111,7 @@ QueueBase<T>::destroy(IAllocator* p)
 
 template<typename T>
 inline T*
-QueueBase<T>::pushFront(IAllocator* p, const T& val)
+Queue<T>::pushFront(IAllocator* p, const T& val)
 {
     if (m_size >= m_cap) grow(p, m_cap * 2);
 
@@ -128,7 +128,7 @@ QueueBase<T>::pushFront(IAllocator* p, const T& val)
 
 template<typename T>
 inline T*
-QueueBase<T>::pushBack(IAllocator* p, const T& val)
+Queue<T>::pushBack(IAllocator* p, const T& val)
 {
     if (m_size >= m_cap) grow(p, m_cap * 2);
 
@@ -145,9 +145,9 @@ QueueBase<T>::pushBack(IAllocator* p, const T& val)
 
 template<typename T>
 inline void
-QueueBase<T>::grow(IAllocator* p, ssize size)
+Queue<T>::grow(IAllocator* p, ssize size)
 {
-    auto nQ = QueueBase<T>(p, size);
+    auto nQ = Queue<T>(p, size);
 
     for (auto& e : *this) nQ.pushBack(p, e);
 
@@ -157,7 +157,7 @@ QueueBase<T>::grow(IAllocator* p, ssize size)
 
 template<typename T>
 inline T*
-QueueBase<T>::popFront()
+Queue<T>::popFront()
 {
     assert(m_size > 0 && "[Queue]: empty");
 
@@ -170,7 +170,7 @@ QueueBase<T>::popFront()
 
 template<typename T>
 inline T*
-QueueBase<T>::popBack()
+Queue<T>::popBack()
 {
     assert(m_size > 0 && "[Queue]: empty");
 
@@ -183,7 +183,7 @@ QueueBase<T>::popBack()
 
 template<typename T>
 inline ssize
-QueueBase<T>::idx(const T* pItem) const
+Queue<T>::idx(const T* pItem) const
 {
     ssize r = pItem - m_pData;
     assert(r >= 0 && r < m_cap && "[Queue]: out of capacity");
@@ -191,9 +191,9 @@ QueueBase<T>::idx(const T* pItem) const
 }
 
 template<typename T>
-struct Queue
+struct QueueManaged
 {
-    QueueBase<T> base {};
+    Queue<T> base {};
 
     /* */
 
@@ -201,8 +201,8 @@ struct Queue
 
     /* */
 
-    Queue() = default;
-    Queue(IAllocator* p, ssize prealloc = SIZE_MIN)
+    QueueManaged() = default;
+    QueueManaged(IAllocator* p, ssize prealloc = SIZE_MIN)
         : base(p, prealloc), m_pAlloc(p) {}
 
     /* */
@@ -220,19 +220,19 @@ struct Queue
     T* popFront() { return base.popFront(); }
     T* popBack() { return base.popBack(); }
     ssize idx(const T* pItem) { return base.idx(pItem); }
-    ssize getSize() const { return base.getSize(); }
+    ssize size() const { return base.size(); }
 
     /* */
 
-    typename QueueBase<T>::It begin() { return base.begin(); }
-    typename QueueBase<T>::It end() { return base.end(); }
-    typename QueueBase<T>::It rbegin() { return base.rbegin(); }
-    typename QueueBase<T>::It rend() { return base.rend(); }
+    typename Queue<T>::It begin() { return base.begin(); }
+    typename Queue<T>::It end() { return base.end(); }
+    typename Queue<T>::It rbegin() { return base.rbegin(); }
+    typename Queue<T>::It rend() { return base.rend(); }
 
-    const typename QueueBase<T>::It begin() const { return base.begin(); }
-    const typename QueueBase<T>::It end() const { return base.end(); }
-    const typename QueueBase<T>::It rbegin() const { return base.rbegin(); }
-    const typename QueueBase<T>::It rend() const { return base.rend(); }
+    const typename Queue<T>::It begin() const { return base.begin(); }
+    const typename Queue<T>::It end() const { return base.end(); }
+    const typename Queue<T>::It rbegin() const { return base.rbegin(); }
+    const typename Queue<T>::It rend() const { return base.rend(); }
 };
 
 } /* namespace adt */

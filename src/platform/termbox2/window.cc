@@ -298,7 +298,7 @@ static void
 drawMBString(
     const int x,
     const int y,
-    const String str,
+    const StringView str,
     [[maybe_unused]] const long maxLen,
     const u32 fg = TB_WHITE,
     const u32 bg = TB_DEFAULT,
@@ -322,7 +322,7 @@ drawSongList()
     for (ssize h = g_firstIdx, i = 0; i < win.m_listHeight - 1 && h < aIdxBuff.getSize(); ++h, ++i)
     {
         const u16 songIdx = aIdxBuff[h];
-        const String sSong = pl.m_vShortSongs[songIdx];
+        const StringView sSong = pl.m_vShortSongs[songIdx];
         const u32 maxLen = tb_width() - 2;
 
         const bool bSelected = songIdx == pl.m_selected ? true : false;
@@ -412,8 +412,8 @@ drawInfo()
         int n = print::toBuffer(pBuff, width, "title: ");
         drawMBString(xOff, 1, pBuff, width - 1);
         memset(pBuff, 0, width + 1);
-        if (pl.m_info.title.getSize() > 0)
-            print::toBuffer(pBuff, width, "{}", pl.m_info.title);
+        if (pl.m_info.sTitle.getSize() > 0)
+            print::toBuffer(pBuff, width, "{}", pl.m_info.sTitle);
         else print::toBuffer(pBuff, width, "{}", pl.m_vShortSongs[pl.m_selected]);
         drawMBString(xOff + n + 1, 1, pBuff, width - 1 - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
     }
@@ -423,10 +423,10 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
         drawMBString(xOff, 2, pBuff, width - 1);
-        if (pl.m_info.album.getSize() > 0)
+        if (pl.m_info.sAlbum.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
-            print::toBuffer(pBuff, width, "{}", pl.m_info.album);
+            print::toBuffer(pBuff, width, "{}", pl.m_info.sAlbum);
             drawMBString(xOff + n + 1, 2, pBuff, width - 1 - n - 1, TB_BOLD);
         }
     }
@@ -436,10 +436,10 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
         drawMBString(xOff, 3, pBuff, width - 2);
-        if (pl.m_info.artist.getSize() > 0)
+        if (pl.m_info.sArtist.getSize() > 0)
         {
             memset(pBuff, 0, width + 1);
-            print::toBuffer(pBuff, width, "{}", pl.m_info.artist);
+            print::toBuffer(pBuff, width, "{}", pl.m_info.sArtist);
             drawMBString(xOff + n + 1, 3, pBuff, width - 1 - n - 1, TB_BOLD);
         }
     }
@@ -476,7 +476,7 @@ drawBottomLine()
         (c::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE && wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff)) > 0)
     )
     {
-        const String sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
+        const StringView sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
         drawWideString(sReadMode.getSize() + 1, height - 1, c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff), width - 2);
         drawMBString(1, height - 1, sReadMode, width - 2);
 
@@ -497,7 +497,7 @@ drawTimeSlider()
 
     /* time */
     {
-        const String str = common::allocTimeString(g_pFrameArena, width);
+        const StringView str = common::allocTimeString(g_pFrameArena, width);
         drawMBString(xOff, 9, str, width - 2);
         str.getSize();
     }

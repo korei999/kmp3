@@ -6,13 +6,15 @@ namespace adt
 {
 
 template<typename LAMBDA_T>
-class Defer
+struct Defer
 {
-    LAMBDA_T onScopeExit;
+    Defer(LAMBDA_T f) : m_onScopeExit(f) {}
+    ~Defer() { m_onScopeExit(); }
 
-public:
-    Defer(LAMBDA_T f) : onScopeExit(f) {}
-    ~Defer() { onScopeExit(); }
+    /* */
+
+private:
+    LAMBDA_T m_onScopeExit;
 };
 
 } /* namespace adt */

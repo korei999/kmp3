@@ -543,10 +543,10 @@ i32Fillx4(Span<i32> src, const i32 x)
     const i32 pack = x;
 
     ssize i = 0;
-    for (; i + 3 < src.getSize(); i += 4)
+    for (; i + 3 < src.size(); i += 4)
         i32x4Store(&src[i], pack);
 
-    for (; i < src.getSize(); ++i)
+    for (; i < src.size(); ++i)
         src[i] = x;
 }
 
@@ -556,10 +556,10 @@ f32Fillx4(Span<f32> src, const f32 x)
     f32x4 pack = x;
 
     ssize i = 0;
-    for (; i + 3 < src.getSize(); i += 4)
+    for (; i + 3 < src.size(); i += 4)
         f32x4Store(&src[i], pack);
 
-    for (; i < src.getSize(); ++i)
+    for (; i < src.size(); ++i)
         src[i] = x;
 }
 
@@ -1097,10 +1097,10 @@ i32Fillx8(Span<i32> src, const i32 x)
     const i32 pack = x;
 
     ssize i = 0;
-    for (; i + 7 < src.getSize(); i += 8)
+    for (; i + 7 < src.size(); i += 8)
         i32x8Store(&src[i], pack);
 
-    for (; i < src.getSize(); ++i)
+    for (; i < src.size(); ++i)
         src[i] = x;
 }
 
@@ -1110,10 +1110,10 @@ f32Fillx8(Span<f32> src, const f32 x)
     f32x8 pack = x;
 
     ssize i = 0;
-    for (; i + 7 < src.getSize(); i += 8)
+    for (; i + 7 < src.size(); i += 8)
         f32x8Store(&src[i], pack);
 
-    for (; i < src.getSize(); ++i)
+    for (; i < src.size(); ++i)
         src[i] = x;
 }
 

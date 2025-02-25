@@ -38,7 +38,9 @@ OsAllocator::malloc(usize mCount, usize mSize)
 #else
     auto* r = ::malloc(mCount * mSize);
 #endif
+
     if (!r) throw AllocException("OsAllocator::malloc()");
+
     return r;
 }
 
@@ -51,8 +53,7 @@ OsAllocator::zalloc(usize mCount, usize mSize)
     auto* r = ::calloc(mCount, mSize);
 #endif
 
-    if (!r)
-        throw AllocException("OsAllocator::zalloc()");
+    if (!r) throw AllocException("OsAllocator::zalloc()");
 
     return r;
 }
@@ -66,8 +67,7 @@ OsAllocator::realloc(void* p, usize, usize newCount, usize mSize)
     auto* r = ::realloc(p, newCount * mSize);
 #endif
 
-    if (!r)
-        throw AllocException("OsAllocator::realloc()");
+    if (!r) throw AllocException("OsAllocator::realloc()");
 
     return r;
 }

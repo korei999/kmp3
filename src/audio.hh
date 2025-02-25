@@ -34,13 +34,13 @@ protected:
 public:
     virtual void init() = 0;
     virtual void destroy() = 0;
-    virtual void play(String sPath) = 0;
+    virtual void play(StringView sPath) = 0;
     virtual void pause(bool bPause) = 0;
     virtual void togglePause() = 0;
     virtual void changeSampleRate(u64 sampleRate, bool bSave) = 0;
     virtual void seekMS(f64 ms) = 0;
     virtual void seekOff(f64 offset) = 0;
-    [[nodiscard]] virtual Opt<String> getMetadata(const String sKey) = 0;
+    [[nodiscard]] virtual Opt<StringView> getMetadata(const StringView sKey) = 0;
     [[nodiscard]] virtual Opt<Image> getCoverImage() = 0;
     virtual void setVolume(const f32 volume) = 0;
     [[nodiscard]] virtual i64 getCurrentMS() = 0;
@@ -75,13 +75,13 @@ struct DummyMixer : public IMixer
 {
     virtual void init() override final {}
     virtual void destroy() override final {}
-    virtual void play(String) override final {}
+    virtual void play(StringView) override final {}
     virtual void pause(bool) override final {}
     virtual void togglePause() override final {}
     virtual void changeSampleRate(u64, bool) override final {}
     virtual void seekMS(f64) override final {}
     virtual void seekOff(f64) override final {}
-    virtual Opt<String> getMetadata(const String) override final { return {}; }
+    virtual Opt<StringView> getMetadata(const StringView) override final { return {}; }
     virtual Opt<Image> getCoverImage() override final { return {}; }
     virtual void setVolume(const f32) override final {}
     virtual i64 getCurrentMS() override final { return {}; };
@@ -96,7 +96,7 @@ enum class ERROR : u8
     FAIL,
 };
 
-constexpr String mapERRORToString[] {
+constexpr StringView mapERRORToString[] {
     "OK_",
     "EOF_OF_FILE",
     "DONE",
@@ -117,9 +117,9 @@ struct IDecoder
     [[nodiscard]] virtual i64 getTotalMS() = 0;
     [[nodiscard]] virtual i64 getTotalSamplesCount() = 0;
     [[nodiscard]] virtual int getChannelsCount() = 0;
-    [[nodiscard]] virtual Opt<String> getMetadataValue(const String sKey) = 0;
+    [[nodiscard]] virtual StringView getMetadataValue(const StringView sKey) = 0;
     [[nodiscard]] virtual Opt<Image> getCoverImage() = 0;
-    [[nodiscard]] virtual ERROR open(String sPath) = 0;
+    [[nodiscard]] virtual ERROR open(StringView sPath) = 0;
     virtual void close() = 0;
 };
 

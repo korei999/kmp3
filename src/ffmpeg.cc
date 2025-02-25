@@ -67,13 +67,13 @@ Decoder::getTotalMS()
 }
 
 
-Opt<String>
-Decoder::getMetadataValue(const String sKey)
+StringView
+Decoder::getMetadataValue(const StringView sKey)
 {
     if (!m_pStream) return {};
 
     char aBuff[64] {};
-    strncpy(aBuff, sKey.data(), utils::min(sKey.getSize(), utils::size(aBuff) - 1));
+    strncpy(aBuff, sKey.data(), utils::min(sKey.size(), utils::size(aBuff) - 1));
 
     AVDictionaryEntry* pTag {};
     pTag = av_dict_get(m_pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
@@ -185,9 +185,9 @@ Decoder::getCoverImage()
 }
 
 audio::ERROR
-Decoder::open(String sPath)
+Decoder::open(StringView sPath)
 {
-    String sPathNullTerm = StringAlloc(OsAllocatorGet(), sPath); /* with null char */
+    String sPathNullTerm = String(OsAllocatorGet(), sPath); /* with null char */
     defer( sPathNullTerm.destroy(OsAllocatorGet()) );
 
     int err = 0;
@@ -289,12 +289,12 @@ Decoder::writeToBuffer(
             }
 
             int maxSamples = res.nb_samples * res.ch_layout.nb_channels;
-            if (maxSamples >= spBuff.getSize()) maxSamples = spBuff.getSize() - 1;
+            if (maxSamples >= spBuff.size()) maxSamples = spBuff.size() - 1;
 
             const auto& nFrameChannles = res.ch_layout.nb_channels;
             assert(nFrameChannles > 0);
 
-            utils::copy(spBuff.data() + nWrites, (f32*)(res.data[0]), maxSamples);
+            utils::memCopy(spBuff.data() + nWrites, (f32*)(res.data[0]), maxSamples);
             nWrites += maxSamples;
 
             if (nWrites >= maxSamples && nWrites >= nFrames * nFrameChannles) /* mul by nChannels */

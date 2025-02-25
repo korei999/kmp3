@@ -302,8 +302,8 @@ allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int term
 
         defer( g_string_free(pGStr, true) );
 
-        auto sRet = StringAlloc(pAlloc, pGStr->str, pGStr->len);
-        assert(sRet.getSize() == (ssize)pGStr->len);
+        auto sRet = String(pAlloc, pGStr->str, pGStr->len);
+        assert(sRet.size() == (ssize)pGStr->len);
 
         return {
             .eLayout = IMAGE_LAYOUT::RAW,
@@ -329,11 +329,11 @@ allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int term
 
         defer( g_strfreev(ppGStr.data()) );
 
-        VecBase<String> vLines(pAlloc, ppGStr.getSize());
-        vLines.setSize(pAlloc, ppGStr.getSize());
+        Vec<String> vLines(pAlloc, ppGStr.size());
+        vLines.setSize(pAlloc, ppGStr.size());
 
-        for (ssize i = 0; i < vLines.getSize(); ++i)
-            vLines[i] = StringAlloc(pAlloc, ppGStr[i], strlen(ppGStr[i]));
+        for (ssize i = 0; i < vLines.size(); ++i)
+            vLines[i] = String(pAlloc, ppGStr[i], strlen(ppGStr[i]));
 
         return {
             .eLayout = IMAGE_LAYOUT::LINES,

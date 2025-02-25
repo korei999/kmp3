@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/Arr.hh"
+#include "adt/Array.hh"
 #include "adt/defer.hh"
 #include "app.hh"
 
@@ -38,14 +38,14 @@ constexpr u32 CHAR_VOL = L'▯';
 constexpr u32 CHAR_VOL_MUTED = L'▮';
 constexpr wchar_t CURSOR_BLOCK[] {L'█', L'\0'};
 
-[[nodiscard]] inline constexpr String
+[[nodiscard]] inline constexpr StringView
 readModeToString(WINDOW_READ_MODE e) noexcept
 {
-    constexpr String map[] {"", "searching: ", "time: "};
+    constexpr StringView map[] {"", "searching: ", "time: "};
     return map[int(e)];
 }
 
-[[nodiscard]] inline String
+[[nodiscard]] inline StringView
 allocTimeString(Arena* pArena, int width)
 {
     auto& mix = *app::g_pMixer;
@@ -84,7 +84,7 @@ fixFirstIdx(u16 listHeight, i16* pFirstIdx) noexcept
         first = focused - listHeight;
     else if (focused < first)
         first = focused;
-    else if (pl.m_vSearchIdxs.getSize() < listHeight)
+    else if (pl.m_vSearchIdxs.size() < listHeight)
         first = 0;
 
     *pFirstIdx = first;
@@ -96,8 +96,8 @@ procSeekString(const Span<wchar_t> spBuff) noexcept
     bool bPercent = false;
     bool bColon = false;
 
-    Arr<char, 32> aMinutesBuff {};
-    Arr<char, 32> aSecondsBuff {};
+    Array<char, 32> aMinutesBuff {};
+    Array<char, 32> aSecondsBuff {};
 
     for (auto& wch : spBuff)
     {
@@ -113,13 +113,13 @@ procSeekString(const Span<wchar_t> spBuff) noexcept
         }
         else if (iswdigit(wch))
         {
-            Arr<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
-            if (spBuff.idx(&wch) < pTargetArray->getCap() - 1)
+            Array<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
+            if (spBuff.idx(&wch) < pTargetArray->cap() - 1)
                 pTargetArray->push(char(wch)); /* wdigits are equivalent to char */
         }
     }
 
-    if (aMinutesBuff.getSize() == 0)
+    if (aMinutesBuff.size() == 0)
         return;
 
     if (bPercent)
@@ -131,7 +131,7 @@ procSeekString(const Span<wchar_t> spBuff) noexcept
     else
     {
         ssize sec;
-        if (aSecondsBuff.getSize() == 0) sec = atoll(aMinutesBuff.data());
+        if (aSecondsBuff.size() == 0) sec = atoll(aMinutesBuff.data());
         else sec = atoll(aSecondsBuff.data()) + atoll(aMinutesBuff.data())*60;
 
         app::g_pMixer->seekMS(sec * 1000);
@@ -168,7 +168,7 @@ subStringSearch(
         eRead = FN_READ(pReadArg);
         if (eRead == READ_STATUS::BACKSPACE)
         {
-            if (pl.m_vSearchIdxs.getSize() != pl.m_vSongs.getSize())
+            if (pl.m_vSearchIdxs.size() != pl.m_vSongs.size())
             {
                 pl.setDefaultSearchIdxs();
                 pl.copySearchToSongIdxs();
@@ -184,7 +184,7 @@ subStringSearch(
         *pFirstIdx = savedFirst;
 
     /* fix focused if it ends up out of the list range */
-    if (pl.m_focused >= pl.m_vSongIdxs.getSize())
+    if (pl.m_focused >= pl.m_vSongIdxs.size())
         pl.m_focused = 0;
 }
 

@@ -2,7 +2,6 @@
 
 #include "String.hh"
 #include "logs.hh"
-#include "Opt.hh"
 #include "defer.hh"
 
 namespace adt
@@ -10,13 +9,13 @@ namespace adt
 namespace file
 {
 
-[[nodiscard]] inline Opt<String>
-load(IAllocator* pAlloc, String sPath)
+[[nodiscard]] inline String
+load(IAllocator* pAlloc, StringView svPath)
 {
-    FILE* pf = fopen(sPath.data(), "rb");
+    FILE* pf = fopen(svPath.data(), "rb");
     if (!pf)
     {
-        LOG_WARN("Error opening '{}' file\n", sPath);
+        LOG_WARN("Error opening '{}' file\n", svPath);
         return {};
     }
     defer(fclose(pf));
@@ -27,47 +26,47 @@ load(IAllocator* pAlloc, String sPath)
     ssize size = ftell(pf) + 1;
     rewind(pf);
 
-    ret.m_pData = (char*)pAlloc->malloc(size, sizeof(char));
+    ret.m_pData = reinterpret_cast<char*>(pAlloc->malloc(size, sizeof(char)));
     ret.m_size = size - 1;
-    fread(ret.data(), 1, ret.getSize(), pf);
+    fread(ret.data(), 1, ret.size(), pf);
     ret.m_pData[ret.m_size] = '\0';
 
     return ret;
 }
 
 [[nodiscard]]
-inline String
-getPathEnding(String sPath)
+inline StringView
+getPathEnding(StringView svPath)
 {
-    ssize lastSlash = sPath.lastOf('/');
+    ssize lastSlash = svPath.lastOf('/');
 
-    if (lastSlash == NPOS || (lastSlash + 1) == sPath.getSize()) /* nothing after slash */
-        return sPath;
+    if (lastSlash == NPOS || (lastSlash + 1) == svPath.size()) /* nothing after slash */
+        return svPath;
 
-    return String(&sPath[lastSlash + 1], &sPath[sPath.m_size - 1] - &sPath[lastSlash]);
+    return StringView(&svPath[lastSlash + 1], &svPath[svPath.m_size - 1] - &svPath[lastSlash]);
 }
 
 [[nodiscard]]
 inline String
-replacePathEnding(IAllocator* pAlloc, String sPath, String sEnding)
+replacePathEnding(IAllocator* pAlloc, StringView svPath, StringView svEnding)
 {
     ADT_ASSERT(pAlloc != nullptr, " ");
 
-    ssize lastSlash = sPath.lastOf('/');
-    String sNoEnding = {&sPath[0], lastSlash + 1};
-    String r = StringCat(pAlloc, sNoEnding, sEnding);
+    ssize lastSlash = svPath.lastOf('/');
+    StringView sNoEnding = {&svPath[0], lastSlash + 1};
+    String r = StringCat(pAlloc, sNoEnding, svEnding);
     return r;
 }
 
 inline void
-replacePathEnding(Span<char>* pSpBuff, String sPath, String sEnding)
+replacePathEnding(Span<char> spBuff, StringView svPath, StringView svEnding)
 {
-    ADT_ASSERT(pSpBuff != nullptr, " ");
+    ADT_ASSERT(spBuff != nullptr, " ");
 
-    ssize lastSlash = sPath.lastOf('/');
-    String sNoEnding = {&sPath[0], lastSlash + 1};
-    ssize n = print::toSpan(*pSpBuff, "{}{}", sNoEnding, sEnding);
-    pSpBuff->m_size = n;
+    ssize lastSlash = svPath.lastOf('/');
+    StringView sNoEnding = {&svPath[0], lastSlash + 1};
+    ssize n = print::toSpan(spBuff, "{}{}", sNoEnding, svEnding);
+    spBuff.m_size = n;
 }
 
 } /* namespace file */

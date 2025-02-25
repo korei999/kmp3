@@ -37,9 +37,9 @@ struct Decoder : audio::IDecoder
     [[nodiscard]] virtual i64 getTotalMS() override final;
     [[nodiscard]] virtual i64 getTotalSamplesCount() override final;
     [[nodiscard]] virtual int getChannelsCount() override final;
-    [[nodiscard]] virtual Opt<String> getMetadataValue(const String sKey) override final;
+    [[nodiscard]] virtual StringView getMetadataValue(const StringView sKey) override final;
     [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
-    [[nodiscard]] virtual audio::ERROR open(String sPath) override final;
+    [[nodiscard]] virtual audio::ERROR open(StringView sPath) override final;
     virtual void close() override final;
 
     /* */

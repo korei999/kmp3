@@ -15,8 +15,8 @@ struct Span
 
     constexpr Span() = default;
 
-    constexpr Span(T* pData, ssize size) noexcept
-        : m_pData(pData), m_size(size) {}
+    constexpr Span(const T* pData, ssize size) noexcept
+        : m_pData(const_cast<T*>(pData)), m_size(size) {}
 
     template<ssize N>
     constexpr Span(T (&aChars)[N]) noexcept
@@ -27,7 +27,7 @@ struct Span
     constexpr T* data() noexcept { return m_pData; }
     constexpr const T* data() const noexcept { return m_pData; }
 
-    constexpr ssize getSize() const noexcept { return m_size; }
+    constexpr ssize size() const noexcept { return m_size; }
 
     constexpr ssize lastI() const noexcept { ADT_ASSERT(m_size > 0, "empty: size: %llu", m_size); return m_size - 1; }
 

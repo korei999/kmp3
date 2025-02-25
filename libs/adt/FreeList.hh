@@ -34,12 +34,12 @@ struct FreeListData
     
     /* */
 
-    constexpr usize getSize() const noexcept { return m_sizeAndIsFree & ~IS_FREE_MASK; }
+    constexpr usize size() const noexcept { return m_sizeAndIsFree & ~IS_FREE_MASK; }
     constexpr bool isFree() const noexcept { return m_sizeAndIsFree & IS_FREE_MASK; }
     constexpr void setFree(bool _bFree) noexcept { _bFree ? m_sizeAndIsFree |= IS_FREE_MASK : m_sizeAndIsFree &= ~IS_FREE_MASK; };
     constexpr void setSizeSetFree(usize _size, bool _bFree) noexcept { m_sizeAndIsFree = _size; setFree(_bFree); }
     constexpr void setSize(usize _size) noexcept { setSizeSetFree(_size, isFree()); }
-    constexpr void addSize(usize _size) noexcept { setSize(_size + getSize()); }
+    constexpr void addSize(usize _size) noexcept { setSize(_size + size()); }
 };
 
 class FreeList : public IAllocator
@@ -53,13 +53,14 @@ private:
     usize m_blockSize {};
     IAllocator* m_pBackAlloc {};
     usize m_totalAllocated {};
-    RBTreeBase<FreeListData> m_tree {}; /* free nodes sorted by size */
+    RBTree<FreeListData> m_tree {}; /* free nodes sorted by size */
     FreeListBlock* m_pBlocks {};
 
     /* */
 
 public:
     FreeList() = default;
+
     FreeList(usize _blockSize, IAllocator* pBackAlloc = OsAllocatorGet()) noexcept(false)
         : m_blockSize(align8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
           m_pBackAlloc(pBackAlloc),
@@ -92,7 +93,7 @@ template<>
 inline constexpr ssize
 utils::compare(const FreeListData& l, const FreeListData& r)
 {
-    return (ssize)l.getSize() - (ssize)r.getSize();
+    return (ssize)l.size() - (ssize)r.size();
 }
 
 inline FreeList::Node*
@@ -188,7 +189,7 @@ FreeList::findFittingNode(const usize size)
     {
         assert(it->m_data.isFree() && "[FreeList]: non free node in the free list");
 
-        ssize nodeSize = it->m_data.getSize();
+        ssize nodeSize = it->m_data.size();
 
         if (nodeSize >= realSize)
             pLastFitting = it;
@@ -217,10 +218,10 @@ FreeList::verify()
         {
             if (pListNode->m_pNext)
             {
-                bool bNextAdjecent = ((u8*)pListNode + pListNode->getSize()) == ((u8*)pListNode->m_pNext);
+                bool bNextAdjecent = ((u8*)pListNode + pListNode->size()) == ((u8*)pListNode->m_pNext);
                 if (!bNextAdjecent)
                     LOG_FATAL("size and next don't match: [next: {}, calc: {}], size: {}, calcSize: {}\n",
-                        pListNode->m_pNext, ((u8*)pListNode + pListNode->getSize()), pListNode->getSize(), (u8*)pListNode->m_pNext - (u8*)pListNode
+                        pListNode->m_pNext, ((u8*)pListNode + pListNode->size()), pListNode->size(), (u8*)pListNode->m_pNext - (u8*)pListNode
                     );
             }
 
@@ -232,7 +233,7 @@ FreeList::verify()
         {
             if (pListNode->m_pPrev)
             {
-                bool bPrevAdjecent = ((u8*)pListNode->m_pPrev + pListNode->m_pPrev->getSize()) == ((u8*)pListNode);
+                bool bPrevAdjecent = ((u8*)pListNode->m_pPrev + pListNode->m_pPrev->size()) == ((u8*)pListNode);
                 assert(bPrevAdjecent);
             }
 
@@ -249,7 +250,7 @@ FreeList::verify()
 inline FreeList::Node*
 FreeList::splitNode(FreeList::Node* pNode, usize realSize)
 {
-    ssize splitSize = ssize(pNode->m_data.getSize()) - ssize(realSize);
+    ssize splitSize = ssize(pNode->m_data.size()) - ssize(realSize);
 
     assert(splitSize >= 0);
 
@@ -311,8 +312,8 @@ again:
 
     splitNode(pFree, realSize);
 
-    pBlock->nBytesOccupied += pFree->data().getSize();
-    m_totalAllocated += pFree->data().getSize();
+    pBlock->nBytesOccupied += pFree->data().size();
+    m_totalAllocated += pFree->data().size();
 
     return pFree->m_data.m_pMem;
 }
@@ -336,15 +337,15 @@ FreeList::free(void* ptr) noexcept
     auto* pBlock = blockFromNode(pNode);
 
     pNode->m_data.setFree(true);
-    pBlock->nBytesOccupied -= pNode->m_data.getSize();
-    m_totalAllocated -= pNode->m_data.getSize();
+    pBlock->nBytesOccupied -= pNode->m_data.size();
+    m_totalAllocated -= pNode->m_data.size();
 
     /* next adjecent node coalescence */
     if (pNode->m_data.m_pNext && pNode->m_data.m_pNext->isFree())
     {
         m_tree.remove(_FreeListNodeFromPtr(pNode->m_data.m_pNext->m_pMem));
 
-        pNode->m_data.addSize(pNode->m_data.m_pNext->getSize());
+        pNode->m_data.addSize(pNode->m_data.m_pNext->size());
         if (pNode->m_data.m_pNext->m_pNext)
             pNode->m_data.m_pNext->m_pNext->m_pPrev = &pNode->m_data;
         pNode->m_data.m_pNext = pNode->m_data.m_pNext->m_pNext;
@@ -358,7 +359,7 @@ FreeList::free(void* ptr) noexcept
 
         pNode = pPrev;
 
-        pNode->m_data.addSize(pNode->m_data.m_pNext->getSize());
+        pNode->m_data.addSize(pNode->m_data.m_pNext->size());
         if (pNode->m_data.m_pNext->m_pNext)
             pNode->m_data.m_pNext->m_pNext->m_pPrev = &pNode->m_data;
         pNode->m_data.m_pNext = pNode->m_data.m_pNext->m_pNext;
@@ -382,7 +383,7 @@ FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
     }
 
     auto* pNode = _FreeListNodeFromPtr(ptr);
-    ssize nodeSize = (ssize)pNode->m_data.getSize() - (ssize)sizeof(FreeList::Node);
+    ssize nodeSize = (ssize)pNode->m_data.size() - (ssize)sizeof(FreeList::Node);
     assert(nodeSize > 0 && "[FreeList]: 0 or negative size allocation (corruption)");
 
     if ((ssize)newCount*(ssize)mSize <= nodeSize)
@@ -395,20 +396,20 @@ FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
         usize realSize = requested + sizeof(FreeList::Node);
         auto* pNext = pNode->m_data.m_pNext;
 
-        if (pNext && pNext->isFree() && pNode->m_data.getSize() + pNext->getSize() >= realSize)
+        if (pNext && pNext->isFree() && pNode->m_data.size() + pNext->size() >= realSize)
         {
             auto* pBlock = blockFromNode(pNode);
             assert(pBlock && "[FreeList]: failed to find the block");
 
-            pBlock->nBytesOccupied += realSize - pNode->m_data.getSize();
-            m_totalAllocated += realSize - pNode->m_data.getSize();
+            pBlock->nBytesOccupied += realSize - pNode->m_data.size();
+            m_totalAllocated += realSize - pNode->m_data.size();
 
             /* remove next from the free list */
             pNext->setFree(false);
             m_tree.remove(_FreeListNodeFromPtr(pNext->m_pMem));
 
             /* merge with next */
-            pNode->m_data.addSize(pNext->getSize());
+            pNode->m_data.addSize(pNext->size());
             pNode->m_data.m_pNext = pNext->m_pNext;
             if (pNext->m_pNext) pNext->m_pNext->m_pPrev = &pNode->m_data;
             pNode->m_data.setFree(true);

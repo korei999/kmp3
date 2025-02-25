@@ -34,7 +34,7 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
     {
         ssize size = strlen(aCmpMap[type]);
 
-        if (spBuff.getSize() >= size && (strncmp(aCmpMap[type], spBuff.data(), size)) == 0)
+        if (spBuff.size() >= size && (strncmp(aCmpMap[type], spBuff.data(), size)) == 0)
             break;
     }
 
@@ -104,7 +104,7 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
             ssize aIndices[FIRST_LAST_MAX] = {indexFail, indexFail, indexFail};
             bool bCapital = 0;
 
-            for (ssize i = 0; i < spBuff.getSize(); ++i)
+            for (ssize i = 0; i < spBuff.size(); ++i)
             {
                 if (spBuff[i] == ';')
                 {
@@ -257,12 +257,19 @@ Win::procMouse(MouseInput in)
 
     if (in.eKey == MouseInput::KEY::LEFT)
     {
+        f64 time = utils::timeNowMS();
+
         pl.focus(target);
-    }
-    if (in.eKey == MouseInput::KEY::RIGHT)
-    {
-        pl.focus(target);
-        pl.selectFocused();
+
+        if (target == m_lastMouseSelection &&
+            time < m_lastMouseSelectionTime + defaults::DOUBLE_CLICK_DELAY
+        )
+        {
+            pl.selectFocused();
+        }
+
+        m_lastMouseSelection = target;
+        m_lastMouseSelectionTime = time;
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_UP)
     {

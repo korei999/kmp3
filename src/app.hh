@@ -33,7 +33,7 @@ enum class TERM : u8 { ELSE, XTERM, XTERM_256COLOR, KITTY, FOOT, GHOSTTY, ALACRI
 
 extern UI g_eUIFrontend;
 extern MIXER g_eMixer;
-extern String g_sTerm;
+extern StringView g_svTerm;
 extern TERM g_eTerm;
 extern IWindow* g_pWin;
 extern bool g_bRunning;

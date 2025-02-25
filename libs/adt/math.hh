@@ -154,6 +154,34 @@ union IV4
     }
 };
 
+union IV4u8
+{
+    u8 e[4];
+    struct { u8 x, y, z, w; };
+
+    /* */
+
+    constexpr explicit operator IV4() const
+    {
+        return {
+            static_cast<i32>(x),
+            static_cast<i32>(y),
+            static_cast<i32>(z),
+            static_cast<i32>(w)
+        };
+    }
+
+    constexpr explicit operator V4() const
+    {
+        return {
+            static_cast<f32>(x),
+            static_cast<f32>(y),
+            static_cast<f32>(z),
+            static_cast<f32>(w)
+        };
+    }
+};
+
 union IV4u16
 {
     u16 e[4];
@@ -234,6 +262,15 @@ union Qt
     V4 base;
     f32 e[4];
     struct { f32 x, y, z, w; };
+
+    /* */
+
+    Qt
+    getSwapped()
+    {
+        Qt ret {.x = w, .y = z, .z = y, .w = x};
+        return ret;
+    }
 };
 
 constexpr
@@ -269,6 +306,18 @@ constexpr V3
 V3From(f32 x, f32 y, f32 z)
 {
     return {x, y, z};
+}
+
+constexpr V3
+V3From(const V3& v)
+{
+    return v;
+}
+
+constexpr V3
+V3From(const V4& v)
+{
+    return {v.x, v.y, v.z};
 }
 
 constexpr V4
@@ -1319,12 +1368,12 @@ QtRot(const Qt& q)
     auto& x = q.x;
     auto& y = q.y;
     auto& z = q.z;
-    auto& s = q.w;
+    auto& w = q.w;
 
     return {
-        1 - 2*y*y - 2*z*z, 2*x*y - 2*s*z,     2*x*z + 2*s*y,     0,
-        2*x*y + 2*s*z,     1 - 2*x*x - 2*z*z, 2*y*z - 2*s*x,     0,
-        2*x*z - 2*s*y,     2*y*z + 2*s*x,     1 - 2*x*x - 2*y*y, 0,
+        1 - 2*y*y - 2*z*z, 2*x*y - 2*w*z,     2*x*z + 2*w*y,     0,
+        2*x*y + 2*w*z,     1 - 2*x*x - 2*z*z, 2*y*z - 2*w*x,     0,
+        2*x*z - 2*w*y,     2*y*z + 2*w*x,     1 - 2*x*x - 2*y*y, 0,
         0,                 0,                 0,                 1
     };
 }

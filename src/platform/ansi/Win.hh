@@ -56,6 +56,8 @@ class Win : public IWindow
     f64 m_time {};
     f64 m_lastResizeTime {};
     Input m_lastInput {};
+    int m_lastMouseSelection {};
+    f64 m_lastMouseSelectionTime {};
 
     /* */
 

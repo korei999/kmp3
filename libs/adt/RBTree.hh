@@ -35,7 +35,6 @@
 #include <cstdio>
 #include <cassert>
 #include <new> /* IWYU pragma: keep */
-#include <utility>
 
 #ifdef _WIN32
     #undef IN
@@ -121,7 +120,7 @@ template<typename T>
 inline int RBDepth(RBNode<T>* p);
 
 template<typename T>
-struct RBTreeBase
+struct RBTree
 {
     RBNode<T>* m_pRoot = nullptr;
     usize m_size = 0;
@@ -142,17 +141,17 @@ RBPrintNodes(
     IAllocator* pA,
     const RBNode<T>* pNode,
     FILE* pF,
-    const String sPrefix = "",
+    const StringView sPrefix = "",
     bool bLeft = false
 );
 
 template<typename T> inline void _RBSetBlackRed(RBNode<T>* black, RBNode<T>* red);
 template<typename T> inline void _RBSet(RBNode<T>* elm, RBNode<T>* parent);
 template<typename T> inline void _RBSetLinks(RBNode<T>* l, RBNode<T>* r);
-template<typename T> inline void _RBRotateLeft(RBTreeBase<T>* s, RBNode<T>* elm);
-template<typename T> inline void _RBRotateRight(RBTreeBase<T>* s, RBNode<T>* elm);
-template<typename T> inline void _RBInsertColor(RBTreeBase<T>* s, RBNode<T>* elm);
-template<typename T> inline void _RBRemoveColor(RBTreeBase<T>* s, RBNode<T>* parent, RBNode<T>* elm);
+template<typename T> inline void _RBRotateLeft(RBTree<T>* s, RBNode<T>* elm);
+template<typename T> inline void _RBRotateRight(RBTree<T>* s, RBNode<T>* elm);
+template<typename T> inline void _RBInsertColor(RBTree<T>* s, RBNode<T>* elm);
+template<typename T> inline void _RBRemoveColor(RBTree<T>* s, RBNode<T>* parent, RBNode<T>* elm);
 
 template<typename T>
 inline void
@@ -182,21 +181,21 @@ _RBSetBlackRed(RBNode<T>* black, RBNode<T>* red)
 
 template<typename T>
 inline RBNode<T>*
-RBTreeBase<T>::getRoot()
+RBTree<T>::getRoot()
 {
     return m_pRoot;
 }
 
 template<typename T>
 inline bool
-RBTreeBase<T>::empty()
+RBTree<T>::empty()
 {
     return m_pRoot;
 }
 
 template<typename T>
 inline void
-_RBRotateLeft(RBTreeBase<T>* s, RBNode<T>* elm)
+_RBRotateLeft(RBTree<T>* s, RBNode<T>* elm)
 {
     auto tmp = elm->right();
     if ((elm->right() = tmp->left()))
@@ -221,7 +220,7 @@ _RBRotateLeft(RBTreeBase<T>* s, RBNode<T>* elm)
 
 template<typename T>
 inline void
-_RBRotateRight(RBTreeBase<T>* s, RBNode<T>* elm)
+_RBRotateRight(RBTree<T>* s, RBNode<T>* elm)
 {
     auto tmp = elm->left();
     if ((elm->left() = tmp->right()))
@@ -246,7 +245,7 @@ _RBRotateRight(RBTreeBase<T>* s, RBNode<T>* elm)
 
 template<typename T>
 inline void
-_RBInsertColor(RBTreeBase<T>* s, RBNode<T>* elm)
+_RBInsertColor(RBTree<T>* s, RBNode<T>* elm)
 {
     RBNode<T>* parent, * gparent, * tmp;
     while ((parent = elm->parent()) && parent->color() == RB_COLOR::RED)
@@ -298,7 +297,7 @@ _RBInsertColor(RBTreeBase<T>* s, RBNode<T>* elm)
 
 template<typename T>
 inline void
-_RBRemoveColor(RBTreeBase<T>* s, RBNode<T>* parent, RBNode<T>* elm)
+_RBRemoveColor(RBTree<T>* s, RBNode<T>* parent, RBNode<T>* elm)
 {
     RBNode<T>* tmp;
     while ((elm == nullptr || elm->color() == RB_COLOR::BLACK) && elm != s->m_pRoot)
@@ -382,7 +381,7 @@ _RBRemoveColor(RBTreeBase<T>* s, RBNode<T>* parent, RBNode<T>* elm)
 
 template<typename T>
 inline RBNode<T>*
-RBTreeBase<T>::remove(RBNode<T>* elm)
+RBTree<T>::remove(RBNode<T>* elm)
 {
     assert(m_size > 0 && "[RBTree]: empty");
 
@@ -454,7 +453,7 @@ color:
 
 template<typename T>
 inline void
-RBTreeBase<T>::removeAndFree(IAllocator* p, RBNode<T>* elm)
+RBTree<T>::removeAndFree(IAllocator* p, RBNode<T>* elm)
 {
     p->free(remove(elm));
 }
@@ -462,7 +461,7 @@ RBTreeBase<T>::removeAndFree(IAllocator* p, RBNode<T>* elm)
 /* create RBNode outside then insert */
 template<typename T>
 inline RBNode<T>*
-RBTreeBase<T>::insert(bool bAllowDuplicates, RBNode<T>* elm)
+RBTree<T>::insert(bool bAllowDuplicates, RBNode<T>* elm)
 {
     RBNode<T>* parent = nullptr;
     RBNode<T>* tmp = m_pRoot;
@@ -498,7 +497,7 @@ RBTreeBase<T>::insert(bool bAllowDuplicates, RBNode<T>* elm)
 
 template<typename T>
 inline RBNode<T>*
-RBTreeBase<T>::insert(IAllocator* pA, bool bAllowDuplicates, const T& data)
+RBTree<T>::insert(IAllocator* pA, bool bAllowDuplicates, const T& data)
 {
     RBNode<T>* pNew = RBNodeAlloc(pA, data);
     return insert(bAllowDuplicates, pNew);
@@ -507,7 +506,7 @@ RBTreeBase<T>::insert(IAllocator* pA, bool bAllowDuplicates, const T& data)
 template<typename T>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) 
 inline RBNode<T>*
-RBTreeBase<T>::emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args)
+RBTree<T>::emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args)
 {
     RBNode<T>* pNew = RBNodeAlloc(pA, std::forward<ARGS>(args)...);
     return insert(bAllowDuplicates, pNew);
@@ -645,7 +644,7 @@ RBPrintNodes(
     IAllocator* pA,
     const RBNode<T>* pNode,
     FILE* pF,
-    const String sPrefix,
+    const StringView sPrefix,
     bool bLeft
 )
 {
@@ -664,7 +663,7 @@ RBPrintNodes(
 
 template<typename T>
 inline void
-RBTreeBase<T>::destroy(IAllocator* pAlloc)
+RBTree<T>::destroy(IAllocator* pAlloc)
 {
     auto pfnFree = +[](RBNode<T>* p, void* ptr) -> bool {
         ((IAllocator*)ptr)->free(p);
@@ -676,9 +675,9 @@ RBTreeBase<T>::destroy(IAllocator* pAlloc)
 }
 
 template<typename T>
-struct RBTree
+struct RBTreeManaged
 {
-    RBTreeBase<T> base {};
+    RBTree<T> base {};
 
     /* */
 
@@ -686,8 +685,8 @@ struct RBTree
 
     /* */
     
-    RBTree() = default;
-    RBTree(IAllocator* p) : m_pAlloc(p) {}
+    RBTreeManaged() = default;
+    RBTreeManaged(IAllocator* p) : m_pAlloc(p) {}
 
     /* */
 
@@ -712,7 +711,7 @@ inline ssize
 formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const RBNode<T>& node)
 {
     char aBuff[128] {};
-    const String sCol = node.color() == RB_COLOR::BLACK ? ADT_LOGS_COL_BLUE : ADT_LOGS_COL_RED;
+    const StringView sCol = node.color() == RB_COLOR::BLACK ? ADT_LOGS_COL_BLUE : ADT_LOGS_COL_RED;
     print::toBuffer(aBuff, utils::size(aBuff), "{}{}" ADT_LOGS_COL_NORM, sCol, node.m_data);
 
     return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});

@@ -471,12 +471,12 @@ metadata(
     CK(sd_bus_message_open_container(reply, 'a', "{sv}"));
     const auto& pl = *app::g_pPlayer;
 
-    if (pl.m_info.title.getSize() > 0)
-        CK(msgAppendDictSS(reply, "xesam:title", pl.m_info.title.data()));
-    if (pl.m_info.album.getSize() > 0)
-        CK(msgAppendDictSS(reply, "xesam:album", pl.m_info.album.data()));
-    if (pl.m_info.artist.getSize() > 0)
-        CK(msgAppendDictSAS(reply, "xesam:artist", pl.m_info.artist.data()));
+    if (pl.m_info.sTitle.size() > 0)
+        CK(msgAppendDictSS(reply, "xesam:title", pl.m_info.sTitle.data()));
+    if (pl.m_info.sAlbum.size() > 0)
+        CK(msgAppendDictSS(reply, "xesam:album", pl.m_info.sAlbum.data()));
+    if (pl.m_info.sArtist.size() > 0)
+        CK(msgAppendDictSAS(reply, "xesam:artist", pl.m_info.sArtist.data()));
 
     {
         long duration = app::g_pMixer->getTotalMS() * 1000;

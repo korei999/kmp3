@@ -16,7 +16,7 @@ struct Image
     IMAGE_LAYOUT eLayout {};
     union {
         String sRaw;
-        VecBase<String> vLines;
+        Vec<String> vLines;
     } uData {};
 
     int width {};

@@ -3,8 +3,6 @@
 #include "IAllocator.hh"
 #include "utils.hh"
 
-#include <new> /* IWYU pragma: keep */
-
 namespace adt
 {
 
@@ -30,7 +28,7 @@ ListNodeAlloc(IAllocator* pA, const T& x)
 }
 
 template<typename T>
-struct ListBase
+struct List
 {
     ListNode<T>* m_pFirst {};
     ListNode<T>* m_pLast {};
@@ -38,7 +36,7 @@ struct ListBase
 
     /* */
 
-    [[nodiscard]] constexpr ssize getSize() const { return m_size; }
+    [[nodiscard]] constexpr ssize size() const { return m_size; }
 
     [[nodiscard]] constexpr bool empty() const { return m_size == 0; }
 
@@ -95,7 +93,7 @@ struct ListBase
 
 template<typename T>
 constexpr void
-ListBase<T>::destroy(IAllocator* pA)
+List<T>::destroy(IAllocator* pA)
 {
     ADT_LIST_FOREACH_SAFE(this, it, tmp)
         pA->free(it);
@@ -105,7 +103,7 @@ ListBase<T>::destroy(IAllocator* pA)
 
 template<typename T>
 constexpr ListNode<T>*
-ListBase<T>::pushFront(ListNode<T>* pNew)
+List<T>::pushFront(ListNode<T>* pNew)
 {
     if (!m_pFirst)
     {
@@ -126,7 +124,7 @@ ListBase<T>::pushFront(ListNode<T>* pNew)
 
 template<typename T>
 constexpr ListNode<T>*
-ListBase<T>::pushBack(ListNode<T>* pNew)
+List<T>::pushBack(ListNode<T>* pNew)
 {
     if (!m_pFirst)
     {
@@ -147,7 +145,7 @@ ListBase<T>::pushBack(ListNode<T>* pNew)
 
 template<typename T>
 constexpr ListNode<T>*
-ListBase<T>::pushFront(IAllocator* pA, const T& x)
+List<T>::pushFront(IAllocator* pA, const T& x)
 {
     auto* pNew = ListNodeAlloc(pA, x);
     return pushFront(pNew);
@@ -155,7 +153,7 @@ ListBase<T>::pushFront(IAllocator* pA, const T& x)
 
 template<typename T>
 constexpr ListNode<T>*
-ListBase<T>::pushBack(IAllocator* pA, const T& x)
+List<T>::pushBack(IAllocator* pA, const T& x)
 {
     auto* pNew = ListNodeAlloc(pA, x);
     return pushBack(pNew);
@@ -163,7 +161,7 @@ ListBase<T>::pushBack(IAllocator* pA, const T& x)
 
 template<typename T>
 constexpr void
-ListBase<T>::remove(ListNode<T>* p)
+List<T>::remove(ListNode<T>* p)
 {
     ADT_ASSERT(p && m_size > 0, "");
 
@@ -192,7 +190,7 @@ ListBase<T>::remove(ListNode<T>* p)
 
 template<typename T>
 constexpr void
-ListBase<T>::insertAfter(ListNode<T>* pAfter, ListNode<T>* p)
+List<T>::insertAfter(ListNode<T>* pAfter, ListNode<T>* p)
 {
     p->pPrev = pAfter;
     p->pNext = pAfter->pNext;
@@ -208,7 +206,7 @@ ListBase<T>::insertAfter(ListNode<T>* pAfter, ListNode<T>* p)
 
 template<typename T>
 constexpr void
-ListBase<T>::insertBefore(ListNode<T>* pBefore, ListNode<T>* p)
+List<T>::insertBefore(ListNode<T>* pBefore, ListNode<T>* p)
 {
     p->pNext = pBefore;
     p->pPrev = pBefore->pPrev;
@@ -226,7 +224,7 @@ ListBase<T>::insertBefore(ListNode<T>* pBefore, ListNode<T>* p)
 template<typename T>
 template<auto FN_CMP>
 constexpr void
-ListBase<T>::sort()
+List<T>::sort()
 {
     ListNode<T>* p {}, * q {}, * e {}, * tail {};
     long inSize {}, nMerges {}, pSize {}, qSize {}, i {};
@@ -312,9 +310,9 @@ ListBase<T>::sort()
 }
 
 template<typename T>
-struct List
+struct ListManaged
 {
-    ListBase<T> base {};
+    List<T> base {};
 
     /* */
 
@@ -322,12 +320,12 @@ struct List
 
     /* */
 
-    List() = default;
-    List(IAllocator* pA) : m_pAlloc(pA) {}
+    ListManaged() = default;
+    ListManaged(IAllocator* pA) : m_pAlloc(pA) {}
 
     /* */
 
-    [[nodiscard]] constexpr ssize getSize() const { return base.getSize(); }
+    [[nodiscard]] constexpr ssize size() const { return base.size(); }
 
     [[nodiscard]] constexpr bool empty() const { return base.empty(); }
 
@@ -349,15 +347,15 @@ struct List
 
     /* */
 
-    typename ListBase<T>::It begin() { return base.begin(); }
-    typename ListBase<T>::It end() { return base.end(); }
-    typename ListBase<T>::It rbegin() { return base.rbegin(); }
-    typename ListBase<T>::It rend() { return base.rend(); }
+    typename List<T>::It begin() { return base.begin(); }
+    typename List<T>::It end() { return base.end(); }
+    typename List<T>::It rbegin() { return base.rbegin(); }
+    typename List<T>::It rend() { return base.rend(); }
 
-    const typename ListBase<T>::It begin() const { return base.begin(); }
-    const typename ListBase<T>::It end() const { return base.end(); }
-    const typename ListBase<T>::It rbegin() const { return base.rbegin(); }
-    const typename ListBase<T>::It rend() const { return base.rend(); }
+    const typename List<T>::It begin() const { return base.begin(); }
+    const typename List<T>::It end() const { return base.end(); }
+    const typename List<T>::It rbegin() const { return base.rbegin(); }
+    const typename List<T>::It rend() const { return base.rend(); }
 };
 
 } /* namespace adt */

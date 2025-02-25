@@ -118,11 +118,8 @@ enum class TEXT_BUFF_STYLE : u32
     BG_MAGENTA = 1 << 19,
     BG_CYAN = 1 << 20,
     BG_WHITE = 1 << 21,
-
-    DONT_TOUCH = 1 << 22,
 };
 ADT_ENUM_BITWISE_OPERATORS(TEXT_BUFF_STYLE);
-
 
 struct TextBuffCell
 {
@@ -160,15 +157,15 @@ struct TextBuff
     bool m_bChanged {};
     bool m_bErase {};
 
-    VecBase<TextBuffCell> m_vFront {}; /* what to show */
-    VecBase<TextBuffCell> m_vBack {}; /* where to write */
+    Vec<TextBuffCell> m_vFront {}; /* what to show */
+    Vec<TextBuffCell> m_vBack {}; /* where to write */
 
 #ifdef OPT_CHAFA
     /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
      * the image might be forceClean()'d and gone by the next iteration.
      * A separate arena just for the image vector will be sufficient. */
     Arena m_imgArena {};
-    VecBase<TextBuffImage> m_vImages {};
+    Vec<TextBuffImage> m_vImages {};
 #endif
 
     ScratchBuffer m_scratch {};
@@ -180,7 +177,7 @@ struct TextBuff
     /* direct write api (cpu heavy) */
     void push(const char ch);
     void push(const char* pBuff, const ssize buffSize);
-    void push(const String sBuff);
+    void push(const StringView svBuff);
     void flush();
     void moveTopLeft();
     void up(int steps);
@@ -205,9 +202,9 @@ struct TextBuff
     void erase();
     void resize(ssize width, ssize height);
 
-    void string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str);
+    void string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView sv);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp);
-    String styleToString(TEXT_BUFF_STYLE eStyle);
+    StringView styleToStringScratch(TEXT_BUFF_STYLE eStyle);
 
 #ifdef OPT_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);
@@ -263,9 +260,9 @@ TextBuff::push(const char* pBuff, const ssize buffSize)
 }
 
 inline void
-TextBuff::push(const String sBuff)
+TextBuff::push(const StringView sv)
 {
-    push(sBuff.data(), sBuff.getSize());
+    push(sv.data(), sv.size());
 }
 
 inline void
@@ -464,7 +461,7 @@ TextBuff::pushDiff()
 
             if (back.eStyle != eLastStyle)
             {
-                push(styleToString(back.eStyle));
+                push(styleToStringScratch(back.eStyle));
                 eLastStyle = back.eStyle;
             }
 
@@ -509,7 +506,7 @@ TextBuff::showImages()
         else
         {
             auto& vLines = im.img.uData.vLines;
-            for (ssize lineIdx = 0; lineIdx < vLines.getSize(); ++lineIdx)
+            for (ssize lineIdx = 0; lineIdx < vLines.size(); ++lineIdx)
             {
                 move(im.x, im.y + lineIdx);
                 push(vLines[lineIdx]);
@@ -543,7 +540,7 @@ TextBuff::resetBuffers()
         cell.wc = L' ';
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
-    utils::copy(m_vBack.data(), m_vFront.data(), m_vFront.getSize());
+    utils::memCopy(m_vBack.data(), m_vFront.data(), m_vFront.size());
 }
 
 inline void
@@ -618,7 +615,7 @@ TextBuff::backBufferSpan()
 }
 
 inline void
-TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str)
+TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str)
 {
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
         return;
@@ -642,7 +639,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const String str)
         {
             for (ssize i = 1; i < colWidth; ++i)
             {
-                if (x + i >= bb.getWidth() || y >= bb.getHeight())
+                if (x + i >= bb.width() || y >= bb.height())
                     return;
 
                 auto& back = bb(x + i, y);
@@ -661,17 +658,17 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
         return;
 
-    Span spBuff = m_scratch.nextMemZero<char>(sp.getSize() * 8);
+    Span spBuff = m_scratch.nextMemZero<char>(sp.size() * 8);
 
-    int len = wcstombs(spBuff.data(), sp.data(), spBuff.getSize() - 1);
+    int len = wcstombs(spBuff.data(), sp.data(), spBuff.size() - 1);
     string(x, y, eStyle, {spBuff.data(), len});
 }
 
-inline String
-TextBuff::styleToString(TEXT_BUFF_STYLE eStyle)
+inline StringView
+TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
 {
     auto sp = m_scratch.nextMemZero<char>(128);
-    ssize size = sp.getSize() - 1;
+    ssize size = sp.size() - 1;
     ssize n = 0;
 
     n += print::toBuffer(sp.data() + n, size - n, "\x1b[0");

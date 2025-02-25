@@ -32,8 +32,7 @@ MiMalloc::malloc(usize mCount, usize mSize)
 {
     auto* r = ::mi_malloc(mCount * mSize);
 
-    if (!r)
-        throw AllocException("MiMalloc::malloc()");
+    if (!r) throw AllocException("MiMalloc::malloc()");
 
     return r;
 }
@@ -43,8 +42,7 @@ MiMalloc::zalloc(usize mCount, usize mSize)
 {
     auto* r = ::mi_calloc(mCount, mSize);
 
-    if (!r)
-        throw AllocException("MiMalloc::zalloc()");
+    if (!r) throw AllocException("MiMalloc::zalloc()");
 
     return r;
 }
@@ -54,8 +52,7 @@ MiMalloc::realloc(void* p, usize, usize newCount, usize mSize)
 {
     auto* r = ::mi_reallocn(p, newCount, mSize);
 
-    if (!r)
-        throw AllocException("MiMalloc::realloc()");
+    if (!r) throw AllocException("MiMalloc::realloc()");
 
     return r;
 }
@@ -80,6 +77,7 @@ struct MiHeap : IAllocator
     /* */
 
     MiHeap() = default;
+
     MiHeap(usize) : m_pHeap(mi_heap_new()) {}
 
     /* */
@@ -100,8 +98,7 @@ MiHeap::malloc(usize mCount, usize mSize)
 {
     auto* r = ::mi_heap_mallocn(m_pHeap, mCount, mSize);
 
-    if (!r)
-        throw AllocException("MiHeap::malloc()");
+    if (!r) throw AllocException("MiHeap::malloc()");
 
     return r;
 }
@@ -111,8 +108,7 @@ MiHeap::zalloc(usize mCount, usize mSize)
 {
     auto* r = ::mi_heap_zalloc(m_pHeap, mCount * mSize);
 
-    if (!r)
-        throw AllocException("MiHeap::zalloc()");
+    if (!r) throw AllocException("MiHeap::zalloc()");
 
     return r;
 }
@@ -122,8 +118,7 @@ MiHeap::realloc(void* p, usize, usize newCount, usize mSize)
 {
     auto* r = ::mi_reallocn(p, newCount, mSize);
 
-    if (!r)
-        throw AllocException("MiHeap::realloc()");
+    if (!r) throw AllocException("MiHeap::realloc()");
 
     return r;
 }

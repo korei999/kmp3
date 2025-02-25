@@ -35,7 +35,7 @@ protected:
     enum spa_audio_format m_eformat {};
     std::atomic<bool> m_bDecodes = false;
     audio::IDecoder* m_pIDecoder {};
-    String m_sPath {};
+    StringView m_sPath {};
 
     pw_thread_loop* m_pThrdLoop {};
     pw_stream* m_pStream {};
@@ -48,13 +48,13 @@ protected:
 public:
     virtual void init() override final;
     virtual void destroy() override final;
-    virtual void play(String sPath) override final;
+    virtual void play(StringView sPath) override final;
     virtual void pause(bool bPause) override final;
     virtual void togglePause() override final;
     virtual void changeSampleRate(u64 sampleRate, bool bSave) override final;
     virtual void seekMS(f64 ms) override final;
     virtual void seekOff(f64 offset) override final;
-    [[nodiscard]] virtual Opt<String> getMetadata(const String sKey) override final;
+    [[nodiscard]] virtual Opt<StringView> getMetadata(const StringView sKey) override final;
     [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
     virtual void setVolume(const f32 volume) override final;
     [[nodiscard]] virtual i64 getCurrentMS() override final;
