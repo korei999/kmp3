@@ -198,7 +198,7 @@ inline THREAD_STATUS
 Thread::pthreadJoin()
 {
     u64 ret {};
-    auto err = pthread_join(m_thread, (void**)&ret);
+    [[maybe_unused]] auto err = pthread_join(m_thread, (void**)&ret);
     ADT_ASSERT(err == 0, "err: %d", err);
 
     return static_cast<THREAD_STATUS>(ret);
