@@ -52,6 +52,11 @@ sigwinchHandler(int)
 
     s.m_bClear = true;
     s.m_lastResizeTime = utils::timeNowMS();
+
+    /* adapt list height if window size increased */
+    const int listHeight = s.m_listHeight - 2;
+    if (pl.m_focused > pl.m_vSearchIdxs.size() - listHeight && pl.m_vSearchIdxs.size() > listHeight)
+        s.m_firstIdx = pl.m_vSearchIdxs.size() - listHeight - 1;
 }
 
 bool
@@ -97,7 +102,7 @@ Win::procEvents()
     procInput();
 
     common::fixFirstIdx(
-        (g_termSize.height - app::g_pPlayer->m_imgHeight) - 5 /* some image whitespace + bottom row padding to make it work */,
+        m_listHeight - 2,
         &m_firstIdx
     );
 }

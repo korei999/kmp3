@@ -21,8 +21,8 @@ static ScratchBuffer s_scratch(s_aMemBuff);
 void
 Win::coverImage()
 {
-    auto& pl = *app::g_pPlayer;
-    auto& mix = *app::g_pMixer;
+    auto& pl = app::player();
+    auto& mix = app::mixer();
 
     if (pl.m_bSelectionChanged && m_time > m_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
@@ -51,6 +51,7 @@ Win::coverImage()
 
             m_prevImgWidth = chafaImg.width;
         }
+        else m_prevImgWidth = 0;
     }
 }
 #endif

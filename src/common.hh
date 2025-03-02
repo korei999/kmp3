@@ -1,8 +1,9 @@
 #pragma once
 
+#include "app.hh"
+
 #include "adt/Array.hh"
 #include "adt/defer.hh"
-#include "app.hh"
 
 #include <cmath>
 #include <cwctype>
@@ -18,8 +19,8 @@ struct InputBuff {
 
     /* */
 
-    void zeroOut() noexcept { memset(m_aBuff, 0, sizeof(m_aBuff)); }
-    Span<wchar_t> getSpan() noexcept { return Span{m_aBuff}; }
+    void zeroOut() { memset(m_aBuff, 0, sizeof(m_aBuff)); }
+    Span<wchar_t> getSpan() { return Span{m_aBuff}; }
 };
 
 extern InputBuff g_input;
@@ -73,25 +74,25 @@ allocTimeString(Arena* pArena, int width)
 
 /* fix song list range on new focus */
 inline void
-fixFirstIdx(u16 listHeight, i16* pFirstIdx) noexcept
+fixFirstIdx(u16 listHeight, i16* pFirstIdx)
 {
-    const auto& pl = *app::g_pPlayer;
+    const Player& pl = app::player();
 
-    const u16 focused = pl.m_focused;
-    u16 first = *pFirstIdx;
+    const long focused = pl.m_focused;
+    i16 first = *pFirstIdx;
 
-    if (focused > first + listHeight)
+    if (pl.m_vSearchIdxs.size() < listHeight)
+        first = 0;
+    else if (focused > first + listHeight)
         first = focused - listHeight;
     else if (focused < first)
         first = focused;
-    else if (pl.m_vSearchIdxs.size() < listHeight)
-        first = 0;
 
     *pFirstIdx = first;
 }
 
 inline void
-procSeekString(const Span<wchar_t> spBuff) noexcept
+procSeekString(const Span<wchar_t> spBuff)
 {
     bool bPercent = false;
     bool bColon = false;
