@@ -149,7 +149,7 @@ Mixer::destroy()
 
     m_bRunning = false;
 
-    if (m_bDecodes) m_decoder.close();
+    if (m_bDecodes.load(std::memory_order_relaxed)) m_decoder.close();
 
     if (m_pStream) pw_stream_destroy(m_pStream);
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
@@ -171,16 +171,17 @@ Mixer::play(StringView svPath)
 
         m_svPath = svPath;
 
-        if (m_bDecodes)
-            m_decoder.close();
+        if (m_bDecodes.load(std::memory_order_relaxed)) m_decoder.close();
 
-        auto err = m_decoder.open(svPath);
-        if (err != audio::ERROR::OK_)
+        if (audio::ERROR err = m_decoder.open(svPath);
+            err != audio::ERROR::OK_
+        )
         {
             LOG_WARN("decoder::open(): '{}'\n", svPath);
             return;
         }
-        m_bDecodes = true;
+
+        m_bDecodes.store(true, std::memory_order_relaxed);
     }
 
     setNChannles(m_decoder.getChannelsCount());
@@ -203,7 +204,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
     {
         guard::Mtx lock(&m_mtxDecoder);
 
-        if (!m_bDecodes) return;
+        if (!m_bDecodes.load(std::memory_order_relaxed)) return;
 
         err = m_decoder.writeToBuffer(
             spBuff,
@@ -215,7 +216,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
         {
             pause(true);
             m_decoder.close();
-            m_bDecodes = false;
+            m_bDecodes.store(false, std::memory_order_relaxed);
         }
     }
 
@@ -359,8 +360,7 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     pw_stream_set_active(m_pStream, m_bPaused);
     pw_stream_set_active(m_pStream, !m_bPaused);
 
-    if (bSave)
-        m_sampleRate = sampleRate;
+    if (bSave) m_sampleRate = sampleRate;
 
     m_changedSampleRate = sampleRate;
 }
@@ -369,8 +369,8 @@ void
 Mixer::seekMS(f64 ms)
 {
     guard::Mtx lock(&m_mtxDecoder);
-    if (!m_bDecodes)
-        return;
+
+    if (!m_bDecodes.load(std::memory_order_relaxed)) return;
 
     ms = utils::clamp(ms, 0.0, (f64)getTotalMS());
     m_decoder.seekMS(ms);

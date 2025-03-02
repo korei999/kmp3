@@ -32,6 +32,8 @@ struct Vec
           m_size(0),
           m_capacity(prealloc) {}
 
+    Vec(IAllocator* p, ssize prealloc, const T& defaultVal);
+
     /* */
 
 #define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
@@ -129,6 +131,16 @@ public:
     const It rbegin() const noexcept { return {&m_pData[m_size - 1]}; }
     const It rend() const noexcept { return {m_pData - 1}; }
 };
+
+template<typename T>
+inline
+Vec<T>::Vec(IAllocator* p, ssize prealloc, const T& defaultVal)
+    : Vec(p, prealloc)
+{
+    setSize(p, prealloc);
+    for (auto& e : (*this))
+        e = defaultVal;
+}
 
 template<typename T>
 inline ssize
@@ -371,6 +383,7 @@ struct VecManaged
 
     VecManaged() = default;
     VecManaged(IAllocator* p, ssize prealloc = 1) : base(p, prealloc), m_pAlloc(p) {}
+    VecManaged(IAllocator* p, ssize prealloc, const T& defaultVal) : base(p, prealloc, defaultVal) {}
 
     /* */
 

@@ -16,7 +16,17 @@ nullTermStringSize(const char* nts)
     ssize i = 0;
     if (!nts) return 0;
 
+#if defined __has_constexpr_builtin
+    #if __has_constexpr_builtin(__builtin_strlen)
+
+    i = __builtin_strlen(nts);
+
+    #endif
+#else
+
     while (nts[i] != '\0') ++i;
+
+#endif
 
     return i;
 }
@@ -41,9 +51,6 @@ struct StringView
 
     constexpr StringView() = default;
 
-    constexpr StringView(char* sNullTerminated)
-        : m_pData(sNullTerminated), m_size(nullTermStringSize(sNullTerminated)) {}
-
     constexpr StringView(const char* sNullTerminated)
         : m_pData(const_cast<char*>(sNullTerminated)), m_size(nullTermStringSize(sNullTerminated)) {}
 
@@ -52,6 +59,11 @@ struct StringView
 
     constexpr StringView(Span<char> sp)
         : StringView(sp.data(), sp.size()) {}
+
+    template <ssize SIZE>
+    constexpr StringView(const char (&aCharBuff)[SIZE])
+        : m_pData(const_cast<char*>(aCharBuff)),
+          m_size(SIZE - 1) {}
 
     /* */
 
