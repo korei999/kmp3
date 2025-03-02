@@ -6,7 +6,6 @@
 #include "adt/utils.hh"
 #include "app.hh"
 #include "defaults.hh"
-#include "ffmpeg.hh"
 #include "mpris.hh"
 
 #include <cmath>
@@ -83,8 +82,6 @@ formatByteSize(spa_audio_format eFormat)
 void
 Mixer::init()
 {
-    m_pIDecoder = OsAllocatorGet()->alloc<ffmpeg::Decoder>();
-
     m_bRunning = true;
     m_bMuted = false;
     m_volume = 0.1f;
@@ -152,7 +149,7 @@ Mixer::destroy()
 
     m_bRunning = false;
 
-    if (m_bDecodes) m_pIDecoder->close();
+    if (m_bDecodes) m_decoder.close();
 
     if (m_pStream) pw_stream_destroy(m_pStream);
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
@@ -160,12 +157,10 @@ Mixer::destroy()
 
     m_mtxDecoder.destroy();
     LOG_NOTIFY("MixerDestroy()\n");
-
-    OsAllocatorGet()->free(m_pIDecoder);
 }
 
 void
-Mixer::play(StringView sPath)
+Mixer::play(StringView svPath)
 {
     const f64 prevSpeed = f64(m_changedSampleRate) / f64(m_sampleRate);
 
@@ -174,22 +169,22 @@ Mixer::play(StringView sPath)
     {
         guard::Mtx lockDec(&m_mtxDecoder);
 
-        m_sPath = sPath;
+        m_svPath = svPath;
 
         if (m_bDecodes)
-            m_pIDecoder->close();
+            m_decoder.close();
 
-        auto err = m_pIDecoder->open(sPath);
+        auto err = m_decoder.open(svPath);
         if (err != audio::ERROR::OK_)
         {
-            LOG_WARN("decoder::open(): '{}'\n", sPath);
+            LOG_WARN("decoder::open(): '{}'\n", svPath);
             return;
         }
         m_bDecodes = true;
     }
 
-    setNChannles(m_pIDecoder->getChannelsCount());
-    changeSampleRate(m_pIDecoder->getSampleRate(), true);
+    setNChannles(m_decoder.getChannelsCount());
+    changeSampleRate(m_decoder.getSampleRate(), true);
 
     if (!math::eq(prevSpeed, 1.0))
         changeSampleRate(f64(m_sampleRate) * prevSpeed, false);
@@ -210,7 +205,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
 
         if (!m_bDecodes) return;
 
-        err = m_pIDecoder->writeToBuffer(
+        err = m_decoder.writeToBuffer(
             spBuff,
             nFrames, m_nChannels,
             pSamplesWritten, pPcmPos
@@ -219,7 +214,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
         if (err == audio::ERROR::END_OF_FILE)
         {
             pause(true);
-            m_pIDecoder->close();
+            m_decoder.close();
             m_bDecodes = false;
         }
     }
@@ -299,7 +294,7 @@ Mixer::onProcess()
         if (s_nWrites >= s_nDecodedSamples)
         {
             writeFramesLocked({s_aPwBuff}, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
-            m_currMs = m_pIDecoder->getCurrentMS();
+            m_currMs = m_decoder.getCurrentMS();
             s_nWrites = 0;
         }
     }
@@ -311,7 +306,7 @@ Mixer::onProcess()
     }
     else
     {
-        m_nTotalSamples = m_pIDecoder->getTotalSamplesCount();
+        m_nTotalSamples = m_decoder.getTotalSamplesCount();
     }
 
     pBuffData.chunk->offset = 0;
@@ -378,11 +373,11 @@ Mixer::seekMS(f64 ms)
         return;
 
     ms = utils::clamp(ms, 0.0, (f64)getTotalMS());
-    m_pIDecoder->seekMS(ms);
+    m_decoder.seekMS(ms);
 
     m_currMs = ms;
     m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
-    m_nTotalSamples = m_pIDecoder->getTotalSamplesCount();
+    m_nTotalSamples = m_decoder.getTotalSamplesCount();
 
     mpris::seeked();
 }
@@ -390,20 +385,20 @@ Mixer::seekMS(f64 ms)
 void
 Mixer::seekOff(f64 offset)
 {
-    auto time = m_pIDecoder->getCurrentMS() + offset;
+    auto time = m_decoder.getCurrentMS() + offset;
     seekMS(time);
 }
 
 Opt<StringView>
 Mixer::getMetadata(const StringView sKey)
 {
-    return m_pIDecoder->getMetadataValue(sKey);
+    return m_decoder.getMetadataValue(sKey);
 }
 
 Opt<Image>
 Mixer::getCoverImage()
 {
-    return m_pIDecoder->getCoverImage();
+    return m_decoder.getCoverImage();
 }
 
 void
@@ -423,7 +418,7 @@ i64
 Mixer::getTotalMS()
 {
     guard::Mtx lock(&m_mtxDecoder);
-    return m_pIDecoder->getTotalMS();
+    return m_decoder.getTotalMS();
 }
 
 } /* namespace platform::pipewire */

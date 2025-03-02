@@ -3,13 +3,16 @@
 #include "adt/Thread.hh"
 
 #include "audio.hh"
+#include "platform/ffmpeg/Decoder.hh"
 
 #include <atomic>
 
 #ifdef __clang__
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
-#elif defined __GNUC__
+#endif
+
+#ifdef __GNUC__
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
@@ -19,7 +22,9 @@
 
 #ifdef __clang__
     #pragma clang diagnostic pop
-#elif defined __GNUC__
+#endif
+
+#ifdef __GNUC__
     #pragma GCC diagnostic pop
 #endif
 
@@ -34,8 +39,8 @@ protected:
     u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
     std::atomic<bool> m_bDecodes = false;
-    audio::IDecoder* m_pIDecoder {};
-    StringView m_sPath {};
+    ffmpeg::Decoder m_decoder {}; /* no point in IDecoder */
+    StringView m_svPath {};
 
     pw_thread_loop* m_pThrdLoop {};
     pw_stream* m_pStream {};

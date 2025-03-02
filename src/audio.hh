@@ -106,8 +106,11 @@ constexpr StringView mapERRORToString[] {
 struct IDecoder
 {
     [[nodiscard]] virtual ERROR writeToBuffer(
-        Span<f32> spBuff, const int nFrames, const int nChannles,
-        long* pSamplesWritten, ssize* pPcmPos
+        Span<f32> spBuff,
+        const int nFrames,
+        const int nChannles,
+        long* pSamplesWritten,
+        ssize* pPcmPos
     ) = 0;
 
     [[nodiscard]] virtual u32 getSampleRate() = 0;

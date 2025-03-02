@@ -20,7 +20,7 @@ extern "C"
 
 using namespace adt;
 
-namespace ffmpeg
+namespace platform::ffmpeg
 {
 
 struct Decoder : audio::IDecoder
@@ -65,4 +65,4 @@ private:
     void getAttachedPicture();
 };
 
-} /* namespace ffmpeg */
+} /* namespace platform::ffmpeg */

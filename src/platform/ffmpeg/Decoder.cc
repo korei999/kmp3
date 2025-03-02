@@ -1,4 +1,4 @@
-#include "ffmpeg.hh"
+#include "Decoder.hh"
 
 #include "adt/OsAllocator.hh"
 #include "adt/defer.hh"
@@ -13,7 +13,7 @@ extern "C"
 
 }
 
-namespace ffmpeg
+namespace platform::ffmpeg
 {
 
 [[maybe_unused]] static IMAGE_PIXEL_FORMAT
@@ -349,4 +349,4 @@ Decoder::getChannelsCount()
     return m_pStream->codecpar->ch_layout.nb_channels;
 }
 
-} /* namespace ffmpeg */
+} /* namespace platform::ffmpeg */
