@@ -131,7 +131,7 @@ startup(int argc, char** argv)
 
         /* make fake `argv` so core code works as usual */
         argc = aInput.size() + 1;
-        argv = (char**)alloc.zalloc(argc, sizeof(argv));
+        argv = reinterpret_cast<char**>(alloc.zalloc(argc, sizeof(argv)));
 
         for (int i = 1; i < argc; ++i)
             argv[i] = aInput[i - 1].data();
