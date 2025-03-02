@@ -6,33 +6,6 @@ message(STATUS "NAME: '${NAME}'")
 project(${NAME} VERSION 0.1 LANGUAGES CXX C)
 message(STATUS "CMAKE_PROJECT_VERSION: '${CMAKE_PROJECT_VERSION}'")
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_COLOR_DIAGNOSTICS ON)
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_C_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-message(STATUS "CMAKE_C_COMPILER_ID: '${CMAKE_C_COMPILER_ID}'")
-message(STATUS "CMAKE_CXX_COMPILER_ID: '${CMAKE_CXX_COMPILER_ID}'")
-message(STATUS "CMAKE_CXX_STANDARD: '${CMAKE_CXX_STANDARD}'")
-
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
-endif()
-
-include_directories(BEFORE "src")
-include_directories(BEFORE "libs")
-
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    add_definitions("-D_DEFAULT_SOURCE")
-    add_definitions("-D_XOPEN_SOURCE")
-endif()
-
-if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    add_definitions("-D_CRT_SECURE_NO_WARNINGS")
-endif()
-
 option(OPT_TERMBOX2 "" OFF)
 option(OPT_PIPEWIRE "" ON)
 option(OPT_CHAFA "" ON)
@@ -44,10 +17,53 @@ if (OPT_MARCH_NATIVE)
     add_compile_options(-march=native)
 endif()
 
+if (OPT_MIMALLOC)
+    include(FetchContent)
+    FetchContent_Declare(
+        MIMALLOC
+        GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
+        GIT_TAG dev3
+    )
+    FetchContent_MakeAvailable(MIMALLOC)
+    FetchContent_GetProperties(MIMALLOC
+        SOURCE_DIR MIMALLOC_SOURCE_DIR
+        BINARY_DIR MIMALLOC_BINARY_DIR
+    )
+    message(STATUS "MIMALLOC_SOURCE_DIR: '${MIMALLOC_SOURCE_DIR}'")
+    add_definitions("-DADT_USE_MIMALLOC")
+endif()
+
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_COLOR_DIAGNOSTICS ON)
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+message(STATUS "CMAKE_C_COMPILER_ID: '${CMAKE_C_COMPILER_ID}'")
+message(STATUS "CMAKE_CXX_COMPILER_ID: '${CMAKE_CXX_COMPILER_ID}'")
+message(STATUS "CMAKE_CXX_STANDARD: '${CMAKE_CXX_STANDARD}'")
 
 add_definitions("-DADT_DEFER_LESS_TYPING")
 add_definitions("-DADT_LOGS_LESS_TYPING")
+
+include_directories(BEFORE "src")
+include_directories(BEFORE "libs")
+
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    add_definitions("-D_DEFAULT_SOURCE")
+    add_definitions("-D_XOPEN_SOURCE")
+endif()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    add_definitions("-D_CRT_SECURE_NO_WARNINGS")
+endif()
 
 if (CMAKE_BUILD_TYPE MATCHES "Release" AND CMAKE_SYSTEM_NAME MATCHES "Windows")
     set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY WIN32_EXECUTABLE TRUE)
@@ -68,9 +84,7 @@ if (CMAKE_BUILD_TYPE MATCHES "Asan")
         add_compile_options(-O0 -g3 -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=address)
 
         if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-            add_compile_options(-shared-libsan)
             # doesn't work...
-            # target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE clang_rt.asan_cxx-x86_64.lib clang_rt.asan-x86_64.lib)
         else()
             add_link_options(-fsanitize=undefined -fsanitize=address)
         endif()
@@ -126,25 +140,7 @@ add_executable(
 )
 
 if (OPT_MIMALLOC)
-    include(FetchContent)
-    FetchContent_Declare(
-        MIMALLOC
-        GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
-        GIT_TAG dev3
-    )
-    FetchContent_MakeAvailable(MIMALLOC)
-    FetchContent_GetProperties(MIMALLOC
-        SOURCE_DIR MIMALLOC_SOURCE_DIR
-        BINARY_DIR MIMALLOC_BINARY_DIR
-    )
-    include_directories(${MIMALLOC_SOURCE_DIR}/include)
-    message(STATUS "MIMALLOC_SOURCE_DIR: '${MIMALLOC_SOURCE_DIR}'")
-
-    add_definitions("-DADT_USE_MIMALLOC")
-    # target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-        ${MIMALLOC_SOURCE_DIR}/src/static.c
-    )
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)
 endif()
 
 if (OPT_TERMBOX2)
