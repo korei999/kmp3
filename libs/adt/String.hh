@@ -60,11 +60,6 @@ struct StringView
     constexpr StringView(Span<char> sp)
         : StringView(sp.data(), sp.size()) {}
 
-    template <ssize SIZE>
-    constexpr StringView(const char (&aCharBuff)[SIZE])
-        : m_pData(const_cast<char*>(aCharBuff)),
-          m_size(SIZE - 1) {}
-
     /* */
 
     explicit constexpr operator bool() const { return size() > 0; }
