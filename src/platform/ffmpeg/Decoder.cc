@@ -68,12 +68,12 @@ Decoder::getTotalMS()
 
 
 StringView
-Decoder::getMetadataValue(const StringView sKey)
+Decoder::getMetadataValue(const StringView svKey)
 {
     if (!m_pStream) return {};
 
     char aBuff[64] {};
-    strncpy(aBuff, sKey.data(), utils::min(sKey.size(), utils::size(aBuff) - 1));
+    strncpy(aBuff, svKey.data(), utils::min(svKey.size(), utils::size(aBuff) - 1));
 
     AVDictionaryEntry* pTag {};
     pTag = av_dict_get(m_pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
@@ -167,7 +167,7 @@ Decoder::getAttachedPicture()
 
     sws_scale_frame(m_pSwsCtx, m_pConverted, m_pImgFrame);
 
-    m_oCoverImg = Image {
+    m_coverImg = Image {
         .pBuff = m_pConverted->data[0],
         .width = m_pConverted->width,
         .height = m_pConverted->height,
@@ -178,10 +178,10 @@ Decoder::getAttachedPicture()
     #define getAttachedPicture(...) (void)0
 #endif
 
-Opt<Image>
+Image
 Decoder::getCoverImage()
 {
-    return m_oCoverImg;
+    return m_coverImg;
 }
 
 audio::ERROR

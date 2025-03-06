@@ -1371,11 +1371,50 @@ QtRot(const Qt& q)
     auto& w = q.w;
 
     return {
-        1 - 2*y*y - 2*z*z, 2*x*y - 2*w*z,     2*x*z + 2*w*y,     0,
-        2*x*y + 2*w*z,     1 - 2*x*x - 2*z*z, 2*y*z - 2*w*x,     0,
-        2*x*z - 2*w*y,     2*y*z + 2*w*x,     1 - 2*x*x - 2*y*y, 0,
+        1 - 2*y*y - 2*z*z, 2*x*y + 2*w*z,     2*x*z - 2*w*y,     0,
+        2*x*y - 2*w*z,     1 - 2*x*x - 2*z*z, 2*y*z + 2*w*x,     0,
+        2*x*z + 2*w*y,     2*y*z - 2*w*x,     1 - 2*x*x - 2*y*y, 0,
         0,                 0,                 0,                 1
     };
+}
+
+inline M4
+QtRot2(const Qt& q)
+{
+    f32 x = q.x, y = q.y, z = q.z, w = q.w;
+
+    f32 xx = x * x;
+    f32 yy = y * y;
+    f32 zz = z * z;
+    f32 xy = x * y;
+    f32 xz = x * z;
+    f32 yz = y * z;
+    f32 wx = w * x;
+    f32 wy = w * y;
+    f32 wz = w * z;
+
+    M4 m;
+    m.e[0][0] = 1.0f - 2.0f * (yy + zz);
+    m.e[0][1] = 2.0f * (xy + wz);
+    m.e[0][2] = 2.0f * (xz - wy);
+    m.e[0][3] = 0.0f;
+
+    m.e[1][0] = 2.0f * (xy - wz);
+    m.e[1][1] = 1.0f - 2.0f * (xx + zz);
+    m.e[1][2] = 2.0f * (yz + wx);
+    m.e[1][3] = 0.0f;
+
+    m.e[2][0] = 2.0f * (xz + wy);
+    m.e[2][1] = 2.0f * (yz - wx);
+    m.e[2][2] = 1.0f - 2.0f * (xx + yy);
+    m.e[2][3] = 0.0f;
+
+    m.e[3][0] = 0.0f;
+    m.e[3][1] = 0.0f;
+    m.e[3][2] = 0.0f;
+    m.e[3][3] = 1.0f;
+
+    return m;
 }
 
 inline Qt
@@ -1601,10 +1640,10 @@ formatToContext(Context ctx, FormatArgs, const math::M4& x)
               "\n\t {:.3}, {:.3}, {:.3}, {:.3}]";
     ctx.fmtIdx = 0;
     return printArgs(ctx,
-        x.d[0], x.d[1], x.d[2], x.d[3],
-        x.d[4], x.d[5], x.d[6], x.d[7],
-        x.d[8], x.d[9], x.d[10], x.d[11],
-        x.d[12], x.d[13], x.d[14], x.d[15]
+        x.e[0][0], x.e[0][1], x.e[0][2], x.e[0][3],
+        x.e[1][0], x.e[1][1], x.e[1][2], x.e[1][3],
+        x.e[2][0], x.e[2][1], x.e[2][2], x.e[2][3],
+        x.e[3][0], x.e[3][1], x.e[3][2], x.e[3][3]
     );
 }
 

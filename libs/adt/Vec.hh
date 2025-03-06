@@ -32,7 +32,11 @@ struct Vec
           m_size(0),
           m_capacity(prealloc) {}
 
-    Vec(IAllocator* p, ssize prealloc, const T& defaultVal);
+    Vec(IAllocator* p, ssize preallocSize, const T& fillWith);
+
+    /* */
+
+    explicit operator Span<T>() const { return {data(), size()}; }
 
     /* */
 
@@ -72,7 +76,7 @@ struct Vec
 
     void removeAndShift(ssize i) noexcept;
 
-    [[nodiscard]] ssize idx(const T* x) const noexcept;
+    [[nodiscard]] ssize idx(const T* const x) const noexcept;
 
     [[nodiscard]] ssize lastI() const noexcept;
 
@@ -272,7 +276,7 @@ Vec<T>::removeAndShift(ssize i) noexcept
 
 template<typename T>
 inline ssize
-Vec<T>::idx(const T* x) const noexcept
+Vec<T>::idx(const T* const x) const noexcept
 {
     ssize r = ssize(x - m_pData);
     ADT_ASSERT(r >= 0 && r < m_capacity,"r: %lld, cap: %lld", r, m_capacity);
@@ -383,7 +387,11 @@ struct VecManaged
 
     VecManaged() = default;
     VecManaged(IAllocator* p, ssize prealloc = 1) : base(p, prealloc), m_pAlloc(p) {}
-    VecManaged(IAllocator* p, ssize prealloc, const T& defaultVal) : base(p, prealloc, defaultVal) {}
+    VecManaged(IAllocator* p, ssize preallocSize, const T& fillWith) : base(p, preallocSize, fillWith) {}
+
+    /* */
+
+    explicit operator Span<T>() const { return {Span<T>(base)}; }
 
     /* */
 
@@ -419,7 +427,7 @@ struct VecManaged
 
     void removeAndShift(ssize i) noexcept { base.removeAndShift(i); }
 
-    [[nodiscard]] ssize idx(const T* x) const noexcept { return base.idx(x); }
+    [[nodiscard]] ssize idx(const T* const x) const noexcept { return base.idx(x); }
 
     [[nodiscard]] ssize lastI() const noexcept { return base.lastI(); }
 

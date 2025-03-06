@@ -260,6 +260,8 @@ getString(
 Image
 allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int termHeight, int termWidth)
 {
+    if (img.height <= 0 || img.width <= 0) return {};
+
     TermSize termSize {};
     getTTYSize(&termSize);
 

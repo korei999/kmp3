@@ -44,7 +44,7 @@ struct Arena : public IAllocator
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    virtual void free(void* ptr) noexcept override final; /* noop */
+    [[deprecated("Noop")]] virtual void free(void* ptr) noexcept override final; /* noop */
     virtual void freeAll() noexcept override final;
     void reset() noexcept;
 

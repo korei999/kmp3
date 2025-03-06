@@ -114,7 +114,7 @@ inline void
 assertionFailed(const char* cnd, const char* msg, const char* file, int line, const char* func)
 {
     char aBuff[256] {};
-    snprintf(aBuff, sizeof(aBuff) - 1, "[%s, %d: %s()] assertion( %s ) failed.\n(msg) %s\n", file, line, func, cnd, msg);
+    snprintf(aBuff, sizeof(aBuff) - 1, "[%s, %d: %s()] assertion( %s ) failed.\n(msg) '%s'\n", file, line, func, cnd, msg);
 
 #if __has_include(<windows.h>)
     MessageBoxA(

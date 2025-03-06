@@ -194,7 +194,7 @@ struct TextBuff
     void clearKittyImages();
     /* */
 
-    /* main api ('efficient') */
+    /* main api (more efficient using damage tracking) */
     void start(Arena* pArena, ssize termWidth, ssize termHeight);
     void destroy();
     void clean();
@@ -732,6 +732,7 @@ TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
 inline void
 TextBuff::image(int x, int y, const platform::chafa::Image& img)
 {
+    if (img.width <= 0 || img.height <= 0) return;
     m_vImages.push(&m_imgArena, {img, x, y});
 }
 

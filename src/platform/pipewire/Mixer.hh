@@ -59,8 +59,8 @@ public:
     virtual void changeSampleRate(u64 sampleRate, bool bSave) override final;
     virtual void seekMS(f64 ms) override final;
     virtual void seekOff(f64 offset) override final;
-    [[nodiscard]] virtual Opt<StringView> getMetadata(const StringView sKey) override final;
-    [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
+    [[nodiscard]] virtual StringView getMetadata(const StringView sKey) override final;
+    [[nodiscard]] virtual Image getCoverImage() override final;
     virtual void setVolume(const f32 volume) override final;
     [[nodiscard]] virtual i64 getCurrentMS() override final;
     [[nodiscard]] virtual i64 getTotalMS() override final;

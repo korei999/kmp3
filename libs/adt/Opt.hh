@@ -24,6 +24,10 @@ struct Opt
 
     /* */
 
+    explicit constexpr operator bool() const { return m_bHasValue; }
+
+    /* */
+
     constexpr T& value() { ADT_ASSERT(m_bHasValue, "no value"); return m_data; }
     constexpr T& valueOrZero() { return m_data; }
 
@@ -33,8 +37,6 @@ struct Opt
         if (m_bHasValue) return m_data;
         else return std::forward<T>(v);
     }
-
-    explicit constexpr operator bool() const { return m_bHasValue; }
 };
 
 } /* namespace adt */

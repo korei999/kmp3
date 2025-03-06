@@ -389,13 +389,13 @@ Mixer::seekOff(f64 offset)
     seekMS(time);
 }
 
-Opt<StringView>
+StringView
 Mixer::getMetadata(const StringView sKey)
 {
     return m_decoder.getMetadataValue(sKey);
 }
 
-Opt<Image>
+Image
 Mixer::getCoverImage()
 {
     return m_decoder.getCoverImage();

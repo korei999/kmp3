@@ -33,25 +33,20 @@ Win::coverImage()
         m_textBuff.clearKittyImages(); /* shouldn't hurt if TERM is not kitty */
         m_textBuff.forceClean(1, 1, m_prevImgWidth + 1, split + 1);
 
-        Opt<Image> oCoverImg = mix.getCoverImage();
-        if (oCoverImg)
-        {
-            const auto& img = oCoverImg.value();
+        Image img = mix.getCoverImage();
 
-            namespace ch = platform::chafa;
+        namespace ch = platform::chafa;
 
-            ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
+        ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
 
-            /* NOTE: using textBuff's dedicated image arena */
-            auto chafaImg = ch::allocImage(
-                &m_textBuff.m_imgArena, eLayout, img, split, g_termSize.width
-            );
+        /* NOTE: using textBuff's dedicated image arena */
+        auto chafaImg = ch::allocImage(
+            &m_textBuff.m_imgArena, eLayout, img, split, g_termSize.width
+        );
 
-            m_textBuff.image(1, 1, chafaImg);
+        m_textBuff.image(1, 1, chafaImg);
 
-            m_prevImgWidth = chafaImg.width;
-        }
-        else m_prevImgWidth = 0;
+        m_prevImgWidth = chafaImg.width;
     }
 }
 #endif
@@ -111,12 +106,12 @@ Win::volume()
         f32 col = f32(i) / ((f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME)));
 
         if (col <= 0.33f)
-            return TEXT_BUFF_STYLE::GREEN;
+            return STYLE::GREEN;
         else if (col > 0.33f && col <= 0.66f)
-            return TEXT_BUFF_STYLE::GREEN;
+            return STYLE::GREEN;
         else if (col > 0.66f && col <= 1.00f)
-            return TEXT_BUFF_STYLE::YELLOW;
-        else return TEXT_BUFF_STYLE::RED;
+            return STYLE::YELLOW;
+        else return STYLE::RED;
     };
 
     const STYLE col = bMuted ? STYLE::BLUE : volumeColor(maxVolumeBars - 1);

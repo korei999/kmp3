@@ -10,7 +10,7 @@ template<typename T>
 struct View
 {
     T* m_pData {};
-    ssize m_size {}; /* element count (not byte size) */
+    ssize m_count {};
     ssize m_byteStride {};
 
     /* */
@@ -23,7 +23,7 @@ struct View
     T& operator[](ssize i) { return at(i); }
     const T& operator[](ssize i) const { return at(i); }
 
-    ssize size() const { return m_size; }
+    ssize size() const { return m_count; }  /* NOTE: element count (not byte size). */
     ssize stride() const { return m_byteStride; }
     ssize idx(const T* pElement) const; /* NOTE: requires division (slow), for i loops should be preferred instead. */
 
@@ -58,20 +58,20 @@ public:
     };
 
     It begin()  noexcept { return {this, 0}; }
-    It end()    noexcept { return {this, m_size}; }
-    It rbegin() noexcept { return {this, m_size - 1}; }
+    It end()    noexcept { return {this, m_count}; }
+    It rbegin() noexcept { return {this, m_count - 1}; }
     It rend()   noexcept { return {this, NPOS}; }
 
     const It begin()  const noexcept { return {this, 0}; }
-    const It end()    const noexcept { return {this, m_size}; }
-    const It rbegin() const noexcept { return {this, m_size - 1}; }
+    const It end()    const noexcept { return {this, m_count}; }
+    const It rbegin() const noexcept { return {this, m_count - 1}; }
     const It rend()   const noexcept { return {this, NPOS}; }
 };
 
 
 template<typename T>
 View<T>::View(const T* pData, ssize size, ssize stride)
-    : m_pData(const_cast<T*>(pData)), m_size(size)
+    : m_pData(const_cast<T*>(pData)), m_count(size)
 {
     if (stride == 0)
         m_byteStride = (sizeof(T));
@@ -82,7 +82,7 @@ template<typename T>
 inline T&
 View<T>::at(ssize i) const
 {
-    ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, size: %lld, stride: %lld", i, m_size, m_byteStride);
+    ADT_ASSERT(i >= 0 && i < m_count, "i: %lld, size: %lld, stride: %lld", i, m_count, m_byteStride);
 
     auto* pU8 = u8Data();
     T* pRet = (T*)(pU8 + (i*m_byteStride));

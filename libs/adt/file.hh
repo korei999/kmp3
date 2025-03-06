@@ -59,14 +59,14 @@ replacePathEnding(IAllocator* pAlloc, StringView svPath, StringView svEnding)
 }
 
 inline void
-replacePathEnding(Span<char> spBuff, StringView svPath, StringView svEnding)
+replacePathEnding(Span<char>* spBuff, StringView svPath, StringView svEnding)
 {
     ADT_ASSERT(spBuff != nullptr, " ");
 
     ssize lastSlash = svPath.lastOf('/');
     StringView sNoEnding = {&svPath[0], lastSlash + 1};
-    ssize n = print::toSpan(spBuff, "{}{}", sNoEnding, svEnding);
-    spBuff.m_size = n;
+    ssize n = print::toSpan(*spBuff, "{}{}", sNoEnding, svEnding);
+    spBuff->m_size = n;
 }
 
 } /* namespace file */

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Image.hh"
-#include "adt/Opt.hh"
 #include "adt/String.hh"
 #include "adt/utils.hh"
 
@@ -40,8 +39,8 @@ public:
     virtual void changeSampleRate(u64 sampleRate, bool bSave) = 0;
     virtual void seekMS(f64 ms) = 0;
     virtual void seekOff(f64 offset) = 0;
-    [[nodiscard]] virtual Opt<StringView> getMetadata(const StringView sKey) = 0;
-    [[nodiscard]] virtual Opt<Image> getCoverImage() = 0;
+    [[nodiscard]] virtual StringView getMetadata(const StringView sKey) = 0;
+    [[nodiscard]] virtual Image getCoverImage() = 0;
     virtual void setVolume(const f32 volume) = 0;
     [[nodiscard]] virtual i64 getCurrentMS() = 0;
     [[nodiscard]] virtual i64 getTotalMS() = 0;
@@ -81,8 +80,8 @@ struct DummyMixer : public IMixer
     virtual void changeSampleRate(u64, bool) override final {}
     virtual void seekMS(f64) override final {}
     virtual void seekOff(f64) override final {}
-    virtual Opt<StringView> getMetadata(const StringView) override final { return {}; }
-    virtual Opt<Image> getCoverImage() override final { return {}; }
+    virtual StringView getMetadata(const StringView) override final { return {}; }
+    virtual Image getCoverImage() override final { return {}; }
     virtual void setVolume(const f32) override final {}
     virtual i64 getCurrentMS() override final { return {}; };
     virtual i64 getTotalMS() override final { return {}; };
@@ -121,7 +120,7 @@ struct IDecoder
     [[nodiscard]] virtual i64 getTotalSamplesCount() = 0;
     [[nodiscard]] virtual int getChannelsCount() = 0;
     [[nodiscard]] virtual StringView getMetadataValue(const StringView sKey) = 0;
-    [[nodiscard]] virtual Opt<Image> getCoverImage() = 0;
+    [[nodiscard]] virtual Image getCoverImage() = 0;
     [[nodiscard]] virtual ERROR open(StringView sPath) = 0;
     virtual void close() = 0;
 };

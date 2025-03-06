@@ -26,6 +26,10 @@ struct Array
 
     /* */
 
+    constexpr operator Span<T>() const { return {data(), size()}; }
+
+    /* */
+
 #define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
 
     constexpr T& operator[](ssize i)             { ADT_RANGE_CHECK; return m_aData[i]; }
@@ -254,6 +258,7 @@ insertion(Array<T, CAP>* pArr)
 namespace print
 {
 
+/* adapt to CON_T<T> template */
 template<typename T, ssize CAP>
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const Array<T, CAP>& x)

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "adt/Opt.hh"
 #include "adt/String.hh"
 #include "audio.hh"
 #include "Image.hh"
@@ -37,8 +36,8 @@ struct Decoder : audio::IDecoder
     [[nodiscard]] virtual i64 getTotalMS() override final;
     [[nodiscard]] virtual i64 getTotalSamplesCount() override final;
     [[nodiscard]] virtual int getChannelsCount() override final;
-    [[nodiscard]] virtual StringView getMetadataValue(const StringView sKey) override final;
-    [[nodiscard]] virtual Opt<Image> getCoverImage() override final;
+    [[nodiscard]] virtual StringView getMetadataValue(const StringView svKey) override final;
+    [[nodiscard]] virtual Image getCoverImage() override final;
     [[nodiscard]] virtual audio::ERROR open(StringView sPath) override final;
     virtual void close() override final;
 
@@ -55,7 +54,7 @@ private:
 
     AVPacket* m_pImgPacket {};
     AVFrame* m_pImgFrame {};
-    Opt<Image> m_oCoverImg {};
+    Image m_coverImg {};
 
 #ifdef OPT_CHAFA
     SwsContext* m_pSwsCtx {};

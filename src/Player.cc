@@ -152,9 +152,9 @@ Player::updateInfo()
     m_info.sAlbum.destroy(m_pAlloc);
     m_info.sArtist.destroy(m_pAlloc);
 
-    m_info.sTitle = {m_pAlloc, app::mixer().getMetadata("title").valueOrZero()};
-    m_info.sAlbum = {m_pAlloc, app::mixer().getMetadata("album").valueOrZero()};
-    m_info.sArtist = {m_pAlloc, app::mixer().getMetadata("artist").valueOrZero()};
+    m_info.sTitle = {m_pAlloc, app::mixer().getMetadata("title")};
+    m_info.sAlbum = {m_pAlloc, app::mixer().getMetadata("album")};
+    m_info.sArtist = {m_pAlloc, app::mixer().getMetadata("artist")};
 
     if (m_info.sTitle.size() == 0)
         m_info.sTitle = String(m_pAlloc, m_vShortSongs[m_selected]);
