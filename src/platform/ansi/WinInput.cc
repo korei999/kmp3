@@ -48,6 +48,7 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
     switch (type)
     {
         case TYPE_VT200:
+        {
             if (nRead >= 6)
             {
                 int b = spBuff[3] - 0x20;
@@ -89,10 +90,13 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
                     ret.y = ((uint8_t)spBuff[5]) - 0x21;
                 }
             }
-            break;
+        }
+        break; /* case TYPE_VT200: */
+
         case TYPE_1006:
-            // fallthrough
-        case TYPE_1015: {
+        [[fallthrough]];
+        case TYPE_1015:
+        {
             ssize indexFail = -1;
 
             enum
@@ -184,7 +188,7 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
                 }
             }
         }
-        break;
+        break; /* case TYPE_1015: */
     }
 
     return ret;
@@ -193,6 +197,16 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
 void
 Win::procMouse(MouseInput in)
 {
+    static bool s_bPressed = false;
+    static bool s_bOnSlider = false;
+
+    if (in.eKey == MouseInput::KEY::RELEASE)
+    {
+        s_bPressed = false;
+        s_bOnSlider = false;
+        return;
+    }
+
     auto& pl = app::player();
     const long width = g_termSize.width;
     const long height = g_termSize.height;
@@ -204,20 +218,29 @@ Win::procMouse(MouseInput in)
     const long sliderOff = 10;
     const long volumeOff = 6;
 
-    /* click on slider */
+    /* click on slider line */
     if (in.y == sliderOff && in.x >= xOff)
     {
-        if (in.eKey == MouseInput::KEY::LEFT)
+        defer( s_bPressed = true );
+
+        if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
         {
             /* click on indicator */
             if (in.x >= xOff && in.x <= xOff + 2)
             {
+                if (s_bPressed || s_bOnSlider) return;
+
                 app::togglePause();
                 return;
             }
 
+            /* click on slider */
             if (width - xOff - 4 > 0)
             {
+                if (s_bPressed && !s_bOnSlider) return;
+
+                s_bOnSlider = true;
+
                 f64 target = f64(in.x - xOff - 2) / f64(width - xOff - 4);
                 target *= app::mixer().getTotalMS();
                 app::mixer().seekMS(target);
@@ -240,9 +263,21 @@ Win::procMouse(MouseInput in)
     /* scroll ontop of volume */
     if (in.y == volumeOff && in.x >= xOff)
     {
-        if (in.eKey == MouseInput::KEY::WHEEL_DOWN) app::volumeDown(0.1f);
-        else if (in.eKey == MouseInput::KEY::WHEEL_UP) app::volumeUp(0.1f);
-        else if (in.eKey == MouseInput::KEY::LEFT) app::toggleMute();
+        if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
+        {
+            app::volumeDown(0.1f);
+        }
+        else if (in.eKey == MouseInput::KEY::WHEEL_UP)
+        {
+            app::volumeUp(0.1f);
+        }
+        else if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
+        {
+            if (s_bPressed) return;
+
+            s_bPressed = true;
+            app::toggleMute();
+        }
 
         return;
     }
@@ -257,8 +292,11 @@ Win::procMouse(MouseInput in)
         long(m_firstIdx + height - listOff - 3)
     );
 
-    if (in.eKey == MouseInput::KEY::LEFT)
+    if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
     {
+        if (s_bPressed) return;
+        else s_bPressed = true;
+
         f64 time = utils::timeNowMS();
 
         pl.focus(target);

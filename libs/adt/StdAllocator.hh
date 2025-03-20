@@ -14,24 +14,28 @@ namespace adt
 
 /* default os allocator (aka malloc() / calloc() / realloc() / free()).
  * freeAll() method is not supported. */
-struct OsAllocator : IAllocator
+struct StdAllocator : IAllocator
 {
+    static StdAllocator* inst();
+
+    /* virtual */
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     void virtual free(void* ptr) noexcept override final;
     ADT_WARN_LEAK void virtual freeAll() noexcept override final; /* assert(false) */
+    /* virtual end */
 };
 
-inline OsAllocator*
-OsAllocatorGet()
+inline StdAllocator*
+StdAllocator::inst()
 {
-    static OsAllocator alloc {};
-    return &alloc;
+    static StdAllocator instance {};
+    return &instance;
 }
 
 inline void*
-OsAllocator::malloc(usize mCount, usize mSize)
+StdAllocator::malloc(usize mCount, usize mSize)
 {
 #ifdef ADT_USE_MIMALLOC
     auto* r = ::mi_malloc(mCount * mSize);
@@ -39,13 +43,13 @@ OsAllocator::malloc(usize mCount, usize mSize)
     auto* r = ::malloc(mCount * mSize);
 #endif
 
-    if (!r) throw AllocException("OsAllocator::malloc()");
+    if (!r) throw AllocException("StdAllocator::malloc()");
 
     return r;
 }
 
 inline void*
-OsAllocator::zalloc(usize mCount, usize mSize)
+StdAllocator::zalloc(usize mCount, usize mSize)
 {
 #ifdef ADT_USE_MIMALLOC
     auto* r = ::mi_zalloc(mCount * mSize);
@@ -53,13 +57,13 @@ OsAllocator::zalloc(usize mCount, usize mSize)
     auto* r = ::calloc(mCount, mSize);
 #endif
 
-    if (!r) throw AllocException("OsAllocator::zalloc()");
+    if (!r) throw AllocException("StdAllocator::zalloc()");
 
     return r;
 }
 
 inline void*
-OsAllocator::realloc(void* p, usize, usize newCount, usize mSize)
+StdAllocator::realloc(void* p, usize, usize newCount, usize mSize)
 {
 #ifdef ADT_USE_MIMALLOC
     auto* r = ::mi_realloc(p, newCount * mSize);
@@ -67,13 +71,13 @@ OsAllocator::realloc(void* p, usize, usize newCount, usize mSize)
     auto* r = ::realloc(p, newCount * mSize);
 #endif
 
-    if (!r) throw AllocException("OsAllocator::realloc()");
+    if (!r) throw AllocException("StdAllocator::realloc()");
 
     return r;
 }
 
 inline void
-OsAllocator::free(void* p) noexcept
+StdAllocator::free(void* p) noexcept
 {
 #ifdef ADT_USE_MIMALLOC
     ::mi_free(p);
@@ -83,7 +87,7 @@ OsAllocator::free(void* p) noexcept
 }
 
 inline void
-OsAllocator::freeAll() noexcept
+StdAllocator::freeAll() noexcept
 {
     ADT_ASSERT(false, "no 'freeAll()' method");
 }

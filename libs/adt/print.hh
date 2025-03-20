@@ -12,7 +12,6 @@
 #include <cstdlib>
 #include <cuchar> /* IWYU pragma: keep */
 
-#include <type_traits>
 #include <atomic>
 
 namespace adt::print
@@ -100,8 +99,7 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, ssize fmtIdx) noexcept
     {
         if (i + 1 < fmt.size())
             return fmt[i + 1];
-        else
-            return '\0';
+        else return '\0';
     };
 
     for (; i < fmt.size(); ++i, ++nRead)
@@ -166,10 +164,8 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, ssize fmtIdx) noexcept
             }
         }
 
-        if (fmt[i] == '}')
-            bDone = true;
-        else if (fmt[i] == ':')
-            bColon = true;
+        if (fmt[i] == '}') bDone = true;
+        else if (fmt[i] == ':') bColon = true;
     }
 
     return nRead;
@@ -217,7 +213,7 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
         x = x / int(fmtArgs.eBase);
     }
  
-    if (!!(fmtArgs.eFmtFlags & FMT_FLAGS::ALWAYS_SHOW_SIGN))
+    if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ALWAYS_SHOW_SIGN))
     {
         if (bNegative)
             push('-');
@@ -228,7 +224,7 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
         push('-');
     }
 
-    if (!!(fmtArgs.eFmtFlags & FMT_FLAGS::HASH))
+    if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::HASH))
     {
         if (fmtArgs.eBase == BASE::SIXTEEN)
         {
@@ -248,6 +244,8 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 inline ssize
 copyBackToCtxBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept
 {
+    if (spSrc.empty()) return 0;
+
     ssize i = 0;
 
     auto copySpan = [&]
@@ -256,7 +254,7 @@ copyBackToCtxBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noe
             ctx.pBuff[ctx.buffIdx++] = spSrc[i];
     };
 
-    if (!!(fmtArgs.eFmtFlags & FMT_FLAGS::JUSTIFY_RIGHT))
+    if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::JUSTIFY_RIGHT))
     {
         /* leave space for the string */
         ssize nSpaces = fmtArgs.maxLen - strnlen(spSrc.data(), spSrc.size());
@@ -288,6 +286,13 @@ copyBackToCtxBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noe
 
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const StringView& str) noexcept
+{
+    return copyBackToCtxBuffer(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
+}
+
+template<int SIZE> requires(SIZE > 1)
+inline ssize
+formatToContext(Context ctx, FormatArgs fmtArgs, const StringFixed<SIZE>& str) noexcept
 {
     return copyBackToCtxBuffer(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
 }
@@ -440,11 +445,11 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
             ssize addBuff = 0;
             ssize add = parseFormatArg(&fmtArgs, ctx.fmt, i);
 
-            if (!!(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
+            if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
             {
                 if constexpr (std::is_integral_v<std::remove_reference_t<decltype(tFirst)>>)
                 {
-                    if (!!(fmtArgs.eFmtFlags & FMT_FLAGS::FLOAT_PRECISION_ARG))
+                    if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::FLOAT_PRECISION_ARG))
                         fmtArgs.maxFloatLen = tFirst;
                     else fmtArgs.maxLen = tFirst;
 
@@ -542,13 +547,13 @@ FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
     {
         if (!push(':')) return i;
 
-        if (!!(fmtArgs.eFmtFlags & FMT_FLAGS::JUSTIFY_RIGHT))
+        if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::JUSTIFY_RIGHT))
             if (!push('>')) return i;
 
         if (fmtArgs.maxFloatLen != NPOS8)
             if (!push('.')) return i;
 
-        if (!!(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
+        if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
         {
             if (!push('{')) return i;
             if (!push('}')) return i;

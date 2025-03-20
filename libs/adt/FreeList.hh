@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RBTree.hh"
-#include "OsAllocator.hh"
+#include "StdAllocator.hh"
 
 #if defined ADT_DBG_MEMORY
     #include "logs.hh"
@@ -42,14 +42,12 @@ struct FreeListData
     constexpr void addSize(usize _size) noexcept { setSize(_size + size()); }
 };
 
-class FreeList : public IAllocator
+struct FreeList : public IAllocator
 {
-public:
     using Node = RBNode<FreeListData>; /* node is the header + the memory chunk */
 
     /* */
 
-private:
     usize m_blockSize {};
     IAllocator* m_pBackAlloc {};
     usize m_totalAllocated {};
@@ -58,10 +56,9 @@ private:
 
     /* */
 
-public:
     FreeList() = default;
 
-    FreeList(usize _blockSize, IAllocator* pBackAlloc = OsAllocatorGet()) noexcept(false)
+    FreeList(usize _blockSize, IAllocator* pBackAlloc = StdAllocator::inst()) noexcept(false)
         : m_blockSize(align8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
           m_pBackAlloc(pBackAlloc),
           m_pBlocks(allocBlock(m_blockSize)) {}
@@ -81,7 +78,7 @@ public:
 
     /* */
 
-private:
+protected:
     [[nodiscard]] FreeListBlock* allocBlock(usize size);
     [[nodiscard]] FreeListBlock* blockPrepend(usize size);
     [[nodiscard]] FreeListBlock* blockFromNode(FreeList::Node* pNode);
@@ -125,6 +122,8 @@ FreeList::blockFromNode(FreeList::Node* pNode)
 inline FreeListBlock*
 FreeList::allocBlock(usize size)
 {
+    ADT_ASSERT(m_pBackAlloc, "uninitialized: m_pBackAlloc == nullptr");
+
     FreeListBlock* pBlock = (FreeListBlock*)m_pBackAlloc->zalloc(1, size);
     pBlock->size = size;
 

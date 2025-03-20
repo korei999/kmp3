@@ -30,7 +30,7 @@ struct ReverseIt
 
         constexpr It(Iter _it) : it(_it) {};
 
-        constexpr auto& operator*() { return *it; }
+        constexpr decltype(auto) operator*() { return *it; }
         constexpr auto* operator->() { return it; }
 
         constexpr Iter operator++() { return --it; }

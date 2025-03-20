@@ -4,12 +4,11 @@
 #include "Span.hh"
 
 #include <cstring>
-#include <cassert>
 
 namespace adt
 {
 
-/* Bump allocator, using fixed size buffer memory */
+/* Bump allocator, using fixed size memory buffer. */
 struct BufferAllocator : public IAllocator
 {
     u8* m_pMemBuffer = nullptr;
@@ -74,7 +73,7 @@ BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 {
     if (!p) return malloc(newCount, mSize);
 
-    assert(p >= m_pMemBuffer && p < m_pMemBuffer + m_cap && "[FixedAllocator]: invalid pointer");
+    ADT_ASSERT(p >= m_pMemBuffer && p < m_pMemBuffer + m_cap, "invalid pointer");
 
     usize realSize = align8(newCount * mSize);
 

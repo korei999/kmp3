@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IAllocator.hh"
+#include "utils.hh"
 
 #include <cassert>
 #include <new> /* IWYU pragma: keep */
@@ -113,7 +114,8 @@ template<typename T>
 inline T*
 Queue<T>::pushFront(IAllocator* p, const T& val)
 {
-    if (m_size >= m_cap) grow(p, m_cap * 2);
+    if (m_size >= m_cap)
+        grow(p, utils::max(SIZE_MIN, static_cast<ssize>(m_cap * 2)));
 
     int i = m_first;
     int ni = prevI(i);
@@ -121,7 +123,7 @@ Queue<T>::pushFront(IAllocator* p, const T& val)
     new(m_pData + ni) T(val);
 
     m_first = ni;
-    m_size++;
+    ++m_size;
 
     return &m_pData[ni];
 }
@@ -130,7 +132,8 @@ template<typename T>
 inline T*
 Queue<T>::pushBack(IAllocator* p, const T& val)
 {
-    if (m_size >= m_cap) grow(p, m_cap * 2);
+    if (m_size >= m_cap)
+        grow(p, utils::max(SIZE_MIN, static_cast<ssize>(m_cap * 2)));
 
     int i = m_last;
     int ni = nextI(i);
@@ -138,7 +141,7 @@ Queue<T>::pushBack(IAllocator* p, const T& val)
     new(m_pData + i) T(val);
 
     m_last = ni;
-    m_size++;
+    ++m_size;
 
     return &m_pData[i];
 }

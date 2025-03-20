@@ -397,6 +397,24 @@ operator-(const IV2& l, const IV2& r)
     };
 }
 
+inline IV2&
+operator+=(IV2& l, const IV2& r)
+{
+    l.x += r.x;
+    l.y += r.y;
+
+    return l;
+}
+
+inline IV2&
+operator-=(IV2& l, const IV2& r)
+{
+    l.x -= r.x;
+    l.y -= r.y;
+
+    return l;
+}
+
 inline V2
 operator*(const V2& v, f32 s)
 {
@@ -1492,7 +1510,7 @@ normalize(const V4& v)
 }
 
 constexpr inline auto
-lerp(auto& a, auto& b, auto& t)
+lerp(const auto& a, const auto& b, const auto& t)
 {
     return (1.0 - t) * a + t * b;
 }
@@ -1557,6 +1575,18 @@ bezier(
     const std::floating_point auto t)
 {
     return cube(1-t)*p0 + 3*sq(1-t)*t*p1 + 3*(1-t)*sq(t)*p2 + cube(t)*p3;
+}
+
+inline M4
+transformation(const V3& translation, const Qt& rot, const V3& scale)
+{
+    return M4TranslationFrom(translation) * QtRot(rot) * M4ScaleFrom(scale);
+}
+
+inline M4
+transformation(const V3& translation, const V3& scale)
+{
+    return M4TranslationFrom(translation) * M4ScaleFrom(scale);
 }
 
 } /* namespace adt::math */

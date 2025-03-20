@@ -382,8 +382,8 @@ TextBuff::clearKittyImages()
 inline void
 TextBuff::resizeBuffers(ssize width, ssize height)
 {
-    m_vBack.setSize(OsAllocatorGet(), width * height);
-    m_vFront.setSize(OsAllocatorGet(), width * height);
+    m_vBack.setSize(StdAllocator::inst(), width * height);
+    m_vFront.setSize(StdAllocator::inst(), width * height);
 
     m_tWidth = width, m_tHeight = height;
 
@@ -407,8 +407,8 @@ TextBuff::resize(ssize width, ssize height)
 inline void
 TextBuff::destroy()
 {
-    m_vBack.destroy(OsAllocatorGet());
-    m_vFront.destroy(OsAllocatorGet());
+    m_vBack.destroy(StdAllocator::inst());
+    m_vFront.destroy(StdAllocator::inst());
 
 #ifdef OPT_CHAFA
     m_imgArena.freeAll();

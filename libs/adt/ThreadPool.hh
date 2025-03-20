@@ -18,7 +18,7 @@ struct ThreadPoolTask
 
 struct ThreadPool
 {
-    IAllocator* m_pAlloc {};
+    IAllocator* m_pAlloc {}; /* managed by default */
     Queue<ThreadPoolTask> m_qTasks {};
     Span<Thread> m_spThreads {};
     Mutex m_mtxQ {};
@@ -44,7 +44,7 @@ struct ThreadPool
     [[deprecated("rvalue lambdas cause use after free")]] void addLambda(LAMBDA&& t) = delete;
 
 private:
-    THREAD_STATUS loop(void* pArg);
+    THREAD_STATUS loop();
 };
 
 inline
@@ -64,10 +64,14 @@ ThreadPool::ThreadPool(IAllocator* pAlloc, int nThreads)
             this
         );
     }
+
+#ifndef NDEBUG
+    fprintf(stderr, "ThreadPool: new pool with %d threads\n", nThreads);
+#endif
 }
 
 inline THREAD_STATUS
-ThreadPool::loop(void* pArg)
+ThreadPool::loop()
 {
     while (true)
     {

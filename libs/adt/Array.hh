@@ -41,7 +41,7 @@ struct Array
 
     constexpr T* data() { return m_aData; }
     constexpr const T* data() const { return m_aData; }
-    constexpr bool empty() const { return m_size == 0; }
+    constexpr bool empty() const { return m_size <= 0; }
     constexpr ssize push(const T& x);
     template<typename ...ARGS> requires (std::is_constructible_v<T, ARGS...>) constexpr ssize emplace(ARGS&&... args);
     constexpr ssize fakePush();
@@ -50,7 +50,7 @@ struct Array
     constexpr ssize cap() const;
     constexpr ssize size() const;
     constexpr void setSize(ssize newSize);
-    constexpr ssize idx(const T* p);
+    constexpr ssize idx(const T* const p) const;
     constexpr T& first();
     constexpr const T& first() const;
     constexpr T& last();
@@ -62,7 +62,7 @@ struct Array
     {
         T* s;
 
-        constexpr It(T* pFirst) : s{pFirst} {}
+        constexpr It(const T* pFirst) : s{const_cast<T*>(pFirst)} {}
 
         constexpr T& operator*() { return *s; }
         constexpr T* operator->() { return s; }
@@ -77,34 +77,15 @@ struct Array
         friend constexpr bool operator!=(const It& l, const It& r) { return l.s != r.s; }
     };
 
-    struct ConstIt
-    {
-        const T* s;
-
-        constexpr ConstIt(const T* pFirst) : s{pFirst} {}
-
-        constexpr const T& operator*() const { return *s; }
-        constexpr const T* operator->() const { return s; }
-
-        constexpr ConstIt operator++() { s++; return *this; }
-        constexpr ConstIt operator++(int) { T* tmp = s++; return tmp; }
-
-        constexpr ConstIt operator--() { s--; return *this; }
-        constexpr ConstIt operator--(int) { T* tmp = s--; return tmp; }
-
-        friend constexpr bool operator==(const ConstIt& l, const ConstIt& r) { return l.s == r.s; }
-        friend constexpr bool operator!=(const ConstIt& l, const ConstIt& r) { return l.s != r.s; }
-    };
-
     constexpr It begin() { return {&m_aData[0]}; }
     constexpr It end() { return {&m_aData[m_size]}; }
     constexpr It rbegin() { return {&m_aData[m_size - 1]}; }
     constexpr It rend() { return {m_aData - 1}; }
 
-    constexpr const ConstIt begin() const { return {&m_aData[0]}; }
-    constexpr const ConstIt end() const { return {&m_aData[m_size]}; }
-    constexpr const ConstIt rbegin() const { return {&m_aData[m_size - 1]}; }
-    constexpr const ConstIt rend() const { return {m_aData - 1}; }
+    constexpr const It begin() const { return {&m_aData[0]}; }
+    constexpr const It end() const { return {&m_aData[m_size]}; }
+    constexpr const It rbegin() const { return {&m_aData[m_size - 1]}; }
+    constexpr const It rend() const { return {m_aData - 1}; }
 };
 
 template<typename T, ssize CAP> requires(CAP > 0)
@@ -179,7 +160,7 @@ Array<T, CAP>::setSize(ssize newSize)
 
 template<typename T, ssize CAP> requires(CAP > 0)
 constexpr ssize
-Array<T, CAP>::idx(const T* p)
+Array<T, CAP>::idx(const T* const p) const
 {
     ssize r = ssize(p - m_aData);
     ADT_ASSERT(r >= 0 && r < size(), "out of range, r: %lld, size: %lld", r, size());

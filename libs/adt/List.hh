@@ -38,7 +38,7 @@ struct List
 
     [[nodiscard]] constexpr ssize size() const { return m_size; }
 
-    [[nodiscard]] constexpr bool empty() const { return m_size == 0; }
+    [[nodiscard]] constexpr bool empty() const { return m_size <= 0; }
 
     constexpr void destroy(IAllocator* pA);
 

@@ -46,6 +46,9 @@ struct Reader
 
     /* */
 
+    char& operator[](ssize i) { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: %lld, size: %lld\n", i, m_svFile.size()); return m_svFile[i]; }
+    const char& operator[](ssize i) const { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: %lld, size: %lld\n", i, m_svFile.size()); return m_svFile[i]; }
+
     void skipBytes(ssize n);
     StringView readString(ssize bytes);
     u8 read8();

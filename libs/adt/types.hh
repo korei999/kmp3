@@ -109,7 +109,6 @@ struct Overloaded : Ts...
 template<typename ...Ts>
 Overloaded(Ts...) -> Overloaded<Ts...>;
 
-/* TODO: windows messagebox? */
 inline void
 assertionFailed(const char* cnd, const char* msg, const char* file, int line, const char* func)
 {
@@ -135,6 +134,7 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
 
 #ifndef NDEBUG
     #define ADT_ASSERT(CND, ...)                                                                                       \
+        /* this has to be formatted with standard printf because of mutual inclusion problem */                        \
         do                                                                                                             \
         {                                                                                                              \
             if (!static_cast<bool>(CND))                                                                               \

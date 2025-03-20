@@ -165,6 +165,7 @@ func(const Span<T> sp)
     return xxh64::hash((const char*)sp.data(), sp.size() * sizeof(T), 0);
 }
 
+/* just return the key */
 template<typename T>
 inline usize
 dumbFunc(const T& key)

@@ -24,6 +24,8 @@ struct Span
 
     /* */
 
+    constexpr bool empty() const { return m_size <= 0; }
+
     constexpr T* data() noexcept { return m_pData; }
     constexpr const T* data() const noexcept { return m_pData; }
 

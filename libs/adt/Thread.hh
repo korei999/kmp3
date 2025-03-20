@@ -15,7 +15,9 @@
     #include <sys/sysinfo.h>
 
     #define ADT_GET_NPROCS() get_nprocs()
-#elif _WIN32
+
+#elif defined _WIN32
+
     #include <sysinfoapi.h>
 
 inline DWORD
@@ -26,9 +28,9 @@ getLogicalCoresCountWIN32()
     return info.dwNumberOfProcessors;
 }
 
-    #define ADT_GET_NCORES() getLogicalCoresCountWIN32()
+    #define ADT_GET_NPROCS() getLogicalCoresCountWIN32()
 #else
-    #define ADT_GET_NCORES() 4
+    #define ADT_GET_NPROCS() 4
 #endif
 
 inline int
@@ -123,7 +125,7 @@ private:
 #endif
 
 inline
-Thread::Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg, ATTR eAttr)
+Thread::Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg, [[maybe_unused]] ATTR eAttr)
 {
 #ifdef ADT_USE_PTHREAD
 
@@ -138,7 +140,7 @@ Thread::Thread(THREAD_STATUS (*pfn)(void*), void* pFnArg, ATTR eAttr)
 
 template<typename LAMBDA>
 inline
-Thread::Thread(LAMBDA& l, ATTR eAttr)
+Thread::Thread(LAMBDA& l, [[maybe_unused]] ATTR eAttr)
 {
 #ifdef ADT_USE_PTHREAD
 

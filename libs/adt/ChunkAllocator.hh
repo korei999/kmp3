@@ -1,6 +1,6 @@
 #pragma once
 
-#include "OsAllocator.hh"
+#include "StdAllocator.hh"
 
 #include <cassert>
 #include <cstdlib>
@@ -24,7 +24,7 @@ struct ChunkAllocatorBlock
     u8 pMem[];
 };
 
-class ChunkAllocator : public IAllocator
+struct ChunkAllocator : public IAllocator
 {
     usize m_blockCap = 0; 
     usize m_chunkSize = 0;
@@ -33,13 +33,12 @@ class ChunkAllocator : public IAllocator
 
     /* */
 
-public:
     ChunkAllocator() = default;
-    ChunkAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = OsAllocatorGet()) noexcept(false)
+    ChunkAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = StdAllocator::inst()) noexcept(false)
         : m_blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
           m_chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
           m_pBackAlloc(pBackAlloc),
-          m_pBlocks {newBlock()} {}
+          m_pBlocks {allocBlock()} {}
 
     /* */
 
@@ -56,12 +55,14 @@ public:
     { ADT_ASSERT_ALWAYS(false, "can't realloc"); return nullptr; };
 
 private:
-    [[nodiscard]] ChunkAllocatorBlock* newBlock();
+    [[nodiscard]] ChunkAllocatorBlock* allocBlock();
 };
 
 inline ChunkAllocatorBlock*
-ChunkAllocator::newBlock()
+ChunkAllocator::allocBlock()
 {
+    ADT_ASSERT(m_pBackAlloc, "uninitialized: m_pBackAlloc == nullptr");
+
     usize total = m_blockCap + sizeof(ChunkAllocatorBlock);
     auto* r = (ChunkAllocatorBlock*)m_pBackAlloc->zalloc(1, total);
 
@@ -98,7 +99,7 @@ ChunkAllocator::malloc(usize, usize)
 
     if (!pBlock)
     {
-        pPrev->next = newBlock();
+        pPrev->next = allocBlock();
         pBlock = pPrev->next;
     }
 

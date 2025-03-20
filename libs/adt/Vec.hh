@@ -47,7 +47,7 @@ struct Vec
 
 #undef ADT_RANGE_CHECK
 
-    [[nodiscard]] bool empty() const noexcept { return m_size == 0; }
+    [[nodiscard]] bool empty() const noexcept { return m_size <= 0; }
 
     ssize push(IAllocator* p, const T& data);
 
@@ -279,7 +279,7 @@ inline ssize
 Vec<T>::idx(const T* const x) const noexcept
 {
     ssize r = ssize(x - m_pData);
-    ADT_ASSERT(r >= 0 && r < m_capacity,"r: %lld, cap: %lld", r, m_capacity);
+    ADT_ASSERT(r >= 0 && r < m_capacity,"r: %lld, cap: %lld, addr: %p. Must take the address of the reference", r, m_capacity, (void*)x);
     return r;
 }
 

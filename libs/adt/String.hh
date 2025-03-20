@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IAllocator.hh"
+#include "utils.hh"
 #include "hash.hh"
 #include "Span.hh"
 
@@ -11,22 +12,34 @@ namespace adt
 {
 
 [[nodiscard]] constexpr ssize
-nullTermStringSize(const char* nts)
+ntsSize(const char* nts)
 {
     ssize i = 0;
     if (!nts) return 0;
 
 #if defined __has_constexpr_builtin
+
     #if __has_constexpr_builtin(__builtin_strlen)
-
     i = __builtin_strlen(nts);
-
     #endif
+
 #else
 
     while (nts[i] != '\0') ++i;
 
 #endif
+
+    return i;
+}
+
+template <ssize SIZE>
+[[nodiscard]] constexpr ssize
+charBuffStringSize(const char (&aCharBuff)[SIZE])
+{
+    ssize i = 0;
+    if (SIZE == 0) return 0;
+
+    while (i < SIZE && aCharBuff[i] != '\0') ++i;
 
     return i;
 }
@@ -51,14 +64,19 @@ struct StringView
 
     constexpr StringView() = default;
 
-    constexpr StringView(const char* sNullTerminated)
-        : m_pData(const_cast<char*>(sNullTerminated)), m_size(nullTermStringSize(sNullTerminated)) {}
+    constexpr StringView(const char* nts)
+        : m_pData(const_cast<char*>(nts)), m_size(ntsSize(nts)) {}
 
     constexpr StringView(char* pStr, ssize len)
         : m_pData(pStr), m_size(len) {}
 
     constexpr StringView(Span<char> sp)
         : StringView(sp.data(), sp.size()) {}
+
+    template <ssize SIZE>
+    constexpr StringView(const char (&aCharBuff)[SIZE])
+        : m_pData(const_cast<char*>(aCharBuff)),
+          m_size(charBuffStringSize(aCharBuff)) {}
 
     /* */
 
@@ -77,6 +95,7 @@ struct StringView
     constexpr char* data() { return m_pData; }
     constexpr ssize size() const { return m_size; }
     constexpr bool empty() const { return size() == 0; }
+    constexpr ssize idx(const char* const pChar) const;
     [[nodiscard]] bool beginsWith(const StringView r) const;
     [[nodiscard]] bool endsWith(const StringView r) const;
     [[nodiscard]] ssize lastOf(char c) const;
@@ -144,7 +163,7 @@ struct StringGlyphIt
         It(const char* pFirst, ssize _i, ssize _size)
             : p{pFirst}, i(_i), size(_size)
         {
-            operator++();
+            if (i != NPOS) operator++();
         }
 
         wchar_t& operator*() { return wc; }
@@ -204,12 +223,16 @@ struct StringWordIt
 
         /* */
 
-        It(const StringView sv, ssize pos, const StringView svSeps)
+        It(const StringView sv, ssize pos, const StringView svSeps, bool)
             : m_svStr(sv), m_svSeps(svSeps),  m_i(pos)
         {
-            if (pos != NPOS)
-                operator++();
+            if (pos != NPOS) operator++();
         }
+
+        It(const StringView sv, ssize pos, const StringView svSeps)
+            : m_svStr(sv), m_svSeps(svSeps),  m_i(pos) {}
+
+        explicit It(ssize i) : m_i(i) {}
 
         /* */
 
@@ -243,6 +266,8 @@ struct StringWordIt
             m_svCurrWord = {const_cast<char*>(&m_svStr[start]), end - start};
             m_i = end + 1;
 
+            if (m_svCurrWord.empty()) operator++();
+
             return *this;
         }
 
@@ -250,12 +275,21 @@ struct StringWordIt
         friend bool operator!=(const It& l, const It& r) { return l.m_i != r.m_i; }
     };
 
-    It begin() { return {m_sv, 0, m_svDelimiters}; }
-    It end() { return {m_sv, NPOS, m_svDelimiters}; }
+    It begin() { return {m_sv, 0, m_svDelimiters, true}; }
+    It end() { return It(NPOS); }
 
-    const It begin() const { return {m_sv, 0, m_svDelimiters}; }
-    const It end() const { return {m_sv, NPOS, m_svDelimiters}; }
+    const It begin() const { return {m_sv, 0, m_svDelimiters, true}; }
+    const It end() const { return It(NPOS); }
 };
+
+constexpr inline ssize
+StringView::idx(const char* const p) const
+{
+    ssize i = p - m_pData;
+    ADT_ASSERT(i >= 0 && i < size(), "out of range: idx: %lld: size: %lld", i, size());
+
+    return i;
+}
 
 inline bool
 StringView::beginsWith(const StringView r) const
@@ -448,7 +482,7 @@ String::String(IAllocator* pAlloc, const char* pChars, ssize size)
         return;
 
     char* pNewData = pAlloc->mallocV<char>(size + 1);
-    strncpy(pNewData, pChars, size);
+    memcpy(pNewData, pChars, size);
     pNewData[size] = '\0';
 
     m_pData = pNewData;
@@ -457,7 +491,7 @@ String::String(IAllocator* pAlloc, const char* pChars, ssize size)
 
 inline
 String::String(IAllocator* pAlloc, const char* nts)
-    : String(pAlloc, nts, nullTermStringSize(nts)) {}
+    : String(pAlloc, nts, ntsSize(nts)) {}
 
 inline
 String::String(IAllocator* pAlloc, Span<char> spChars)
@@ -472,6 +506,77 @@ String::destroy(IAllocator* pAlloc)
 {
     pAlloc->free(m_pData);
     *this = {};
+}
+
+template<int SIZE> requires(SIZE > 1)
+struct StringFixed
+{
+    char m_aBuff[SIZE] {};
+
+    /* */
+
+    StringFixed() = default;
+
+    StringFixed(const StringView svName);
+
+    StringFixed(const char* nts) : StringFixed(StringView(nts)) {}
+
+    template<int SIZE_B>
+    StringFixed(const StringFixed<SIZE_B> other);
+
+    /* */
+
+    operator adt::StringView() { return StringView(m_aBuff); };
+    operator const adt::StringView() const { return StringView(m_aBuff); };
+
+    /* */
+
+    bool operator==(const StringFixed& other) const;
+    bool operator==(const adt::StringView sv) const;
+
+    char* data() { return m_aBuff; }
+    const char* data() const { return m_aBuff; }
+
+    ssize size() const { return strnlen(m_aBuff, SIZE); }
+};
+
+template<int SIZE> requires(SIZE > 1)
+inline
+StringFixed<SIZE>::StringFixed(const StringView svName)
+{
+    memcpy(m_aBuff,
+        svName.data(),
+        utils::min(svName.size(), static_cast<ssize>(sizeof(m_aBuff)))
+    );
+}
+
+template<int SIZE> requires(SIZE > 1)
+template<int SIZE_B>
+inline
+StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other)
+{
+    memcpy(m_aBuff, other.m_aBuff, utils::min(SIZE, SIZE_B));
+}
+
+template<int SIZE> requires(SIZE > 1)
+inline bool
+StringFixed<SIZE>::operator==(const StringFixed<SIZE>& other) const
+{
+    return memcmp(m_aBuff, other.m_aBuff, SIZE) == 0;
+}
+
+template<int SIZE> requires(SIZE > 1)
+inline bool
+StringFixed<SIZE>::operator==(const StringView sv) const
+{
+    return StringView(m_aBuff) == sv;
+}
+
+template<int SIZE_L, int SIZE_R>
+inline bool
+operator==(const StringFixed<SIZE_L>& l, const StringFixed<SIZE_R>& r)
+{
+    return memcmp(l.m_aBuff, r.m_aBuff, utils::min(SIZE_L, SIZE_R)) == 0;
 }
 
 inline String

@@ -97,7 +97,7 @@ parseArgs(int argc, char** argv)
 static void
 startup(int argc, char** argv)
 {
-    OsAllocator alloc;
+    StdAllocator alloc;
 
     app::g_eUIFrontend = app::UI::ANSI;
     app::g_eMixer = app::MIXER::PIPEWIRE;

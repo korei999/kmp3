@@ -291,10 +291,7 @@ template<template<typename> typename CON_T, typename T, typename LAMBDA>
 search(const CON_T<T>& c, LAMBDA f)
 {
     for (const auto& el : c)
-    {
-        if (f(el))
-            return c.idx(&el);
-    }
+        if (f(el)) return c.idx(&el);
 
     return NPOS;
 }

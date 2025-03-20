@@ -1,6 +1,6 @@
 #include "Decoder.hh"
 
-#include "adt/OsAllocator.hh"
+#include "adt/StdAllocator.hh"
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 #include "adt/types.hh"
@@ -187,8 +187,8 @@ Decoder::getCoverImage()
 audio::ERROR
 Decoder::open(StringView sPath)
 {
-    String sPathNullTerm = String(OsAllocatorGet(), sPath); /* with null char */
-    defer( sPathNullTerm.destroy(OsAllocatorGet()) );
+    String sPathNullTerm = String(StdAllocator::inst(), sPath); /* with null char */
+    defer( sPathNullTerm.destroy(StdAllocator::inst()) );
 
     int err = 0;
     defer( if (err < 0) close() );
