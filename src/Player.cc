@@ -154,7 +154,7 @@ Player::updateInfo()
     m_info.sArtist = app::mixer().getMetadata("artist");
 
     if (m_info.sTitle.size() == 0)
-        m_info.sTitle = String(m_pAlloc, m_vShortSongs[m_selected]);
+        m_info.sTitle = m_vShortSongs[m_selected];
 
     m_bSelectionChanged = true;
 }

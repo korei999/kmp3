@@ -49,7 +49,7 @@ bool
 start(Arena* pAlloc)
 {
     [[maybe_unused]] int r = tb_init();
-    assert(r == 0 && "'tb_init()' failed");
+    ADT_ASSERT(r == 0, "'tb_init()' failed");
 
     tb_set_input_mode(TB_INPUT_ESC | TB_INPUT_MOUSE);
 
@@ -307,7 +307,7 @@ drawMBString(
     [[maybe_unused]] const int nMaxWraps = 0
 )
 {
-    tb_printf(x, y, fg, bg, "%.*s", str.getSize(), str.data());
+    tb_printf(x, y, fg, bg, "%.*s", str.size(), str.data());
 }
 
 static void
@@ -319,7 +319,7 @@ drawSongList()
 
     const auto& aIdxBuff = pl.m_vSearchIdxs;
 
-    for (ssize h = g_firstIdx, i = 0; i < win.m_listHeight - 1 && h < aIdxBuff.getSize(); ++h, ++i)
+    for (ssize h = g_firstIdx, i = 0; i < win.m_listHeight - 1 && h < aIdxBuff.size(); ++h, ++i)
     {
         const u16 songIdx = aIdxBuff[h];
         const StringView sSong = pl.m_vShortSongs[songIdx];
@@ -412,7 +412,7 @@ drawInfo()
         int n = print::toBuffer(pBuff, width, "title: ");
         drawMBString(xOff, 1, pBuff, width - 1);
         memset(pBuff, 0, width + 1);
-        if (pl.m_info.sTitle.getSize() > 0)
+        if (pl.m_info.sTitle.size() > 0)
             print::toBuffer(pBuff, width, "{}", pl.m_info.sTitle);
         else print::toBuffer(pBuff, width, "{}", pl.m_vShortSongs[pl.m_selected]);
         drawMBString(xOff + n + 1, 1, pBuff, width - 1 - n - 1, TB_ITALIC|TB_BOLD|TB_YELLOW, TB_DEFAULT);
@@ -423,7 +423,7 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "album: ");
         drawMBString(xOff, 2, pBuff, width - 1);
-        if (pl.m_info.sAlbum.getSize() > 0)
+        if (pl.m_info.sAlbum.size() > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.m_info.sAlbum);
@@ -436,7 +436,7 @@ drawInfo()
         memset(pBuff, 0, width + 1);
         int n = print::toBuffer(pBuff, width, "artist: ");
         drawMBString(xOff, 3, pBuff, width - 2);
-        if (pl.m_info.sArtist.getSize() > 0)
+        if (pl.m_info.sArtist.size() > 0)
         {
             memset(pBuff, 0, width + 1);
             print::toBuffer(pBuff, width, "{}", pl.m_info.sArtist);
@@ -458,7 +458,7 @@ drawBottomLine()
     {
         char* pBuff = (char*)g_pFrameArena->zalloc(1, width + 1);
 
-        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_vShortSongs.getSize() - 1);
+        int n = print::toBuffer(pBuff, width, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
@@ -477,13 +477,13 @@ drawBottomLine()
     )
     {
         const StringView sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
-        drawWideString(sReadMode.getSize() + 1, height - 1, c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff), width - 2);
+        drawWideString(sReadMode.size() + 1, height - 1, c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff), width - 2);
         drawMBString(1, height - 1, sReadMode, width - 2);
 
         if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE)
         {
             u32 wlen = wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff));
-            drawWideString(sReadMode.getSize() + wlen + 1, height - 1, common::CURSOR_BLOCK, 1, 3);
+            drawWideString(sReadMode.size() + wlen + 1, height - 1, common::CURSOR_BLOCK, 1, 3);
         }
     }
 }
@@ -536,14 +536,15 @@ drawCoverImage()
     {
         pl.m_bSelectionChanged = false;
 
-        auto oCover = app::g_pMixer->getCoverImage();
+        auto image = app::g_pMixer->getCoverImage();
+        bool bNonZeroSize = image.height > 0 && image.width > 0;
 
         /* termbox2 doesn't support image printing, these are bunch of ugly heuristics */
-        if (s_bNoImage && oCover)
+        if (s_bNoImage && bNonZeroSize)
         {
             tb_invalidate();
         }
-        else if (oCover || (!s_bNoImage && !oCover))
+        else if (bNonZeroSize || (!s_bNoImage && !bNonZeroSize))
         {
             /* clear without flickering */
             const char sKittyClear[] = "\x1b_Ga=d,d=A\x1b\\";
@@ -552,20 +553,19 @@ drawCoverImage()
             clearAreaHARD(1, 1, g_prevImgWidth + 1, g_prevImgHeight + 1);
         }
 
-        if (oCover)
+        if (bNonZeroSize)
         {
             namespace ch = platform::chafa;
-            auto& img = oCover.value();
             ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
 
             g_prevImgWidth = pl.m_imgWidth;
             g_prevImgHeight = pl.m_imgHeight;
 
             const auto chafaImg = ch::allocImage(
-                g_pFrameArena, eLayout, img, pl.m_imgHeight, pl.m_imgWidth
+                g_pFrameArena, eLayout, image, pl.m_imgHeight, pl.m_imgWidth
             );
 
-            f64 asp = (((f64)img.width / (f64)img.height));
+            f64 asp = (((f64)image.width / (f64)image.height));
             f64 normalAsp = 1920.0 / 1080.0;
             f64 diff = normalAsp - asp;
             int xOff = 0;
@@ -587,15 +587,15 @@ drawCoverImage()
                 else
                     tb_set_cursor(1 + xOff, 1);
 
-                tb_send(chafaImg.uData.sRaw.data(), chafaImg.uData.sRaw.getSize());
+                tb_send(chafaImg.uData.sRaw.data(), chafaImg.uData.sRaw.size());
             }
             else
             {
-                for (ssize lineIdx = 1, i = 0; lineIdx < chafaImg.uData.vLines.getSize(); ++lineIdx, ++i)
+                for (ssize lineIdx = 1, i = 0; lineIdx < chafaImg.uData.vLines.size(); ++lineIdx, ++i)
                 {
                     tb_set_cursor(1 + xOff, lineIdx);
                     const auto& sLine = chafaImg.uData.vLines[i];
-                    tb_send(sLine.data(), sLine.getSize());
+                    tb_send(sLine.data(), sLine.size());
                 }
             }
 
