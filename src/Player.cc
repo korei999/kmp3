@@ -137,6 +137,7 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
 
         aSongToUpper.zeroOut();
         mbstowcs(aSongToUpper.data(), song.data(), song.size());
+
         for (auto& wc : aSongToUpper)
             wc = towupper(wc);
 
@@ -148,13 +149,9 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
 void
 Player::updateInfo()
 {
-    m_info.sTitle.destroy(m_pAlloc);
-    m_info.sAlbum.destroy(m_pAlloc);
-    m_info.sArtist.destroy(m_pAlloc);
-
-    m_info.sTitle = {m_pAlloc, app::mixer().getMetadata("title")};
-    m_info.sAlbum = {m_pAlloc, app::mixer().getMetadata("album")};
-    m_info.sArtist = {m_pAlloc, app::mixer().getMetadata("artist")};
+    m_info.sTitle = app::mixer().getMetadata("title");
+    m_info.sAlbum = app::mixer().getMetadata("album");
+    m_info.sArtist = app::mixer().getMetadata("artist");
 
     if (m_info.sTitle.size() == 0)
         m_info.sTitle = String(m_pAlloc, m_vShortSongs[m_selected]);
@@ -294,10 +291,6 @@ Player::adjustImgWidth()
 void
 Player::destroy()
 {
-    m_info.sTitle.destroy(m_pAlloc);
-    m_info.sAlbum.destroy(m_pAlloc);
-    m_info.sArtist.destroy(m_pAlloc);
-
     m_vSongs.destroy(m_pAlloc);
     m_vShortSongs.destroy(m_pAlloc);
     m_vSongIdxs.destroy(m_pAlloc);

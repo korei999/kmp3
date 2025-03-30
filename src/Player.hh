@@ -25,9 +25,9 @@ struct Player
     IAllocator* m_pAlloc {};
 
     struct {
-        String sTitle {};
-        String sAlbum {};
-        String sArtist {};
+        StringFixed<128> sTitle {};
+        StringFixed<128> sAlbum {};
+        StringFixed<128> sArtist {};
     } m_info {};
 
     u8 m_imgHeight {};

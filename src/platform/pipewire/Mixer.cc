@@ -245,9 +245,13 @@ Mixer::setNChannles(u32 nChannles)
 
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_update_params(m_pStream, &pParams, 1);
+
     /* won't apply without this */
-    pw_stream_set_active(m_pStream, m_bPaused.load(atomic::ORDER::ACQUIRE));
-    pw_stream_set_active(m_pStream, !m_bPaused.load(atomic::ORDER::ACQUIRE));
+    {
+        bool bPaused = m_bPaused.load(atomic::ORDER::ACQUIRE);
+        pw_stream_set_active(m_pStream, bPaused);
+        pw_stream_set_active(m_pStream, !bPaused);
+    }
 }
 
 void
@@ -273,7 +277,7 @@ Mixer::onProcess()
     u32 nFrames = pBuffData.maxsize / stride;
     if (pPwBuffer->requested) nFrames = SPA_MIN(pPwBuffer->requested, (u64)nFrames);
 
-    if (nFrames * m_nChannels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
+    if (nFrames*m_nChannels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
 
     m_nLastFrames = nFrames;
 
@@ -355,9 +359,13 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_update_params(m_pStream, aParams, utils::size(aParams));
+
     /* update won't apply without this */
-    pw_stream_set_active(m_pStream, m_bPaused.load(atomic::ORDER::ACQUIRE));
-    pw_stream_set_active(m_pStream, !m_bPaused.load(atomic::ORDER::ACQUIRE));
+    {
+        bool bPaused = m_bPaused.load(atomic::ORDER::ACQUIRE);
+        pw_stream_set_active(m_pStream, bPaused);
+        pw_stream_set_active(m_pStream, !bPaused);
+    }
 
     if (bSave) m_sampleRate = sampleRate;
 

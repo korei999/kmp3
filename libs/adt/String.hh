@@ -474,6 +474,7 @@ struct String : public StringView
     /* */
 
     void destroy(IAllocator* pAlloc);
+    void replaceWith(IAllocator* pAlloc, StringView svWith);
 };
 
 inline
@@ -507,6 +508,23 @@ String::destroy(IAllocator* pAlloc)
 {
     pAlloc->free(m_pData);
     *this = {};
+}
+
+inline void
+String::replaceWith(IAllocator* pAlloc, StringView svWith)
+{
+    if (svWith.empty())
+    {
+        destroy(pAlloc);
+        return;
+    }
+
+    if (size() < svWith.size() + 1)
+        m_pData = pAlloc->reallocV<char>(data(), 0, svWith.size() + 1);
+
+    strncpy(data(), svWith.data(), svWith.size());
+    m_size = svWith.size();
+    data()[size()] = '\0';
 }
 
 template<int SIZE> requires(SIZE > 1)
