@@ -221,7 +221,7 @@ Win::songListScrollBar()
     const auto& pl = app::player();
     const int split = pl.m_imgHeight + 1;
 
-    const f32 sizeToListSize = f32(pl.m_vSearchIdxs.size() - m_listHeight - 1) / (m_listHeight+0.00001f);
+    const f32 sizeToListSize = f32(pl.m_vSearchIdxs.size() - m_listHeight + split - 3) / (m_listHeight+0.00001f);
 
     int closestI = 0;
 

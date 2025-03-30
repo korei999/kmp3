@@ -104,7 +104,7 @@ Win::procEvents()
 {
     procInput();
 
-    if (!m_bScrollBarClicked)
+    if (m_bUpdateFirst)
     {
         common::fixFirstIdx(
             m_listHeight - 2,

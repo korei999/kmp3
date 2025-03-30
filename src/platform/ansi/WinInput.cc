@@ -199,8 +199,6 @@ Win::procMouse(MouseInput in)
         s_bPressed = false;
         s_bHoldTimeSlider = false;
         s_bHoldScrollBar = false;
-
-        m_bScrollBarClicked = false;
         return;
     }
 
@@ -219,11 +217,9 @@ Win::procMouse(MouseInput in)
     {
         s_bHoldScrollBar = true;
 
-        const f32 sizeToListSize = f32(pl.m_vSearchIdxs.size() - m_listHeight - 1) / (m_listHeight+0.00001f);
+        const f32 sizeToListSize = f32(pl.m_vSearchIdxs.size() - m_listHeight + yOff) / (m_listHeight+0.00001f);
         const int tar = std::round((in.y - listOff) * sizeToListSize);
-        m_firstIdx = utils::clamp(tar, 0, static_cast<int>(pl.m_vSearchIdxs.size() - m_listHeight - 1));
-        m_bScrollBarClicked = true;
-        pl.m_focused = m_firstIdx;
+        m_firstIdx = utils::clamp(tar, 0, static_cast<int>(pl.m_vSearchIdxs.size() - m_listHeight + 1));
     };
 
     auto clHoldTimeSlider = [&]
@@ -350,10 +346,12 @@ Win::procMouse(MouseInput in)
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_UP)
     {
+        m_bUpdateFirst = true;
         pl.focus(pl.m_focused - defaults::MOUSE_STEP);
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
     {
+        m_bUpdateFirst = true;
         pl.focus(pl.m_focused + defaults::MOUSE_STEP);
     }
 }
@@ -485,6 +483,8 @@ Win::procInput()
 {
     Input in = readFromStdin(defaults::UPDATE_RATE);
 
+    m_bUpdateFirst = false;
+
     switch (in.eType)
     {
         case Input::TYPE::KB:
@@ -496,6 +496,7 @@ Win::procInput()
                 {
                     keybinds::exec(k.pfn, k.arg);
                     m_bRedraw = true;
+                    m_bUpdateFirst = true;
                 }
             }
         }

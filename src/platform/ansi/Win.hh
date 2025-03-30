@@ -58,7 +58,7 @@ class Win : public IWindow
     Input m_lastInput {};
     int m_lastMouseSelection {};
     adt::f64 m_lastMouseSelectionTime {};
-    bool m_bScrollBarClicked {};
+    bool m_bUpdateFirst {};
 
     /* */
 
