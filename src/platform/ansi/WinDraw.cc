@@ -63,7 +63,8 @@ Win::info()
         const int y,
         const StringView sPrefix,
         const StringView sLine,
-        const TEXT_BUFF_STYLE eStyle)
+        const TEXT_BUFF_STYLE eStyle
+    )
     {
         utils::memSet(sp.data(), 0, sp.size());
 
