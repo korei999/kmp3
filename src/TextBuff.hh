@@ -673,53 +673,53 @@ TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
 
     n += print::toBuffer(sp.data() + n, size - n, "\x1b[0");
 
-    if (!!eStyle)
+    if (bool(eStyle))
     {
         using CODE = TEXT_BUFF_STYLE_CODE;
 
-        if (!!(eStyle & TEXT_BUFF_STYLE::BOLD))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BOLD))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BOLD);
-        if (!!(eStyle & TEXT_BUFF_STYLE::DIM))
+        if (bool(eStyle & TEXT_BUFF_STYLE::DIM))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::DIM);
-        if (!!(eStyle & TEXT_BUFF_STYLE::ITALIC))
+        if (bool(eStyle & TEXT_BUFF_STYLE::ITALIC))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::ITALIC);
-        if (!!(eStyle & TEXT_BUFF_STYLE::UNDERLINE))
+        if (bool(eStyle & TEXT_BUFF_STYLE::UNDERLINE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::UNRELINE);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BLINK))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BLINK))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BLINK);
-        if (!!(eStyle & TEXT_BUFF_STYLE::REVERSE))
+        if (bool(eStyle & TEXT_BUFF_STYLE::REVERSE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::REVERSE);
-        if (!!(eStyle & TEXT_BUFF_STYLE::INVIS))
+        if (bool(eStyle & TEXT_BUFF_STYLE::INVIS))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::INVIS);
-        if (!!(eStyle & TEXT_BUFF_STYLE::STRIKE))
+        if (bool(eStyle & TEXT_BUFF_STYLE::STRIKE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::STRIKE);
-        if (!!(eStyle & TEXT_BUFF_STYLE::RED))
+        if (bool(eStyle & TEXT_BUFF_STYLE::RED))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::RED);
-        if (!!(eStyle & TEXT_BUFF_STYLE::GREEN))
+        if (bool(eStyle & TEXT_BUFF_STYLE::GREEN))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::GREEN);
-        if (!!(eStyle & TEXT_BUFF_STYLE::YELLOW))
+        if (bool(eStyle & TEXT_BUFF_STYLE::YELLOW))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::YELLOW);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BLUE))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BLUE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BLUE);
-        if (!!(eStyle & TEXT_BUFF_STYLE::MAGENTA))
+        if (bool(eStyle & TEXT_BUFF_STYLE::MAGENTA))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::MAGENTA);
-        if (!!(eStyle & TEXT_BUFF_STYLE::CYAN))
+        if (bool(eStyle & TEXT_BUFF_STYLE::CYAN))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::CYAN);
-        if (!!(eStyle & TEXT_BUFF_STYLE::WHITE))
+        if (bool(eStyle & TEXT_BUFF_STYLE::WHITE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::WHITE);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BG_RED))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BG_RED))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_RED);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BG_GREEN))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BG_GREEN))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_GREEN);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BG_YELLOW))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BG_YELLOW))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_YELLOW);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BG_BLUE))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BG_BLUE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_BLUE);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BG_MAGENTA))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BG_MAGENTA))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_MAGENTA);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BG_CYAN))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BG_CYAN))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_CYAN);
-        if (!!(eStyle & TEXT_BUFF_STYLE::BG_WHITE))
+        if (bool(eStyle & TEXT_BUFF_STYLE::BG_WHITE))
             n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_WHITE);
     }
 
