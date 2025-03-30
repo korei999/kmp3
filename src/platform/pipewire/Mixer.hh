@@ -5,8 +5,6 @@
 #include "audio.hh"
 #include "platform/ffmpeg/Decoder.hh"
 
-#include <atomic>
-
 #ifdef __clang__
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
@@ -38,7 +36,7 @@ class Mixer : public audio::IMixer
 protected:
     u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
-    std::atomic<bool> m_bDecodes = false;
+    atomic::Int m_bDecodes {false};
     ffmpeg::Decoder m_decoder {}; /* no point in IDecoder */
     StringView m_svPath {};
 

@@ -3,9 +3,8 @@
 #include "Thread.hh"
 #include "Queue.hh"
 #include "Span.hh"
-#include "guard.hh"
-
-#include <atomic>
+#include "defer.hh"
+#include "atomic.hh"
 
 namespace adt
 {
@@ -24,13 +23,27 @@ struct ThreadPool
     Mutex m_mtxQ {};
     CndVar m_cndQ {};
     CndVar m_cndWait {};
-    std::atomic<int> m_nActiveTasks {};
-    std::atomic<bool> m_bDone {};
+    void (*m_pfnLoopStart)(void*) {};
+    void* m_pLoopStartArg {};
+    void (*m_pfnLoopEnd)(void*) {};
+    void* m_pLoopEndArg {};
+    atomic::Int m_atom_nActiveTasks {};
+    atomic::Int m_atom_bDone {};
 
     /* */
 
     ThreadPool() = default;
+
     ThreadPool(IAllocator* pAlloc, int nThreads = ADT_GET_NPROCS());
+
+    ThreadPool(
+        IAllocator* pAlloc,
+        void (*pfnLoopStart)(void*),
+        void* pLoopStartArg,
+        void (*pfnLoopEnd)(void*),
+        void* pLoopEndArg,
+        int nThreads = ADT_GET_NPROCS()
+    );
 
     /* */
 
@@ -43,8 +56,9 @@ struct ThreadPool
     template<typename LAMBDA> requires(std::is_rvalue_reference_v<LAMBDA&&>)
     [[deprecated("rvalue lambdas cause use after free")]] void addLambda(LAMBDA&& t) = delete;
 
-private:
+protected:
     THREAD_STATUS loop();
+    void spawnThreads();
 };
 
 inline
@@ -55,7 +69,72 @@ ThreadPool::ThreadPool(IAllocator* pAlloc, int nThreads)
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
-      m_bDone(false)
+      m_atom_bDone(false)
+{
+    spawnThreads();
+}
+
+inline
+ThreadPool::ThreadPool(
+    IAllocator* pAlloc,
+    void (*pfnLoopStart)(void*), void* pLoopStartArg,
+    void (*pfnLoopEnd)(void*), void* pLoopEndArg,
+    int nThreads
+)
+    : m_pAlloc(pAlloc),
+      m_qTasks(pAlloc, nThreads * 2),
+      m_spThreads(pAlloc->zallocV<Thread>(nThreads), nThreads),
+      m_mtxQ(Mutex::TYPE::PLAIN),
+      m_cndQ(INIT),
+      m_cndWait(INIT),
+      m_pfnLoopStart(pfnLoopStart),
+      m_pLoopStartArg(pLoopStartArg),
+      m_pfnLoopEnd(pfnLoopEnd),
+      m_pLoopEndArg(pLoopEndArg),
+      m_atom_bDone(false)
+{
+    spawnThreads();
+}
+
+inline THREAD_STATUS
+ThreadPool::loop()
+{
+    if (m_pfnLoopStart) m_pfnLoopStart(m_pLoopStartArg);
+    defer( if (m_pfnLoopEnd) m_pfnLoopEnd(m_pLoopEndArg) );
+
+    while (true)
+    {
+        ThreadPoolTask task {};
+
+        {
+            MutexGuard qLock(&m_mtxQ);
+
+            while (m_qTasks.empty() && !m_atom_bDone.load(atomic::ORDER::RELAXED))
+                m_cndQ.wait(&m_mtxQ);
+
+            if (m_atom_bDone.load(atomic::ORDER::RELAXED))
+                return 0;
+
+            task = *m_qTasks.popFront();
+            m_atom_nActiveTasks.fetchAdd(1, atomic::ORDER::SEQ_CST);
+        }
+
+        task.pfn(task.pArg);
+        m_atom_nActiveTasks.fetchSub(1, atomic::ORDER::SEQ_CST);
+
+        {
+            MutexGuard qLock(&m_mtxQ);
+
+            if (m_qTasks.empty() && m_atom_nActiveTasks.load(atomic::ORDER::ACQUIRE) == 0)
+                m_cndWait.signal();
+        }
+    }
+
+    return 0;
+}
+
+inline void
+ThreadPool::spawnThreads()
 {
     for (auto& thread : m_spThreads)
     {
@@ -66,50 +145,16 @@ ThreadPool::ThreadPool(IAllocator* pAlloc, int nThreads)
     }
 
 #ifndef NDEBUG
-    fprintf(stderr, "ThreadPool: new pool with %d threads\n", nThreads);
+    fprintf(stderr, "ThreadPool: new pool with %lld threads\n", m_spThreads.size());
 #endif
-}
-
-inline THREAD_STATUS
-ThreadPool::loop()
-{
-    while (true)
-    {
-        ThreadPoolTask task {};
-
-        {
-            guard::Mtx qLock(&m_mtxQ);
-
-            while (m_qTasks.empty() && !m_bDone.load(std::memory_order_relaxed))
-                m_cndQ.wait(&m_mtxQ);
-
-            if (m_bDone.load(std::memory_order_relaxed))
-                return 0;
-
-            task = *m_qTasks.popFront();
-            m_nActiveTasks.fetch_add(1, std::memory_order_seq_cst);
-        }
-
-        task.pfn(task.pArg);
-        m_nActiveTasks.fetch_sub(1,std::memory_order_seq_cst);
-
-        {
-            guard::Mtx qLock(&m_mtxQ);
-
-            if (m_qTasks.empty() && m_nActiveTasks.load(std::memory_order_acquire) == 0)
-                m_cndWait.signal();
-        }
-    }
-
-    return 0;
 }
 
 inline void
 ThreadPool::wait()
 {
-    guard::Mtx qLock(&m_mtxQ);
+    MutexGuard qLock(&m_mtxQ);
 
-    while (!m_qTasks.empty() || m_nActiveTasks.load(std::memory_order_relaxed) != 0)
+    while (!m_qTasks.empty() || m_atom_nActiveTasks.load(atomic::ORDER::RELAXED) != 0)
         m_cndWait.wait(&m_mtxQ);
 }
 
@@ -119,8 +164,8 @@ ThreadPool::destroy()
     wait();
 
     {
-        guard::Mtx qLock(&m_mtxQ);
-        m_bDone.store(true, std::memory_order_relaxed);
+        MutexGuard qLock(&m_mtxQ);
+        m_atom_bDone.store(1, atomic::ORDER::RELAXED);
     }
 
     m_cndQ.broadcast();
@@ -140,7 +185,7 @@ ThreadPool::destroy()
 inline void
 ThreadPool::add(ThreadPoolTask task)
 {
-    guard::Mtx lock(&m_mtxQ);
+    MutexGuard lock(&m_mtxQ);
 
     m_qTasks.pushBack(m_pAlloc, task);
     m_cndQ.signal();

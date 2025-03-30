@@ -2,7 +2,6 @@
 
 #include "print.hh"
 
-#include <cassert>
 #include <cstdlib>
 #include <cerrno>
 
@@ -56,8 +55,8 @@ constexpr adt::StringView _ADT_LOG_SEV_STR[] = {
     #define _ADT_LOG(SEV, ...)                                                                                         \
         do                                                                                                             \
         {                                                                                                              \
-            assert(SEV >= 0 && SEV < _ADT_LOG_SEV_ENUM_SIZE && "wrong _ADT_LOG_SEV*");                                 \
-            ADT_CERR("({}{}, {}(), {}): ", _ADT_LOG_SEV_STR[SEV], ADT_LOGS_FILE, __FUNCTION__, __LINE__);                \
+            ADT_ASSERT(SEV >= 0 && SEV < _ADT_LOG_SEV_ENUM_SIZE, "wrong _ADT_LOG_SEV*");                               \
+            ADT_CERR("({}{}, {}(), {}): ", _ADT_LOG_SEV_STR[SEV], ADT_LOGS_FILE, __FUNCTION__, __LINE__);              \
             ADT_CERR(__VA_ARGS__);                                                                                     \
             switch (SEV)                                                                                               \
             {                                                                                                          \

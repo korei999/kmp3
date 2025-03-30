@@ -2,7 +2,6 @@
 
 #include "StdAllocator.hh"
 
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 
@@ -141,7 +140,7 @@ ChunkAllocator::free(void* p) noexcept
         pBlock = pBlock->next;
     }
 
-    assert(pBlock && "bad pointer?");
+    ADT_ASSERT(pBlock, "bad pointer?");
     
     node->next = pBlock->head;
     pBlock->head = node;

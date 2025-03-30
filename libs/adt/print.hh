@@ -12,8 +12,6 @@
 #include <cstdlib>
 #include <cuchar> /* IWYU pragma: keep */
 
-#include <atomic>
-
 namespace adt::print
 {
 
@@ -84,7 +82,7 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, ssize fmtIdx) noexcept
     char aBuff[64] {};
     ssize i = fmtIdx + 1;
 
-    auto skipUntil = [&](const StringView chars) -> void
+    auto clSkipUntil = [&](const StringView chars) -> void
     {
         memset(aBuff, 0, sizeof(aBuff));
         ssize bIdx = 0;
@@ -95,7 +93,7 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, ssize fmtIdx) noexcept
         }
     };
 
-    auto peek = [&]
+    auto clPeek = [&]
     {
         if (i + 1 < fmt.size())
             return fmt[i + 1];
@@ -108,7 +106,7 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, ssize fmtIdx) noexcept
 
         if (bFloatPresicion)
         {
-            skipUntil("}");
+            clSkipUntil("}");
             pArgs->maxFloatLen = atoi(aBuff);
             pArgs->eFmtFlags |= FMT_FLAGS::FLOAT_PRECISION_ARG;
         }
@@ -117,15 +115,15 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, ssize fmtIdx) noexcept
         {
             if (fmt[i] == '{')
             {
-                skipUntil("}");
+                clSkipUntil("}");
                 pArgs->eFmtFlags |= FMT_FLAGS::ARG_IS_FMT;
                 continue;
             }
             else if (fmt[i] == '.')
             {
-                if (peek() == '{')
+                if (clPeek() == '{')
                 {
-                    skipUntil("}");
+                    clSkipUntil("}");
                     pArgs->eFmtFlags |= FMT_FLAGS::ARG_IS_FMT;
                 }
 
@@ -134,7 +132,7 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, ssize fmtIdx) noexcept
             }
             else if (isdigit(fmt[i]))
             {
-                skipUntil("}.#xb");
+                clSkipUntil("}.#xb");
                 pArgs->maxLen = atoi(aBuff);
             }
             else if (fmt[i] == '#')
@@ -178,7 +176,7 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
     bool bNegative = false;
 
     ssize i = 0;
-    auto push = [&](char c) -> bool
+    auto clPush = [&](char c) -> bool
     {
         if (i < spBuff.size())
         {
@@ -191,7 +189,7 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
  
     if (x == 0)
     {
-        push('0');
+        clPush('0');
         return;
     }
  
@@ -209,32 +207,32 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
     {
         int rem = x % int(fmtArgs.eBase);
         char c = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
-        push(c);
+        clPush(c);
         x = x / int(fmtArgs.eBase);
     }
  
     if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ALWAYS_SHOW_SIGN))
     {
         if (bNegative)
-            push('-');
-        else push('+');
+            clPush('-');
+        else clPush('+');
     }
     else if (bNegative)
     {
-        push('-');
+        clPush('-');
     }
 
     if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::HASH))
     {
         if (fmtArgs.eBase == BASE::SIXTEEN)
         {
-            push('x');
-            push('0');
+            clPush('x');
+            clPush('0');
         }
         else if (fmtArgs.eBase == BASE::TWO)
         {
-            push('b');
-            push('0');
+            clPush('b');
+            clPush('0');
         }
     }
 
@@ -242,13 +240,13 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 }
 
 inline ssize
-copyBackToCtxBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept
+copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept
 {
     if (spSrc.empty()) return 0;
 
     ssize i = 0;
 
-    auto copySpan = [&]
+    auto clCopySpan = [&]
     {
         for (; i < spSrc.size() && spSrc[i] && ctx.buffIdx < ctx.buffSize; ++i)
             ctx.pBuff[ctx.buffIdx++] = spSrc[i];
@@ -266,13 +264,13 @@ copyBackToCtxBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noe
                 ctx.pBuff[ctx.buffIdx++] = ' ';
         }
 
-        copySpan();
+        clCopySpan();
 
         i += j;
     }
     else
     {
-        copySpan();
+        clCopySpan();
 
         if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i)
         {
@@ -287,14 +285,14 @@ copyBackToCtxBuffer(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noe
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const StringView& str) noexcept
 {
-    return copyBackToCtxBuffer(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
+    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
 }
 
 template<int SIZE> requires(SIZE > 1)
 inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const StringFixed<SIZE>& str) noexcept
 {
-    return copyBackToCtxBuffer(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
+    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
 }
 
 inline ssize
@@ -324,7 +322,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
     if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen < utils::size(buff) - 1)
         buff[fmtArgs.maxLen] = '\0';
 
-    return copyBackToCtxBuffer(ctx, fmtArgs, {buff});
+    return copyBackToContext(ctx, fmtArgs, {buff});
 }
 
 inline ssize
@@ -336,7 +334,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
     else
         snprintf(aBuff, utils::size(aBuff), "%.*f", fmtArgs.maxFloatLen, x);
 
-    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
@@ -348,7 +346,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
     else
         snprintf(aBuff, utils::size(aBuff), "%.*lf", fmtArgs.maxFloatLen, x);
 
-    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
@@ -361,7 +359,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept
     snprintf(aBuff, utils::size(aBuff) - 1, "%lc", x);
 #endif
 
-    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
@@ -376,7 +374,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const char x) noexcept
     char aBuff[4] {};
     snprintf(aBuff, utils::size(aBuff), "%c", x);
 
-    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
 inline ssize
@@ -529,7 +527,7 @@ inline ssize
 FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
 {
     ssize i = 0;
-    auto push = [&](char c) -> bool
+    auto clPush = [&](char c) -> bool
     {
         if (i < spFmt.size())
         {
@@ -541,22 +539,22 @@ FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
         return false;
     };
 
-    if (!push('{')) return i;
+    if (!clPush('{')) return i;
 
     if (fmtArgs.maxLen != NPOS16 || fmtArgs.maxFloatLen != NPOS8)
     {
-        if (!push(':')) return i;
+        if (!clPush(':')) return i;
 
         if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::JUSTIFY_RIGHT))
-            if (!push('>')) return i;
+            if (!clPush('>')) return i;
 
         if (fmtArgs.maxFloatLen != NPOS8)
-            if (!push('.')) return i;
+            if (!clPush('.')) return i;
 
         if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
         {
-            if (!push('{')) return i;
-            if (!push('}')) return i;
+            if (!clPush('{')) return i;
+            if (!clPush('}')) return i;
         }
         else
         {
@@ -567,11 +565,11 @@ FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
                 intToBuffer(fmtArgs.maxLen, {aBuff}, {});
 
             for (ssize j = 0; j < utils::size(aBuff) && aBuff[j]; ++j)
-                if (!push(aBuff[j])) return i;
+                if (!clPush(aBuff[j])) return i;
         }
     }
 
-    if (!push('}')) return i;
+    if (!clPush('}')) return i;
 
     return i;
 }
@@ -606,7 +604,7 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const
         ++i;
     }
 
-    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
 template<template<typename, ssize> typename CON_T, typename T, ssize SIZE>
@@ -639,7 +637,7 @@ formatToContextTemplateSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE
         ++i;
     }
 
-    return copyBackToCtxBuffer(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
 template<template<typename> typename CON_T, typename T>
@@ -654,13 +652,6 @@ inline ssize
 formatToContext(Context ctx, FormatArgs fmtArgs, const T (&a)[N]) noexcept
 {
     return formatToContext(ctx, fmtArgs, Span(a, N));
-}
-
-template<typename T>
-inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const std::atomic<T>& x) noexcept
-{
-    return formatToContext(ctx, fmtArgs, x.load(std::memory_order_relaxed));
 }
 
 } /* namespace adt::print */

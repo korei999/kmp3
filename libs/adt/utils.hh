@@ -22,10 +22,10 @@
 #endif
 
 #include "types.hh"
+#include "assert.hh"
 
 #include <ctime>
 #include <cstring>
-#include <cassert>
 #include <cmath>
 
 namespace adt::utils
@@ -179,7 +179,7 @@ template<typename T>
 inline void
 memCopy(T* pDest, const T* const pSrc, ssize size)
 {
-    assert(pDest != nullptr && pSrc != nullptr);
+    ADT_ASSERT(pDest != nullptr && pSrc != nullptr, " ");
     memcpy(pDest, pSrc, size * sizeof(T));
 }
 
@@ -188,7 +188,7 @@ template<typename T>
 inline void
 memMove(T* pDest, const T* const pSrc, ssize size)
 {
-    assert(pDest != nullptr && pSrc != nullptr);
+    ADT_ASSERT(pDest != nullptr && pSrc != nullptr, " ");
     memmove(pDest, pSrc, size * sizeof(T));
 }
 
@@ -196,7 +196,7 @@ template<typename T>
 inline void
 memSet(T* pDest, int byte, ssize size)
 {
-    assert(pDest != nullptr);
+    ADT_ASSERT(pDest != nullptr, " ");
     memset(pDest, byte, size * sizeof(T));
 }
 
@@ -219,7 +219,7 @@ template<template<typename> typename CON_T, typename T>
 [[nodiscard]] inline T&
 searchMax(CON_T<T>* s)
 {
-    assert(!empty(s));
+    ADT_ASSERT(!empty(s), " ");
 
     auto _max = s->begin();
     for (auto it = ++s->begin(); it != s->end(); ++it)
@@ -232,7 +232,7 @@ template<template<typename> typename CON_T, typename T>
 [[nodiscard]] inline T&
 searchMin(CON_T<T>* s)
 {
-    assert(!empty(s));
+    ADT_ASSERT(!empty(s), " ");
 
     auto _min = s->begin();
     for (auto it = ++s->begin(); it != s->end(); ++it)
@@ -244,7 +244,7 @@ searchMin(CON_T<T>* s)
 inline constexpr void
 reverse(auto* a, const ssize size)
 {
-    assert(size > 0);
+    ADT_ASSERT(size > 0, " ");
 
     for (ssize i = 0; i < size / 2; ++i)
         swap(&a[i], &a[size - 1 - i]);
@@ -256,36 +256,6 @@ reverse(auto* a)
     reverse(a->data(), a->size());
 }
 
-
-inline constexpr u16
-swapBytes(u16 x)
-{
-    return ((x & 0xff00u) >> 1 * 8) |
-           ((x & 0x00ffu) << 1 * 8);
-}
-
-inline constexpr u32
-swapBytes(u32 x)
-{
-    return ((x & 0xff000000u) >> 3 * 8) |
-           ((x & 0x00ff0000u) >> 1 * 8) |
-           ((x & 0x0000ff00u) << 1 * 8) |
-           ((x & 0x000000ffu) << 3 * 8);
-}
-
-inline constexpr u64
-swapBytes(u64 x)
-{
-    return ((x & 0xff00000000000000llu) >> 7 * 8) |
-           ((x & 0x00ff000000000000llu) >> 5 * 8) |
-           ((x & 0x0000ff0000000000llu) >> 2 * 8) |
-           ((x & 0x000000ff00000000llu) >> 1 * 8) |
-           ((x & 0x00000000ff000000llu) << 1 * 8) |
-           ((x & 0x0000000000ff0000llu) << 3 * 8) |
-           ((x & 0x000000000000ff00llu) << 5 * 8) |
-           ((x & 0x00000000000000ffllu) << 7 * 8);
-}
-
 template<template<typename> typename CON_T, typename T, typename LAMBDA>
 [[nodiscard]] inline ssize
 search(const CON_T<T>& c, LAMBDA f)
@@ -294,6 +264,20 @@ search(const CON_T<T>& c, LAMBDA f)
         if (f(el)) return c.idx(&el);
 
     return NPOS;
+}
+
+template<typename T> requires(std::is_integral_v<T>)
+inline void
+cycleForward(T* pIdx, ssize size)
+{
+    *pIdx = (*pIdx + 1) % size;
+}
+
+template<typename T> requires(std::is_integral_v<T>)
+inline void
+cycleBackward(T* pIdx, ssize size)
+{
+    *pIdx = (*pIdx + (size - 1)) % size;
 }
 
 } /* namespace adt::utils */

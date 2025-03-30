@@ -3,7 +3,6 @@
 #include "IAllocator.hh"
 #include "utils.hh"
 
-#include <cassert>
 #include <new> /* IWYU pragma: keep */
 
 namespace adt
@@ -162,7 +161,7 @@ template<typename T>
 inline T*
 Queue<T>::popFront()
 {
-    assert(m_size > 0 && "[Queue]: empty");
+    ADT_ASSERT(m_size > 0, "empty");
 
     T* ret = &m_pData[m_first];
     m_first = nextI(m_first);
@@ -175,7 +174,7 @@ template<typename T>
 inline T*
 Queue<T>::popBack()
 {
-    assert(m_size > 0 && "[Queue]: empty");
+    ADT_ASSERT(m_size > 0, "[Queue]: empty");
 
     T* ret = &m_pData[lastI()];
     m_last = prevI(lastI());
@@ -189,7 +188,7 @@ inline ssize
 Queue<T>::idx(const T* pItem) const
 {
     ssize r = pItem - m_pData;
-    assert(r >= 0 && r < m_cap && "[Queue]: out of capacity");
+    ADT_ASSERT(r >= 0 && r < m_cap, "out of capacity");
     return r;
 }
 

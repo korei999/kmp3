@@ -278,7 +278,7 @@ TextBuff::flush()
 {
     if (m_size > 0)
     {
-        write(STDOUT_FILENO, m_pData, m_size);
+        [[maybe_unused]] auto _unused = write(STDOUT_FILENO, m_pData, m_size);
         m_size = 0;
     }
 }

@@ -4,7 +4,6 @@
 #include "adt/utils.hh"
 #include "adt/types.hh"
 
-#include <cassert>
 #include <cmath>
 #include <concepts>
 #include <limits>

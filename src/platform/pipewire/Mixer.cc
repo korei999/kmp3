@@ -1,6 +1,5 @@
 #include "Mixer.hh"
 
-#include "adt/guard.hh"
 #include "adt/logs.hh"
 #include "adt/math.hh"
 #include "adt/utils.hh"
@@ -149,7 +148,7 @@ Mixer::destroy()
 
     m_bRunning = false;
 
-    if (m_bDecodes.load(std::memory_order_relaxed)) m_decoder.close();
+    if (m_bDecodes.load(atomic::ORDER::RELAXED)) m_decoder.close();
 
     if (m_pStream) pw_stream_destroy(m_pStream);
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
@@ -167,11 +166,11 @@ Mixer::play(StringView svPath)
     pause(true);
 
     {
-        guard::Mtx lockDec(&m_mtxDecoder);
+        MutexGuard lockDec(&m_mtxDecoder);
 
         m_svPath = svPath;
 
-        if (m_bDecodes.load(std::memory_order_relaxed)) m_decoder.close();
+        if (m_bDecodes.load(atomic::ORDER::RELAXED)) m_decoder.close();
 
         if (audio::ERROR err = m_decoder.open(svPath);
             err != audio::ERROR::OK_
@@ -181,7 +180,7 @@ Mixer::play(StringView svPath)
             return;
         }
 
-        m_bDecodes.store(true, std::memory_order_relaxed);
+        m_bDecodes.store(true, atomic::ORDER::RELAXED);
     }
 
     setNChannles(m_decoder.getChannelsCount());
@@ -193,7 +192,7 @@ Mixer::play(StringView svPath)
     pause(false);
 
 #ifdef OPT_MPRIS
-    m_bUpdateMpris = true; /* mark to update in frame::run() */
+    m_bUpdateMpris.store(true, atomic::ORDER::RELEASE); /* mark to update in frame::run() */
 #endif
 }
 
@@ -202,9 +201,9 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
 {
     audio::ERROR err {};
     {
-        guard::Mtx lock(&m_mtxDecoder);
+        MutexGuard lock(&m_mtxDecoder);
 
-        if (!m_bDecodes.load(std::memory_order_relaxed)) return;
+        if (!m_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
         err = m_decoder.writeToBuffer(
             spBuff,
@@ -216,7 +215,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
         {
             pause(true);
             m_decoder.close();
-            m_bDecodes.store(false, std::memory_order_relaxed);
+            m_bDecodes.store(false, atomic::ORDER::RELEASE);
         }
     }
 
@@ -247,8 +246,8 @@ Mixer::setNChannles(u32 nChannles)
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_update_params(m_pStream, &pParams, 1);
     /* won't apply without this */
-    pw_stream_set_active(m_pStream, m_bPaused);
-    pw_stream_set_active(m_pStream, !m_bPaused);
+    pw_stream_set_active(m_pStream, m_bPaused.load(atomic::ORDER::ACQUIRE));
+    pw_stream_set_active(m_pStream, !m_bPaused.load(atomic::ORDER::ACQUIRE));
 }
 
 void
@@ -322,7 +321,7 @@ Mixer::pause(bool bPause)
 {
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_set_active(m_pStream, !bPause);
-    m_bPaused = bPause;
+    m_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
     LOG_NOTIFY("bPaused: {}\n", m_bPaused);
     mpris::playbackStatusChanged();
@@ -331,7 +330,7 @@ Mixer::pause(bool bPause)
 void
 Mixer::togglePause()
 {
-    pause(!m_bPaused);
+    pause(!m_bPaused.load(atomic::ORDER::ACQUIRE));
 }
 
 void
@@ -357,8 +356,8 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_update_params(m_pStream, aParams, utils::size(aParams));
     /* update won't apply without this */
-    pw_stream_set_active(m_pStream, m_bPaused);
-    pw_stream_set_active(m_pStream, !m_bPaused);
+    pw_stream_set_active(m_pStream, m_bPaused.load(atomic::ORDER::ACQUIRE));
+    pw_stream_set_active(m_pStream, !m_bPaused.load(atomic::ORDER::ACQUIRE));
 
     if (bSave) m_sampleRate = sampleRate;
 
@@ -368,9 +367,9 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 void
 Mixer::seekMS(f64 ms)
 {
-    guard::Mtx lock(&m_mtxDecoder);
+    MutexGuard lock(&m_mtxDecoder);
 
-    if (!m_bDecodes.load(std::memory_order_relaxed)) return;
+    if (!m_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
     ms = utils::clamp(ms, 0.0, (f64)getTotalMS());
     m_decoder.seekMS(ms);
@@ -417,7 +416,7 @@ Mixer::getCurrentMS()
 i64
 Mixer::getTotalMS()
 {
-    guard::Mtx lock(&m_mtxDecoder);
+    MutexGuard lock(&m_mtxDecoder);
     return m_decoder.getTotalMS();
 }
 

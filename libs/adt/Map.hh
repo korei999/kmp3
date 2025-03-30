@@ -42,31 +42,33 @@ struct MapResult
     usize hash {};
     MAP_RESULT_STATUS eStatus {};
 
-    explicit constexpr operator bool() const
+    /* */
+
+    explicit constexpr operator bool() const { return pData != nullptr; }
+
+    /* */
+
+    [[nodiscard]] KeyVal<K, V>&
+    data()
     {
-        return pData != nullptr;
+        ADT_ASSERT(eStatus != MAP_RESULT_STATUS::NOT_FOUND, "not found");
+        return *(KeyVal<K, V>*)pData;
     }
 
-    [[nodiscard]] constexpr const KeyVal<K, V>&
+    [[nodiscard]] const KeyVal<K, V>&
     data() const
     {
         ADT_ASSERT(eStatus != MAP_RESULT_STATUS::NOT_FOUND, "not found");
         return *(KeyVal<K, V>*)pData;
     }
 
-    [[nodiscard]] constexpr const K&
-    key() const
-    {
-        return data().key;
-    }
+    [[nodiscard]] K& key() { return data().key; }
+    [[nodiscard]] const K& key() const { return data().key; }
 
-    [[nodiscard]] constexpr const V&
-    value() const
-    {
-        return data().val;
-    }
+    [[nodiscard]] V& value() { return data().val; }
+    [[nodiscard]] const V& value() const { return data().val; }
 
-    [[nodiscard]] constexpr const V&
+    [[nodiscard]] const V
     valueOr(V&& v) const
     {
         if (eStatus != MAP_RESULT_STATUS::NOT_FOUND)

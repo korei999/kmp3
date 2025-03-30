@@ -1,8 +1,8 @@
 #pragma once
 
 #include "IAllocator.hh"
+#include "assert.hh"
 
-#include <cassert>
 #include <cstdlib>
 
 #ifdef ADT_USE_MIMALLOC

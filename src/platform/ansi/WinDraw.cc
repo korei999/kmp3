@@ -1,6 +1,5 @@
 #include "Win.hh"
 
-#include "adt/guard.hh"
 #include "app.hh"
 #include "defaults.hh"
 #include "adt/ScratchBuffer.hh"
@@ -158,7 +157,7 @@ Win::timeSlider()
 
     /* play/pause indicator */
     {
-        bool bPaused = mix.isPaused().load(std::memory_order_relaxed);
+        bool bPaused = mix.isPaused().load(atomic::ORDER::ACQUIRE);
         const StringView sIndicator = bPaused ? "I>" : "II";
 
         using STYLE = TEXT_BUFF_STYLE;
@@ -265,7 +264,7 @@ Win::bottomLine()
 void
 Win::update()
 {
-    guard::Mtx lock(&m_mtxUpdate);
+    MutexGuard lock(&m_mtxUpdate);
 
     const int width = g_termSize.width;
     const int height = g_termSize.height;

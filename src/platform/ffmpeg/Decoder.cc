@@ -292,7 +292,7 @@ Decoder::writeToBuffer(
             if (maxSamples >= spBuff.size()) maxSamples = spBuff.size() - 1;
 
             const auto& nFrameChannles = res.ch_layout.nb_channels;
-            assert(nFrameChannles > 0);
+            ADT_ASSERT(nFrameChannles > 0, " ");
 
             utils::memCopy(spBuff.data() + nWrites, (f32*)(res.data[0]), maxSamples);
             nWrites += maxSamples;

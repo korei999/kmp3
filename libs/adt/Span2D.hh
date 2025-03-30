@@ -1,8 +1,7 @@
 #pragma once
 
 #include "types.hh"
-
-#include <cassert>
+#include "assert.hh"
 
 namespace adt
 {

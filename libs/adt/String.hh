@@ -1,5 +1,6 @@
 #pragma once
 
+#include "assert.hh"
 #include "IAllocator.hh"
 #include "utils.hh"
 #include "hash.hh"

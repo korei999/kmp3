@@ -499,12 +499,12 @@ drawTimeSlider()
     {
         const StringView str = common::allocTimeString(g_pFrameArena, width);
         drawMBString(xOff, 9, str, width - 2);
-        str.getSize();
+        str.size();
     }
 
     /* play/pause indicator */
     {
-        bool bPaused = mix.isPaused().load(std::memory_order_relaxed);
+        bool bPaused = mix.isPaused().load(atomic::ORDER::ACQUIRE);
         const char* ntsIndicator = bPaused ? "I>" : "II";
 
         drawMBString(xOff, 10, ntsIndicator, width - 2, TB_BOLD);

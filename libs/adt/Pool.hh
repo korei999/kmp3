@@ -3,7 +3,6 @@
 #include "Array.hh"
 
 #include <cstdio>
-#include <cassert>
 
 namespace adt
 {
@@ -169,7 +168,7 @@ inline ssize
 Pool<T, CAP>::idx(const T* const p) const
 {
     ssize r = p - &m_aNodes[0];
-    assert(r < CAP && "[Pool]: out of range");
+    ADT_ASSERT(r >= 0 && r < CAP, "out of range");
     return r;
 }
 

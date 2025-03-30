@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Image.hh"
-#include "adt/String.hh"
-#include "adt/utils.hh"
 
-#include <atomic>
+#include "adt/String.hh"
+#include "adt/atomic.hh"
+#include "adt/utils.hh"
 
 using namespace adt;
 
@@ -17,9 +17,9 @@ constexpr u64 CHUNK_SIZE = (1 << 18); /* big enough */
 class IMixer
 {
 protected:
-    std::atomic<bool> m_bPaused = false;
+    atomic::Int m_bPaused {false};
 #ifdef OPT_MPRIS
-    std::atomic<bool> m_bUpdateMpris {};
+    atomic::Int m_bUpdateMpris {false};
 #endif
     bool m_bMuted = false;
     bool m_bRunning = true;
@@ -54,7 +54,7 @@ public:
     u8 getNChannels() const { return m_nChannels; }
     u64 getTotalSamplesCount() const { return m_nTotalSamples; }
     u64 getCurrentTimeStamp() const { return m_currentTimeStamp; }
-    const std::atomic<bool>& isPaused() const { return m_bPaused; }
+    const atomic::Int& isPaused() const { return m_bPaused; }
     f64 getVolume() const { return m_volume; }
     void volumeDown(const f32 step) { setVolume(m_volume - step); }
     void volumeUp(const f32 step) { setVolume(m_volume + step); }
@@ -65,8 +65,8 @@ public:
     void restoreSampleRate() { changeSampleRate(m_sampleRate, false); }
 
 #ifdef OPT_MPRIS
-    const std::atomic<bool>& mprisHasToUpdate() const { return m_bUpdateMpris; }
-    void mprisSetToUpdate(bool b) { m_bUpdateMpris = b; }
+    const atomic::Int& mprisHasToUpdate() const { return m_bUpdateMpris; }
+    void mprisSetToUpdate(bool b) { m_bUpdateMpris.store(b, atomic::ORDER::RELEASE); }
 #endif
 };
 

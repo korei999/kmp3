@@ -23,7 +23,7 @@ private:
 #define ADT_DEFER_GLUE2(x, y) x##y##_
 #define ADT_DEFER_GLUE1(x, y) ADT_DEFER_GLUE2(x, y)
 
-#define ADT_DEFER(code) auto ADT_DEFER_GLUE1(_lamDefer, __COUNTER__) = adt::Defer([&] { code; })
+#define ADT_DEFER(code) auto ADT_DEFER_GLUE1(_clDefer, __COUNTER__) = adt::Defer([&] { code; })
 
 #ifdef ADT_DEFER_LESS_TYPING
     #define defer(code) ADT_DEFER(code)

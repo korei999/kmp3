@@ -5,8 +5,6 @@
 
 #include <sys/select.h>
 
-#include "adt/logs.hh"
-
 namespace platform::ansi
 {
 
@@ -80,14 +78,9 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
 
                 if (!fail)
                 {
-                    if ((b & 32) != 0)
-                    {
-                        /*event->mod |= TB_MOD_MOTION;*/
-                    }
-
-                    // the coord is 1,1 for upper left
-                    ret.x = ((uint8_t)spBuff[4]) - 0x21;
-                    ret.y = ((uint8_t)spBuff[5]) - 0x21;
+                    /* the coord is 1,1 for upper left */
+                    ret.x = ((u8)spBuff[4]) - 0x21;
+                    ret.y = ((u8)spBuff[5]) - 0x21;
                 }
             }
         }
@@ -374,7 +367,6 @@ Win::readFromStdin(const int timeoutMS)
     if (nRead > 1)
     {
         MouseInput mouse = parseMouse({aBuff, sizeof(aBuff)}, nRead);
-        LOG_BAD("mouse xy: {}, {}\n", mouse.x, mouse.y);
         if (mouse != INVALID_MOUSE)
         {
             return {

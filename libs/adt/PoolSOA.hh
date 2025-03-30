@@ -41,8 +41,8 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
     void
     set(PoolSOAHandle<STRUCT> h, const STRUCT& x)
     {
-        /* for each Member, assign .*Member to the corresponding struct element. */
-        ((static_cast<SOAArrayHolder<STRUCT, CAP, MEMBERS>&>(*this).m_arrays[h.i] = x.*MEMBERS), ...);
+        (new(&static_cast<SOAArrayHolder<STRUCT, CAP, MEMBERS>&>(*this).m_arrays[h.i])
+          SOAArrayHolder<STRUCT, CAP, MEMBERS>::MemberType(x.*MEMBERS), ...);
     }
 
     BIND operator[](PoolSOAHandle<STRUCT> idx) { return BIND {bindMember<MEMBERS>(idx)...}; }

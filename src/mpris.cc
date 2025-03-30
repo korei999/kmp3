@@ -2,7 +2,6 @@
 
 #include "mpris.hh"
 
-#include "adt/guard.hh"
 #include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
@@ -300,7 +299,8 @@ playbackStatus(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    const char* s = app::g_pMixer->isPaused() ? "Paused" : "Playing";
+    const char* s = app::g_pMixer->isPaused().load(atomic::ORDER::ACQUIRE) ?
+        "Paused" : "Playing";
     return sd_bus_message_append_basic(reply, 's', s);
 }
 
@@ -569,7 +569,7 @@ static const sd_bus_vtable s_vtMediaPlayer2Player[] = {
 void
 init()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
 
     g_bReady = false;
     int res = 0;
@@ -626,7 +626,7 @@ out:
 void
 proc()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
 
     if (s_pBus && g_bReady)
     {
@@ -638,7 +638,7 @@ proc()
 void
 destroy()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
 
     if (!s_pBus) return;
 
@@ -664,35 +664,35 @@ playerPropertyChanged(const char* name)
 void
 playbackStatusChanged()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
     playerPropertyChanged("PlaybackStatus");
 }
 
 void
 loopStatusChanged()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
     playerPropertyChanged("LoopStatus");
 }
 
 void
 shuffleChanged()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
     playerPropertyChanged("Shuffle");
 }
 
 void
 volumeChanged()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
     playerPropertyChanged("Volume");
 }
 
 void
 seeked()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
 
     if (!s_pBus) return;
     i64 pos = app::g_pMixer->getCurrentMS() * 1000;
@@ -702,7 +702,7 @@ seeked()
 void
 metadataChanged()
 {
-    guard::Mtx lock(&g_mtx);
+    MutexGuard lock(&g_mtx);
 
     playerPropertyChanged("Metadata");
     /* the following is not necessary according to the spec but some

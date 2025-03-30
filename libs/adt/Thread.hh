@@ -1,6 +1,8 @@
 #pragma once
 
-#include "adt/types.hh"
+#include "types.hh"
+#include "assert.hh"
+#include "atomic.hh"
 
 #include <type_traits>
 
@@ -364,6 +366,8 @@ Mutex::destroy()
 {
 #ifdef ADT_USE_PTHREAD
 
+    /* In the LinuxThreads implementation, no resources are associated with mutex objects,
+     * thus pthread_mutex_destroy actually does nothing except checking that the mutex is unlocked. */
     [[maybe_unused]] int err = pthread_mutex_destroy(&m_mtx);
     ADT_ASSERT(err == 0, "err: %d", err);
     err = pthread_mutexattr_destroy(&m_attr);
@@ -560,6 +564,100 @@ CallOnce::exec(void (*pfn)())
     return InitOnceExecuteOnce(&m_onceCtrl, stub, reinterpret_cast<void*>(pfn), nullptr);
 
 #endif
+}
+
+struct MutexGuard
+{
+    MutexGuard(Mutex* _pMtx) : pMtx(_pMtx) { pMtx->lock(); }
+    ~MutexGuard() { pMtx->unlock(); }
+
+protected:
+    Mutex* pMtx {};
+};
+
+struct Future
+{
+    void* m_pExtraData {};
+    Mutex m_mtx {};
+    CndVar m_cnd {};
+    bool m_bDone {};
+
+    /* */
+
+    Future() = default;
+    Future(InitFlag);
+
+    /* */
+
+    void wait();
+    void signal();
+    void reset();
+    void destroy();
+};
+
+inline
+Future::Future(InitFlag)
+    : m_mtx(Mutex::TYPE::PLAIN), m_cnd(INIT) {}
+
+inline void
+Future::wait()
+{
+    MutexGuard lock(&m_mtx);
+
+    while (!m_bDone) m_cnd.wait(&m_mtx);
+}
+
+inline void
+Future::signal()
+{
+    MutexGuard lock(&m_mtx);
+
+    m_bDone = true;
+    m_cnd.signal();
+}
+
+inline void
+Future::reset()
+{
+    m_bDone = false;
+}
+
+inline void
+Future::destroy()
+{
+    m_mtx.destroy();
+    m_cnd.destroy();
+}
+
+struct BusyWait
+{
+    atomic::Int m_atom_bDone {};
+
+    /* */
+
+    void wait();
+    void signal();
+    void reset();
+};
+
+inline void
+BusyWait::wait()
+{
+    while (!m_atom_bDone.load(atomic::ORDER::ACQUIRE))
+    {
+    }
+}
+
+inline void
+BusyWait::signal()
+{
+    m_atom_bDone.store(1, atomic::ORDER::RELEASE);
+}
+
+inline void
+BusyWait::reset()
+{
+    m_atom_bDone.store(0, atomic::ORDER::RELEASE);
 }
 
 } /* namespace adt */

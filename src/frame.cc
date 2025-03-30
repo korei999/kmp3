@@ -21,7 +21,7 @@ mprisPollLoop(void*)
     while (app::g_bRunning)
     {
         mpris::proc();
-        if (app::g_pMixer->mprisHasToUpdate().load(std::memory_order_relaxed))
+        if (app::g_pMixer->mprisHasToUpdate().load(atomic::ORDER::ACQUIRE))
         {
             app::g_pMixer->mprisSetToUpdate(false);
             mpris::destroy();
@@ -31,7 +31,7 @@ mprisPollLoop(void*)
         utils::sleepMS(defaults::MPRIS_UPDATE_RATE);
     }
 
-    return {};
+    return THREAD_STATUS(0);
 }
 #endif
 
