@@ -4,10 +4,6 @@
 #include "defaults.hh"
 #include "adt/ScratchBuffer.hh"
 
-#ifdef OPT_CHAFA
-#include "platform/chafa/chafa.hh"
-#endif
-
 using namespace adt;
 
 namespace platform::ansi
@@ -59,31 +55,31 @@ Win::info()
 
     Span sp = s_scratch.nextMem<char>(width*4);
 
-    auto drawLine = [&](
+    auto clDrawLine = [&](
         const int y,
-        const StringView sPrefix,
-        const StringView sLine,
+        const StringView svPrefix,
+        const StringView svLine,
         const TEXT_BUFF_STYLE eStyle
-    )
+    ) -> void
     {
         utils::memSet(sp.data(), 0, sp.size());
 
-        ssize n = print::toSpan(sp, sPrefix);
+        ssize n = print::toSpan(sp, svPrefix);
         m_textBuff.string(hOff, y, {}, sp.data());
 
-        if (sLine.size() > 0)
+        if (svLine.size() > 0)
         {
             utils::memSet(sp.data(), 0, sp.size());
-            print::toSpan(sp, "{}", sLine);
+            print::toSpan(sp, "{}", svLine);
             m_textBuff.string(hOff + n, y, eStyle, sp.data());
         }
     };
 
     using STYLE = TEXT_BUFF_STYLE;
 
-    drawLine(1, "title: ", pl.m_info.sTitle, STYLE::BOLD | STYLE::ITALIC | STYLE::YELLOW);
-    drawLine(2, "album: ", pl.m_info.sAlbum, STYLE::BOLD);
-    drawLine(3, "artist: ", pl.m_info.sArtist, STYLE::BOLD);
+    clDrawLine(1, "title: ", pl.m_info.sTitle, STYLE::BOLD | STYLE::ITALIC | STYLE::YELLOW);
+    clDrawLine(2, "album: ", pl.m_info.sAlbum, STYLE::BOLD);
+    clDrawLine(3, "artist: ", pl.m_info.sArtist, STYLE::BOLD);
 }
 
 void
@@ -101,7 +97,7 @@ Win::volume()
 
     using STYLE = TEXT_BUFF_STYLE;
 
-    auto volumeColor = [&](int i) -> STYLE
+    auto clVolumeColor = [&](int i) -> STYLE
     {
         f32 col = f32(i) / ((f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME)));
 
@@ -114,7 +110,7 @@ Win::volume()
         else return STYLE::RED;
     };
 
-    const STYLE col = bMuted ? STYLE::BLUE : volumeColor(maxVolumeBars - 1);
+    const STYLE col = bMuted ? STYLE::BLUE : clVolumeColor(maxVolumeBars - 1);
     m_textBuff.string(off, 6, STYLE::BOLD | col, {sp.data(), n});
 
     for (int i = off + n + 1, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
@@ -128,7 +124,7 @@ Win::volume()
         }
         else
         {
-            col = volumeColor(nTimes) | STYLE::BOLD;
+            col = clVolumeColor(nTimes) | STYLE::BOLD;
             wc[0] = common::CHAR_VOL_MUTED;
         }
 
@@ -142,8 +138,8 @@ Win::time()
     const auto width = g_termSize.width;
     const int off = m_prevImgWidth + 2;
 
-    StringView sTime = common::allocTimeString(m_pArena, width);
-    m_textBuff.string(off, 9, {}, sTime);
+    StringView svTime = common::allocTimeString(m_pArena, width);
+    m_textBuff.string(off, 9, {}, svTime);
 }
 
 void
@@ -159,12 +155,12 @@ Win::timeSlider()
     /* play/pause indicator */
     {
         bool bPaused = mix.isPaused().load(atomic::ORDER::ACQUIRE);
-        const StringView sIndicator = bPaused ? "I>" : "II";
+        const StringView svIndicator = bPaused ? "I>" : "II";
 
         using STYLE = TEXT_BUFF_STYLE;
-        m_textBuff.string(xOff, yOff, STYLE::BOLD, sIndicator);
+        m_textBuff.string(xOff, yOff, STYLE::BOLD, svIndicator);
 
-        n += sIndicator.size();
+        n += svIndicator.size();
     }
 
     /* time slider */
@@ -185,7 +181,7 @@ Win::timeSlider()
 }
 
 void
-Win::list()
+Win::songList()
 {
     const auto& pl = *app::g_pPlayer;
     const int split = pl.m_imgHeight + 1;
@@ -197,7 +193,7 @@ Win::list()
         if (h < aIdxs.size())
         {
             const u16 songIdx = aIdxs[h];
-            const StringView sSong = pl.m_vShortSongs[songIdx];
+            const StringView svSong = pl.m_vShortSongs[songIdx];
 
             bool bSelected = songIdx == pl.m_selected ? true : false;
 
@@ -212,7 +208,7 @@ Win::list()
             else if (bSelected)
                 eStyle = STYLE::BOLD | STYLE::YELLOW;
 
-            m_textBuff.string(1, i + split + 1, eStyle, sSong);
+            m_textBuff.string(1, i + split + 1, eStyle, svSong);
         }
     }
 }
@@ -248,16 +244,16 @@ Win::bottomLine()
          wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff)) > 0)
     )
     {
-        const StringView sReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
+        const StringView svReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
 
-        m_textBuff.string(1, height - 1, {}, sReadMode);
-        m_textBuff.wideString(sReadMode.size() + 1, height - 1, {}, c::g_input.getSpan());
+        m_textBuff.string(1, height - 1, {}, svReadMode);
+        m_textBuff.wideString(svReadMode.size() + 1, height - 1, {}, c::g_input.getSpan());
 
         if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE)
         {
             /* just append the cursor character */
             Span spCursor {const_cast<wchar_t*>(common::CURSOR_BLOCK), 3};
-            m_textBuff.wideString(sReadMode.size() + c::g_input.m_idx + 1, height - 1, {}, spCursor);
+            m_textBuff.wideString(svReadMode.size() + c::g_input.m_idx + 1, height - 1, {}, spCursor);
         }
     }
 }
@@ -295,7 +291,7 @@ Win::update()
     timeSlider();
     volume();
     info();
-    list();
+    songList();
     bottomLine();
 
     m_textBuff.present();

@@ -20,6 +20,8 @@
 #include "adt/defer.hh"
 #include "adt/logs.hh"
 
+using namespace adt;
+
 static void
 setTermEnv()
 {

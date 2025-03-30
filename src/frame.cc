@@ -11,6 +11,8 @@
     #include "mpris.hh"
 #endif
 
+using namespace adt;
+
 namespace frame
 {
 

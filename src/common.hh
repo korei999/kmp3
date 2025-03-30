@@ -2,7 +2,6 @@
 
 #include "app.hh"
 
-#include "adt/Array.hh"
 #include "adt/defer.hh"
 
 #include <cmath>
@@ -13,137 +12,51 @@ namespace common
 
 struct InputBuff {
     wchar_t m_aBuff[64] {};
-    u32 m_idx = 0;
+    adt::u32 m_idx = 0;
     WINDOW_READ_MODE m_eCurrMode {};
     WINDOW_READ_MODE m_eLastUsedMode {};
 
     /* */
 
     void zeroOut() { memset(m_aBuff, 0, sizeof(m_aBuff)); }
-    Span<wchar_t> getSpan() { return Span{m_aBuff}; }
+    adt::Span<wchar_t> getSpan() { return adt::Span{m_aBuff}; }
 };
 
-extern InputBuff g_input;
+enum class READ_STATUS : adt::u8 { OK_, DONE, BACKSPACE };
 
-enum class READ_STATUS : u8 { OK_, DONE, BACKSPACE };
-
-constexpr u32 CHAR_TL = L'┏';
-constexpr u32 CHAR_TR = L'┓';
-constexpr u32 CHAR_BL = L'┗';
-constexpr u32 CHAR_BR = L'┛';
-constexpr u32 CHAR_T = L'━';
-constexpr u32 CHAR_B = L'━';
-constexpr u32 CHAR_L = L'┃';
-constexpr u32 CHAR_R = L'┃';
-constexpr u32 CHAR_VOL = L'▯';
-constexpr u32 CHAR_VOL_MUTED = L'▮';
+constexpr adt::u32 CHAR_TL = L'┏';
+constexpr adt::u32 CHAR_TR = L'┓';
+constexpr adt::u32 CHAR_BL = L'┗';
+constexpr adt::u32 CHAR_BR = L'┛';
+constexpr adt::u32 CHAR_T = L'━';
+constexpr adt::u32 CHAR_B = L'━';
+constexpr adt::u32 CHAR_L = L'┃';
+constexpr adt::u32 CHAR_R = L'┃';
+constexpr adt::u32 CHAR_VOL = L'▯';
+constexpr adt::u32 CHAR_VOL_MUTED = L'▮';
 constexpr wchar_t CURSOR_BLOCK[] {L'█', L'\0'};
 
-[[nodiscard]] inline constexpr StringView
+[[nodiscard]] inline constexpr adt::StringView
 readModeToString(WINDOW_READ_MODE e) noexcept
 {
-    constexpr StringView map[] {"", "searching: ", "time: "};
+    constexpr adt::StringView map[] {"", "searching: ", "time: "};
     return map[int(e)];
 }
 
-[[nodiscard]] inline StringView
-allocTimeString(Arena* pArena, int width)
-{
-    auto& mix = *app::g_pMixer;
-    char* pBuff = (char*)pArena->zalloc(1, width + 1);
-
-    f64 sampleRateRatio = f64(mix.getSampleRate()) / f64(mix.getChangedSampleRate());
-
-    u64 t = std::round(mix.getCurrentMS() / 1000.0 * sampleRateRatio);
-    u64 totalT = std::round(mix.getTotalMS() / 1000.0 * sampleRateRatio);
-
-    u64 currMin = t / 60;
-    u64 currSec = t - (60 * currMin);
-
-    u64 maxMin = totalT / 60;
-    u64 maxSec = totalT - (60 * maxMin);
-
-    int n = snprintf(pBuff, width, "time: %llu:%02llu / %llu:%02llu", currMin, currSec, maxMin, maxSec);
-    if (mix.getSampleRate() != mix.getChangedSampleRate())
-        print::toBuffer(pBuff + n, width - n, " ({}% speed)",
-            int(std::round(f64(mix.getChangedSampleRate()) / f64(mix.getSampleRate()) * 100.0))
-        );
-
-    return pBuff;
-}
+[[nodiscard]] adt::StringView allocTimeString(adt::Arena* pArena, int width);
 
 /* fix song list range on new focus */
-inline void
-fixFirstIdx(u16 listHeight, i16* pFirstIdx)
-{
-    const Player& pl = app::player();
+void fixFirstIdx(adt::u16 listHeight, adt::i16* pFirstIdx);
 
-    const long focused = pl.m_focused;
-    i16 first = *pFirstIdx;
+void procSeekString(const adt::Span<wchar_t> spBuff);
 
-    if (pl.m_vSearchIdxs.size() < listHeight)
-        first = 0;
-    else if (focused > first + listHeight)
-        first = focused - listHeight;
-    else if (focused < first)
-        first = focused;
-
-    *pFirstIdx = first;
-}
-
-inline void
-procSeekString(const Span<wchar_t> spBuff)
-{
-    bool bPercent = false;
-    bool bColon = false;
-
-    Array<char, 32> aMinutesBuff {};
-    Array<char, 32> aSecondsBuff {};
-
-    for (auto& wch : spBuff)
-    {
-        if (wch == L'%')
-        {
-            bPercent = true;
-        }
-        else if (wch == L':')
-        {
-            /* leave if there is one more colon or bPercent */
-            if (bColon || bPercent) break;
-            bColon = true;
-        }
-        else if (iswdigit(wch))
-        {
-            Array<char, 32>* pTargetArray = bColon ? &aSecondsBuff : &aMinutesBuff;
-            if (spBuff.idx(&wch) < pTargetArray->cap() - 1)
-                pTargetArray->push(char(wch)); /* wdigits are equivalent to char */
-        }
-    }
-
-    if (aMinutesBuff.size() == 0)
-        return;
-
-    if (bPercent)
-    {
-        i64 maxMS = app::g_pMixer->getTotalMS();
-
-        app::g_pMixer->seekMS(maxMS * (f64(atoll(aMinutesBuff.data())) / 100.0));
-    }
-    else
-    {
-        ssize sec;
-        if (aSecondsBuff.size() == 0) sec = atoll(aMinutesBuff.data());
-        else sec = atoll(aSecondsBuff.data()) + atoll(aMinutesBuff.data())*60;
-
-        app::g_pMixer->seekMS(sec * 1000);
-    }
-}
+extern InputBuff g_input;
 
 template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
 inline void
 subStringSearch(
-    Arena* pArena,
-    i16* pFirstIdx,
+    adt::Arena* pArena,
+    adt::i16* pFirstIdx,
     void* pReadArg,
     void* pDrawArg
 )
@@ -181,8 +94,7 @@ subStringSearch(
 
     pl.copySearchToSongIdxs();
 
-    if (nSearches == 1)
-        *pFirstIdx = savedFirst;
+    if (nSearches == 1) *pFirstIdx = savedFirst;
 
     /* fix focused if it ends up out of the list range */
     if (pl.m_focused >= pl.m_vSongIdxs.size())

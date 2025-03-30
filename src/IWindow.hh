@@ -2,17 +2,15 @@
 
 #include "adt/Arena.hh"
 
-using namespace adt;
-
-enum class WINDOW_READ_MODE : u8 { NONE, SEARCH, SEEK };
+enum class WINDOW_READ_MODE : adt::u8 { NONE, SEARCH, SEEK };
 
 struct IWindow
 {
-    i16 m_listHeight {};
+    adt::i16 m_listHeight {};
     bool m_bRedraw {};
     bool m_bClear {};
 
-    virtual bool start(Arena* pArena) = 0;
+    virtual bool start(adt::Arena* pArena) = 0;
     virtual void destroy() = 0;
     virtual void draw() = 0;
     virtual void procEvents() = 0;
@@ -24,7 +22,7 @@ struct IWindow
 
 struct DummyWindow : IWindow
 {
-    virtual bool start(Arena*) final { return true; };
+    virtual bool start(adt::Arena*) final { return true; };
     virtual void destroy() final { };
     virtual void draw() final {};
     virtual void procEvents() final {};

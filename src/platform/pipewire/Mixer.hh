@@ -34,44 +34,44 @@ struct Device;
 class Mixer : public audio::IMixer
 {
 protected:
-    u8 m_nChannels = 2;
+    adt::u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
-    atomic::Int m_bDecodes {false};
+    adt::atomic::Int m_bDecodes {false};
     ffmpeg::Decoder m_decoder {}; /* no point in IDecoder */
-    StringView m_svPath {};
+    adt::StringView m_svPath {};
 
     pw_thread_loop* m_pThrdLoop {};
     pw_stream* m_pStream {};
-    u32 m_nLastFrames {};
-    f64 m_currMs {};
-    Mutex m_mtxDecoder {};
+    adt::u32 m_nLastFrames {};
+    adt::f64 m_currMs {};
+    adt::Mutex m_mtxDecoder {};
 
     /* */
 
 public:
     virtual void init() override final;
     virtual void destroy() override final;
-    virtual void play(StringView sPath) override final;
+    virtual void play(adt::StringView sPath) override final;
     virtual void pause(bool bPause) override final;
     virtual void togglePause() override final;
-    virtual void changeSampleRate(u64 sampleRate, bool bSave) override final;
-    virtual void seekMS(f64 ms) override final;
-    virtual void seekOff(f64 offset) override final;
-    [[nodiscard]] virtual StringView getMetadata(const StringView sKey) override final;
+    virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override final;
+    virtual void seekMS(adt::f64 ms) override final;
+    virtual void seekOff(adt::f64 offset) override final;
+    [[nodiscard]] virtual adt::StringView getMetadata(const adt::StringView sKey) override final;
     [[nodiscard]] virtual Image getCoverImage() override final;
-    virtual void setVolume(const f32 volume) override final;
-    [[nodiscard]] virtual i64 getCurrentMS() override final;
-    [[nodiscard]] virtual i64 getTotalMS() override final;
+    virtual void setVolume(const adt::f32 volume) override final;
+    [[nodiscard]] virtual adt::i64 getCurrentMS() override final;
+    [[nodiscard]] virtual adt::i64 getTotalMS() override final;
 
     /* */
 
-    static void* getOnProcessPFN() { return methodPointer(&Mixer::onProcess); }
+    static void* getOnProcessPFN() { return adt::methodPointer(&Mixer::onProcess); }
 
     /* */
 
 private:
-    void writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i64* pPcmPos);
-    void setNChannles(u32 nChannles);
+    void writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
+    void setNChannles(adt::u32 nChannles);
     void onProcess();
 };
 

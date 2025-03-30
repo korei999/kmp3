@@ -1,12 +1,15 @@
 #include "Win.hh"
 
-#include "adt/logs.hh"
 #include "app.hh"
 #include "common.hh"
+
+#include "adt/logs.hh"
 
 #include <csignal>
 #include <unistd.h>
 #include <sys/ioctl.h>
+
+using namespace adt;
 
 namespace platform::ansi
 {
@@ -74,7 +77,7 @@ Win::start(Arena* pArena)
 
     signal(SIGWINCH, sigwinchHandler);
 
-    LOG_GOOD("ansi::WinStart()\n");
+    LOG_GOOD("start()\n");
 
     return true;
 }

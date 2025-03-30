@@ -10,6 +10,8 @@
     #include "platform/pipewire/Mixer.hh"
 #endif
 
+using namespace adt;
+
 namespace app
 {
 

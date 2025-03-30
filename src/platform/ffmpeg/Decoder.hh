@@ -17,28 +17,26 @@ extern "C"
 
 }
 
-using namespace adt;
-
 namespace platform::ffmpeg
 {
 
 struct Decoder : audio::IDecoder
 {
     [[nodiscard]] virtual audio::ERROR writeToBuffer(
-        Span<f32> spBuff, const int nFrames, const int nChannles,
-        long* pSamplesWritten, ssize* pPcmPos
+        adt::Span<adt::f32> spBuff, const int nFrames, const int nChannles,
+        long* pSamplesWritten, adt::ssize* pPcmPos
     ) override final;
 
-    [[nodiscard]] virtual u32 getSampleRate() override final;
-    virtual void seekMS(f64 ms) override final;
-    [[nodiscard]] virtual i64 getCurrentSamplePos() override final;
-    [[nodiscard]] virtual i64 getCurrentMS() override final;
-    [[nodiscard]] virtual i64 getTotalMS() override final;
-    [[nodiscard]] virtual i64 getTotalSamplesCount() override final;
+    [[nodiscard]] virtual adt::u32 getSampleRate() override final;
+    virtual void seekMS(adt::f64 ms) override final;
+    [[nodiscard]] virtual adt::i64 getCurrentSamplePos() override final;
+    [[nodiscard]] virtual adt::i64 getCurrentMS() override final;
+    [[nodiscard]] virtual adt::i64 getTotalMS() override final;
+    [[nodiscard]] virtual adt::i64 getTotalSamplesCount() override final;
     [[nodiscard]] virtual int getChannelsCount() override final;
-    [[nodiscard]] virtual StringView getMetadataValue(const StringView svKey) override final;
+    [[nodiscard]] virtual adt::StringView getMetadataValue(const adt::StringView svKey) override final;
     [[nodiscard]] virtual Image getCoverImage() override final;
-    [[nodiscard]] virtual audio::ERROR open(StringView sPath) override final;
+    [[nodiscard]] virtual audio::ERROR open(adt::StringView sPath) override final;
     virtual void close() override final;
 
     /* */
@@ -49,8 +47,8 @@ private:
     AVCodecContext* m_pCodecCtx {};
     SwrContext* m_pSwr {};
     int m_audioStreamIdx {};
-    u64 m_currentSamplePos {};
-    f64 m_currentMS {};
+    adt::u64 m_currentSamplePos {};
+    adt::f64 m_currentMS {};
 
     AVPacket* m_pImgPacket {};
     AVFrame* m_pImgFrame {};

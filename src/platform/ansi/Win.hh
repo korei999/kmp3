@@ -1,11 +1,11 @@
 #pragma once
 
-#include "adt/Thread.hh"
-
 #include "IWindow.hh"
 #include "TextBuff.hh"
 #include "TermSize.hh"
 #include "common.hh"
+
+#include "adt/Thread.hh"
 
 #include <termios.h>
 
@@ -16,7 +16,7 @@ class Win : public IWindow
 {
     struct MouseInput
     {
-        enum class KEY : u8 { NONE, WHEEL_UP, WHEEL_DOWN, LEFT, MIDDLE, RIGHT, RELEASE };
+        enum class KEY : adt::u8 { NONE, WHEEL_UP, WHEEL_DOWN, LEFT, MIDDLE, RIGHT, RELEASE };
 
         /* */
 
@@ -34,7 +34,7 @@ class Win : public IWindow
 
     struct Input
     {
-        enum class TYPE : u8 { KB, MOUSE };
+        enum class TYPE : adt::u8 { KB, MOUSE };
 
         /* */
 
@@ -47,22 +47,22 @@ class Win : public IWindow
 
     /* */
 
-    Arena* m_pArena {};
+    adt::Arena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
-    i16 m_firstIdx {};
+    adt::i16 m_firstIdx {};
     int m_prevImgWidth = 0;
-    Mutex m_mtxUpdate {};
-    f64 m_time {};
-    f64 m_lastResizeTime {};
+    adt::Mutex m_mtxUpdate {};
+    adt::f64 m_time {};
+    adt::f64 m_lastResizeTime {};
     Input m_lastInput {};
     int m_lastMouseSelection {};
-    f64 m_lastMouseSelectionTime {};
+    adt::f64 m_lastMouseSelectionTime {};
 
     /* */
 
 public:
-    virtual bool start(Arena* pArena) final;
+    virtual bool start(adt::Arena* pArena) final;
     virtual void destroy() final;
     virtual void draw() final;
     virtual void procEvents() final;
@@ -88,7 +88,7 @@ private:
     void volume();
     void time();
     void timeSlider();
-    void list();
+    void songList();
     void bottomLine();
     void update();
     /* */
@@ -102,8 +102,8 @@ private:
 
 private:
     Input readFromStdin(const int timeoutMS);
-    [[nodiscard]] ADT_NO_UB int parseSeq(Span<char> spBuff, ssize_t nRead);
-    [[nodiscard]] ADT_NO_UB MouseInput parseMouse(Span<char> spBuff, ssize_t nRead);
+    [[nodiscard]] ADT_NO_UB int parseSeq(adt::Span<char> spBuff, ssize_t nRead);
+    [[nodiscard]] ADT_NO_UB MouseInput parseMouse(adt::Span<char> spBuff, ssize_t nRead);
     void procMouse(MouseInput in);
 };
 

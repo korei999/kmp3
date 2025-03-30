@@ -1,16 +1,6 @@
-#pragma once
+#include "TextBuff.hh"
 
-#include "adt/Arena.hh"
-#include "adt/ScratchBuffer.hh"
-#include "adt/Span2D.hh"
-#include "adt/String.hh"
-#include "adt/Vec.hh"
-#include "adt/enum.hh"
 #include "adt/print.hh"
-
-#ifdef OPT_CHAFA
-    #include "platform/chafa/chafa.hh"
-#endif
 
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
 #define TEXT_BUFF_MOUSE_DISABLE "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
@@ -47,194 +37,17 @@
 
 using namespace adt;
 
-#ifdef OPT_CHAFA
-struct TextBuffImage
+namespace platform::ansi
 {
-    platform::chafa::Image img {};
-    int x {};
-    int y {};
-};
-#endif
 
-/* ansi code */
-enum class TEXT_BUFF_STYLE_CODE : int
-{
-    NORM = 0,
-    BOLD = 1,
-    DIM = 2,
-    ITALIC = 3,
-    UNRELINE = 4,
-    BLINK = 5,
-    REVERSE = 7,
-    INVIS = 8,
-    STRIKE = 9,
-
-    RED = 31,
-    GREEN = 32,
-    YELLOW = 33,
-    BLUE = 34,
-    MAGENTA = 35,
-    CYAN = 36,
-    WHITE = 37,
-
-    BG_RED = 41,
-    BG_GREEN = 42,
-    BG_YELLOW = 43,
-    BG_BLUE = 44,
-    BG_MAGENTA = 45,
-    BG_CYAN = 46,
-    BG_WHITE = 47,
-};
-
-enum class TEXT_BUFF_ARG : u8
-{
-    TO_END, TO_BEGINNING, EVERYTHING
-};
-
-enum class TEXT_BUFF_STYLE : u32
-{
-    NORM = 0,
-    BOLD = 1,
-    DIM = 1 << 1,
-    ITALIC = 1 << 2,
-    UNDERLINE = 1 << 3,
-    BLINK = 1 << 4,
-    REVERSE = 1 << 5,
-    INVIS = 1 << 6,
-    STRIKE = 1 << 7,
-
-    RED = 1 << 8,
-    GREEN = 1 << 9,
-    YELLOW = 1 << 10,
-    BLUE = 1 << 11,
-    MAGENTA = 1 << 12,
-    CYAN = 1 << 13,
-    WHITE = 1 << 14,
-
-    BG_RED = 1 << 15,
-    BG_GREEN = 1 << 16,
-    BG_YELLOW = 1 << 17,
-    BG_BLUE = 1 << 18,
-    BG_MAGENTA = 1 << 19,
-    BG_CYAN = 1 << 20,
-    BG_WHITE = 1 << 21,
-};
-ADT_ENUM_BITWISE_OPERATORS(TEXT_BUFF_STYLE);
-
-struct TextBuffCell
-{
-    wchar_t wc {};
-    TEXT_BUFF_STYLE eStyle {};
-};
-
-inline bool
-operator==(const TextBuffCell& l, const TextBuffCell& r)
-{
-    return (l.wc == r.wc) && (l.eStyle == r.eStyle);
-}
-
-inline bool
-operator!=(const TextBuffCell& l, const TextBuffCell& r)
-{
-    return !(l == r);
-}
-
-struct TextBuff
-{
-    Arena* m_pArena {};
-
-    char* m_pData {};
-    ssize m_size {};
-    ssize m_capacity {};
-
-    ssize m_tWidth {};
-    ssize m_tHeight {};
-
-    ssize m_newTWidth {};
-    ssize m_newTHeight {};
-
-    bool m_bResize {};
-    bool m_bChanged {};
-    bool m_bErase {};
-
-    Vec<TextBuffCell> m_vFront {}; /* what to show */
-    Vec<TextBuffCell> m_vBack {}; /* where to write */
-
-#ifdef OPT_CHAFA
-    /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
-     * the image might be forceClean()'d and gone by the next iteration.
-     * A separate arena just for the image vector will be sufficient. */
-    Arena m_imgArena {};
-    Vec<TextBuffImage> m_vImages {};
-#endif
-
-    ScratchBuffer m_scratch {};
-
-    /* */
-
-    TextBuff() = default;
-
-    /* direct write api (cpu heavy) */
-    void push(const char ch);
-    void push(const char* pBuff, const ssize buffSize);
-    void push(const StringView svBuff);
-    void flush();
-    void moveTopLeft();
-    void up(int steps);
-    void down(int steps);
-    void forward(int steps);
-    void back(int steps);
-    void move(int x, int y);
-    void clearTermDown();
-    void clearTermUp();
-    void clearTerm();
-    void clearLine(TEXT_BUFF_ARG eArg);
-    void hideCursor(bool bHide);
-    void pushGlyph(wchar_t wc);
-    void clearKittyImages();
-    /* */
-
-    /* main api (more efficient using damage tracking) */
-    void start(Arena* pArena, ssize termWidth, ssize termHeight);
-    void destroy();
-    void clean();
-    void present();
-    void erase();
-    void resize(ssize width, ssize height);
-
-    void string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView sv);
-    void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp);
-    StringView styleToStringScratch(TEXT_BUFF_STYLE eStyle);
-
-#ifdef OPT_CHAFA
-    void image(int x, int y, const platform::chafa::Image& img);
-    void forceClean(int x, int y, int width, int height); /* remove images */
-#endif
-    /* */
-
-private:
-    Span2D<TextBuffCell> frontBufferSpan();
-    Span2D<TextBuffCell> backBufferSpan();
-    void grow(ssize newCap);
-    void reset();
-    void clearBackBuffer();
-    void pushDiff();
-    void resetBuffers();
-    void resizeBuffers(ssize width, ssize height);
-
-#ifdef OPT_CHAFA
-    void showImages();
-#endif
-};
-
-inline void
+void
 TextBuff::grow(ssize newCap)
 {
     m_pData = (char*)m_pArena->realloc(m_pData, m_capacity, newCap, 1);
     m_capacity = newCap;
 }
 
-inline void
+void
 TextBuff::push(const char ch)
 {
     if (m_size >= m_capacity)
@@ -246,7 +59,7 @@ TextBuff::push(const char ch)
     m_pData[m_size++] = ch;
 }
 
-inline void
+void
 TextBuff::push(const char* pBuff, const ssize buffSize)
 {
     if (buffSize + m_size >= m_capacity)
@@ -259,13 +72,13 @@ TextBuff::push(const char* pBuff, const ssize buffSize)
     m_size += buffSize;
 }
 
-inline void
+void
 TextBuff::push(const StringView sv)
 {
     push(sv.data(), sv.size());
 }
 
-inline void
+void
 TextBuff::reset()
 {
     m_pData = {};
@@ -273,7 +86,7 @@ TextBuff::reset()
     m_capacity = {};
 }
 
-inline void
+void
 TextBuff::flush()
 {
     if (m_size > 0)
@@ -283,13 +96,13 @@ TextBuff::flush()
     }
 }
 
-inline void
+void
 TextBuff::moveTopLeft()
 {
     push("\x1b[H");
 }
 
-inline void
+void
 TextBuff::up(int steps)
 {
     char aBuff[32] {};
@@ -297,7 +110,7 @@ TextBuff::up(int steps)
     push(aBuff, n);
 }
 
-inline void
+void
 TextBuff::down(int steps)
 {
     char aBuff[32] {};
@@ -305,7 +118,7 @@ TextBuff::down(int steps)
     push(aBuff, n);
 }
 
-inline void
+void
 TextBuff::forward(int steps)
 {
     char aBuff[32] {};
@@ -313,7 +126,7 @@ TextBuff::forward(int steps)
     push(aBuff, n);
 }
 
-inline void
+void
 TextBuff::back(int steps)
 {
     char aBuff[32] {};
@@ -321,7 +134,7 @@ TextBuff::back(int steps)
     push(aBuff, n);
 }
 
-inline void
+void
 TextBuff::move(int x, int y)
 {
     char aBuff[32] {};
@@ -329,25 +142,25 @@ TextBuff::move(int x, int y)
     push(aBuff, n);
 }
 
-inline void
+void
 TextBuff::clearTermDown()
 {
     push("\x1b[0J");
 }
 
-inline void
+void
 TextBuff::clearTermUp()
 {
     push("\x1b[1J");
 }
 
-inline void
+void
 TextBuff::clearTerm()
 {
     push("\x1b[2J");
 }
 
-inline void
+void
 TextBuff::clearLine(TEXT_BUFF_ARG eArg)
 {
     char aBuff[32] {};
@@ -355,48 +168,48 @@ TextBuff::clearLine(TEXT_BUFF_ARG eArg)
     push(aBuff, n);
 }
 
-inline void
+void
 TextBuff::hideCursor(bool bHide)
 {
     if (bHide) push("\x1b[?25l");
     else push("\x1b[?25h");
 }
 
-inline void
+void
 TextBuff::pushGlyph(wchar_t wc)
 {
     char aBuff[8] {};
     int len = wctomb(aBuff, wc);
 
-    if (len > 1)
-        push(aBuff, len);
+    if (len > 1) push(aBuff, len);
     else push(aBuff[0]);
 }
 
-inline void
+void
 TextBuff::clearKittyImages()
 {
     push("\x1b_Ga=d,d=A\x1b\\");
 }
 
-inline void
+void
 TextBuff::resizeBuffers(ssize width, ssize height)
 {
     m_vBack.setSize(StdAllocator::inst(), width * height);
     m_vFront.setSize(StdAllocator::inst(), width * height);
 
-    m_tWidth = width, m_tHeight = height;
+    m_tWidth = width;
+    m_tHeight = height;
 
     resetBuffers();
 }
 
-inline void
+void
 TextBuff::erase()
 {
     m_bErase = true;
 }
 
-inline void
+void
 TextBuff::resize(ssize width, ssize height)
 {
     m_bResize = true;
@@ -404,7 +217,7 @@ TextBuff::resize(ssize width, ssize height)
     m_newTHeight = height;
 }
 
-inline void
+void
 TextBuff::destroy()
 {
     m_vBack.destroy(StdAllocator::inst());
@@ -422,7 +235,7 @@ TextBuff::destroy()
     flush();
 }
 
-inline void
+void
 TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 {
     m_pArena = pArena;
@@ -441,7 +254,7 @@ TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
     resizeBuffers(termWidth, termHeight);
 }
 
-inline void
+void
 TextBuff::pushDiff()
 {
     ssize row = 0;
@@ -490,7 +303,7 @@ TextBuff::pushDiff()
 }
 
 #ifdef OPT_CHAFA
-inline void
+void
 TextBuff::showImages()
 {
     int nDraws = 0;
@@ -522,7 +335,7 @@ TextBuff::showImages()
 }
 #endif
 
-inline void
+void
 TextBuff::clearBackBuffer()
 {
     for (auto& cell : m_vBack)
@@ -532,7 +345,7 @@ TextBuff::clearBackBuffer()
     }
 }
 
-inline void
+void
 TextBuff::resetBuffers()
 {
     for (auto& cell : m_vFront)
@@ -540,10 +353,11 @@ TextBuff::resetBuffers()
         cell.wc = L' ';
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
+
     utils::memCopy(m_vBack.data(), m_vFront.data(), m_vFront.size());
 }
 
-inline void
+void
 TextBuff::clean()
 {
     if (m_bErase)
@@ -568,7 +382,7 @@ TextBuff::clean()
     m_scratch = Span((char*)m_pArena->malloc(scratchSize, 1), scratchSize);
 }
 
-inline void
+void
 TextBuff::present()
 {
     if (m_bErase)
@@ -592,7 +406,7 @@ TextBuff::present()
     reset();
 }
 
-inline Span2D<TextBuffCell>
+Span2D<TextBuffCell>
 TextBuff::frontBufferSpan()
 {
     return {
@@ -603,7 +417,7 @@ TextBuff::frontBufferSpan()
     };
 }
 
-inline Span2D<TextBuffCell>
+Span2D<TextBuffCell>
 TextBuff::backBufferSpan()
 {
     return {
@@ -614,7 +428,7 @@ TextBuff::backBufferSpan()
     };
 }
 
-inline void
+void
 TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str)
 {
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
@@ -652,7 +466,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str)
     }
 }
 
-inline void
+void
 TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
 {
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
@@ -664,7 +478,7 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
     string(x, y, eStyle, {spBuff.data(), len});
 }
 
-inline StringView
+StringView
 TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
 {
     auto sp = m_scratch.nextMemZero<char>(128);
@@ -729,14 +543,14 @@ TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
 }
 
 #ifdef OPT_CHAFA
-inline void
+void
 TextBuff::image(int x, int y, const platform::chafa::Image& img)
 {
     if (img.width <= 0 || img.height <= 0) return;
     m_vImages.push(&m_imgArena, {img, x, y});
 }
 
-inline void
+void
 TextBuff::forceClean(int x, int y, int width, int height)
 {
     if (x < 0 || y < 0)
@@ -762,3 +576,5 @@ TextBuff::forceClean(int x, int y, int width, int height)
     }
 }
 #endif
+
+} /* namespace platform::ansi */

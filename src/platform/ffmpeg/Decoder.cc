@@ -6,6 +6,8 @@
 #include "adt/types.hh"
 #include "adt/utils.hh"
 
+using namespace adt;
+
 extern "C"
 {
 
@@ -125,7 +127,7 @@ Decoder::getAttachedPicture()
         return;
     }
 
-    LOG_WARN("codec name: '{}'\n", pCodec->long_name);
+    LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
 
     m_pImgPacket = av_packet_alloc();
     err = av_read_frame(m_pFormatCtx, m_pImgPacket);

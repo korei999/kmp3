@@ -12,6 +12,8 @@
 #include "adt/logs.hh"
 #include "adt/file.hh"
 
+using namespace adt;
+
 constexpr StringView aAcceptedFileEndings[] {
     ".mp2", ".mp3", ".mp4", ".m4a", ".m4b",
     ".fla", ".flac",

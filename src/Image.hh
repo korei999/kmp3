@@ -2,8 +2,6 @@
 
 #include "adt/types.hh"
 
-using namespace adt;
-
 enum class IMAGE_PIXEL_FORMAT : int
 {
     NONE = -1,
@@ -14,7 +12,7 @@ enum class IMAGE_PIXEL_FORMAT : int
 
 struct Image
 {
-    u8* pBuff {};
+    adt::u8* pBuff {};
     int width {};
     int height {};
     IMAGE_PIXEL_FORMAT eFormat {};

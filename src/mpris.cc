@@ -27,6 +27,8 @@
             return tmp;                                                                                                \
     } while (0)
 
+using namespace adt;
+
 namespace mpris
 {
 

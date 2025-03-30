@@ -6,18 +6,18 @@
 namespace keybinds
 {
 
-enum ARG_TYPE : u8 { NONE, LONG, F32, F64, U64, U64_BOOL, BOOL };
+enum ARG_TYPE : adt::u8 { NONE, LONG, F32, F64, U64, U64_BOOL, BOOL };
 
 struct Arg
 {
     ARG_TYPE eType {};
     union {
-        null nil;
+        adt::null nil;
         long l;
-        f32 f;
-        f64 d;
-        u64 u;
-        struct { u64 u; bool b; } ub;
+        adt::f32 f;
+        adt::f64 d;
+        adt::u64 u;
+        struct { adt::u64 u; bool b; } ub;
         bool b;
     } uVal {};
 };
@@ -27,17 +27,17 @@ union PFN
     void* ptr;
     void (*none)();
     void (*long_)(long);
-    void (*f32_)(f32);
-    void (*f64_)(f64);
-    void (*u64_)(u64);
-    void (*u64b)(u64, bool);
+    void (*f32_)(adt::f32);
+    void (*f64_)(adt::f64);
+    void (*u64_)(adt::u64);
+    void (*u64b)(adt::u64, bool);
     void (*bool_)(bool);
 };
 
 struct Key
 {
-    u16 key {};
-    u32 ch {};
+    adt::u16 key {};
+    adt::u32 ch {};
     PFN pfn {};
     Arg arg {};
 };

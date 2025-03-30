@@ -53,10 +53,8 @@ getTermSize()
     }
 #endif
 
-    if (term.width <= 0)
-        term.width = -1;
-    if (term.height <= 2)
-        term.height = -1;
+    if (term.width <= 0) term.width = -1;
+    if (term.height <= 2) term.height = -1;
 
     /* If .ws_xpixel and .ws_ypixel are filled out, we can calculate
      * aspect information for the font used. Sixel-capable terminals
@@ -73,9 +71,7 @@ getTermSize()
 
 } /* namespace platform::ansi */
 
-namespace adt
-{
-namespace print
+namespace adt::print
 {
 
 inline u32
@@ -86,5 +82,4 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const platform
     return printArgs(ctx, x.width, x.height, x.pixWidth, x.pixHeight);
 }
 
-} /* namespace print */
-} /* namespace adt */
+} /* namespace adt::print */

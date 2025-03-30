@@ -5,6 +5,8 @@
 
 #include <sys/select.h>
 
+using namespace adt;
+
 namespace platform::ansi
 {
 

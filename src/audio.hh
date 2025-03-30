@@ -6,67 +6,65 @@
 #include "adt/atomic.hh"
 #include "adt/utils.hh"
 
-using namespace adt;
-
 namespace audio
 {
 
-constexpr u64 CHUNK_SIZE = (1 << 18); /* big enough */
-/* Platrform abstracted audio interface */
+constexpr adt::u64 CHUNK_SIZE = (1 << 18); /* big enough */
 
+/* Platrform abstracted audio interface */
 class IMixer
 {
 protected:
-    atomic::Int m_bPaused {false};
+    adt::atomic::Int m_bPaused {false};
 #ifdef OPT_MPRIS
-    atomic::Int m_bUpdateMpris {false};
+    adt::atomic::Int m_bUpdateMpris {false};
 #endif
     bool m_bMuted = false;
     bool m_bRunning = true;
-    u32 m_sampleRate = 48000;
-    u32 m_changedSampleRate = 48000;
-    u8 m_nChannels = 2;
-    f32 m_volume = 0.5f;
-    i64 m_currentTimeStamp {};
-    i64 m_nTotalSamples {};
+    adt::u32 m_sampleRate = 48000;
+    adt::u32 m_changedSampleRate = 48000;
+    adt::u8 m_nChannels = 2;
+    adt::f32 m_volume = 0.5f;
+    adt::i64 m_currentTimeStamp {};
+    adt::i64 m_nTotalSamples {};
 
 public:
     virtual void init() = 0;
     virtual void destroy() = 0;
-    virtual void play(StringView sPath) = 0;
+    virtual void play(adt::StringView svPath) = 0;
     virtual void pause(bool bPause) = 0;
     virtual void togglePause() = 0;
-    virtual void changeSampleRate(u64 sampleRate, bool bSave) = 0;
-    virtual void seekMS(f64 ms) = 0;
-    virtual void seekOff(f64 offset) = 0;
-    [[nodiscard]] virtual StringView getMetadata(const StringView sKey) = 0;
+    virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) = 0;
+    virtual void seekMS(adt::f64 ms) = 0;
+    virtual void seekOff(adt::f64 offset) = 0;
+    [[nodiscard]] virtual adt::StringView getMetadata(const adt::StringView sKey) = 0;
     [[nodiscard]] virtual Image getCoverImage() = 0;
-    virtual void setVolume(const f32 volume) = 0;
-    [[nodiscard]] virtual i64 getCurrentMS() = 0;
-    [[nodiscard]] virtual i64 getTotalMS() = 0;
+    virtual void setVolume(const adt::f32 volume) = 0;
+    [[nodiscard]] virtual adt::i64 getCurrentMS() = 0;
+    [[nodiscard]] virtual adt::i64 getTotalMS() = 0;
 
     /* */
 
     bool isMuted() const { return m_bMuted; }
-    void toggleMute() { utils::toggle(&m_bMuted); }
-    u32 getSampleRate() const { return m_sampleRate; }
-    u32 getChangedSampleRate() const { return m_changedSampleRate; }
-    u8 getNChannels() const { return m_nChannels; }
-    u64 getTotalSamplesCount() const { return m_nTotalSamples; }
-    u64 getCurrentTimeStamp() const { return m_currentTimeStamp; }
-    const atomic::Int& isPaused() const { return m_bPaused; }
-    f64 getVolume() const { return m_volume; }
-    void volumeDown(const f32 step) { setVolume(m_volume - step); }
-    void volumeUp(const f32 step) { setVolume(m_volume + step); }
-    [[nodiscard]] f64 calcCurrentMS() { return (f64(m_currentTimeStamp) / f64(m_sampleRate) / f64(m_nChannels)) * 1000.0; }
-    [[nodiscard]] f64 calcTotalMS() { return (f64(m_nTotalSamples) / f64(m_sampleRate) / f64(m_nChannels)) * 1000.0; }
+    void toggleMute() { adt::utils::toggle(&m_bMuted); }
+    adt::u32 getSampleRate() const { return m_sampleRate; }
+    adt::u32 getChangedSampleRate() const { return m_changedSampleRate; }
+    adt::u8 getNChannels() const { return m_nChannels; }
+    adt::u64 getTotalSamplesCount() const { return m_nTotalSamples; }
+    adt::u64 getCurrentTimeStamp() const { return m_currentTimeStamp; }
+    const adt::atomic::Int& isPaused() const { return m_bPaused; }
+    adt::f64 getVolume() const { return m_volume; }
+    void volumeDown(const adt::f32 step) { setVolume(m_volume - step); }
+    void volumeUp(const adt::f32 step) { setVolume(m_volume + step); }
+    [[nodiscard]] adt::f64 calcCurrentMS() { return (adt::f64(m_currentTimeStamp) / adt::f64(m_sampleRate) / adt::f64(m_nChannels)) * 1000.0; }
+    [[nodiscard]] adt::f64 calcTotalMS() { return (adt::f64(m_nTotalSamples) / adt::f64(m_sampleRate) / adt::f64(m_nChannels)) * 1000.0; }
     void changeSampleRateDown(int ms, bool bSave) { changeSampleRate(m_changedSampleRate - ms, bSave); }
     void changeSampleRateUp(int ms, bool bSave) { changeSampleRate(m_changedSampleRate + ms, bSave); }
     void restoreSampleRate() { changeSampleRate(m_sampleRate, false); }
 
 #ifdef OPT_MPRIS
-    const atomic::Int& mprisHasToUpdate() const { return m_bUpdateMpris; }
-    void mprisSetToUpdate(bool b) { m_bUpdateMpris.store(b, atomic::ORDER::RELEASE); }
+    const adt::atomic::Int& mprisHasToUpdate() const { return m_bUpdateMpris; }
+    void mprisSetToUpdate(bool b) { m_bUpdateMpris.store(b, adt::atomic::ORDER::RELEASE); }
 #endif
 };
 
@@ -74,20 +72,20 @@ struct DummyMixer : public IMixer
 {
     virtual void init() override final {}
     virtual void destroy() override final {}
-    virtual void play(StringView) override final {}
+    virtual void play(adt::StringView) override final {}
     virtual void pause(bool) override final {}
     virtual void togglePause() override final {}
-    virtual void changeSampleRate(u64, bool) override final {}
-    virtual void seekMS(f64) override final {}
-    virtual void seekOff(f64) override final {}
-    virtual StringView getMetadata(const StringView) override final { return {}; }
+    virtual void changeSampleRate(adt::u64, bool) override final {}
+    virtual void seekMS(adt::f64) override final {}
+    virtual void seekOff(adt::f64) override final {}
+    virtual adt::StringView getMetadata(const adt::StringView) override final { return {}; }
     virtual Image getCoverImage() override final { return {}; }
-    virtual void setVolume(const f32) override final {}
-    virtual i64 getCurrentMS() override final { return {}; };
-    virtual i64 getTotalMS() override final { return {}; };
+    virtual void setVolume(const adt::f32) override final {}
+    virtual adt::i64 getCurrentMS() override final { return {}; };
+    virtual adt::i64 getTotalMS() override final { return {}; };
 };
 
-enum class ERROR : u8
+enum class ERROR : adt::u8
 {
     OK_ = 0,
     END_OF_FILE,
@@ -95,7 +93,7 @@ enum class ERROR : u8
     FAIL,
 };
 
-constexpr StringView mapERRORToString[] {
+constexpr adt::StringView mapERRORToString[] {
     "OK_",
     "EOF_OF_FILE",
     "DONE",
@@ -105,23 +103,23 @@ constexpr StringView mapERRORToString[] {
 struct IDecoder
 {
     [[nodiscard]] virtual ERROR writeToBuffer(
-        Span<f32> spBuff,
+        adt::Span<adt::f32> spBuff,
         const int nFrames,
         const int nChannles,
         long* pSamplesWritten,
-        ssize* pPcmPos
+        adt::ssize* pPcmPos
     ) = 0;
 
-    [[nodiscard]] virtual u32 getSampleRate() = 0;
-    virtual void seekMS(f64 ms) = 0;
-    [[nodiscard]] virtual i64 getCurrentSamplePos() = 0;
-    [[nodiscard]] virtual i64 getCurrentMS() = 0;
-    [[nodiscard]] virtual i64 getTotalMS() = 0;
-    [[nodiscard]] virtual i64 getTotalSamplesCount() = 0;
+    [[nodiscard]] virtual adt::u32 getSampleRate() = 0;
+    virtual void seekMS(adt::f64 ms) = 0;
+    [[nodiscard]] virtual adt::i64 getCurrentSamplePos() = 0;
+    [[nodiscard]] virtual adt::i64 getCurrentMS() = 0;
+    [[nodiscard]] virtual adt::i64 getTotalMS() = 0;
+    [[nodiscard]] virtual adt::i64 getTotalSamplesCount() = 0;
     [[nodiscard]] virtual int getChannelsCount() = 0;
-    [[nodiscard]] virtual StringView getMetadataValue(const StringView sKey) = 0;
+    [[nodiscard]] virtual adt::StringView getMetadataValue(const adt::StringView sKey) = 0;
     [[nodiscard]] virtual Image getCoverImage() = 0;
-    [[nodiscard]] virtual ERROR open(StringView sPath) = 0;
+    [[nodiscard]] virtual ERROR open(adt::StringView sPath) = 0;
     virtual void close() = 0;
 };
 

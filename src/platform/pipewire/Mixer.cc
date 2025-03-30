@@ -12,6 +12,8 @@
 #include <emmintrin.h>
 #include <immintrin.h>
 
+using namespace adt;
+
 namespace platform::pipewire
 {
 

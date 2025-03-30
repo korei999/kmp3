@@ -137,10 +137,13 @@ add_executable(
     src/frame.cc
     src/Player.cc
     src/common.cc
+
     src/platform/ffmpeg/Decoder.cc
+
     src/platform/ansi/Win.cc
     src/platform/ansi/WinDraw.cc
     src/platform/ansi/WinInput.cc
+    src/platform/ansi/TextBuff.cc
 )
 
 if (OPT_MIMALLOC)
