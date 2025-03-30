@@ -102,7 +102,7 @@ Decoder::getAttachedPicture()
         auto* itStream = m_pFormatCtx->streams[i];
         if (itStream->disposition & AV_DISPOSITION_ATTACHED_PIC)
         {
-            LOG_WARN("Found 'attached_pic'\n");
+            LOG_GOOD("Found 'attached_pic'\n");
             pStream = itStream;
             break;
         }

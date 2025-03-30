@@ -17,6 +17,10 @@ if (OPT_MARCH_NATIVE)
     add_compile_options(-march=native)
 endif()
 
+if (OPT_ANALYZE)
+    add_compile_options(-fanalyzer)
+endif()
+
 if (OPT_MIMALLOC)
     include(FetchContent)
     FetchContent_Declare(

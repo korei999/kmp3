@@ -98,6 +98,7 @@ static void
 startup(int argc, char** argv)
 {
     StdAllocator alloc;
+    bool bFreeArgv = false;
 
     app::g_eUIFrontend = app::UI::ANSI;
     app::g_eMixer = app::MIXER::PIPEWIRE;
@@ -110,7 +111,11 @@ startup(int argc, char** argv)
 #endif
 
     VecManaged<String> aInput(&alloc, argc);
-    defer( aInput.destroy() );
+    defer(
+        for (auto& s : aInput) s.destroy(&alloc);
+        aInput.destroy()
+    );
+
     if (argc < 2) /* use stdin instead */
     {
         int flags = fcntl(0, F_GETFL, 0);
@@ -132,6 +137,7 @@ startup(int argc, char** argv)
         /* make fake `argv` so core code works as usual */
         argc = aInput.size() + 1;
         argv = reinterpret_cast<char**>(alloc.zalloc(argc, sizeof(argv)));
+        bFreeArgv = true;
 
         for (int i = 1; i < argc; ++i)
             argv[i] = aInput[i - 1].data();
@@ -176,6 +182,9 @@ startup(int argc, char** argv)
         frame::run();
     }
     else print::out("No accepted input provided\n");
+
+    /* -fanalyzer is still unhappy about this */
+    if (bFreeArgv) alloc.free(argv);
 }
 
 int

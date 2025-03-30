@@ -563,6 +563,9 @@ template<int SIZE> requires(SIZE > 1)
 inline
 StringFixed<SIZE>::StringFixed(const StringView svName)
 {
+    /* memcpy doesn't like nullptrs */
+    if (!svName.data() || svName.size() <= 0) return;
+
     memcpy(m_aBuff,
         svName.data(),
         utils::min(svName.size(), static_cast<ssize>(sizeof(m_aBuff)))
