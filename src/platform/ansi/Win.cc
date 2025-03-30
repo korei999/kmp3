@@ -104,10 +104,13 @@ Win::procEvents()
 {
     procInput();
 
-    common::fixFirstIdx(
-        m_listHeight - 2,
-        &m_firstIdx
-    );
+    if (!m_bScrollBarClicked)
+    {
+        common::fixFirstIdx(
+            m_listHeight - 2,
+            &m_firstIdx
+        );
+    }
 }
 
 void

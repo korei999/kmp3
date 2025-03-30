@@ -58,6 +58,7 @@ class Win : public IWindow
     Input m_lastInput {};
     int m_lastMouseSelection {};
     adt::f64 m_lastMouseSelectionTime {};
+    bool m_bScrollBarClicked {};
 
     /* */
 
@@ -89,6 +90,7 @@ private:
     void time();
     void timeSlider();
     void songList();
+    void songListScrollBar();
     void bottomLine();
     void update();
     /* */

@@ -391,6 +391,7 @@ TextBuff::present()
         m_bErase = false;
         clearTerm();
     }
+
     if (m_bChanged)
     {
         m_bChanged = false;
@@ -430,7 +431,7 @@ TextBuff::backBufferSpan()
 }
 
 void
-TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str)
+TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int maxSvLen)
 {
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
         return;
@@ -438,10 +439,10 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str)
     Span2D bb = backBufferSpan();
     Span2D fb = frontBufferSpan();
 
+    int max = 0;
     for (const auto& wc : StringGlyphIt(str))
     {
-        if (x >= m_tWidth)
-            break;
+        if (x >= m_tWidth || max >= maxSvLen) break;
 
         if (fb(x, y) != TextBuffCell{wc, eStyle})
             m_bChanged = true;
@@ -464,6 +465,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str)
         }
 
         x += colWidth;
+        max += colWidth;
     }
 }
 

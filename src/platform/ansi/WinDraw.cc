@@ -2,6 +2,7 @@
 
 #include "app.hh"
 #include "defaults.hh"
+
 #include "adt/ScratchBuffer.hh"
 
 using namespace adt;
@@ -186,16 +187,14 @@ Win::songList()
     const auto& pl = *app::g_pPlayer;
     const int split = pl.m_imgHeight + 1;
 
-    const auto& aIdxs = pl.m_vSearchIdxs;
-
     for (ssize h = m_firstIdx, i = 0; i < m_listHeight - 1; ++h, ++i)
     {
-        if (h < aIdxs.size())
+        if (h < pl.m_vSearchIdxs.size())
         {
-            const u16 songIdx = aIdxs[h];
+            const u16 songIdx = pl.m_vSearchIdxs[h];
             const StringView svSong = pl.m_vShortSongs[songIdx];
 
-            bool bSelected = songIdx == pl.m_selected ? true : false;
+            const bool bSelected = songIdx == pl.m_selected ? true : false;
 
             using STYLE = TEXT_BUFF_STYLE;
 
@@ -208,9 +207,34 @@ Win::songList()
             else if (bSelected)
                 eStyle = STYLE::BOLD | STYLE::YELLOW;
 
-            m_textBuff.string(1, i + split + 1, eStyle, svSong);
+            /* leave some width space for the scroll bar */
+            m_textBuff.string(1, i + split + 1, eStyle, svSong, g_termSize.width - 3);
         }
     }
+}
+
+void
+Win::songListScrollBar()
+{
+    using STYLE = TEXT_BUFF_STYLE;
+
+    const auto& pl = app::player();
+    const int split = pl.m_imgHeight + 1;
+
+    const f32 sizeToListSize = f32(pl.m_vSearchIdxs.size() - m_listHeight - 1) / (m_listHeight+0.00001f);
+
+    int closestI = 0;
+
+    for (ssize i = 0; i < m_listHeight - 1; ++i)
+    {
+        const int tar = i*sizeToListSize;
+
+        if (m_firstIdx >= tar) closestI = i;
+
+        m_textBuff.string(g_termSize.width - 1, split + i + 1, STYLE::DIM, "┃");
+    }
+
+    m_textBuff.string(g_termSize.width - 1, split + closestI + 1, STYLE::NORM, "█");
 }
 
 void
@@ -283,8 +307,7 @@ Win::update()
     m_textBuff.clean();
 
 #ifdef OPT_CHAFA
-    if (!app::g_bNoImage)
-        coverImage();
+    if (!app::g_bNoImage) coverImage();
 #endif
 
     time();
@@ -292,6 +315,7 @@ Win::update()
     volume();
     info();
     songList();
+    songListScrollBar();
     bottomLine();
 
     m_textBuff.present();

@@ -193,12 +193,16 @@ void
 Win::procMouse(MouseInput in)
 {
     static bool s_bPressed = false;
-    static bool s_bOnSlider = false;
+    static bool s_bHoldTimeSlider = false;
+    static bool s_bHoldScrollBar = false;
 
     if (in.eKey == MouseInput::KEY::RELEASE)
     {
         s_bPressed = false;
-        s_bOnSlider = false;
+        s_bHoldTimeSlider = false;
+        s_bHoldScrollBar = false;
+
+        m_bScrollBarClicked = false;
         return;
     }
 
@@ -213,6 +217,39 @@ Win::procMouse(MouseInput in)
     const long sliderOff = 10;
     const long volumeOff = 6;
 
+    auto clHoldScrollBar = [&]
+    {
+        s_bHoldScrollBar = true;
+
+        const f32 sizeToListSize = f32(pl.m_vSearchIdxs.size() - m_listHeight - 1) / (m_listHeight+0.00001f);
+        const int tar = std::round((in.y - listOff) * sizeToListSize);
+        m_firstIdx = utils::clamp(tar, 0, static_cast<int>(pl.m_vSearchIdxs.size() - m_listHeight - 1));
+        m_bScrollBarClicked = true;
+        pl.m_focused = m_firstIdx;
+    };
+
+    auto clHoldTimeSlider = [&]
+    {
+        s_bHoldTimeSlider = true;
+
+        f64 target = f64(in.x - xOff - 2) / f64(width - xOff - 4);
+        target = utils::clamp(target, 0.0, static_cast<f64>(width - xOff - 4));
+        target *= app::mixer().getTotalMS();
+        app::mixer().seekMS(target);
+    };
+
+    if (s_bHoldScrollBar)
+    {
+        clHoldScrollBar();
+        return;
+    }
+
+    if (s_bHoldTimeSlider)
+    {
+        clHoldTimeSlider();
+        return;
+    }
+
     /* click on slider line */
     if (in.y == sliderOff && in.x >= xOff)
     {
@@ -223,7 +260,7 @@ Win::procMouse(MouseInput in)
             /* click on indicator */
             if (in.x >= xOff && in.x <= xOff + 2)
             {
-                if (s_bPressed || s_bOnSlider) return;
+                if (s_bPressed || s_bHoldTimeSlider) return;
 
                 app::togglePause();
                 return;
@@ -232,13 +269,9 @@ Win::procMouse(MouseInput in)
             /* click on slider */
             if (width - xOff - 4 > 0)
             {
-                if (s_bPressed && !s_bOnSlider) return;
+                if (s_bPressed && !s_bHoldTimeSlider) return;
 
-                s_bOnSlider = true;
-
-                f64 target = f64(in.x - xOff - 2) / f64(width - xOff - 4);
-                target *= app::mixer().getTotalMS();
-                app::mixer().seekMS(target);
+                clHoldTimeSlider();
             }
 
             return;
@@ -289,22 +322,33 @@ Win::procMouse(MouseInput in)
 
     if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
     {
-        if (s_bPressed) return;
-        else s_bPressed = true;
-
-        f64 time = utils::timeNowMS();
-
-        pl.focus(target);
-
-        if (target == m_lastMouseSelection &&
-            time < m_lastMouseSelectionTime + defaults::DOUBLE_CLICK_DELAY
-        )
+        /* click on scrollbar */
+        if (in.x == g_termSize.width - 1)
         {
-            pl.selectFocused();
+            clHoldScrollBar();
+            return;
         }
+        else
+        {
+            if (s_bPressed) return;
+            else s_bPressed = true;
 
-        m_lastMouseSelection = target;
-        m_lastMouseSelectionTime = time;
+            f64 time = utils::timeNowMS();
+
+            {
+                pl.focus(target);
+
+                if (target == m_lastMouseSelection &&
+                    time < m_lastMouseSelectionTime + defaults::DOUBLE_CLICK_DELAY
+                )
+                {
+                    pl.selectFocused();
+                }
+            }
+
+            m_lastMouseSelection = target;
+            m_lastMouseSelectionTime = time;
+        }
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_UP)
     {
