@@ -84,6 +84,7 @@ TextBuff::reset()
     m_pData = {};
     m_size = {};
     m_capacity = {};
+    m_scratch = {};
 }
 
 void
@@ -474,14 +475,19 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
 
     Span spBuff = m_scratch.nextMemZero<char>(sp.size() * 8);
 
-    int len = wcstombs(spBuff.data(), sp.data(), spBuff.size() - 1);
-    string(x, y, eStyle, {spBuff.data(), len});
+    if (spBuff.size() > 0)
+    {
+        int len = wcstombs(spBuff.data(), sp.data(), spBuff.size() - 1);
+        string(x, y, eStyle, {spBuff.data(), len});
+    }
 }
 
 StringView
 TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
 {
-    auto sp = m_scratch.nextMemZero<char>(128);
+    Span<char> sp = m_scratch.nextMemZero<char>(128);
+    if (sp.size() <= 0) return {};
+
     ssize size = sp.size() - 1;
     ssize n = 0;
 
