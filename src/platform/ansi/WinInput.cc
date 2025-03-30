@@ -10,8 +10,6 @@ using namespace adt;
 namespace platform::ansi
 {
 
-#define ESC_SEQ '\x1b'
-
 /* https://github.com/termbox/termbox2/blob/master/termbox2.h */
 Win::MouseInput
 Win::parseMouse(Span<char> spBuff, ssize_t nRead)
