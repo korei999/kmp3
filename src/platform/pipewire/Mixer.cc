@@ -276,7 +276,7 @@ Mixer::onProcess()
     }
 
     u32 stride = formatByteSize(m_eformat) * m_nChannels;
-    u32 nFrames = pBuffData.maxsize / stride;
+    u32 nFrames = (stride > 0) ? (pBuffData.maxsize / stride) : 0;
     if (pPwBuffer->requested) nFrames = SPA_MIN(pPwBuffer->requested, (u64)nFrames);
 
     if (nFrames*m_nChannels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
