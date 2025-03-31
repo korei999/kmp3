@@ -173,10 +173,12 @@ Win::timeSlider()
 
         for (long i = n + 1, t = 0; i < wMax; ++i, ++t)
         {
-            wchar_t wch[2] = {L'━', {}};
-            if (t == std::floor(timePlace)) wch[0] = L'╋';
+            wchar_t wch[2] = {L'━', L'\0'};
 
-            m_textBuff.wideString(xOff + i, yOff, {}, {wch, 3});
+            if (t == std::floor(timePlace))
+                wch[0] = L'╋';
+
+            m_textBuff.wideString(xOff + i, yOff, TEXT_BUFF_STYLE::NORM, {wch, 3});
         }
     }
 }
@@ -221,20 +223,18 @@ Win::songListScrollBar()
     const auto& pl = app::player();
     const int split = pl.m_imgHeight + 1;
 
-    const f32 sizeToListSize = f32(pl.m_vSearchIdxs.size() - m_listHeight + split - 3) / (m_listHeight+0.00001f);
+    const f32 listSizeFactor = (m_listHeight+0.0001f) / f32(pl.m_vSearchIdxs.size() - 1);
+    const int barHeight = utils::max(1, static_cast<int>(m_listHeight * listSizeFactor));
 
-    int closestI = 0;
+    const int blockI = utils::clamp(static_cast<int>(m_firstIdx*listSizeFactor), 0, m_listHeight - 2);
+
+    if (m_listHeight - 1 >= pl.m_vSearchIdxs.size()) return;
 
     for (ssize i = 0; i < m_listHeight - 1; ++i)
-    {
-        const int tar = i*sizeToListSize;
-
-        if (m_firstIdx >= tar) closestI = i;
-
         m_textBuff.string(g_termSize.width - 1, split + i + 1, STYLE::DIM, "┃");
-    }
 
-    m_textBuff.string(g_termSize.width - 1, split + closestI + 1, STYLE::NORM, "█");
+    for (ssize i = 0; i < barHeight && i + blockI < m_listHeight - 1; ++i)
+        m_textBuff.string(g_termSize.width - 1, i + blockI + split + 1, STYLE::DIM, "█");
 }
 
 void
