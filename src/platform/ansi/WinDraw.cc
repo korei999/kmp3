@@ -226,7 +226,7 @@ Win::songListScrollBar()
 
     const int split = pl.m_imgHeight + 1;
 
-    const f32 listSizeFactor = (m_listHeight+0.0001f) / f32(pl.m_vSearchIdxs.size() - 0.9999f);
+    const f32 listSizeFactor = m_listHeight / f32(pl.m_vSearchIdxs.size() - 0.9999f);
     const int barHeight = utils::max(1, static_cast<int>(m_listHeight * listSizeFactor));
 
     /* bunch of mess to make it look better and not extent beyond the list */
