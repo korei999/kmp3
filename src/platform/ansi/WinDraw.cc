@@ -221,14 +221,15 @@ Win::songListScrollBar()
     using STYLE = TEXT_BUFF_STYLE;
 
     const auto& pl = app::player();
+
+    if (m_listHeight - 1 >= pl.m_vSearchIdxs.size()) return;
+
     const int split = pl.m_imgHeight + 1;
 
     const f32 listSizeFactor = (m_listHeight+0.0001f) / f32(pl.m_vSearchIdxs.size() - 1);
     const int barHeight = utils::max(1, static_cast<int>(m_listHeight * listSizeFactor));
 
     const int blockI = utils::clamp(static_cast<int>(m_firstIdx*listSizeFactor), 0, m_listHeight - 2);
-
-    if (m_listHeight - 1 >= pl.m_vSearchIdxs.size()) return;
 
     for (ssize i = 0; i < m_listHeight - 1; ++i)
         m_textBuff.string(g_termSize.width - 1, split + i + 1, STYLE::DIM, "┃");
