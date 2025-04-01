@@ -14,8 +14,6 @@ using namespace adt;
 namespace platform::ansi
 {
 
-TermSize g_termSize {};
-
 void
 Win::disableRawMode()
 {
@@ -41,37 +39,37 @@ Win::enableRawMode()
 void
 sigwinchHandler(int)
 {
-    auto& s = *(Win*)app::g_pWin;
+    auto& win = *(Win*)app::g_pWin;
     auto& pl = *app::g_pPlayer;
 
-    g_termSize = getTermSize();
-    LOG_GOOD("term: {}\n", g_termSize);
+    win.m_termSize = getTermSize();
+    LOG_GOOD("term: {}\n", win.m_termSize);
 
-    s.adjustListHeight();
-    s.m_textBuff.resize(g_termSize.width, g_termSize.height);
+    win.adjustListHeight();
+    win.m_textBuff.resize(win.m_termSize.width, win.m_termSize.height);
 
     pl.m_bSelectionChanged = true;
-    s.m_bRedraw = true;
+    win.m_bRedraw = true;
 
-    s.m_bClear = true;
-    s.m_lastResizeTime = utils::timeNowMS();
+    win.m_bClear = true;
+    win.m_lastResizeTime = utils::timeNowMS();
 
     /* adapt list height if window size increased */
-    const int listHeight = s.m_listHeight - 2;
+    const int listHeight = win.m_listHeight - 2;
     if (pl.m_focused > pl.m_vSearchIdxs.size() - listHeight && pl.m_vSearchIdxs.size() > listHeight)
-        s.m_firstIdx = pl.m_vSearchIdxs.size() - listHeight - 1;
+        win.m_firstIdx = pl.m_vSearchIdxs.size() - listHeight - 1;
 }
 
 bool
 Win::start(Arena* pArena)
 {
     m_pArena = pArena;
-    g_termSize = getTermSize();
+    m_termSize = getTermSize();
 
     m_mtxUpdate = Mutex(Mutex::TYPE::PLAIN);
 
     enableRawMode();
-    m_textBuff.start(m_pArena, g_termSize.width, g_termSize.height);
+    m_textBuff.start(m_pArena, m_termSize.width, m_termSize.height);
 
     adjustListHeight();
 
@@ -140,7 +138,7 @@ void
 Win::adjustListHeight()
 {
     const int split = app::g_pPlayer->m_imgHeight + 1;
-    const int height = g_termSize.height;
+    const int height = m_termSize.height;
     m_listHeight = height - split - 2;
 }
 

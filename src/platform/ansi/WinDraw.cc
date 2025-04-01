@@ -37,7 +37,7 @@ Win::coverImage()
 
         /* NOTE: using textBuff's dedicated image arena */
         auto chafaImg = ch::allocImage(
-            &m_textBuff.m_imgArena, eLayout, img, split, g_termSize.width
+            &m_textBuff.m_imgArena, eLayout, img, split, m_termSize.width
         );
 
         m_textBuff.image(1, 1, chafaImg);
@@ -52,7 +52,7 @@ Win::info()
 {
     const auto& pl = *app::g_pPlayer;
     const int hOff = m_prevImgWidth + 2;
-    const int width = g_termSize.width;
+    const int width = m_termSize.width;
 
     Span sp = s_scratch.nextMem<char>(width*4);
 
@@ -86,7 +86,7 @@ Win::info()
 void
 Win::volume()
 {
-    const auto width = g_termSize.width;
+    const auto width = m_termSize.width;
     const int off = m_prevImgWidth + 2;
     const f32 vol = app::g_pMixer->getVolume();
     const bool bMuted = app::g_pMixer->isMuted();
@@ -136,7 +136,7 @@ Win::volume()
 void
 Win::time()
 {
-    const auto width = g_termSize.width;
+    const auto width = m_termSize.width;
     const int off = m_prevImgWidth + 2;
 
     StringView svTime = common::allocTimeString(m_pArena, width);
@@ -147,7 +147,7 @@ void
 Win::timeSlider()
 {
     const auto& mix = *app::g_pMixer;
-    const auto width = g_termSize.width;
+    const auto width = m_termSize.width;
     const int xOff = m_prevImgWidth + 2;
     const int yOff = 10;
 
@@ -210,7 +210,7 @@ Win::songList()
                 eStyle = STYLE::BOLD | STYLE::YELLOW;
 
             /* leave some width space for the scroll bar */
-            m_textBuff.string(1, i + split + 1, eStyle, svSong, g_termSize.width - 3);
+            m_textBuff.string(1, i + split + 1, eStyle, svSong, m_termSize.width - 3);
         }
     }
 }
@@ -235,10 +235,10 @@ Win::songListScrollBar()
         blockI -= (blockI + barHeight) - (m_listHeight - 1);
 
     for (ssize i = 0; i < m_listHeight - 1; ++i)
-        m_textBuff.string(g_termSize.width - 1, split + i + 1, STYLE::DIM, "┃");
+        m_textBuff.string(m_termSize.width - 1, split + i + 1, STYLE::DIM, "┃");
 
     for (ssize i = 0; i < barHeight && i + blockI < m_listHeight - 1; ++i)
-        m_textBuff.string(g_termSize.width - 1, i + blockI + split + 1, STYLE::DIM, "█");
+        m_textBuff.string(m_termSize.width - 1, i + blockI + split + 1, STYLE::DIM, "█");
 }
 
 void
@@ -247,8 +247,8 @@ Win::bottomLine()
     namespace c = common;
 
     const auto& pl = *app::g_pPlayer;
-    int height = g_termSize.height;
-    int width = g_termSize.width;
+    int height = m_termSize.height;
+    int width = m_termSize.width;
 
     /* selected / focused */
     {
@@ -291,8 +291,8 @@ Win::update()
 {
     MutexGuard lock(&m_mtxUpdate);
 
-    const int width = g_termSize.width;
-    const int height = g_termSize.height;
+    const int width = m_termSize.width;
+    const int height = m_termSize.height;
 
     m_time = utils::timeNowMS();
 

@@ -203,8 +203,8 @@ Win::procMouse(MouseInput in)
     }
 
     auto& pl = app::player();
-    const long width = g_termSize.width;
-    const long height = g_termSize.height;
+    const long width = m_termSize.width;
+    const long height = m_termSize.height;
 
     const long xOff = m_prevImgWidth + 2;
     const int yOff = pl.m_imgHeight + 1;
@@ -317,7 +317,7 @@ Win::procMouse(MouseInput in)
     if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
     {
         /* click on scrollbar */
-        if (in.x == g_termSize.width - 1)
+        if (in.x == m_termSize.width - 1)
         {
             clHoldScrollBar();
             return;

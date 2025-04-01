@@ -50,6 +50,7 @@ class Win : public IWindow
     adt::Arena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
+    TermSize m_termSize {};
     adt::i16 m_firstIdx {};
     int m_prevImgWidth = 0;
     adt::Mutex m_mtxUpdate {};
@@ -108,7 +109,5 @@ private:
     [[nodiscard]] ADT_NO_UB MouseInput parseMouse(adt::Span<char> spBuff, ssize_t nRead);
     void procMouse(MouseInput in);
 };
-
-extern TermSize g_termSize;
 
 } /* namespace platform::ansi */
