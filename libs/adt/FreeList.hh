@@ -383,7 +383,7 @@ FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
 
     auto* pNode = _FreeListNodeFromPtr(ptr);
     ssize nodeSize = (ssize)pNode->m_data.size() - (ssize)sizeof(FreeList::Node);
-    ADT_ASSERT(nodeSize > 0, "0 or negative size allocation (corruption), nodeSize: %lld", nodeSize);
+    ADT_ASSERT(nodeSize > 0, "0 or negative size allocation (corruption), nodeSize: {}", nodeSize);
 
     if ((ssize)newCount*(ssize)mSize <= nodeSize)
         return ptr;

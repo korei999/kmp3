@@ -23,7 +23,7 @@
 #pragma once
 
 #include "types.hh"
-#include "Span.hh"
+#include "Span.hh" /* IWYU pragma: keep */
 
 namespace adt::hash
 {

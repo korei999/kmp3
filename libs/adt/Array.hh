@@ -19,6 +19,8 @@ struct Array
 
     constexpr Array() = default;
 
+    constexpr Array(ssize size);
+
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
     constexpr Array(ssize size, ARGS&&... args);
 
@@ -30,7 +32,7 @@ struct Array
 
     /* */
 
-#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: {}, m_size: {}", i, m_size);
 
     constexpr T& operator[](ssize i)             { ADT_RANGE_CHECK; return m_aData[i]; }
     constexpr const T& operator[](ssize i) const { ADT_RANGE_CHECK; return m_aData[i]; }
@@ -89,7 +91,7 @@ struct Array
 };
 
 template<typename T, ssize CAP> requires(CAP > 0)
-constexpr ssize
+inline constexpr ssize
 Array<T, CAP>::push(const T& x)
 {
     ADT_ASSERT(size() < CAP, "pushing over capacity");
@@ -163,7 +165,7 @@ constexpr ssize
 Array<T, CAP>::idx(const T* const p) const
 {
     ssize r = ssize(p - m_aData);
-    ADT_ASSERT(r >= 0 && r < size(), "out of range, r: %lld, size: %lld", r, size());
+    ADT_ASSERT(r >= 0 && r < size(), "out of range, r: {}, size: {}", r, size());
     return r;
 }
 
@@ -194,6 +196,10 @@ Array<T, CAP>::last() const
 {
     return operator[](m_size - 1);
 }
+
+template<typename T, ssize CAP> requires(CAP > 0)
+inline constexpr
+Array<T, CAP>::Array(ssize size) : m_size(size) {}
 
 template<typename T, ssize CAP> requires(CAP > 0)
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)

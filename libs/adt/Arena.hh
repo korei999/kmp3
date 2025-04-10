@@ -2,6 +2,7 @@
 
 #include "StdAllocator.hh"
 #include "utils.hh"
+#include "print.hh"
 
 #include <cstdlib>
 #include <cstring>
@@ -98,7 +99,7 @@ Arena::allocBlock(usize size)
     ArenaBlock* pBlock = static_cast<ArenaBlock*>(m_pBackAlloc->zalloc(1, size + sizeof(ArenaBlock)));
 
 #if defined ADT_DBG_MEMORY
-    fprintf(stderr, "[Arena]: new block of size: %llu\n", size);
+    print::err("[Arena]: new block of size: {}\n", size);
 #endif
 
     pBlock->size = size;
@@ -125,7 +126,7 @@ Arena::malloc(usize mCount, usize mSize)
 
 #if defined ADT_DBG_MEMORY
     if (m_defaultCapacity <= realSize)
-        fprintf(stderr, "[Arena]: allocating more than defaultCapacity (%llu, %llu)\n", m_defaultCapacity, realSize);
+        print::err("[Arena]: allocating more than defaultCapacity ({}, {})\n", m_defaultCapacity, realSize);
 #endif
 
     if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, realSize*2));
@@ -223,7 +224,7 @@ Arena::shrinkToFirstBlock() noexcept
     while (it->pNext)
     {
 #if defined ADT_DBG_MEMORY
-        fprintf(stderr, "[Arena]: shrinking %llu sized block\n", it->size);
+        print::err("[Arena]: shrinking {} sized block\n", it->size);
 #endif
         auto* next = it->pNext;
         m_pBackAlloc->free(it);

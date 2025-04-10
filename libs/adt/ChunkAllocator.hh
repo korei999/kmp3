@@ -1,6 +1,7 @@
 #pragma once
 
 #include "StdAllocator.hh"
+#include "print.hh" /* IWYU pragma: keep */
 
 #include <cstdlib>
 #include <cstring>
@@ -51,7 +52,9 @@ struct ChunkAllocator : public IAllocator
 
     template<typename T> ADT_WARN_IMPOSSIBLE_OPERATION constexpr T*
     reallocV(T* ptr, ssize oldCount, ssize newCount)
-    { ADT_ASSERT_ALWAYS(false, "can't realloc"); return nullptr; };
+    {
+        ADT_ASSERT_ALWAYS(false, "can't realloc"); return nullptr;
+    };
 
 private:
     [[nodiscard]] ChunkAllocatorBlock* allocBlock();

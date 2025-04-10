@@ -63,7 +63,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
             if (m_size == CAP)
             {
 #if !defined NDEBUG
-                fprintf(stderr, "PoolSOA::make(): out of size, returning -1\n");
+                print::err("PoolSOA::make(): out of size, returning -1\n");
 #endif
                 return {.i = -1};
             }
@@ -86,8 +86,8 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
     decltype(auto)
     bindMember(PoolSOAHandle<STRUCT> h)
     {
-        ADT_ASSERT(h.i >= 0 && h.i < CAP, "out of range: h: %d, CAP: %d", h.i, CAP);
-        ADT_ASSERT(m_aOccupiedIdxs[h.i], "handle '%d' is free", h.i);
+        ADT_ASSERT(h.i >= 0 && h.i < CAP, "out of range: h: {}, CAP: {}", h.i, CAP);
+        ADT_ASSERT(m_aOccupiedIdxs[h.i], "handle '{}' is free", h.i);
         return static_cast<SOAArrayHolder<STRUCT, CAP, MEMBER>&>(*this).m_arrays[h.i];
     }
 
@@ -95,8 +95,8 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
     decltype(auto)
     bindMember(PoolSOAHandle<STRUCT> h) const
     {
-        ADT_ASSERT(h.i >= 0 && h.i < CAP, "out of range: h: %d, CAP: %d", h.i, CAP);
-        ADT_ASSERT(m_aOccupiedIdxs[h.i], "handle '%d' is free", h.i);
+        ADT_ASSERT(h.i >= 0 && h.i < CAP, "out of range: h: {}, CAP: {}", h.i, CAP);
+        ADT_ASSERT(m_aOccupiedIdxs[h.i], "handle '{}' is free", h.i);
         return static_cast<const SOAArrayHolder<STRUCT, CAP, MEMBER>&>(*this).m_arrays[h.i];
     }
 

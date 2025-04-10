@@ -1,12 +1,12 @@
 #pragma once
 
-#include "adt/print.hh"
-#include "adt/utils.hh"
-#include "adt/types.hh"
+#include "mathDecl.hh"
+
+#include "utils.hh"
+#include "types.hh"
 
 #include <cmath>
 #include <concepts>
-#include <limits>
 
 #if defined __clang__
     #pragma clang diagnostic push
@@ -21,11 +21,6 @@
 namespace adt::math
 {
 
-constexpr f64 PI64 = 3.14159265358979323846;
-constexpr f32 PI32 = static_cast<f32>(PI64);
-constexpr f64 EPS64 = std::numeric_limits<f64>::epsilon();
-constexpr f32 EPS32 = std::numeric_limits<f32>::epsilon();
-
 constexpr inline f64 toDeg(f64 x) { return x * 180.0 / PI64; }
 constexpr inline f64 toRad(f64 x) { return x * PI64 / 180.0; }
 constexpr inline f32 toDeg(f32 x) { return x * 180.0f / PI32; }
@@ -36,21 +31,12 @@ constexpr inline f64 toDeg(i64 x) { return toDeg(static_cast<f64>(x)); }
 constexpr inline f32 toRad(i32 x) { return toRad(static_cast<f32>(x)); }
 constexpr inline f32 toDeg(i32 x) { return toDeg(static_cast<f32>(x)); }
 
-template<typename T>
-constexpr inline bool
-eq(const T l, const T r)
-{
-    return l == r;
-}
-
-template<>
 inline bool
 eq(const f64 l, const f64 r)
 {
     return std::abs(l - r) <= EPS64*(std::abs(l) + std::abs(r) + 1.0);
 }
 
-template<>
 inline bool
 eq(const f32 l, const f32 r)
 {
@@ -66,149 +52,6 @@ sign(i64 x)
     return (x > 0) - (x < 0);
 }
 
-union IV2;
-
-union V2
-{
-    f32 e[2];
-    struct { f32 x, y; };
-    struct { f32 u, v; };
-
-    constexpr explicit operator IV2() const;
-};
-
-union IV2
-{
-    int e[2];
-    struct { int x, y; };
-    struct { int u, v; };
-
-    constexpr explicit operator V2() const
-    {
-        return {
-            static_cast<f32>(x),
-            static_cast<f32>(y),
-        };
-    }
-};
-
-constexpr inline
-V2::operator IV2() const
-{
-    return {
-        static_cast<int>(x),
-        static_cast<int>(y),
-    };
-}
-
-union V3
-{
-    f32 e[3];
-    struct { V2 xy; f32 _v2pad; };
-    struct { f32 x, y, z; };
-    struct { f32 r, g, b; };
-};
-
-union IV3
-{
-    int e[3];
-    struct { IV2 xy; int _v2pad; };
-    struct { int x, y, z; };
-    struct { int r, g, b; };
-};
-
-union IV4;
-
-union V4
-{
-    f32 e[4];
-    struct { V3 xyz; f32 _v3pad; };
-    struct { V2 xy; V2 zw; };
-    struct { f32 x, y, z, w; };
-    struct { f32 r, g, b, a; };
-
-    /* */
-
-    constexpr explicit operator IV4() const;
-};
-
-union IV4
-{
-    i32 e[4];
-    struct { IV3 xyz; i32 _v3pad; };
-    struct { IV2 xy; IV2 zw; };
-    struct { i32 x, y, z, w; };
-    struct { i32 r, g, b, a; };
-
-    /* */
-
-    constexpr explicit operator V4() const
-    {
-        return {
-            static_cast<f32>(x),
-            static_cast<f32>(y),
-            static_cast<f32>(z),
-            static_cast<f32>(w),
-        };
-    }
-};
-
-union IV4u8
-{
-    u8 e[4];
-    struct { u8 x, y, z, w; };
-
-    /* */
-
-    constexpr explicit operator IV4() const
-    {
-        return {
-            static_cast<i32>(x),
-            static_cast<i32>(y),
-            static_cast<i32>(z),
-            static_cast<i32>(w)
-        };
-    }
-
-    constexpr explicit operator V4() const
-    {
-        return {
-            static_cast<f32>(x),
-            static_cast<f32>(y),
-            static_cast<f32>(z),
-            static_cast<f32>(w)
-        };
-    }
-};
-
-union IV4u16
-{
-    u16 e[4];
-    struct { u16 x, y, z, w; };
-
-    /* */
-
-    constexpr explicit operator IV4() const
-    {
-        return {
-            static_cast<i32>(x),
-            static_cast<i32>(y),
-            static_cast<i32>(z),
-            static_cast<i32>(w)
-        };
-    }
-
-    constexpr explicit operator V4() const
-    {
-        return {
-            static_cast<f32>(x),
-            static_cast<f32>(y),
-            static_cast<f32>(z),
-            static_cast<f32>(w)
-        };
-    }
-};
-
 constexpr inline
 V4::operator IV4() const
 {
@@ -219,58 +62,6 @@ V4::operator IV4() const
         static_cast<i32>(w),
     };
 }
-
-union M2
-{
-    f32 d[4];
-    f32 e[2][2];
-    V2 v[2];
-};
-
-union M4;
-
-union M3
-{
-    f32 d[9];
-    f32 e[3][3];
-    V3 v[3];
-
-    /* */
-
-    constexpr explicit operator M4() const;
-};
-
-union M4
-{
-    f32 d[16];
-    f32 e[4][4];
-    V4 v[4];
-
-    constexpr explicit operator M3() const
-    {
-        return {
-            e[0][0], e[0][1], e[0][2],
-            e[1][0], e[1][1], e[1][2],
-            e[2][0], e[2][1], e[2][2]
-        };
-    };
-};
-
-union Qt
-{
-    V4 base;
-    f32 e[4];
-    struct { f32 x, y, z, w; };
-
-    /* */
-
-    Qt
-    getSwapped()
-    {
-        Qt ret {.x = w, .y = z, .z = y, .w = x};
-        return ret;
-    }
-};
 
 constexpr
 M3::operator M4() const
@@ -957,7 +748,7 @@ operator*(const M4& l, const V4& r)
 inline M3
 operator*(const M3& l, const M3& r)
 {
-    M3 m {};
+    M3 m;
 
     m.v[0] = l * r.v[0];
     m.v[1] = l * r.v[1];
@@ -975,7 +766,7 @@ operator*=(M3& l, const M3& r)
 inline M4
 operator*(const M4& l, const M4& r)
 {
-    M4 m {};
+    M4 m;
 
     m.v[0] = l * r.v[0];
     m.v[1] = l * r.v[1];
@@ -1589,94 +1380,6 @@ transformation(const V3& translation, const V3& scale)
 }
 
 } /* namespace adt::math */
-
-namespace adt::print
-{
-
-inline ssize
-formatToContext(Context ctx, FormatArgs, const math::V2& x)
-{
-    ctx.fmt = "{:.3}, {:.3}";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.x, x.y);
-}
-
-inline ssize
-formatToContext(Context ctx, FormatArgs, const math::V3& x)
-{
-    ctx.fmt = "{:.3}, {:.3}, {:.3}";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.x, x.y, x.z);
-}
-
-inline ssize
-formatToContext(Context ctx, FormatArgs, const math::V4& x)
-{
-    ctx.fmt = "{:.3}, {:.3}, {:.3}, {:.3}";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.x, x.y, x.z, x.w);
-}
-
-inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4& x)
-{
-    i32 aBuff[4] {x.x, x.y, x.z, x.w};
-    return formatToContext(ctx, fmtArgs, aBuff);
-}
-
-inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x)
-{
-    u16 aBuff[4] {x.x, x.y, x.z, x.w};
-    return formatToContext(ctx, fmtArgs, aBuff);
-}
-
-inline ssize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::Qt& x)
-{
-    return formatToContext(ctx, fmtArgs, x.base);
-}
-
-inline ssize
-formatToContext(Context ctx, FormatArgs, const math::M2& x)
-{
-    ctx.fmt = "\n\t[{:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.d[0], x.d[1], x.d[2], x.d[3]);
-}
-
-inline ssize
-formatToContext(Context ctx, FormatArgs, const math::M3& x)
-{
-    ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx,
-        x.d[0], x.d[1], x.d[2],
-        x.d[3], x.d[4], x.d[5],
-        x.d[6], x.d[7], x.d[8]
-    );
-}
-
-inline ssize
-formatToContext(Context ctx, FormatArgs, const math::M4& x)
-{
-    ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx,
-        x.e[0][0], x.e[0][1], x.e[0][2], x.e[0][3],
-        x.e[1][0], x.e[1][1], x.e[1][2], x.e[1][3],
-        x.e[2][0], x.e[2][1], x.e[2][2], x.e[2][3],
-        x.e[3][0], x.e[3][1], x.e[3][2], x.e[3][3]
-    );
-}
-
-} /* namespace adt::print */
 
 #if defined __clang__
     #pragma clang diagnostic pop

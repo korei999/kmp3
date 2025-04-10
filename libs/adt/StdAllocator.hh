@@ -2,6 +2,7 @@
 
 #include "IAllocator.hh"
 #include "assert.hh"
+#include "print.hh" /* IWYU pragma: keep */
 
 #include <cstdlib>
 

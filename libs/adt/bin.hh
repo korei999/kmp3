@@ -1,6 +1,6 @@
 #pragma once
 
-#include "String.hh"
+#include "String.hh" /* IWYU pragma: keep */
 
 namespace adt::bin
 {
@@ -34,6 +34,13 @@ swapBytes(u64 x)
            ((x & 0x00000000000000ffllu) << 7 * 8);
 }
 
+template <typename T>
+inline constexpr T
+maskBits(u64 nBits)
+{
+    return (nBits >= sizeof(T) * 8) ? ~T(0) : ((T(1) << nBits) - 1);
+}
+
 struct Reader
 {
     StringView m_svFile {};
@@ -46,8 +53,8 @@ struct Reader
 
     /* */
 
-    char& operator[](ssize i) { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: %lld, size: %lld\n", i, m_svFile.size()); return m_svFile[i]; }
-    const char& operator[](ssize i) const { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: %lld, size: %lld\n", i, m_svFile.size()); return m_svFile[i]; }
+    char& operator[](ssize i) { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: {}, size: {}\n", i, m_svFile.size()); return m_svFile[i]; }
+    const char& operator[](ssize i) const { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: {}, size: {}\n", i, m_svFile.size()); return m_svFile[i]; }
 
     void skipBytes(ssize n);
     StringView readString(ssize bytes);
@@ -129,6 +136,43 @@ inline bool
 Reader::finished()
 {
     return m_pos >= m_svFile.size();
+}
+
+struct BitReader
+{
+    StringView m_svFile {};
+    ssize m_pos {};
+
+    /* */
+
+    BitReader() = default;
+    BitReader(StringView svFile) : m_svFile(svFile) {}
+
+    /* */
+
+    template<typename T = u64>
+    [[nodiscard]] T read(ssize nBits);
+};
+
+template<typename T>
+inline T
+BitReader::read(ssize nBits)
+{
+    T ret = 0;
+
+    for (ssize i = 0; i < nBits; ++i)
+    {
+        const ssize byteI = (m_pos + i) / 8;
+        const ssize bitI = 7 - ((m_pos + i) % 8);
+
+        if (byteI >= m_svFile.size())
+            return ret;
+
+        ret = (ret << 1) | ((m_svFile[byteI] >> bitI) & 1);
+    }
+
+    m_pos += nBits;
+    return ret;
 }
 
 } /* namespace adt::bin */

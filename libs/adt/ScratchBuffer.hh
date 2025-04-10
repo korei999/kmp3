@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IAllocator.hh"
-#include "Span.hh"
+#include "Span.hh" /* IWYU pragma: keep */
 
 #include <cstring>
 
@@ -64,7 +64,7 @@ ScratchBuffer::nextMem(ssize mCount) noexcept
 
     if (realSize >= m_sp.size())
     {
-        fprintf(stderr, "ScratchBuffer::nextMem(): allocating more than capacity (%lld < %lld), returing full buffer\n", m_sp.size(), realSize);
+        print::err("ScratchBuffer::nextMem(): allocating more than capacity ({} < {}), returing full buffer\n", m_sp.size(), realSize);
         return {(T*)m_sp.data(), typeCap()};
     }
     else if (realSize + m_pos > m_sp.size())

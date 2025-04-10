@@ -2,6 +2,7 @@
 
 #include "IAllocator.hh"
 #include "mimalloc.h"
+#include "print.hh" /* IWYU pragma: keep */
 
 #include <cstdlib>
 

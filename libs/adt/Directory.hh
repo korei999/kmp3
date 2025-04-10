@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "String.hh"
+#include "print.hh"
 
 #include <cstdio>
 
@@ -116,7 +116,7 @@ Directory::Directory(const char* ntsPath)
     if (!m_pDir)
     {
 #ifndef NDEBUG
-        fprintf(stderr, "failed to open '%s' directory\n", ntsPath);
+        print::err("failed to open '{}' directory\n", ntsPath);
 #endif
         return;
     }
@@ -128,7 +128,7 @@ Directory::close()
      int err = closedir(m_pDir);
 
 #ifndef NDEBUG
-     if (err != 0) fprintf(stderr, "closedir(): error '%d'\n", err);
+     if (err != 0) print::err("closedir(): error '{}'\n", err);
 #endif
 
      return err == 0;
@@ -243,7 +243,7 @@ Directory::Directory(const char* ntsPath)
     if (m_hFind == INVALID_HANDLE_VALUE)
     {
 #ifndef NDEBUG
-        fprintf(stderr, "failed to open '%s'\n", ntsPath);
+        print::err("failed to open '{}'\n", ntsPath);
 #endif
         memset(m_aBuff, 0, sizeof(m_aBuff));
     }
@@ -262,7 +262,7 @@ Directory::close()
 
 #ifndef NDEBUG
     if (err == 0)
-        fprintf(stderr, "FindClose(): failed '%lu'\n", GetLastError());
+        print::err("FindClose(): failed '{}'\n", GetLastError());
 #endif
 
     return err > 0;

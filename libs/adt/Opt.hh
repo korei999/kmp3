@@ -31,8 +31,8 @@ struct Opt
     constexpr T& value() { ADT_ASSERT(m_bHasValue, "no value"); return m_data; }
     constexpr const T& value() const { ADT_ASSERT(m_bHasValue, "no value"); return m_data; }
 
-    constexpr T& valueOrZero() { return m_data; }
-    constexpr const T& valueOrZero() const { return m_data; }
+    constexpr T& valueOrEmpty() { return m_data; }
+    constexpr const T& valueOrEmpty() const { return m_data; }
 
     constexpr T
     valueOr(T&& v) const

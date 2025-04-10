@@ -1,6 +1,7 @@
 #pragma once
 
-#include "adt/types.hh"
+#include "types.hh"
+#include "assert.hh"
 
 namespace adt
 {
@@ -81,7 +82,7 @@ template<typename T>
 inline T&
 View<T>::at(ssize i) const
 {
-    ADT_ASSERT(i >= 0 && i < m_count, "i: %lld, size: %lld, stride: %lld", i, m_count, m_byteStride);
+    ADT_ASSERT(i >= 0 && i < m_count, "i: {}, size: {}, stride: {}", i, m_count, m_byteStride);
 
     auto* pU8 = u8Data();
     T* pRet = (T*)(pU8 + (i*m_byteStride));

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "IAllocator.hh"
-#include "Span.hh"
 #include "utils.hh"
 
 #include <new> /* IWYU pragma: keep */
@@ -40,7 +39,7 @@ struct Vec
 
     /* */
 
-#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: {}, m_size: {}", i, m_size);
 
     T& operator[](ssize i)             noexcept { ADT_RANGE_CHECK; return m_pData[i]; }
     const T& operator[](ssize i) const noexcept { ADT_RANGE_CHECK; return m_pData[i]; }
@@ -279,7 +278,7 @@ inline ssize
 Vec<T>::idx(const T* const x) const noexcept
 {
     ssize r = ssize(x - m_pData);
-    ADT_ASSERT(r >= 0 && r < m_capacity,"r: %lld, cap: %lld, addr: %p. Must take the address of the reference", r, m_capacity, (void*)x);
+    ADT_ASSERT(r >= 0 && r < m_capacity,"r: {}, cap: {}, addr: {}. Must take the address of the reference", r, m_capacity, (void*)x);
     return r;
 }
 
@@ -369,7 +368,7 @@ Vec<T>::growIfNeeded(IAllocator* p)
     if (m_size >= m_capacity)
     {
         ssize newCap = utils::max(decltype(m_capacity)(SIZE_MIN), m_capacity * 2);
-        ADT_ASSERT(newCap > m_capacity, "can't grow (capacity overflow), newCap: %lld, m_capacity: %lld", newCap, m_capacity);
+        ADT_ASSERT(newCap > m_capacity, "can't grow (capacity overflow), newCap: {}, m_capacity: {}", newCap, m_capacity);
         grow(p, newCap);
     }
 }

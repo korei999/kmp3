@@ -1,7 +1,8 @@
 #pragma once
 
 #include "IAllocator.hh"
-#include "Span.hh"
+#include "Span.hh" /* IWYU pragma: keep */
+#include "print.hh" /* IWYU pragma: keep */
 
 #include <cstring>
 

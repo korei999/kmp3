@@ -1,10 +1,9 @@
 #pragma once
 
 #include "Thread.hh"
-#include "Queue.hh"
-#include "Span.hh"
 #include "defer.hh"
 #include "atomic.hh"
+#include "QueueArray.hh"
 
 namespace adt
 {
@@ -15,10 +14,11 @@ struct ThreadPoolTask
     void* pArg {};
 };
 
+template<ssize QUEUE_SIZE>
 struct ThreadPool
 {
     IAllocator* m_pAlloc {}; /* managed by default */
-    Queue<ThreadPoolTask> m_qTasks {};
+    QueueArray<ThreadPoolTask, QUEUE_SIZE> m_qTasks {};
     Span<Thread> m_spThreads {};
     Mutex m_mtxQ {};
     CndVar m_cndQ {};
@@ -38,9 +38,9 @@ struct ThreadPool
 
     ThreadPool(
         IAllocator* pAlloc,
-        void (*pfnLoopStart)(void*),
+        void (*pfnLoopStart)(void*), /* call on entering the loop */ 
         void* pLoopStartArg,
-        void (*pfnLoopEnd)(void*),
+        void (*pfnLoopEnd)(void*), /* call on exiting the loop */
         void* pLoopEndArg,
         int nThreads = ADT_GET_NPROCS()
     );
@@ -48,23 +48,33 @@ struct ThreadPool
     /* */
 
     void wait();
+
     void destroy();
-    void add(ThreadPoolTask task);
-    void add(ThreadFn pfn, void* pArg);
-    template<typename LAMBDA> void addLambda(LAMBDA& t);
+
+    bool add(ThreadPoolTask task);
+
+    bool add(ThreadFn pfn, void* pArg);
+
+    template<typename LAMBDA> bool addLambda(LAMBDA& t);
 
     template<typename LAMBDA> requires(std::is_rvalue_reference_v<LAMBDA&&>)
-    [[deprecated("rvalue lambdas cause use after free")]] void addLambda(LAMBDA&& t) = delete;
+    [[deprecated("rvalue lambdas cause use after free")]] bool addLambda(LAMBDA&& t) = delete;
+
+    void addRetry(ThreadPoolTask task) { while (!add(task)); }
+
+    void addRetry(ThreadFn pfn, void* pArg) { while (!add(pfn, pArg)); }
+
+    template<typename LAMBDA> void addLambdaRetry(LAMBDA&& t) { while (!addLambda(std::forward<LAMBDA>(t))); }
 
 protected:
     THREAD_STATUS loop();
     void spawnThreads();
 };
 
+template<ssize QUEUE_SIZE>
 inline
-ThreadPool::ThreadPool(IAllocator* pAlloc, int nThreads)
+ThreadPool<QUEUE_SIZE>::ThreadPool(IAllocator* pAlloc, int nThreads)
     : m_pAlloc(pAlloc),
-      m_qTasks(pAlloc, nThreads * 2),
       m_spThreads(pAlloc->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
@@ -74,15 +84,15 @@ ThreadPool::ThreadPool(IAllocator* pAlloc, int nThreads)
     spawnThreads();
 }
 
+template<ssize QUEUE_SIZE>
 inline
-ThreadPool::ThreadPool(
+ThreadPool<QUEUE_SIZE>::ThreadPool(
     IAllocator* pAlloc,
     void (*pfnLoopStart)(void*), void* pLoopStartArg,
     void (*pfnLoopEnd)(void*), void* pLoopEndArg,
     int nThreads
 )
     : m_pAlloc(pAlloc),
-      m_qTasks(pAlloc, nThreads * 2),
       m_spThreads(pAlloc->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
@@ -96,8 +106,9 @@ ThreadPool::ThreadPool(
     spawnThreads();
 }
 
+template<ssize QUEUE_SIZE>
 inline THREAD_STATUS
-ThreadPool::loop()
+ThreadPool<QUEUE_SIZE>::loop()
 {
     if (m_pfnLoopStart) m_pfnLoopStart(m_pLoopStartArg);
     defer( if (m_pfnLoopEnd) m_pfnLoopEnd(m_pLoopEndArg) );
@@ -133,8 +144,9 @@ ThreadPool::loop()
     return 0;
 }
 
+template<ssize QUEUE_SIZE>
 inline void
-ThreadPool::spawnThreads()
+ThreadPool<QUEUE_SIZE>::spawnThreads()
 {
     for (auto& thread : m_spThreads)
     {
@@ -145,12 +157,13 @@ ThreadPool::spawnThreads()
     }
 
 #ifndef NDEBUG
-    fprintf(stderr, "ThreadPool: new pool with %lld threads\n", m_spThreads.size());
+    print::err("ThreadPool: new pool with {} threads\n", m_spThreads.size());
 #endif
 }
 
+template<ssize QUEUE_SIZE>
 inline void
-ThreadPool::wait()
+ThreadPool<QUEUE_SIZE>::wait()
 {
     MutexGuard qLock(&m_mtxQ);
 
@@ -158,8 +171,9 @@ ThreadPool::wait()
         m_cndWait.wait(&m_mtxQ);
 }
 
+template<ssize QUEUE_SIZE>
 inline void
-ThreadPool::destroy()
+ThreadPool<QUEUE_SIZE>::destroy()
 {
     wait();
 
@@ -174,7 +188,6 @@ ThreadPool::destroy()
         thread.join();
 
     {
-        m_qTasks.destroy(m_pAlloc);
         m_pAlloc->free(m_spThreads.data());
         m_mtxQ.destroy();
         m_cndQ.destroy();
@@ -182,26 +195,31 @@ ThreadPool::destroy()
     }
 }
 
-inline void
-ThreadPool::add(ThreadPoolTask task)
+template<ssize QUEUE_SIZE>
+inline bool
+ThreadPool<QUEUE_SIZE>::add(ThreadPoolTask task)
 {
     MutexGuard lock(&m_mtxQ);
 
-    m_qTasks.pushBack(m_pAlloc, task);
+    ssize i = m_qTasks.pushBack(task);
     m_cndQ.signal();
+
+    return i;
 }
 
-inline void
-ThreadPool::add(ThreadFn pfn, void* pArg)
+template<ssize QUEUE_SIZE>
+inline bool
+ThreadPool<QUEUE_SIZE>::add(ThreadFn pfn, void* pArg)
 {
-    add({pfn, pArg});
+    return add({pfn, pArg});
 }
 
+template<ssize QUEUE_SIZE>
 template<typename LAMBDA>
-inline void
-ThreadPool::addLambda(LAMBDA& t)
+inline bool
+ThreadPool<QUEUE_SIZE>::addLambda(LAMBDA& t)
 {
-    add(+[](void* pArg) -> THREAD_STATUS
+    return add(+[](void* pArg) -> THREAD_STATUS
         {
             reinterpret_cast<LAMBDA*>(pArg)->operator()();
             return 0;

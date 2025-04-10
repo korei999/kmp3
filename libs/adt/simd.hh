@@ -13,8 +13,8 @@
 
 #pragma once
 
-#include "adt/Span.hh"
-#include "adt/math.hh"
+#include "Span.hh" /* IWYU pragma: keep */
+#include "mathDecl.hh"
 
 #include <nmmintrin.h>
 
@@ -597,8 +597,8 @@ struct i32x8
     i32* data() { return reinterpret_cast<i32*>(this); }
     const i32* data() const { return (i32*)(this); }
 
-    i32& operator[](int i)             { ADT_ASSERT(i >= 0 && i < 8, "out of range, should be (>= 0 && < 8)"); return data()[i]; }
-    const i32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 8, "out of range, should be (>= 0 && < 8)"); return data()[i]; }
+    i32& operator[](int i)             { ADT_ASSERT(i >= 0 && i < 8, "out of range, should be (>= 0 && < 8) got: {}", i); return data()[i]; }
+    const i32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 8, "out of range, should be (>= 0 && < 8) got: {}", i); return data()[i]; }
 };
 
 struct f32x8

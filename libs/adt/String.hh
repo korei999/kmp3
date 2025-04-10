@@ -1,12 +1,14 @@
 #pragma once
 
+#include "StringDecl.hh"
+
 #include "assert.hh"
 #include "IAllocator.hh"
 #include "utils.hh"
 #include "hash.hh"
-#include "Span.hh"
+#include "Span.hh" /* IWYU pragma: keep */
+#include "print.hh" /* IWYU pragma: keep */
 
-#include <cstring>
 #include <cstdlib>
 
 namespace adt
@@ -45,103 +47,39 @@ charBuffStringSize(const char (&aCharBuff)[SIZE])
     return i;
 }
 
-struct StringView;
-struct String;
+inline constexpr
+StringView::StringView(const char* nts)
+    : m_pData(const_cast<char*>(nts)), m_size(ntsSize(nts)) {}
 
-[[nodiscard]] inline bool operator==(const StringView& l, const StringView& r);
-[[nodiscard]] inline bool operator==(const StringView& l, const char* r);
-[[nodiscard]] inline bool operator!=(const StringView& l, const StringView& r);
-[[nodiscard]] inline i64 operator-(const StringView& l, const StringView& r);
+inline constexpr
+StringView::StringView(char* pStr, ssize len)
+    : m_pData(pStr), m_size(len) {}
 
-inline String StringCat(IAllocator* p, const StringView& l, const StringView& r);
+inline constexpr
+StringView::StringView(Span<char> sp)
+    : StringView(sp.data(), sp.size()) {}
 
-/* Just pointer + size, no allocations, has to be cloned into String to store safely */
-struct StringView
+template<ssize SIZE>
+inline constexpr
+StringView::StringView(const char (&aCharBuff)[SIZE])
+    : m_pData(const_cast<char*>(aCharBuff)),
+      m_size(charBuffStringSize(aCharBuff)) {}
+
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: {}, m_size: {}", i, m_size);
+
+inline constexpr char&
+StringView::operator[](ssize i)
 {
-    char* m_pData {};
-    ssize m_size {};
+    ADT_RANGE_CHECK; return m_pData[i];
+}
 
-    /* */
-
-    constexpr StringView() = default;
-
-    constexpr StringView(const char* nts)
-        : m_pData(const_cast<char*>(nts)), m_size(ntsSize(nts)) {}
-
-    constexpr StringView(char* pStr, ssize len)
-        : m_pData(pStr), m_size(len) {}
-
-    constexpr StringView(Span<char> sp)
-        : StringView(sp.data(), sp.size()) {}
-
-    template <ssize SIZE>
-    constexpr StringView(const char (&aCharBuff)[SIZE])
-        : m_pData(const_cast<char*>(aCharBuff)),
-          m_size(charBuffStringSize(aCharBuff)) {}
-
-    /* */
-
-    explicit constexpr operator bool() const { return size() > 0; }
-
-    /* */
-
-#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: %lld, m_size: %lld", i, m_size);
-
-    constexpr char& operator[](ssize i)             { ADT_RANGE_CHECK; return m_pData[i]; }
-    constexpr const char& operator[](ssize i) const { ADT_RANGE_CHECK; return m_pData[i]; }
+constexpr const char&
+StringView::operator[](ssize i) const
+{
+    ADT_RANGE_CHECK; return m_pData[i];
+}
 
 #undef ADT_RANGE_CHECK
-
-    constexpr const char* data() const { return m_pData; }
-    constexpr char* data() { return m_pData; }
-    constexpr ssize size() const { return m_size; }
-    constexpr bool empty() const { return size() == 0; }
-    constexpr ssize idx(const char* const pChar) const;
-    [[nodiscard]] bool beginsWith(const StringView r) const;
-    [[nodiscard]] bool endsWith(const StringView r) const;
-    [[nodiscard]] ssize lastOf(char c) const;
-    void trimEnd();
-    void removeNLEnd(); /* remove \r\n */
-    [[nodiscard]] bool contains(const StringView r) const;
-    [[nodiscard]] char& first();
-    [[nodiscard]] const char& first() const;
-    [[nodiscard]] char& last();
-    [[nodiscard]] const char& last() const;
-    [[nodiscard]] ssize nGlyphs() const;
-
-    template<typename T>
-    T reinterpret(ssize at) const;
-
-    /* */
-
-    struct It
-    {
-        char* p;
-
-        constexpr It(char* pFirst) : p{pFirst} {}
-
-        constexpr char& operator*() { return *p; }
-        constexpr char* operator->() { return p; }
-
-        constexpr It operator++() { p++; return *this; }
-        constexpr It operator++(int) { char* tmp = p++; return tmp; }
-        constexpr It operator--() { p--; return *this; }
-        constexpr It operator--(int) { char* tmp = p--; return tmp; }
-
-        friend constexpr bool operator==(It l, It r) { return l.p == r.p; }
-        friend constexpr bool operator!=(It l, It r) { return l.p != r.p; }
-    };
-
-    constexpr It begin() { return {&m_pData[0]}; }
-    constexpr It end() { return {&m_pData[m_size]}; }
-    constexpr It rbegin() { return {&m_pData[m_size - 1]}; }
-    constexpr It rend() { return {m_pData - 1}; }
-
-    constexpr const It begin() const { return {&m_pData[0]}; }
-    constexpr const It end() const { return {&m_pData[m_size]}; }
-    constexpr const It rbegin() const { return {&m_pData[m_size - 1]}; }
-    constexpr const It rend() const { return {m_pData - 1}; }
-};
 
 /* wchar_t iterator for mutlibyte strings */
 struct StringGlyphIt
@@ -287,7 +225,7 @@ constexpr inline ssize
 StringView::idx(const char* const p) const
 {
     ssize i = p - m_pData;
-    ADT_ASSERT(i >= 0 && i < size(), "out of range: idx: %lld: size: %lld", i, size());
+    ADT_ASSERT(i >= 0 && i < size(), "out of range: idx: {}: size: {}", i, size());
 
     return i;
 }
@@ -331,7 +269,7 @@ operator==(const StringView& l, const StringView& r)
     if (l.size() != r.size())
         return false;
 
-    return strncmp(l.data(), r.data(), l.size()) == 0; /* strncmp is as fast as AVX2 version (on my 8700k) */
+    return strncmp(l.data(), r.data(), l.size()) == 0; /* strncmp is as fast as handmade AVX2 function. */
 }
 
 inline bool
@@ -463,20 +401,6 @@ StringView::reinterpret(ssize at) const
     return *(T*)(&operator[](at));
 }
 
-struct String : public StringView
-{
-    String() = default;
-    String(IAllocator* pAlloc, const char* pChars, ssize size);
-    String(IAllocator* pAlloc, const char* nts);
-    String(IAllocator* pAlloc, Span<char> spChars);
-    String(IAllocator* pAlloc, const StringView sv);
-
-    /* */
-
-    void destroy(IAllocator* pAlloc);
-    void replaceWith(IAllocator* pAlloc, StringView svWith);
-};
-
 inline
 String::String(IAllocator* pAlloc, const char* pChars, ssize size)
 {
@@ -528,38 +452,6 @@ String::replaceWith(IAllocator* pAlloc, StringView svWith)
 }
 
 template<int SIZE> requires(SIZE > 1)
-struct StringFixed
-{
-    char m_aBuff[SIZE] {};
-
-    /* */
-
-    StringFixed() = default;
-
-    StringFixed(const StringView svName);
-
-    StringFixed(const char* nts) : StringFixed(StringView(nts)) {}
-
-    template<int SIZE_B>
-    StringFixed(const StringFixed<SIZE_B> other);
-
-    /* */
-
-    operator adt::StringView() { return StringView(m_aBuff); };
-    operator const adt::StringView() const { return StringView(m_aBuff); };
-
-    /* */
-
-    bool operator==(const StringFixed& other) const;
-    bool operator==(const adt::StringView sv) const;
-
-    char* data() { return m_aBuff; }
-    const char* data() const { return m_aBuff; }
-
-    ssize size() const { return strnlen(m_aBuff, SIZE); }
-};
-
-template<int SIZE> requires(SIZE > 1)
 inline
 StringFixed<SIZE>::StringFixed(const StringView svName)
 {
@@ -578,6 +470,13 @@ inline
 StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other)
 {
     memcpy(m_aBuff, other.m_aBuff, utils::min(SIZE, SIZE_B));
+}
+
+template<int SIZE> requires(SIZE > 1)
+inline ssize
+StringFixed<SIZE>::size() const
+{
+    return strnlen(m_aBuff, SIZE);
 }
 
 template<int SIZE> requires(SIZE > 1)

@@ -181,7 +181,7 @@ Pool<T, CAP>::make()
     if (m_nOccupied >= CAP)
     {
 #ifndef NDEBUG
-        fputs("[MemPool]: no free element, returning -1", stderr);
+        print::err("no free element, returning -1", stderr);
 #endif
         return {-1};
     }
@@ -239,7 +239,7 @@ template<typename T, ssize CAP>
 inline T&
 Pool<T, CAP>::at(PoolHandle<T> h)
 {
-    ADT_ASSERT(h.i >= 0 && h.i < m_aNodes.size(), "i: %lld, size: %lld", h.i, m_aNodes.size());
+    ADT_ASSERT(h.i >= 0 && h.i < m_aNodes.size(), "i: {}, size: {}", h.i, m_aNodes.size());
     ADT_ASSERT(m_aOccupied[h.i], "trying to access unoccupied node");
     return m_aNodes[h.i];
 }

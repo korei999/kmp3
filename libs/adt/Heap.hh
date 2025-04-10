@@ -177,7 +177,7 @@ template<typename T>
 inline T
 Heap<T>::minExtract()
 {
-    assert(m_vec.m_size > 0 && "[Heap]: empty");
+    ADT_ASSERT(m_vec.m_size > 0, "empty");
 
     m_vec.swapWithLast(0);
 
@@ -193,7 +193,7 @@ template<typename T>
 inline T
 Heap<T>::maxExtract()
 {
-    assert(m_vec.m_size > 0 && "[Heap]: empty");
+    ADT_ASSERT(m_vec.m_size > 0, "empty");
 
     m_vec.swapWithLast(0);
 

@@ -126,7 +126,7 @@ template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline void
 VecSOA<STRUCT, BIND, MEMBERS...>::set(ssize i, const STRUCT& x)
 {
-    ADT_ASSERT(i >= 0 && i < m_size, "out of range: i: %lld, size: %lld\n", i, m_size);
+    ADT_ASSERT(i >= 0 && i < m_size, "out of range: i: {}, size: {}\n", i, m_size);
     VecSOASetHelper<STRUCT, BIND>(m_pData, m_capacity, i, x.*MEMBERS...);
 }
 
@@ -185,7 +185,7 @@ VecSOA<STRUCT, BIND, MEMBERS...>::growIfNeeded(IAllocator* pAlloc)
     if (m_size < m_capacity) return;
 
     ssize newCap = utils::max(decltype(m_capacity)(SIZE_MIN), m_capacity*2);
-    ADT_ASSERT(newCap > m_capacity, "can't grow (capacity overflow), newCap: %lld, m_capacity: %lld", newCap, m_capacity);
+    ADT_ASSERT(newCap > m_capacity, "can't grow (capacity overflow), newCap: {}, m_capacity: {}", newCap, m_capacity);
     grow(pAlloc, newCap);
 }
 
@@ -235,7 +235,7 @@ template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline BIND
 VecSOA<STRUCT, BIND, MEMBERS...>::bind(const ssize i) const
 {
-    ADT_ASSERT(i >= 0 && i < m_size, "out of range: i: %lld, size: %lld\n", i, m_size);
+    ADT_ASSERT(i >= 0 && i < m_size, "out of range: i: {}, size: {}\n", i, m_size);
 
     u8* p = m_pData;
     ssize off = 0;

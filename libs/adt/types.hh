@@ -114,7 +114,6 @@ struct Overloaded : Ts...
     using Ts::operator()...; /* Inherit the call operators of all bases */
 };
 
-template<typename ...Ts>
-Overloaded(Ts...) -> Overloaded<Ts...>;
+inline constexpr bool isPowerOf2(usize x) { return (x & (x - 1)) == 0; }
 
 } /* namespace adt */

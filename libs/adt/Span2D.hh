@@ -1,7 +1,6 @@
 #pragma once
 
-#include "types.hh"
-#include "assert.hh"
+#include "print.hh" /* IWYU pragma: keep */
 
 namespace adt
 {
@@ -44,7 +43,7 @@ protected:
     at(int x, int y) const
     {
         ADT_ASSERT(x >= 0 && x < m_width && y >= 0 && y < m_height,
-            "x: %d, y: %d, width: %d, height: %d, stride: %d",
+            "x: {}, y: {}, width: {}, height: {}, stride: {}",
             x, y, m_width, m_height, m_stride
         );
 

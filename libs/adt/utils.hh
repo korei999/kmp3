@@ -267,17 +267,17 @@ search(const CON_T<T>& c, LAMBDA f)
 }
 
 template<typename T> requires(std::is_integral_v<T>)
-inline void
-cycleForward(T* pIdx, ssize size)
+inline T
+cycleForward(const T& idx, ssize size)
 {
-    *pIdx = (*pIdx + 1) % size;
+    return (idx + 1) % size;
 }
 
 template<typename T> requires(std::is_integral_v<T>)
-inline void
-cycleBackward(T* pIdx, ssize size)
+inline T
+cycleBackward(const T& idx, ssize size)
 {
-    *pIdx = (*pIdx + (size - 1)) % size;
+    return (idx + (size - 1)) % size;
 }
 
 } /* namespace adt::utils */

@@ -4,6 +4,8 @@
 #include "assert.hh"
 #include "atomic.hh"
 
+#include <emmintrin.h>
+
 #include <type_traits>
 
 #if __has_include(<windows.h>)
@@ -22,12 +24,12 @@
 
     #include <sysinfoapi.h>
 
-inline DWORD
+inline int
 getLogicalCoresCountWIN32()
 {
     SYSTEM_INFO info;
     GetSystemInfo(&info);
-    return info.dwNumberOfProcessors;
+    return static_cast<int>(info.dwNumberOfProcessors);
 }
 
     #define ADT_GET_NPROCS() getLogicalCoresCountWIN32()
@@ -95,6 +97,10 @@ struct Thread
 
     template<typename LAMBDA> requires(std::is_rvalue_reference_v<LAMBDA&&>)
     [[deprecated("rvalue lambdas cause use after free")]] Thread(LAMBDA&& l) = delete;
+
+    /* */
+
+    static void yield();
 
     /* */
 
@@ -175,6 +181,20 @@ Thread::Thread(LAMBDA& l, [[maybe_unused]] ATTR eAttr)
     #pragma GCC diagnostic pop
 #endif
 
+inline void
+Thread::yield()
+{
+#ifdef ADT_USE_PTHREAD
+
+    sched_yield();
+
+#elif defined ADT_USE_WIN32THREAD
+
+    ADT_ASSERT(false, "not implemented");
+
+#endif
+}
+
 inline THREAD_STATUS
 Thread::join()
 {
@@ -203,7 +223,7 @@ Thread::pthreadJoin()
 {
     u64 ret {};
     [[maybe_unused]] auto err = pthread_join(m_thread, (void**)&ret);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
     return static_cast<THREAD_STATUS>(ret);
 }
@@ -224,21 +244,21 @@ Thread::start(void* (*pfn)(void*), void* pFnArg, ATTR eAttr)
     {
         case ATTR::JOINABLE:
         err = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-        ADT_ASSERT(err == 0, "err: %d", err);
+        ADT_ASSERT(err == 0, "err: {}", err);
         break;
 
         case ATTR::DETACHED:
         err = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        ADT_ASSERT(err == 0, "err: %d", err);
+        ADT_ASSERT(err == 0, "err: {}", err);
         break;
     }
 
     err = pthread_attr_init(&attr);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
     err = pthread_create(&m_thread, &attr, (void* (*)(void*))pfn, pFnArg);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
     err = pthread_attr_destroy(&attr);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 }
 
 #elif defined ADT_USE_WIN32THREAD
@@ -304,11 +324,11 @@ Mutex::Mutex([[maybe_unused]] TYPE eType)
 
     [[maybe_unused]] int err {};
     err = pthread_mutexattr_init(&m_attr);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
     err = pthread_mutexattr_settype(&m_attr, pthreadAttrType(eType));
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
     err = pthread_mutex_init(&m_mtx, &m_attr);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -323,7 +343,7 @@ Mutex::lock()
 #ifdef ADT_USE_PTHREAD
 
     [[maybe_unused]] int err = pthread_mutex_lock(&m_mtx);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -337,7 +357,7 @@ Mutex::tryLock()
 {
 #ifdef ADT_USE_PTHREAD
 
-    return pthread_mutex_trylock(&m_mtx);
+    return pthread_mutex_trylock(&m_mtx) == 0;
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -352,7 +372,7 @@ Mutex::unlock()
 #ifdef ADT_USE_PTHREAD
 
     [[maybe_unused]] int err = pthread_mutex_unlock(&m_mtx);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -369,9 +389,9 @@ Mutex::destroy()
     /* In the LinuxThreads implementation, no resources are associated with mutex objects,
      * thus pthread_mutex_destroy actually does nothing except checking that the mutex is unlocked. */
     [[maybe_unused]] int err = pthread_mutex_destroy(&m_mtx);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
     err = pthread_mutexattr_destroy(&m_attr);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
     *this = {};
 
 #elif defined ADT_USE_WIN32THREAD
@@ -415,7 +435,7 @@ CndVar::CndVar(InitFlag)
 
     /* @MAN: The LinuxThreads implementation supports no attributes for conditions, hence the cond_attr parameter is actually ignored. */
     [[maybe_unused]] int err = pthread_cond_init(&m_cnd, {});
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -433,7 +453,7 @@ CndVar::destroy()
      * In the LinuxThreads implementation, no resources are associated with condition variables,
      * thus pthread_cond_destroy actually does nothing except checking that the condition has no waiting threads. */
     [[maybe_unused]] int err = pthread_cond_destroy(&m_cnd);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
     *this = {};
 
 #elif defined ADT_USE_WIN32THREAD
@@ -453,7 +473,7 @@ CndVar::wait(Mutex* pMtx)
      * The mutex must be locked by the calling thread on entrance to pthread_cond_wait.
      * Before returning to the calling thread, pthread_cond_wait re-acquires mutex (as per pthread_lock_mutex). */
     [[maybe_unused]] int err = pthread_cond_wait(&m_cnd, &pMtx->m_mtx);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -472,7 +492,7 @@ CndVar::timedWait(Mutex* pMtx, f64 ms)
         .tv_nsec = (ssize(ms) % 1000) * 1000'000,
     };
     [[maybe_unused]] int err = pthread_cond_timedwait(&m_cnd, &pMtx->m_mtx, &ts);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -487,7 +507,7 @@ CndVar::signal()
 #ifdef ADT_USE_PTHREAD
 
     [[maybe_unused]] int err = pthread_cond_signal(&m_cnd);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -502,7 +522,7 @@ CndVar::broadcast()
 #ifdef ADT_USE_PTHREAD
 
     [[maybe_unused]] int err = pthread_cond_broadcast(&m_cnd);
-    ADT_ASSERT(err == 0, "err: %d", err);
+    ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -635,17 +655,16 @@ struct BusyWait
 
     /* */
 
-    void wait();
+    void wait() const;
     void signal();
     void reset();
 };
 
 inline void
-BusyWait::wait()
+BusyWait::wait() const
 {
     while (!m_atom_bDone.load(atomic::ORDER::ACQUIRE))
-    {
-    }
+        _mm_pause();
 }
 
 inline void

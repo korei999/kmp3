@@ -29,7 +29,7 @@ struct Queue
 
     /* */
 
-#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "Out of capacity, i: %lld, m_cap: %lld", i, m_cap);
+#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "Out of capacity, i: {}, m_cap: {}", i, m_cap);
 
     T& operator[](int i)             { ADT_RANGE_CHECK; return m_pData[i]; }
     const T& operator[](int i) const { ADT_RANGE_CHECK; return m_pData[i]; }
@@ -39,7 +39,7 @@ struct Queue
     [[nodiscard]] int nextI(int i) const { return (i + 1) >= m_cap ? 0 : (i + 1); }
     [[nodiscard]] int prevI(int i) const { return (i - 1) < 0 ? m_cap - 1 : (i - 1); }
     [[nodiscard]] int firstI() const { return empty() ? -1 : m_first; }
-    [[nodiscard]] int lastI() const { return empty() ? 0 : m_last - 1; }
+    [[nodiscard]] int lastI() const { return empty() ? -1 : m_last - 1; }
 
     bool empty() const { return m_size == 0; }
     T* data() { return m_pData; }
@@ -174,7 +174,7 @@ template<typename T>
 inline T*
 Queue<T>::popBack()
 {
-    ADT_ASSERT(m_size > 0, "[Queue]: empty");
+    ADT_ASSERT(m_size > 0, "empty");
 
     T* ret = &m_pData[lastI()];
     m_last = prevI(lastI());

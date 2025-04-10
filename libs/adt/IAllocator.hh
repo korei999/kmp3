@@ -13,7 +13,6 @@ namespace adt
 
 inline constexpr usize align(usize x, usize to) { return ((x) + to - 1) & (~(to - 1)); }
 inline constexpr usize align8(usize x) { return align(x, 8); }
-inline constexpr bool isPowerOf2(usize x) { return (x & (x - 1)) == 0; }
 
 constexpr ssize SIZE_MIN = 2;
 constexpr ssize SIZE_1K = 1024;

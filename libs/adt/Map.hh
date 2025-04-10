@@ -174,7 +174,7 @@ inline ssize
 Map<K, V, FN_HASH>::idx(const KeyVal<K, V>* p) const
 {
     ssize r = (MapBucket<K, V>*)p - &m_vBuckets[0];
-    ADT_ASSERT(r >= 0 && r < m_vBuckets.cap(), "out of range, r: %lld, cap: %lld", r, m_vBuckets.cap());
+    ADT_ASSERT(r >= 0 && r < m_vBuckets.cap(), "out of range, r: {}, cap: {}", r, m_vBuckets.cap());
     return r;
 }
 
@@ -183,7 +183,7 @@ inline ssize
 Map<K, V, FN_HASH>::idx(const MapResult<K, V> res) const
 {
     ssize idx = res.pData - &m_vBuckets[0];
-    ADT_ASSERT(idx >= 0 && idx < m_vBuckets.cap(), "out of range, r: %lld, cap: %lld", idx, m_vBuckets.cap());
+    ADT_ASSERT(idx >= 0 && idx < m_vBuckets.cap(), "out of range, r: {}, cap: {}", idx, m_vBuckets.cap());
     return idx;
 }
 
