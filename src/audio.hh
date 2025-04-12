@@ -2,7 +2,7 @@
 
 #include "Image.hh"
 
-#include "adt/String.hh"
+#include "adt/StringDecl.hh"
 #include "adt/atomic.hh"
 #include "adt/utils.hh"
 

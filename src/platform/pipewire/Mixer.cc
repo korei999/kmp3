@@ -41,8 +41,6 @@ static const pw_stream_events s_streamEvents {
     .trigger_done {},
 };
 
-static f32 s_aPwBuff[audio::CHUNK_SIZE] {};
-
 static u32
 formatByteSize(spa_audio_format eFormat)
 {
@@ -93,7 +91,7 @@ Mixer::init()
 
     m_mtxDecoder = Mutex(Mutex::TYPE::RECURSIVE);
 
-    pw_init(&app::g_argc, &app::g_argv);
+    pw_init({}, {});
 
     u8 aSetupBuffer[1024] {};
     const spa_pod* aParams[1] {};
@@ -129,7 +127,9 @@ Mixer::init()
         m_pStream,
         PW_DIRECTION_OUTPUT,
         PW_ID_ANY,
-        (pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_INACTIVE | PW_STREAM_FLAG_MAP_BUFFERS),
+        static_cast<pw_stream_flags>(
+            PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_INACTIVE | PW_STREAM_FLAG_MAP_BUFFERS
+        ),
         aParams,
         utils::size(aParams)
     );
@@ -279,6 +279,8 @@ Mixer::onProcess()
     u32 nFrames = (stride > 0) ? (pBuffData.maxsize / stride) : 0;
     if (pPwBuffer->requested) nFrames = SPA_MIN(pPwBuffer->requested, (u64)nFrames);
 
+    static f32 s_aPwBuff[audio::CHUNK_SIZE] {};
+
     if (nFrames*m_nChannels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
 
     m_nLastFrames = nFrames;
@@ -286,22 +288,24 @@ Mixer::onProcess()
     static long s_nDecodedSamples = 0;
     static long s_nWrites = 0;
 
-    f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3);
+    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3);
 
+    ssize destI = 0;
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
-        for (u32 chIdx = 0; chIdx < m_nChannels; chIdx++)
-        {
-            /* modify each sample here */
-            *pDest++ = s_aPwBuff[s_nWrites++] * vol;
-        }
-
         /* fill the buffer when it's empty */
         if (s_nWrites >= s_nDecodedSamples)
         {
             writeFramesLocked({s_aPwBuff}, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
+
             m_currMs = m_decoder.getCurrentMS();
             s_nWrites = 0;
+        }
+
+        for (u32 chIdx = 0; chIdx < m_nChannels; chIdx++)
+        {
+            /* modify each sample here */
+            pDest[destI++] = s_aPwBuff[s_nWrites++] * vol;
         }
     }
 

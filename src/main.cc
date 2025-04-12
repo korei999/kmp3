@@ -145,9 +145,6 @@ startup(int argc, char** argv)
             argv[i] = aInput[i - 1].data();
     }
 
-    app::g_argc = argc;
-    app::g_argv = argv;
-
     Player player(&alloc, argc, argv);
     app::g_pPlayer = &player;
     defer( player.destroy() );

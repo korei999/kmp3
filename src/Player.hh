@@ -2,10 +2,9 @@
 
 #include "adt/Arena.hh"
 #include "adt/types.hh"
-#include "adt/String.hh"
+#include "adt/StringDecl.hh"
 #include "adt/Vec.hh"
 #include "adt/enum.hh"
-#include "adt/Span.hh"
 
 enum class PLAYER_REPEAT_METHOD: adt::u8 { NONE, TRACK, PLAYLIST, ESIZE };
 ADT_ENUM_BITWISE_OPERATORS(PLAYER_REPEAT_METHOD);
@@ -49,6 +48,9 @@ struct Player
     /* */
 
     static bool acceptedFormat(const adt::StringView s);
+
+    /* */
+
     void focusNext();
     void focusPrev();
     void focus(long i);

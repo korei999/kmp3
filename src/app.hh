@@ -37,8 +37,6 @@ extern IWindow* g_pWin;
 extern bool g_bRunning;
 extern bool g_bNoImage;
 extern bool g_bSixelOrKitty;
-extern int g_argc;
-extern char** g_argv;
 
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;

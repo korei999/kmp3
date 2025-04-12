@@ -74,6 +74,10 @@ struct f32x4
 
     explicit operator __m128() const { return pack; }
 
+    explicit operator math::V4() const { return *reinterpret_cast<const math::V4*>(this); }
+
+    explicit operator math::Qt() const { return reinterpret_cast<const math::Qt&>(*this); }
+
     explicit operator i32x4() const { return _mm_cvtps_epi32(pack); }
 };
 
@@ -1115,6 +1119,12 @@ f32Fillx8(Span<f32> src, const f32 x)
 
     for (; i < src.size(); ++i)
         src[i] = x;
+}
+
+inline f32x4
+fma(const f32x4& a, f32 b, const f32x4& c)
+{
+    return _mm_fmadd_ps(a.pack, f32x4(b).pack, c.pack);
 }
 
 #endif /* ADT_AVX2 */

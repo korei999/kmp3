@@ -41,6 +41,9 @@ union V2
     struct { f32 u, v; };
 
     constexpr explicit operator IV2() const;
+
+    f32& operator[](int i) { ADT_ASSERT(i >= 0 && i < 2, "i: {}", i); return e[i]; }
+    const f32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 2, "i: {}", i); return e[i]; }
 };
 
 union IV2
@@ -56,6 +59,9 @@ union IV2
             static_cast<f32>(y),
         };
     }
+
+    int& operator[](int i) { ADT_ASSERT(i >= 0 && i < 2, "i: {}", i); return e[i]; }
+    const int& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 2, "i: {}", i); return e[i]; }
 };
 
 constexpr inline
@@ -73,6 +79,9 @@ union V3
     struct { V2 xy; f32 _v2pad; };
     struct { f32 x, y, z; };
     struct { f32 r, g, b; };
+
+    f32& operator[](int i) { ADT_ASSERT(i >= 0 && i < 3, "i: {}", i); return e[i]; }
+    const f32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 3, "i: {}", i); return e[i]; }
 };
 
 union IV3
@@ -81,9 +90,13 @@ union IV3
     struct { IV2 xy; int _v2pad; };
     struct { int x, y, z; };
     struct { int r, g, b; };
+
+    int& operator[](int i) { ADT_ASSERT(i >= 0 && i < 3, "i: {}", i); return e[i]; }
+    const int& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 3, "i: {}", i); return e[i]; }
 };
 
 union IV4;
+union Qt;
 
 union V4
 {
@@ -96,6 +109,10 @@ union V4
     /* */
 
     constexpr explicit operator IV4() const;
+    explicit operator Qt() const;
+
+    f32& operator[](int i) { ADT_ASSERT(i >= 0 && i < 4, "i: {}", i); return e[i]; }
+    const f32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 4, "i: {}", i); return e[i]; }
 };
 
 union IV4
@@ -117,6 +134,9 @@ union IV4
             static_cast<f32>(w),
         };
     }
+
+    int& operator[](int i) { ADT_ASSERT(i >= 0 && i < 4, "i: {}", i); return e[i]; }
+    const int& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 4, "i: {}", i); return e[i]; }
 };
 
 union IV4u8
@@ -209,6 +229,9 @@ union M4
             e[2][0], e[2][1], e[2][2]
         };
     };
+
+    V4& operator[](int i) { ADT_ASSERT(i >= 0 && i < 4, "i: {}", i); return v[i]; }
+    const V4& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 4, "i: {}", i); return v[i]; }
 };
 
 union Qt
@@ -248,6 +271,8 @@ constexpr V4 V4From(const V2& xy, const V2& zw);
 constexpr V4 V4From(f32 x, const V3& yzw);
 
 constexpr V4 V4From(f32 x, f32 y, f32 z, f32 w);
+
+constexpr V4 V4From(f32 x);
 
 inline IV2 IV2_F24_8(const V2 v);
 
@@ -317,6 +342,10 @@ inline V4 operator*(const V4& l, f32 r);
 
 inline V4 operator*(f32 l, const V4& r);
 
+inline V4 operator*(const V4& l, const V4& r);
+
+inline V4& operator*=(V4& l, const V4& r);
+
 inline V4 operator/(const V4& l, f32 r);
 
 inline V4 operator/(f32 l, const V4& r);
@@ -363,7 +392,7 @@ inline M3 operator*(const M3& l, const f32 r);
 
 inline M4 operator*(const M4& l, const f32 r);
 
-inline M4 operator*(const M4& a, bool);
+inline M4 operator*(const M4& a, bool) = delete;
 
 inline M3& operator*=(M3& l, const f32 r);
 

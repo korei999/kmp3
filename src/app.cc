@@ -23,8 +23,6 @@ IWindow* g_pWin {};
 bool g_bRunning {};
 bool g_bNoImage {};
 bool g_bSixelOrKitty {};
-int g_argc {};
-char** g_argv {};
 
 Player* g_pPlayer {};
 audio::IMixer* g_pMixer {};
