@@ -230,7 +230,24 @@ getString(
         chafa_canvas_unref(pCanvas);
         chafa_canvas_config_unref(pConfig);
         chafa_symbol_map_unref(pSymbolMap);
+
+        /* struct ChafaTermInfo
+         * {
+         *     gint refs;
+         *     gchar *name;
+         *     gchar seq_str [CHAFA_TERM_SEQ_MAX] [CHAFA_TERM_SEQ_LENGTH_MAX];
+         *     SeqArgInfo seq_args [CHAFA_TERM_SEQ_MAX] [CHAFA_TERM_SEQ_ARGS_MAX];
+         *     gchar *unparsed_str [CHAFA_TERM_SEQ_MAX];
+         *     guint8 pixel_passthrough_needed [CHAFA_PIXEL_MODE_MAX];
+         *     guint8 inherit_seq [CHAFA_TERM_SEQ_MAX];
+         *     ChafaSymbolTags safe_symbol_tags;
+         * }; */
+
+        /* BUG: stupid fix for the chafa leak: https://github.com/hpjansson/chafa/commit/05e76092c459421131cca8d512df693d3fd98b99 */
+        /* first 4 bytes is the ref count */
+        int refs = *reinterpret_cast<int*>(pTermInfo);
         chafa_term_info_unref(pTermInfo);
+        if (refs >= 2) chafa_term_info_unref(pTermInfo);
     );
 
     if (eLayout == IMAGE_LAYOUT::RAW)
