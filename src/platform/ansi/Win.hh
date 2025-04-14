@@ -91,7 +91,7 @@ private:
     void time();
     void timeSlider();
     void songList();
-    void songListScrollBar();
+    void scrollBar();
     void bottomLine();
     void update();
     /* */

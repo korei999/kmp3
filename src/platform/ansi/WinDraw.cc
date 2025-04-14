@@ -173,10 +173,10 @@ Win::timeSlider()
 
         for (long i = n + 1, t = 0; i < wMax; ++i, ++t)
         {
-            wchar_t wch[2] = {L'━', L'\0'};
+            wchar_t wch[2] = {L'─', L'\0'};
 
             if (t == std::floor(timePlace))
-                wch[0] = L'╋';
+                wch[0] = L'╂';
 
             m_textBuff.wideString(xOff + i, yOff, TEXT_BUFF_STYLE::NORM, {wch, 3});
         }
@@ -216,7 +216,7 @@ Win::songList()
 }
 
 void
-Win::songListScrollBar()
+Win::scrollBar()
 {
     using STYLE = TEXT_BUFF_STYLE;
 
@@ -235,7 +235,7 @@ Win::songListScrollBar()
         blockI -= (blockI + barHeight) - (m_listHeight - 1);
 
     for (ssize i = 0; i < m_listHeight - 1; ++i)
-        m_textBuff.string(m_termSize.width - 1, split + i + 1, STYLE::DIM, "┃");
+        m_textBuff.string(m_termSize.width - 1, split + i + 1, STYLE::DIM, "│");
 
     for (ssize i = 0; i < barHeight && i + blockI < m_listHeight - 1; ++i)
         m_textBuff.string(m_termSize.width - 1, i + blockI + split + 1, STYLE::DIM, "█");
@@ -319,7 +319,7 @@ Win::update()
     volume();
     info();
     songList();
-    songListScrollBar();
+    scrollBar();
     bottomLine();
 
     m_textBuff.present();
