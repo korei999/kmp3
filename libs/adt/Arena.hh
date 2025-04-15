@@ -24,6 +24,10 @@ struct ArenaBlock
     u8 pMem[];
 };
 
+/* TODO: arena can be stack based, such that last malloc() can actually be free()'d.
+ * This should significantly reduce memory footprint, for the cost of more manual free()'s.
+ * Which are optional anyway. */
+
 /* fast region based allocator, only freeAll() free's memory, free() does nothing */
 struct Arena : public IAllocator
 {

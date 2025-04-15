@@ -23,24 +23,24 @@ inline constexpr ssize
 Span<T>::idx(const T* pItem) const noexcept
 {
     ssize i = pItem - m_pData;
-    ADT_RANGE_CHECK
-        return i;
+    ADT_RANGE_CHECK;
+    return i;
 }
 
 template<typename T>
 inline constexpr T&
 Span<T>::operator[](ssize i) noexcept
 {
-    ADT_RANGE_CHECK
-        return m_pData[i];
+    ADT_RANGE_CHECK;
+    return m_pData[i];
 }
 
 template<typename T>
 inline constexpr const T&
 Span<T>::operator[](ssize i) const noexcept
 {
-    ADT_RANGE_CHECK
-        return m_pData[i];
+    ADT_RANGE_CHECK;
+    return m_pData[i];
 }
 
 #undef ADT_RANGE_CHECK

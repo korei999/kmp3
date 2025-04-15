@@ -392,24 +392,14 @@ formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p) noexcept
     return formatToContext(ctx, fmtArgs, usize(p));
 }
 
-template<typename T, typename ...ARGS_T>
-inline constexpr ssize
-printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
+template<typename T>
+inline constexpr void
+_printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& tFirst) noexcept
 {
-    ssize nRead = 0;
-    bool bArg = false;
-    ssize i = ctx.fmtIdx;
-
-    /* NOTE: ugly edge case, when we need to fill with spaces but fmt is out of range */
-    if (ctx.bUpdateFmtArgs && ctx.fmtIdx >= ctx.fmt.size())
-        return formatToContext(ctx, ctx.prevFmtArgs, tFirst);
-    else if (ctx.fmtIdx >= ctx.fmt.size())
-        return 0;
-
     for (; i < ctx.fmt.size(); ++i, ++nRead)
     {
         if (ctx.buffIdx >= ctx.buffSize)
-            return nRead;
+            return;
 
         FormatArgs fmtArgs {};
 
@@ -462,6 +452,23 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
         }
         else ctx.pBuff[ctx.buffIdx++] = ctx.fmt[i];
     }
+}
+
+template<typename T, typename ...ARGS_T>
+inline constexpr ssize
+printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
+{
+    ssize nRead = 0;
+    bool bArg = false;
+    ssize i = ctx.fmtIdx;
+
+    /* NOTE: ugly edge case, when we need to fill with spaces but fmt is out of range */
+    if (ctx.bUpdateFmtArgs && ctx.fmtIdx >= ctx.fmt.size())
+        return formatToContext(ctx, ctx.prevFmtArgs, tFirst);
+    else if (ctx.fmtIdx >= ctx.fmt.size())
+        return 0;
+
+    _printArgInternal(nRead, i, bArg, ctx, tFirst);
 
     ctx.fmtIdx = i;
     nRead += printArgs(ctx, tArgs...);

@@ -276,7 +276,7 @@ Win::procMouse(MouseInput in)
         }
         else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
         {
-            app::seekOff(10000);
+            app::seekOff(-10000);
         }
 
         return;
