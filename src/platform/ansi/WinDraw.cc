@@ -18,7 +18,6 @@ void
 Win::coverImage()
 {
     auto& pl = app::player();
-    auto& mix = app::mixer();
 
     if (pl.m_bSelectionChanged && m_time > m_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
     {
@@ -29,7 +28,7 @@ Win::coverImage()
         m_textBuff.clearKittyImages(); /* shouldn't hurt if TERM is not kitty */
         m_textBuff.forceClean(1, 1, m_prevImgWidth + 1, split + 1);
 
-        Image img = mix.getCoverImage();
+        Image img = app::decoder().getCoverImage();
 
         namespace ch = platform::chafa;
 

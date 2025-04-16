@@ -4,13 +4,13 @@
 #include "defaults.hh"
 #include "mpris.hh"
 
-#include <cstdlib>
-#include <cwchar>
-#include <cwctype>
-
 #include "adt/Array.hh"
 #include "adt/logs.hh"
 #include "adt/file.hh"
+
+#include <cstdlib>
+#include <cwchar>
+#include <cwctype>
 
 using namespace adt;
 
@@ -151,9 +151,9 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
 void
 Player::updateInfo()
 {
-    m_info.sTitle = app::mixer().getMetadata("title");
-    m_info.sAlbum = app::mixer().getMetadata("album");
-    m_info.sArtist = app::mixer().getMetadata("artist");
+    m_info.sTitle = app::decoder().getMetadata("title");
+    m_info.sAlbum = app::decoder().getMetadata("album");
+    m_info.sArtist = app::decoder().getMetadata("artist");
 
     if (m_info.sTitle.size() == 0)
         m_info.sTitle = m_vShortSongs[m_selected];

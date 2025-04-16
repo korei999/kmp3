@@ -33,6 +33,8 @@
     #include "adt/math.hh"
 #endif
 
+using namespace adt;
+
 namespace platform::termbox2::window
 {
 
@@ -536,7 +538,7 @@ drawCoverImage()
     {
         pl.m_bSelectionChanged = false;
 
-        auto image = app::g_pMixer->getCoverImage();
+        auto image = app::decoder().getCoverImage();
         bool bNonZeroSize = image.height > 0 && image.width > 0;
 
         /* termbox2 doesn't support image printing, these are bunch of ugly heuristics */

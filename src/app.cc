@@ -16,7 +16,7 @@ namespace app
 {
 
 UI g_eUIFrontend {};
-MIXER g_eMixer {};
+MIXER g_eMixer = MIXER::DUMMY;
 StringView g_svTerm {};
 TERM g_eTerm = TERM::XTERM;
 IWindow* g_pWin {};
@@ -26,6 +26,7 @@ bool g_bSixelOrKitty {};
 
 Player* g_pPlayer {};
 audio::IMixer* g_pMixer {};
+platform::ffmpeg::Decoder g_decoder;
 
 IWindow*
 allocWindow(IAllocator* pAlloc)

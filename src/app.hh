@@ -5,6 +5,8 @@
 #include "IWindow.hh"
 #include "defaults.hh"
 
+#include "platform/ffmpeg/Decoder.hh"
+
 namespace app
 {
 
@@ -40,12 +42,15 @@ extern bool g_bSixelOrKitty;
 
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
+extern platform::ffmpeg::Decoder g_decoder;
 
 inline Player& player() { return *g_pPlayer; }
 inline audio::IMixer& mixer() { return *g_pMixer; }
 
 IWindow* allocWindow(adt::IAllocator* pArena);
 audio::IMixer* allocMixer(adt::IAllocator* pAlloc);
+
+inline platform::ffmpeg::Decoder& decoder() { return g_decoder; }
 
 inline void quit() { g_bRunning = false; }
 inline void focusNext() { g_pPlayer->focusNext(); }

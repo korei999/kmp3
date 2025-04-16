@@ -150,7 +150,7 @@ Mixer::destroy()
 
     m_bRunning = false;
 
-    if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) m_decoder.close();
+    if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) app::decoder().close();
 
     if (m_pStream) pw_stream_destroy(m_pStream);
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
@@ -172,9 +172,9 @@ Mixer::play(StringView svPath)
 
         m_svPath = svPath;
 
-        if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) m_decoder.close();
+        if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) app::decoder().close();
 
-        if (audio::ERROR err = m_decoder.open(svPath);
+        if (audio::ERROR err = app::decoder().open(svPath);
             err != audio::ERROR::OK_
         )
         {
@@ -185,8 +185,8 @@ Mixer::play(StringView svPath)
         m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
     }
 
-    setNChannles(m_decoder.getChannelsCount());
-    changeSampleRate(m_decoder.getSampleRate(), true);
+    setNChannles(app::decoder().getChannelsCount());
+    changeSampleRate(app::decoder().getSampleRate(), true);
 
     if (!math::eq(prevSpeed, 1.0))
         changeSampleRate(f64(m_sampleRate) * prevSpeed, false);
@@ -207,7 +207,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
 
         if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
-        err = m_decoder.writeToBuffer(
+        err = app::decoder().writeToBuffer(
             spBuff,
             nFrames, m_nChannels,
             pSamplesWritten, pPcmPos
@@ -216,7 +216,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
         if (err == audio::ERROR::END_OF_FILE)
         {
             pause(true);
-            m_decoder.close();
+            app::decoder().close();
             m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
         }
     }
@@ -298,7 +298,7 @@ Mixer::onProcess()
         {
             writeFramesLocked({s_aPwBuff}, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
 
-            m_currMs = m_decoder.getCurrentMS();
+            m_currMs = app::decoder().getCurrentMS();
             s_nWrites = 0;
         }
 
@@ -316,7 +316,7 @@ Mixer::onProcess()
     }
     else
     {
-        m_nTotalSamples = m_decoder.getTotalSamplesCount();
+        m_nTotalSamples = app::decoder().getTotalSamplesCount();
     }
 
     pBuffData.chunk->offset = 0;
@@ -386,11 +386,11 @@ Mixer::seekMS(f64 ms)
     if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
     ms = utils::clamp(ms, 0.0, (f64)getTotalMS());
-    m_decoder.seekMS(ms);
+    app::decoder().seekMS(ms);
 
     m_currMs = ms;
     m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
-    m_nTotalSamples = m_decoder.getTotalSamplesCount();
+    m_nTotalSamples = app::decoder().getTotalSamplesCount();
 
     mpris::seeked();
 }
@@ -398,20 +398,8 @@ Mixer::seekMS(f64 ms)
 void
 Mixer::seekOff(f64 offset)
 {
-    auto time = m_decoder.getCurrentMS() + offset;
+    auto time = app::decoder().getCurrentMS() + offset;
     seekMS(time);
-}
-
-StringView
-Mixer::getMetadata(const StringView sKey)
-{
-    return m_decoder.getMetadataValue(sKey);
-}
-
-Image
-Mixer::getCoverImage()
-{
-    return m_decoder.getCoverImage();
 }
 
 void
@@ -431,7 +419,7 @@ i64
 Mixer::getTotalMS()
 {
     MutexGuard lock(&m_mtxDecoder);
-    return m_decoder.getTotalMS();
+    return app::decoder().getTotalMS();
 }
 
 } /* namespace platform::pipewire */

@@ -37,8 +37,6 @@ public:
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) = 0;
     virtual void seekMS(adt::f64 ms) = 0;
     virtual void seekOff(adt::f64 offset) = 0;
-    [[nodiscard]] virtual adt::StringView getMetadata(const adt::StringView sKey) = 0;
-    [[nodiscard]] virtual Image getCoverImage() = 0;
     virtual void setVolume(const adt::f32 volume) = 0;
     [[nodiscard]] virtual adt::i64 getCurrentMS() = 0;
     [[nodiscard]] virtual adt::i64 getTotalMS() = 0;
@@ -78,8 +76,6 @@ struct DummyMixer : public IMixer
     virtual void changeSampleRate(adt::u64, bool) override final {}
     virtual void seekMS(adt::f64) override final {}
     virtual void seekOff(adt::f64) override final {}
-    virtual adt::StringView getMetadata(const adt::StringView) override final { return {}; }
-    virtual Image getCoverImage() override final { return {}; }
     virtual void setVolume(const adt::f32) override final {}
     virtual adt::i64 getCurrentMS() override final { return {}; };
     virtual adt::i64 getTotalMS() override final { return {}; };
@@ -117,7 +113,7 @@ struct IDecoder
     [[nodiscard]] virtual adt::i64 getTotalMS() = 0;
     [[nodiscard]] virtual adt::i64 getTotalSamplesCount() = 0;
     [[nodiscard]] virtual int getChannelsCount() = 0;
-    [[nodiscard]] virtual adt::StringView getMetadataValue(const adt::StringView sKey) = 0;
+    [[nodiscard]] virtual adt::StringView getMetadata(const adt::StringView sKey) = 0;
     [[nodiscard]] virtual Image getCoverImage() = 0;
     [[nodiscard]] virtual ERROR open(adt::StringView sPath) = 0;
     virtual void close() = 0;

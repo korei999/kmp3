@@ -70,7 +70,7 @@ Decoder::getTotalMS()
 
 
 StringView
-Decoder::getMetadataValue(const StringView svKey)
+Decoder::getMetadata(const StringView svKey)
 {
     if (!m_pStream) return {};
 

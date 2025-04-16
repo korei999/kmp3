@@ -3,7 +3,6 @@
 #include "adt/Thread.hh"
 
 #include "audio.hh"
-#include "platform/ffmpeg/Decoder.hh"
 
 #ifdef __clang__
     #pragma clang diagnostic push
@@ -37,7 +36,6 @@ protected:
     adt::u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
     adt::atomic::Int m_atom_bDecodes {false};
-    ffmpeg::Decoder m_decoder {}; /* no point in IDecoder */
     adt::StringView m_svPath {};
 
     pw_thread_loop* m_pThrdLoop {};
@@ -57,8 +55,6 @@ public:
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override final;
     virtual void seekMS(adt::f64 ms) override final;
     virtual void seekOff(adt::f64 offset) override final;
-    [[nodiscard]] virtual adt::StringView getMetadata(const adt::StringView sKey) override final;
-    [[nodiscard]] virtual Image getCoverImage() override final;
     virtual void setVolume(const adt::f32 volume) override final;
     [[nodiscard]] virtual adt::i64 getCurrentMS() override final;
     [[nodiscard]] virtual adt::i64 getTotalMS() override final;

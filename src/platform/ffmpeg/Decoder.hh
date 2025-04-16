@@ -1,6 +1,5 @@
 #pragma once
 
-#include "adt/String.hh"
 #include "audio.hh"
 #include "Image.hh"
 
@@ -34,7 +33,7 @@ struct Decoder : audio::IDecoder
     [[nodiscard]] virtual adt::i64 getTotalMS() override final;
     [[nodiscard]] virtual adt::i64 getTotalSamplesCount() override final;
     [[nodiscard]] virtual int getChannelsCount() override final;
-    [[nodiscard]] virtual adt::StringView getMetadataValue(const adt::StringView svKey) override final;
+    [[nodiscard]] virtual adt::StringView getMetadata(const adt::StringView svKey) override final;
     [[nodiscard]] virtual Image getCoverImage() override final;
     [[nodiscard]] virtual audio::ERROR open(adt::StringView sPath) override final;
     virtual void close() override final;

@@ -7,7 +7,7 @@
 #include "window.hh"
 #include "keybinds.hh"
 
-#include <cmath>
+using namespace adt;
 
 namespace platform::termbox2::input
 {
