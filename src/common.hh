@@ -52,13 +52,13 @@ void procSeekString(const adt::Span<wchar_t> spBuff);
 
 extern InputBuff g_input;
 
-template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
+template<typename READ_LAMBDA, typename DRAW_LAMBDA>
 inline void
 subStringSearch(
     adt::Arena* pArena,
     adt::i16* pFirstIdx,
-    void* pReadArg,
-    void* pDrawArg
+    READ_LAMBDA clRead,
+    DRAW_LAMBDA clDraw
 )
 {
     auto& pl = *app::g_pPlayer;
@@ -77,9 +77,9 @@ subStringSearch(
     {
         *pFirstIdx = 0;
         pl.subStringSearch(pArena, g_input.getSpan());
-        FN_DRAW(pDrawArg);
+        clDraw();
 
-        eRead = FN_READ(pReadArg);
+        eRead = clRead();
         if (eRead == READ_STATUS::BACKSPACE)
         {
             if (pl.m_vSearchIdxs.size() != pl.m_vSongs.size())
@@ -101,9 +101,9 @@ subStringSearch(
         pl.m_focused = 0;
 }
 
-template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
+template<typename READ_LAMBDA, typename DRAW_LAMBDA>
 inline void
-seekFromInput(void* pReadArg, void* pDrawArg)
+seekFromInput(READ_LAMBDA clRead, DRAW_LAMBDA clDraw)
 {
     g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEEK;
     defer( g_input.m_eCurrMode = WINDOW_READ_MODE::NONE );
@@ -111,8 +111,8 @@ seekFromInput(void* pReadArg, void* pDrawArg)
     g_input.zeroOut();
     g_input.m_idx = 0;
 
-    do FN_DRAW(pDrawArg);
-    while (FN_READ(pReadArg) != READ_STATUS::DONE);
+    do clDraw();
+    while (clRead() != READ_STATUS::DONE);
 
     procSeekString(g_input.getSpan());
 }

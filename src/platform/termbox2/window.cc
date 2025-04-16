@@ -126,10 +126,10 @@ readWChar(tb_event* pEv)
 void
 subStringSearch()
 {
-    common::subStringSearch<
-        [](void*) { tb_event ev {}; return readWChar(&ev); },
-        [](void*) { draw(); }
-    >(g_pFrameArena, &g_firstIdx, {}, {});
+    common::subStringSearch(g_pFrameArena, &g_firstIdx,
+        [&] { tb_event ev {}; return readWChar(&ev); },
+        [&] { draw(); }
+    );
 }
 
 long
@@ -154,10 +154,10 @@ centerSelection()
 void
 seekFromInput()
 {
-    common::seekFromInput<
-        [](void*) { tb_event ev {}; return readWChar(&ev); },
-        [](void*) { draw(); }
-    >(nullptr, nullptr);
+    common::seekFromInput(
+        [&] { tb_event ev {}; return readWChar(&ev); },
+        [&] { draw(); }
+    );
 }
 
 static void

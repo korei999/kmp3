@@ -114,19 +114,19 @@ Win::procEvents()
 void
 Win::seekFromInput()
 {
-    common::seekFromInput<
-        [](void* pArg) { return ((Win*)pArg)->readWChar(); },
-        [](void* pArg) { ((Win*)pArg)->m_bRedraw = true; ((Win*)pArg)->update(); }
-    >(this, this);
+    common::seekFromInput(
+        [&] { return readWChar(); },
+        [&] { m_bRedraw = true; update(); }
+    );
 }
 
 void
 Win::subStringSearch()
 {
-    common::subStringSearch<
-        [](void* pArg) { return ((Win*)pArg)->readWChar(); },
-        [](void* pArg) { auto& self = *((Win*)pArg); self.m_bRedraw = true; self.update(); }
-    >(m_pArena, &m_firstIdx, this, this);
+    common::subStringSearch(m_pArena, &m_firstIdx,
+        [&] { return readWChar(); },
+        [&] { m_bRedraw = true; update(); }
+    );
 }
 
 void
