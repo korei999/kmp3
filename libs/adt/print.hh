@@ -7,7 +7,6 @@
 
 #include <ctype.h> /* win32 */
 
-#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cuchar> /* IWYU pragma: keep */
@@ -394,7 +393,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p) noexcept
 
 template<typename T>
 inline constexpr void
-_printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& tFirst) noexcept
+_printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& arg) noexcept
 {
     for (; i < ctx.fmt.size(); ++i, ++nRead)
     {
@@ -408,7 +407,7 @@ _printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& tFi
             ctx.bUpdateFmtArgs = false;
 
             fmtArgs = ctx.prevFmtArgs;
-            ssize addBuff = formatToContext(ctx, fmtArgs, tFirst);
+            ssize addBuff = formatToContext(ctx, fmtArgs, arg);
 
             ctx.buffIdx += addBuff;
             nRead += addBuff;
@@ -432,17 +431,17 @@ _printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& tFi
 
             if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
             {
-                if constexpr (std::is_integral_v<std::remove_reference_t<decltype(tFirst)>>)
+                if constexpr (std::is_integral_v<std::remove_reference_t<decltype(arg)>>)
                 {
                     if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::FLOAT_PRECISION_ARG))
-                        fmtArgs.maxFloatLen = tFirst;
-                    else fmtArgs.maxLen = tFirst;
+                        fmtArgs.maxFloatLen = arg;
+                    else fmtArgs.maxLen = arg;
 
                     ctx.prevFmtArgs = fmtArgs;
                     ctx.bUpdateFmtArgs = true;
                 }
             }
-            else addBuff = formatToContext(ctx, fmtArgs, tFirst);
+            else addBuff = formatToContext(ctx, fmtArgs, arg);
 
             ctx.buffIdx += addBuff;
             i += add;

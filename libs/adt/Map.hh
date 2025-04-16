@@ -382,7 +382,7 @@ Map<K, V, FN_HASH>::insertHashed(const K& key, const V& val, usize keyHash)
 
     new(&bucket.val) V(val);
 
-    defer(
+    ADT_DEFER(
         bucket.bOccupied = true;
         bucket.bDeleted = false;
     );

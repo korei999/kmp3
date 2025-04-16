@@ -10,8 +10,6 @@
 #include <clocale>
 #include <fcntl.h>
 
-#include <cmath>
-
 #ifdef OPT_CHAFA
     #include "platform/chafa/chafa.hh"
 #endif
@@ -103,7 +101,9 @@ startup(int argc, char** argv)
     bool bFreeArgv = false;
 
     app::g_eUIFrontend = app::UI::ANSI;
+#ifdef OPT_PIPEWIRE
     app::g_eMixer = app::MIXER::PIPEWIRE;
+#endif
 
     parseArgs(argc, argv);
 
@@ -138,7 +138,7 @@ startup(int argc, char** argv)
 
         /* make fake `argv` so core code works as usual */
         argc = aInput.size() + 1;
-        argv = reinterpret_cast<char**>(alloc.zalloc(argc, sizeof(argv)));
+        argv = alloc.zallocV<char*>(argc);
         bFreeArgv = true;
 
         for (int i = 1; i < argc; ++i)
@@ -182,7 +182,6 @@ startup(int argc, char** argv)
     }
     else print::out("No accepted input provided\n");
 
-    /* -fanalyzer is still unhappy about this */
     if (bFreeArgv) alloc.free(argv);
 }
 

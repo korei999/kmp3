@@ -111,7 +111,7 @@ inline THREAD_STATUS
 ThreadPool<QUEUE_SIZE>::loop()
 {
     if (m_pfnLoopStart) m_pfnLoopStart(m_pLoopStartArg);
-    defer( if (m_pfnLoopEnd) m_pfnLoopEnd(m_pLoopEndArg) );
+    ADT_DEFER( if (m_pfnLoopEnd) m_pfnLoopEnd(m_pLoopEndArg) );
 
     while (true)
     {

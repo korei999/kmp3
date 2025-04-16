@@ -451,7 +451,7 @@ String::replaceWith(IAllocator* pAlloc, StringView svWith)
     data()[size()] = '\0';
 }
 
-template<int SIZE> requires(SIZE > 1)
+template<int SIZE>
 inline
 StringFixed<SIZE>::StringFixed(const StringView svName)
 {
@@ -464,7 +464,7 @@ StringFixed<SIZE>::StringFixed(const StringView svName)
     );
 }
 
-template<int SIZE> requires(SIZE > 1)
+template<int SIZE>
 template<int SIZE_B>
 inline
 StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other)
@@ -472,21 +472,21 @@ StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other)
     memcpy(m_aBuff, other.m_aBuff, utils::min(SIZE, SIZE_B));
 }
 
-template<int SIZE> requires(SIZE > 1)
+template<int SIZE>
 inline ssize
 StringFixed<SIZE>::size() const
 {
     return strnlen(m_aBuff, SIZE);
 }
 
-template<int SIZE> requires(SIZE > 1)
+template<int SIZE>
 inline bool
 StringFixed<SIZE>::operator==(const StringFixed<SIZE>& other) const
 {
     return memcmp(m_aBuff, other.m_aBuff, SIZE) == 0;
 }
 
-template<int SIZE> requires(SIZE > 1)
+template<int SIZE>
 inline bool
 StringFixed<SIZE>::operator==(const StringView sv) const
 {

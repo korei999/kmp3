@@ -4,11 +4,9 @@
 #include "utils.hh"
 #include "print.hh"
 
-#include <cstdlib>
 #include <cstring>
 
 #if defined ADT_DBG_MEMORY
-    #include <cstdio>
 #endif
 
 namespace adt

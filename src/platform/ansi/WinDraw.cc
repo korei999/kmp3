@@ -229,7 +229,7 @@ Win::scrollBar()
     const f32 listSizeFactor = m_listHeight / f32(pl.m_vSearchIdxs.size() - 0.9999f);
     const int barHeight = utils::max(1, static_cast<int>(m_listHeight * listSizeFactor));
 
-    /* bunch of mess to make it look better and not extent beyond the list */
+    /* bunch of mess to make it look better and not go beyond the list */
     int blockI = static_cast<int>(m_firstIdx*listSizeFactor);
     if (blockI + barHeight >= m_listHeight - 1)
         blockI -= (blockI + barHeight) - (m_listHeight - 1);

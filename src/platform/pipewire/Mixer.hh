@@ -36,7 +36,7 @@ class Mixer : public audio::IMixer
 protected:
     adt::u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
-    adt::atomic::Int m_bDecodes {false};
+    adt::atomic::Int m_atom_bDecodes {false};
     ffmpeg::Decoder m_decoder {}; /* no point in IDecoder */
     adt::StringView m_svPath {};
 

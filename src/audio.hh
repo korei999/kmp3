@@ -15,9 +15,9 @@ constexpr adt::u64 CHUNK_SIZE = (1 << 18); /* big enough */
 class IMixer
 {
 protected:
-    adt::atomic::Int m_bPaused {false};
+    adt::atomic::Int m_atom_bPaused {false};
 #ifdef OPT_MPRIS
-    adt::atomic::Int m_bUpdateMpris {false};
+    adt::atomic::Int m_atom_bUpdateMpris {false};
 #endif
     bool m_bMuted = false;
     bool m_bRunning = true;
@@ -52,7 +52,7 @@ public:
     adt::u8 getNChannels() const { return m_nChannels; }
     adt::u64 getTotalSamplesCount() const { return m_nTotalSamples; }
     adt::u64 getCurrentTimeStamp() const { return m_currentTimeStamp; }
-    const adt::atomic::Int& isPaused() const { return m_bPaused; }
+    const adt::atomic::Int& isPaused() const { return m_atom_bPaused; }
     adt::f64 getVolume() const { return m_volume; }
     void volumeDown(const adt::f32 step) { setVolume(m_volume - step); }
     void volumeUp(const adt::f32 step) { setVolume(m_volume + step); }
@@ -63,8 +63,8 @@ public:
     void restoreSampleRate() { changeSampleRate(m_sampleRate, false); }
 
 #ifdef OPT_MPRIS
-    const adt::atomic::Int& mprisHasToUpdate() const { return m_bUpdateMpris; }
-    void mprisSetToUpdate(bool b) { m_bUpdateMpris.store(b, adt::atomic::ORDER::RELEASE); }
+    const adt::atomic::Int& mprisHasToUpdate() const { return m_atom_bUpdateMpris; }
+    void mprisSetToUpdate(bool b) { m_atom_bUpdateMpris.store(b, adt::atomic::ORDER::RELEASE); }
 #endif
 };
 

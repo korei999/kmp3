@@ -150,7 +150,7 @@ Mixer::destroy()
 
     m_bRunning = false;
 
-    if (m_bDecodes.load(atomic::ORDER::RELAXED)) m_decoder.close();
+    if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) m_decoder.close();
 
     if (m_pStream) pw_stream_destroy(m_pStream);
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
@@ -172,7 +172,7 @@ Mixer::play(StringView svPath)
 
         m_svPath = svPath;
 
-        if (m_bDecodes.load(atomic::ORDER::RELAXED)) m_decoder.close();
+        if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) m_decoder.close();
 
         if (audio::ERROR err = m_decoder.open(svPath);
             err != audio::ERROR::OK_
@@ -182,7 +182,7 @@ Mixer::play(StringView svPath)
             return;
         }
 
-        m_bDecodes.store(true, atomic::ORDER::RELAXED);
+        m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
     }
 
     setNChannles(m_decoder.getChannelsCount());
@@ -194,7 +194,7 @@ Mixer::play(StringView svPath)
     pause(false);
 
 #ifdef OPT_MPRIS
-    m_bUpdateMpris.store(true, atomic::ORDER::RELEASE); /* mark to update in frame::run() */
+    m_atom_bUpdateMpris.store(true, atomic::ORDER::RELEASE); /* mark to update in frame::run() */
 #endif
 }
 
@@ -205,7 +205,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
     {
         MutexGuard lock(&m_mtxDecoder);
 
-        if (!m_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
+        if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
         err = m_decoder.writeToBuffer(
             spBuff,
@@ -217,7 +217,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
         {
             pause(true);
             m_decoder.close();
-            m_bDecodes.store(false, atomic::ORDER::RELEASE);
+            m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
         }
     }
 
@@ -250,7 +250,7 @@ Mixer::setNChannles(u32 nChannles)
 
     /* won't apply without this */
     {
-        bool bPaused = m_bPaused.load(atomic::ORDER::ACQUIRE);
+        bool bPaused = m_atom_bPaused.load(atomic::ORDER::ACQUIRE);
         pw_stream_set_active(m_pStream, bPaused);
         pw_stream_set_active(m_pStream, !bPaused);
     }
@@ -331,16 +331,16 @@ Mixer::pause(bool bPause)
 {
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_set_active(m_pStream, !bPause);
-    m_bPaused.store(bPause, atomic::ORDER::RELEASE);
+    m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
-    LOG_NOTIFY("bPaused: {}\n", m_bPaused);
+    LOG_NOTIFY("bPaused: {}\n", m_atom_bPaused);
     mpris::playbackStatusChanged();
 }
 
 void
 Mixer::togglePause()
 {
-    pause(!m_bPaused.load(atomic::ORDER::ACQUIRE));
+    pause(!m_atom_bPaused.load(atomic::ORDER::ACQUIRE));
 }
 
 void
@@ -368,7 +368,7 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 
     /* update won't apply without this */
     {
-        bool bPaused = m_bPaused.load(atomic::ORDER::ACQUIRE);
+        bool bPaused = m_atom_bPaused.load(atomic::ORDER::ACQUIRE);
         pw_stream_set_active(m_pStream, bPaused);
         pw_stream_set_active(m_pStream, !bPaused);
     }
@@ -383,7 +383,7 @@ Mixer::seekMS(f64 ms)
 {
     MutexGuard lock(&m_mtxDecoder);
 
-    if (!m_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
+    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
     ms = utils::clamp(ms, 0.0, (f64)getTotalMS());
     m_decoder.seekMS(ms);

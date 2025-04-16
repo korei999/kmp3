@@ -60,7 +60,7 @@ struct Int
 
     /* */
 
-    volatile Type m_int;
+    volatile Type m_vol_int;
 
     /* */
 
@@ -74,7 +74,7 @@ struct Int
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
-        return __atomic_load_n(&m_int, orderMap(eOrder));
+        return __atomic_load_n(&m_vol_int, orderMap(eOrder));
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
@@ -88,7 +88,7 @@ struct Int
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
-        __atomic_store_n(&m_int, val, orderMap(eOrder));
+        __atomic_store_n(&m_vol_int, val, orderMap(eOrder));
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
@@ -102,7 +102,7 @@ struct Int
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
-        return __atomic_fetch_add(&m_int, val, orderMap(eOrder));
+        return __atomic_fetch_add(&m_vol_int, val, orderMap(eOrder));
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
@@ -116,7 +116,7 @@ struct Int
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
-        return __atomic_fetch_sub(&m_int, val, orderMap(eOrder));
+        return __atomic_fetch_sub(&m_vol_int, val, orderMap(eOrder));
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
@@ -130,7 +130,7 @@ struct Int
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
-        return __atomic_compare_exchange_n(&m_int, pExpected, desired, true /* weak */, orderMap(eSucces), orderMap(eFailure));
+        return __atomic_compare_exchange_n(&m_vol_int, pExpected, desired, true /* weak */, orderMap(eSucces), orderMap(eFailure));
 
 #elif defined ADT_USE_WIN32_ATOMICS
 

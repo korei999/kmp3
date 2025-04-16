@@ -113,11 +113,16 @@ struct String : public StringView
 
     void destroy(IAllocator* pAlloc);
     void replaceWith(IAllocator* pAlloc, StringView svWith);
+    String release(); /* return this String and set to zero */
 };
 
-template<int SIZE> requires(SIZE > 1)
+template<int SIZE>
 struct StringFixed
 {
+    static_assert(SIZE > 1);
+
+    /* */
+
     char m_aBuff[SIZE] {};
 
     /* */

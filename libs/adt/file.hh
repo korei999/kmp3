@@ -37,7 +37,7 @@ load(IAllocator* pAlloc, StringView svPath)
         LOG_WARN("failed to open '{}' file\n", svPath);
         return {};
     }
-    defer(fclose(pf));
+    ADT_DEFER( fclose(pf) );
 
     String ret {};
 
@@ -168,7 +168,7 @@ map(const char* ntsPath)
         return {};
     }
 
-    defer( close(fd) );
+    ADT_DEFER( close(fd) );
 
     struct stat sb {};
     if (fstat(fd, &sb) == -1)
