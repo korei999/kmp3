@@ -122,9 +122,11 @@ private:
 #endif
 };
 
-#if defined __clang__
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wcast-function-type-mismatch"
+#if __clang_major__ > 16
+    #if defined __clang__
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wcast-function-type-mismatch"
+    #endif
 #endif
 
 #if defined __GNUC__
@@ -173,8 +175,10 @@ Thread::Thread(LAMBDA& l, [[maybe_unused]] ATTR eAttr)
 #endif
 }
 
-#if defined __clang__
-    #pragma clang diagnostic pop
+#if __clang_major__ > 16
+    #if defined __clang__
+        #pragma clang diagnostic pop
+    #endif
 #endif
 
 #if defined __GNUC__
