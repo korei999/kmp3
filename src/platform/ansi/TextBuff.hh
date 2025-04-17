@@ -3,7 +3,6 @@
 #include "adt/Arena.hh"
 #include "adt/ScratchBuffer.hh"
 #include "adt/Span2D.hh"
-#include "adt/String.hh"
 #include "adt/Vec.hh"
 #include "adt/enum.hh"
 

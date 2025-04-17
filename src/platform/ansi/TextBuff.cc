@@ -500,51 +500,52 @@ TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
     if (bool(eStyle))
     {
         using CODE = TEXT_BUFF_STYLE_CODE;
+        using STYLE = TEXT_BUFF_STYLE;
 
-        if (bool(eStyle & TEXT_BUFF_STYLE::BOLD))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BOLD);
-        if (bool(eStyle & TEXT_BUFF_STYLE::DIM))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::DIM);
-        if (bool(eStyle & TEXT_BUFF_STYLE::ITALIC))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::ITALIC);
-        if (bool(eStyle & TEXT_BUFF_STYLE::UNDERLINE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::UNRELINE);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BLINK))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BLINK);
-        if (bool(eStyle & TEXT_BUFF_STYLE::REVERSE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::REVERSE);
-        if (bool(eStyle & TEXT_BUFF_STYLE::INVIS))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::INVIS);
-        if (bool(eStyle & TEXT_BUFF_STYLE::STRIKE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::STRIKE);
-        if (bool(eStyle & TEXT_BUFF_STYLE::RED))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::RED);
-        if (bool(eStyle & TEXT_BUFF_STYLE::GREEN))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::GREEN);
-        if (bool(eStyle & TEXT_BUFF_STYLE::YELLOW))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::YELLOW);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BLUE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BLUE);
-        if (bool(eStyle & TEXT_BUFF_STYLE::MAGENTA))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::MAGENTA);
-        if (bool(eStyle & TEXT_BUFF_STYLE::CYAN))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::CYAN);
-        if (bool(eStyle & TEXT_BUFF_STYLE::WHITE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::WHITE);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BG_RED))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_RED);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BG_GREEN))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_GREEN);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BG_YELLOW))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_YELLOW);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BG_BLUE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_BLUE);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BG_MAGENTA))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_MAGENTA);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BG_CYAN))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_CYAN);
-        if (bool(eStyle & TEXT_BUFF_STYLE::BG_WHITE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", (int)CODE::BG_WHITE);
+        if (bool(eStyle & STYLE::BOLD))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BOLD));
+        if (bool(eStyle & STYLE::DIM))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::DIM));
+        if (bool(eStyle & STYLE::ITALIC))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::ITALIC));
+        if (bool(eStyle & STYLE::UNDERLINE))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::UNRELINE));
+        if (bool(eStyle & STYLE::BLINK))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BLINK));
+        if (bool(eStyle & STYLE::REVERSE))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::REVERSE));
+        if (bool(eStyle & STYLE::INVIS))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::INVIS));
+        if (bool(eStyle & STYLE::STRIKE))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::STRIKE));
+        if (bool(eStyle & STYLE::RED))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::RED));
+        if (bool(eStyle & STYLE::GREEN))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::GREEN));
+        if (bool(eStyle & STYLE::YELLOW))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::YELLOW));
+        if (bool(eStyle & STYLE::BLUE))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BLUE));
+        if (bool(eStyle & STYLE::MAGENTA))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::MAGENTA));
+        if (bool(eStyle & STYLE::CYAN))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::CYAN));
+        if (bool(eStyle & STYLE::WHITE))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::WHITE));
+        if (bool(eStyle & STYLE::BG_RED))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_RED));
+        if (bool(eStyle & STYLE::BG_GREEN))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_GREEN));
+        if (bool(eStyle & STYLE::BG_YELLOW))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_YELLOW));
+        if (bool(eStyle & STYLE::BG_BLUE))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_BLUE));
+        if (bool(eStyle & STYLE::BG_MAGENTA))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_MAGENTA));
+        if (bool(eStyle & STYLE::BG_CYAN))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_CYAN));
+        if (bool(eStyle & STYLE::BG_WHITE))
+            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_WHITE));
     }
 
     n += print::toBuffer(sp.data() + n, size - n, "m");
