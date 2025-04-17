@@ -2,6 +2,8 @@
 
 #include "adt/Array.hh"
 
+#include <cwctype>
+
 using namespace adt;
 
 namespace common

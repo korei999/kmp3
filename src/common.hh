@@ -4,7 +4,6 @@
 
 #include "adt/defer.hh"
 
-#include <cwctype>
 
 namespace common
 {
@@ -51,7 +50,6 @@ void procSeekString(const adt::Span<wchar_t> spBuff);
 
 extern InputBuff g_input;
 
-// template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
 template<typename READ_LAMBDA, typename DRAW_LAMBDA>
     requires std::same_as<std::invoke_result_t<READ_LAMBDA>, READ_STATUS> &&
              std::same_as<std::invoke_result_t<DRAW_LAMBDA>, void>
@@ -103,7 +101,6 @@ subStringSearch(
         pl.m_focused = 0;
 }
 
-// template<READ_STATUS (*FN_READ)(void*), void (*FN_DRAW)(void*)>
 template<typename READ_LAMBDA, typename DRAW_LAMBDA>
     requires std::same_as<std::invoke_result_t<READ_LAMBDA>, READ_STATUS> &&
              std::same_as<std::invoke_result_t<DRAW_LAMBDA>, void>
