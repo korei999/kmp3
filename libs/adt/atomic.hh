@@ -78,7 +78,7 @@ struct Int
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
-        return InterlockedCompareExchange(const_cast<volatile LONG*>(&m_int), 0, 0);
+        return InterlockedCompareExchange(const_cast<volatile LONG*>(&m_vol_int), 0, 0);
 
 #endif
     }
@@ -92,7 +92,7 @@ struct Int
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
-        InterlockedExchange(&m_int, val);
+        InterlockedExchange(&m_vol_int, val);
 
 #endif
     }
@@ -106,7 +106,7 @@ struct Int
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
-        return InterlockedExchangeAdd(&m_int, val);
+        return InterlockedExchangeAdd(&m_vol_int, val);
 
 #endif
     }
@@ -120,7 +120,7 @@ struct Int
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
-        return InterlockedExchangeAdd(&m_int, -val);
+        return InterlockedExchangeAdd(&m_vol_int, -val);
 
 #endif
     }
