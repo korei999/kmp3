@@ -655,7 +655,7 @@ Future::destroy()
 
 struct BusyWait
 {
-    atomic::Int m_atom_bDone {};
+    atomic::Int m_atomBDone {};
 
     /* */
 
@@ -667,20 +667,20 @@ struct BusyWait
 inline void
 BusyWait::wait() const
 {
-    while (!m_atom_bDone.load(atomic::ORDER::ACQUIRE))
+    while (!m_atomBDone.load(atomic::ORDER::ACQUIRE))
         _mm_pause();
 }
 
 inline void
 BusyWait::signal()
 {
-    m_atom_bDone.store(1, atomic::ORDER::RELEASE);
+    m_atomBDone.store(1, atomic::ORDER::RELEASE);
 }
 
 inline void
 BusyWait::reset()
 {
-    m_atom_bDone.store(0, atomic::ORDER::RELEASE);
+    m_atomBDone.store(0, atomic::ORDER::RELEASE);
 }
 
 } /* namespace adt */

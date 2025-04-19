@@ -9,7 +9,8 @@ namespace adt
 /* NOTE: experimental.
  * This template allows to create arbitrary vectors with SOA memory layout.
  * Creation example:
- *
+ * 
+ * // SOA.hh can generate these
  * struct Entity
  * {
  *     // reference mirror

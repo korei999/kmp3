@@ -76,8 +76,8 @@ public:
     /* */
 
 private:
-    void disableRawMode();
-    void enableRawMode();
+    void disableRawMode() noexcept(false); /* RuntimeException */
+    void enableRawMode() noexcept(false); /* RuntimeException */
 
     /* draw */
     void clearArea(int x, int y, int width, int height);

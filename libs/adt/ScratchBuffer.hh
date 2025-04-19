@@ -46,7 +46,6 @@ struct ScratchBuffer
     void zeroOut() noexcept;
 
     ssize cap() const noexcept { return m_sp.size(); }
-    ssize typeCap() const noexcept { return m_typeCap; }
 
 protected:
     template<typename T>
@@ -65,7 +64,7 @@ ScratchBuffer::nextMem(ssize mCount) noexcept
     if (realSize >= m_sp.size())
     {
         print::err("ScratchBuffer::nextMem(): allocating more than capacity ({} < {}), returing full buffer\n", m_sp.size(), realSize);
-        return {(T*)m_sp.data(), typeCap()};
+        return {(T*)m_sp.data(), calcTypeCap<T>()};
     }
     else if (realSize + m_pos > m_sp.size())
     {
@@ -91,7 +90,7 @@ template<typename T>
 Span<T>
 ScratchBuffer::allMem() noexcept
 {
-    return {reinterpret_cast<T*>(m_sp.data()), typeCap()};
+    return {reinterpret_cast<T*>(m_sp.data()), calcTypeCap<T>()};
 }
 
 inline void

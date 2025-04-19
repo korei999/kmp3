@@ -228,7 +228,9 @@ Decoder::open(StringView sPath)
         0, {}
     );
 
-    LOG_NOTIFY("codec name: '{}', ch_layout: {}\n", pCodec->long_name, m_pStream->codecpar->ch_layout.nb_channels);
+    LOG_NOTIFY("codec name: '{}', ch_layout: {}, bit_rate: {}, sample_rate: {}\n",
+        pCodec->long_name, m_pStream->codecpar->ch_layout.nb_channels, m_pStream->codecpar->bit_rate, m_pStream->codecpar->sample_rate
+    );
 
     getAttachedPicture();
 

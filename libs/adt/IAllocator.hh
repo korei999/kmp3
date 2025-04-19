@@ -28,7 +28,7 @@ struct IAllocator
 {
     template<typename T, typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
     [[nodiscard]] constexpr T*
-    alloc(ARGS&&... args)
+    alloc(ARGS&&... args) noexcept(false) /* AllocException */
     {
         auto* p = (T*)malloc(1, sizeof(T));
         new(p) T(std::forward<ARGS>(args)...);
@@ -37,29 +37,29 @@ struct IAllocator
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    mallocV(ssize mCount)
+    mallocV(ssize mCount) noexcept(false) /* AllocException */
     {
         return reinterpret_cast<T*>(malloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    zallocV(ssize mCount)
+    zallocV(ssize mCount) noexcept(false) /* AllocException */
     {
         return reinterpret_cast<T*>(zalloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    reallocV(T* ptr, ssize oldCount, ssize newCount)
+    reallocV(T* ptr, ssize oldCount, ssize newCount) noexcept(false) /* AllocException */
     {
         return reinterpret_cast<T*>(realloc(ptr, oldCount, newCount, sizeof(T)));
     }
 
-    [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) = 0;
-    [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) = 0;
+    [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) = 0; /* AllocException */
+    [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) = 0; /* AllocException */
     /* pass oldCount to simpilify memcpy range */
-    [[nodiscard]] virtual constexpr void* realloc(void* p, usize oldCount, usize newCount, usize mSize) noexcept(false) = 0;
+    [[nodiscard]] virtual constexpr void* realloc(void* p, usize oldCount, usize newCount, usize mSize) noexcept(false) = 0; /* AllocException */
     virtual constexpr void free(void* ptr) noexcept = 0;
     virtual constexpr void freeAll() noexcept = 0;
 };
