@@ -217,9 +217,12 @@ Win::procMouse(MouseInput in)
     {
         s_bHoldScrollBar = true;
 
-        const f32 sizeToListSize = f32(pl.m_vSearchIdxs.size() - m_listHeight + yOff) / (m_listHeight+0.00001f);
-        const int tar = std::round((in.y - listOff) * sizeToListSize);
-        m_firstIdx = utils::clamp(tar, 0, static_cast<int>(pl.m_vSearchIdxs.size() - m_listHeight + 1));
+        const f32 listSizeFactor = m_listHeight / f32(pl.m_vSearchIdxs.size() - 0.9999f);
+        const int barHeight = utils::max(1, static_cast<int>(m_listHeight * listSizeFactor));
+
+        const f32 sizeToListSize = f32((pl.m_vSearchIdxs.size()) + listOff) / (m_listHeight - 0.9999f + barHeight);
+        const int tar = std::round(((in.y - listOff)) * sizeToListSize);
+        m_firstIdx = utils::clamp(tar, 0, int(pl.m_vSearchIdxs.size() - m_listHeight) + 1);
     };
 
     auto clHoldTimeSlider = [&]
