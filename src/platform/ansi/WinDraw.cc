@@ -291,7 +291,6 @@ Win::errorMsg()
 {
     auto& pl = app::player();
     int height = m_termSize.height;
-    int width = m_termSize.width;
 
     static Player::Msg s_msg;
     static f64 s_time;
