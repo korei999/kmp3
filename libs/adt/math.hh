@@ -995,12 +995,9 @@ V4Dot(const V4& l, const V4& r)
 {
 #ifdef ADT_SSE4_2
 
-    auto mul = simd::f32x4(l) * simd::f32x4(r);
-
-    __m128 sum1 = _mm_hadd_ps(mul.pack, mul.pack);
-    __m128 sum2 = _mm_hadd_ps(sum1, sum1);
-
-    return _mm_cvtss_f32(sum2);
+    __m128 left = _mm_set_ps(l.w, l.z, l.y, l.x);
+    __m128 right = _mm_set_ps(r.w, r.z, r.y, r.x);
+    return _mm_cvtss_f32(_mm_dp_ps(left, right, 0xff));
 
 #else
 

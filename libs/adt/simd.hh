@@ -18,6 +18,10 @@
 
 #include <nmmintrin.h>
 
+#if defined ADT_AVX2
+    #include <immintrin.h>
+#endif
+
 namespace adt::simd
 {
 
@@ -570,8 +574,6 @@ f32Fillx4(Span<f32> src, const f32 x)
 /* 128 bit end */
 
 #if defined ADT_AVX2
-
-#include <immintrin.h>
 
 struct f32x8;
 

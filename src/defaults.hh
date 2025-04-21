@@ -8,7 +8,7 @@ namespace defaults
 constexpr adt::f32 MAX_VOLUME = 1.5f; /* (0.0f, 1.0f], > 1.0f might cause distortion */
 constexpr adt::f32 VOLUME = 0.4f; /* startup volume */
 constexpr int UPDATE_RATE = 500; /* ui update rate (ms) */
-constexpr int IMAGE_UPDATE_RATE_LIMIT = 300; /* (ms). Is also limited by UPDATE_RATE. */
+constexpr int IMAGE_UPDATE_RATE_LIMIT = 100; /* (ms). Is also limited by UPDATE_RATE. */
 constexpr int READ_TIMEOUT = 5000; /* string input timeout (ms) */
 constexpr adt::f64 MPRIS_UPDATE_RATE = 100.0; /* delay between mpris polls (ms) */
 constexpr adt::u64 MIN_SAMPLE_RATE = 1000;

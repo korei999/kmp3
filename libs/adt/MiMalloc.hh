@@ -2,9 +2,7 @@
 
 #include "IAllocator.hh"
 #include "mimalloc.h"
-#include "print.hh" /* IWYU pragma: keep */
-
-#include <cstdlib>
+#include "assert.hh"
 
 namespace adt
 {

@@ -35,7 +35,7 @@ struct ChunkAllocator : public IAllocator
 
     ChunkAllocator() = default;
     ChunkAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = StdAllocator::inst()) noexcept(false)
-        : m_blockCap {align(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
+        : m_blockCap {alignUp(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
           m_chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
           m_pBackAlloc(pBackAlloc),
           m_pBlocks {allocBlock()} {}

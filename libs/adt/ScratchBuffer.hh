@@ -59,7 +59,7 @@ ScratchBuffer::nextMem(ssize mCount) noexcept
 {
     ADT_ASSERT(m_sp.size() > 0, "empty");
 
-    const ssize realSize = align8(mCount * sizeof(T));
+    const ssize realSize = alignUp8(mCount * sizeof(T));
 
     if (realSize >= m_sp.size())
     {

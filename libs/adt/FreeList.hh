@@ -59,7 +59,7 @@ struct FreeList : public IAllocator
     FreeList() = default;
 
     FreeList(usize _blockSize, IAllocator* pBackAlloc = StdAllocator::inst()) noexcept(false)
-        : m_blockSize(align8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
+        : m_blockSize(alignUp8(_blockSize + sizeof(FreeListBlock) + sizeof(FreeList::Node))),
           m_pBackAlloc(pBackAlloc),
           m_pBlocks(allocBlock(m_blockSize)) {}
 
@@ -279,7 +279,7 @@ FreeList::splitNode(FreeList::Node* pNode, usize realSize)
 inline void*
 FreeList::malloc(usize nMembers, usize mSize)
 {
-    usize requested = align8(nMembers * mSize);
+    usize requested = alignUp8(nMembers * mSize);
     if (requested == 0)
         return nullptr;
 
@@ -373,7 +373,7 @@ FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
     if (!ptr)
         return malloc(newCount, mSize);
 
-    const usize requested = align8(newCount * mSize);
+    const usize requested = alignUp8(newCount * mSize);
 
     if (requested == 0)
     {

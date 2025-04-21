@@ -46,8 +46,10 @@ MutexArena::zalloc(usize mCount, usize mSize)
     {
         MutexGuard lock(&m_mtx);
         r = m_arena.malloc(mCount, mSize);
+
     }
 
+    memset(r, 0, mCount * mSize);
     return r;
 }
 
