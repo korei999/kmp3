@@ -14,6 +14,7 @@ namespace platform::ansi
 
 class Win : public IWindow
 {
+protected:
     struct MouseInput
     {
         enum class KEY : adt::u8 { NONE, WHEEL_UP, WHEEL_DOWN, LEFT, MIDDLE, RIGHT, RELEASE };
@@ -75,7 +76,7 @@ public:
 
     /* */
 
-private:
+protected:
     void disableRawMode() noexcept(false); /* RuntimeException */
     void enableRawMode() noexcept(false); /* RuntimeException */
 
@@ -93,6 +94,7 @@ private:
     void songList();
     void scrollBar();
     void bottomLine();
+    void errorMsg();
     void update();
     /* */
 
@@ -103,7 +105,6 @@ private:
 
     friend void sigwinchHandler(int sig);
 
-private:
     Input readFromStdin(const int timeoutMS);
     [[nodiscard]] ADT_NO_UB int parseSeq(adt::Span<char> spBuff, ssize_t nRead);
     [[nodiscard]] ADT_NO_UB MouseInput parseMouse(adt::Span<char> spBuff, ssize_t nRead);

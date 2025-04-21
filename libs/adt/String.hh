@@ -480,6 +480,13 @@ StringFixed<SIZE>::size() const
 }
 
 template<int SIZE>
+inline void
+StringFixed<SIZE>::destroy()
+{
+    memset(data(), 0, sizeof(m_aBuff));
+}
+
+template<int SIZE>
 inline bool
 StringFixed<SIZE>::operator==(const StringFixed<SIZE>& other) const
 {

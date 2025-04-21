@@ -132,7 +132,7 @@ togglePause(
 )
 {
     LOG("mpris::togglePause\n");
-    app::g_pMixer->togglePause();
+    app::togglePause();
     return sd_bus_reply_method_return(m, "");
 }
 
@@ -571,10 +571,14 @@ static const sd_bus_vtable s_vtMediaPlayer2Player[] = {
 void
 init()
 {
+    static bool s_bReInit = true;
+    if (!s_bReInit) return;
+
     MutexGuard lock(&g_mtx);
 
     g_bReady = false;
     int res = 0;
+    const ssize nTries = 50;
 
     res = sd_bus_default_user(&s_pBus);
     if (res < 0) goto out;
@@ -609,7 +613,22 @@ init()
     // );
     // if (res < 0) goto out;
 
-    res = sd_bus_request_name(s_pBus, "org.mpris.MediaPlayer2.kmp3", 0);
+    static char aBuff[64];
+    for (ssize i = 0; i < nTries; ++i)
+    {
+        memset(aBuff, 0, sizeof(aBuff));
+        print::toSpan(aBuff, "org.mpris.MediaPlayer2.kmp3_{}", i);
+        res = sd_bus_request_name(s_pBus, aBuff, 0);
+        if (res >= 0) break;
+        if ((i >= nTries - 1) && (res < 0))
+        {
+            app::player().pushErrorMsg({
+                "failed to create mpris media player instance", 5000.0, Player::Msg::TYPE::ERROR
+            });
+            s_bReInit = false;
+        }
+    }
+
     s_fdMpris = sd_bus_get_fd(s_pBus);
 
 out:

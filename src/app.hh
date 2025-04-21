@@ -53,30 +53,30 @@ audio::IMixer* allocMixer(adt::IAllocator* pAlloc);
 inline platform::ffmpeg::Decoder& decoder() { return g_decoder; }
 
 inline void quit() { g_bRunning = false; }
-inline void focusNext() { g_pPlayer->focusNext(); }
-inline void focusPrev() { g_pPlayer->focusPrev(); }
-inline void focusFirst() { g_pPlayer->focusFirst(); }
-inline void focusLast() { g_pPlayer->focusLast(); }
-inline void focus(long i) { g_pPlayer->focus(i); }
-inline void focusUp(long step) { focus(g_pPlayer->m_focused - step); }
-inline void focusDown(long step) { focus(g_pPlayer->m_focused + step); }
-inline void selectFocused() { g_pPlayer->selectFocused(); }
-inline void focusSelected() { g_pPlayer->focusSelected(); }
-inline void focusSelectedCenter() { g_pPlayer->focusSelectedCenter(); }
-inline void togglePause() { g_pPlayer->togglePause(); }
+inline void focusNext() { player().focusNext(); }
+inline void focusPrev() { player().focusPrev(); }
+inline void focusFirst() { player().focusFirst(); }
+inline void focusLast() { player().focusLast(); }
+inline void focus(long i) { player().focus(i); }
+inline void focusUp(long step) { focus(player().m_focused - step); }
+inline void focusDown(long step) { focus(player().m_focused + step); }
+inline void selectFocused() { player().selectFocused(); }
+inline void focusSelected() { player().focusSelected(); }
+inline void focusSelectedCenter() { player().focusSelectedCenter(); }
+inline void togglePause() { player().togglePause(); }
 inline void volumeDown(const adt::f32 step) { g_pMixer->volumeDown(step); }
 inline void volumeUp(const adt::f32 step) { g_pMixer->volumeUp(step); }
 inline void changeSampleRateDown(adt::u64 ms, bool bSave) { g_pMixer->changeSampleRateDown(ms, bSave); }
 inline void changeSampleRateUp(adt::u64 ms, bool bSave) { g_pMixer->changeSampleRateUp(ms, bSave); }
 inline void restoreSampleRate() { g_pMixer->restoreSampleRate(); }
 inline void seekOff(adt::f64 ms) { g_pMixer->seekOff(ms); }
-inline PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward) { return g_pPlayer->cycleRepeatMethods(bForward); }
-inline void selectPrev() { g_pPlayer->selectPrev(); }
-inline void selectNext() { g_pPlayer->selectNext(); }
+inline PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward) { return player().cycleRepeatMethods(bForward); }
+inline void selectPrev() { player().selectPrev(); }
+inline void selectNext() { player().selectNext(); }
 inline void toggleMute() { g_pMixer->toggleMute(); }
 inline void seekFromInput() { g_pWin->seekFromInput(); }
 inline void subStringSearch() { g_pWin->subStringSearch(); }
-inline void increaseImageSize(long i) { g_pPlayer->setImgSize(g_pPlayer->m_imgHeight + i); }
-inline void restoreImageSize() { g_pPlayer->setImgSize(defaults::IMAGE_HEIGHT); }
+inline void increaseImageSize(long i) { player().setImgSize(player().m_imgHeight + i); }
+inline void restoreImageSize() { player().setImgSize(defaults::IMAGE_HEIGHT); }
 
 } /* namespace app */

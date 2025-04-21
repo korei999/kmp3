@@ -238,8 +238,6 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 inline ssize
 copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept
 {
-    if (spSrc.empty()) return 0;
-
     ssize i = 0;
 
     auto clCopySpan = [&]

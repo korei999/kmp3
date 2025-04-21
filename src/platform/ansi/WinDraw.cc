@@ -3,6 +3,7 @@
 #include "app.hh"
 #include "defaults.hh"
 
+#include "adt/logs.hh"
 #include "adt/ScratchBuffer.hh"
 
 using namespace adt;
@@ -286,6 +287,61 @@ Win::bottomLine()
 }
 
 void
+Win::errorMsg()
+{
+    auto& pl = app::player();
+    int height = m_termSize.height;
+    int width = m_termSize.width;
+
+    static Player::Msg s_msg;
+    static f64 s_time;
+
+    if (!s_msg || s_msg.time == Player::Msg::UNTIL_NEXT)
+    {
+        Player::Msg newMsg = pl.popErrorMsg();
+        if (newMsg)
+        {
+            s_time = m_time;
+            s_msg = newMsg;
+            LOG_GOOD("got msg: '{}' size: {}\n", s_msg.sfMsg, s_msg.sfMsg.size());
+        }
+    }
+
+    if (common::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE && s_msg && s_msg.time != 0.0)
+    {
+        if (s_time + s_msg.time < m_time)
+        {
+            LOG_NOTIFY("killing: '{}'\n", s_msg.sfMsg);
+            s_msg.sfMsg.destroy();
+            return;
+        }
+
+        using STYLE = TEXT_BUFF_STYLE;
+
+        STYLE eStyle = [&]
+        {
+            switch (s_msg.eType)
+            {
+                case Player::Msg::TYPE::NOTIFY:
+                return STYLE::CYAN | STYLE::ITALIC | STYLE::UNDERLINE;
+                break;
+
+                case Player::Msg::TYPE::WARNING:
+                return STYLE::YELLOW | STYLE::BOLD;
+                break;
+
+                case Player::Msg::TYPE::ERROR:
+                return STYLE::RED | STYLE::BOLD;
+                break;
+            }
+            return STYLE::NORM;
+        }();
+
+        m_textBuff.string(1, height - 1, eStyle, s_msg.sfMsg);
+    }
+}
+
+void
 Win::update()
 {
     MutexGuard lock(&m_mtxUpdate);
@@ -320,6 +376,7 @@ Win::update()
     songList();
     scrollBar();
     bottomLine();
+    errorMsg();
 
     m_textBuff.present();
 }

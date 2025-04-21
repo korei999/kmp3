@@ -5,6 +5,8 @@
 #include "adt/StringDecl.hh"
 #include "adt/Vec.hh"
 #include "adt/enum.hh"
+#include "adt/QueueArray.hh"
+#include "adt/Thread.hh"
 
 enum class PLAYER_REPEAT_METHOD: adt::u8 { NONE, TRACK, PLAYLIST, ESIZE };
 ADT_ENUM_BITWISE_OPERATORS(PLAYER_REPEAT_METHOD);
@@ -19,6 +21,25 @@ repeatMethodToString(PLAYER_REPEAT_METHOD e)
 
 struct Player
 {
+    struct Msg
+    {
+        enum class TYPE : adt::u8 { NOTIFY, WARNING, ERROR };
+        using String = adt::StringFixed<48>;
+        static constexpr adt::f64 UNTIL_NEXT = std::numeric_limits<adt::f64>::max();
+
+        /* */
+
+        String sfMsg {};
+        adt::f64 time {};
+        TYPE eType {};
+
+        /* */
+
+        explicit operator bool() const { return bool(sfMsg); }
+    };
+
+    /* */
+
     adt::IAllocator* m_pAlloc {};
 
     struct {
@@ -39,6 +60,8 @@ struct Player
     adt::ssize m_longestString {};
     PLAYER_REPEAT_METHOD m_eReapetMethod {};
     bool m_bSelectionChanged {};
+    adt::Mutex m_mtxQ {};
+    adt::QueueArray<Msg, 16> m_qErrorMsgs {};
 
     /* */
 
@@ -74,6 +97,8 @@ struct Player
     void setImgSize(long height);
     void adjustImgWidth();
     void destroy();
+    void pushErrorMsg(Msg msg);
+    Msg popErrorMsg();
 
     /* */
 

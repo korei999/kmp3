@@ -299,6 +299,23 @@ Player::destroy()
     m_vSearchIdxs.destroy(m_pAlloc);
 }
 
+void
+Player::pushErrorMsg(Player::Msg msg)
+{
+    MutexGuard lock {&m_mtxQ};
+    m_qErrorMsgs.pushBack(msg);
+}
+
+Player::Msg
+Player::popErrorMsg()
+{
+    MutexGuard lock {&m_mtxQ};
+
+    if (!m_qErrorMsgs.empty())
+        return *m_qErrorMsgs.popFront();
+    else return {};
+}
+
 Player::Player(IAllocator* p, int nArgs, char** ppArgs)
     : m_pAlloc(p), m_vSongs(p, nArgs), m_vShortSongs(p, nArgs), m_vSongIdxs(p, nArgs), m_vSearchIdxs(p, nArgs)
 {
