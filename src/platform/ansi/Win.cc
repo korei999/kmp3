@@ -47,8 +47,6 @@ sigwinchHandler(int)
 bool
 Win::start(Arena* pArena)
 {
-    const auto& pl = *app::g_pPlayer;
-
     m_pArena = pArena;
     m_termSize = getTermSize();
 
