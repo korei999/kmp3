@@ -25,6 +25,8 @@ struct QueueArray
     T& operator[](ssize i) noexcept             { ADT_ASSERT(i >= 0 && i < CAP, "out of CAP({}), i: {}", CAP, i); return m_aData[i]; }
     const T& operator[](ssize i) const noexcept { ADT_ASSERT(i >= 0 && i < CAP, "out of CAP({}), i: {}", CAP, i); return m_aData[i]; }
 
+    ssize cap() const noexcept;
+
     bool empty() const noexcept;
 
     ssize pushBack(const T& x) noexcept; /* Index of inserted element, -1 on failure. */
@@ -103,6 +105,13 @@ QueueArray<T, CAP>::empty() const noexcept
 
 template<typename T, ssize CAP>
 inline ssize
+QueueArray<T, CAP>::cap() const noexcept
+{
+    return CAP;
+}
+
+template<typename T, ssize CAP>
+inline ssize
 QueueArray<T, CAP>::pushBack(const T& x) noexcept
 {
     ssize i = fakePush<PUSH_WAY::TAIL>();
@@ -172,11 +181,10 @@ QueueArray<T, CAP>::popFront() noexcept
 {
     if (empty()) return nullptr;
 
-    ssize nextHeadI = nextI(m_headI);
-    ssize prevHeadI = m_headI;
-    m_headI = nextHeadI;
+    ssize tmp = m_headI;
+    m_headI = nextI(m_headI);
 
-    return &m_aData[prevHeadI];
+    return &m_aData[tmp];
 }
 
 template<typename T, ssize CAP>
@@ -185,11 +193,9 @@ QueueArray<T, CAP>::popBack() noexcept
 {
     if (empty()) return nullptr;
 
-    ssize nextTailI = prevI(m_tailI);
-    ssize prevTailI = m_tailI;
-    m_tailI = nextTailI;
+    m_tailI = prevI(m_tailI);
 
-    return &m_aData[prevTailI];
+    return &m_aData[m_tailI];
 }
 
 template<typename T, ssize CAP>

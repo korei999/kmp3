@@ -28,7 +28,7 @@ maxHeapify(auto* a, const ssize size, ssize i)
 {
     ssize largest, left, right;
 
-again:
+GOTO_again:
     left = HeapLeftI(i);
     right = HeapRightI(i);
 
@@ -43,7 +43,7 @@ again:
     {
         utils::swap(&a[i], &a[largest]);
         i = largest;
-        goto again;
+        goto GOTO_again;
     }
 }
 

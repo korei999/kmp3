@@ -168,7 +168,7 @@ Mixer::play(StringView svPath)
     pause(true);
 
     {
-        MutexGuard lockDec(&m_mtxDecoder);
+        LockGuard lockDec {&m_mtxDecoder};
 
         m_svPath = svPath;
 
@@ -203,7 +203,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
 {
     audio::ERROR err {};
     {
-        MutexGuard lock(&m_mtxDecoder);
+        LockGuard lock {&m_mtxDecoder};
 
         if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
@@ -381,7 +381,7 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 void
 Mixer::seekMS(f64 ms)
 {
-    MutexGuard lock(&m_mtxDecoder);
+    LockGuard lock {&m_mtxDecoder};
 
     if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
@@ -418,7 +418,7 @@ Mixer::getCurrentMS()
 i64
 Mixer::getTotalMS()
 {
-    MutexGuard lock(&m_mtxDecoder);
+    LockGuard lock {&m_mtxDecoder};
     return app::decoder().getTotalMS();
 }
 

@@ -574,7 +574,7 @@ init()
     static bool s_bReInit = true;
     if (!s_bReInit) return;
 
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
 
     g_bReady = false;
     int res = 0;
@@ -647,7 +647,7 @@ out:
 void
 proc()
 {
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
 
     if (s_pBus && g_bReady)
     {
@@ -659,7 +659,7 @@ proc()
 void
 destroy()
 {
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
 
     if (!s_pBus) return;
 
@@ -685,35 +685,35 @@ playerPropertyChanged(const char* name)
 void
 playbackStatusChanged()
 {
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
     playerPropertyChanged("PlaybackStatus");
 }
 
 void
 loopStatusChanged()
 {
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
     playerPropertyChanged("LoopStatus");
 }
 
 void
 shuffleChanged()
 {
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
     playerPropertyChanged("Shuffle");
 }
 
 void
 volumeChanged()
 {
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
     playerPropertyChanged("Volume");
 }
 
 void
 seeked()
 {
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
 
     if (!s_pBus) return;
     i64 pos = app::g_pMixer->getCurrentMS() * 1000;
@@ -723,7 +723,7 @@ seeked()
 void
 metadataChanged()
 {
-    MutexGuard lock(&g_mtx);
+    LockGuard lock {&g_mtx};
 
     playerPropertyChanged("Metadata");
     seeked();

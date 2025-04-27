@@ -2,239 +2,288 @@
 
 #include "IAllocator.hh"
 #include "utils.hh"
-
-#include <new> /* IWYU pragma: keep */
+#include "assert.hh"
+#include "defer.hh"
 
 namespace adt
 {
 
-#define ADT_QUEUE_FOREACH_I(Q, I) for (int I = (Q)->first, _t_ = 0; _t_ < (Q)->size; I = (Q)->nextI(I),++ _t_)
-#define ADT_QUEUE_FOREACH_I_REV(Q, I) for (int I = (Q)->lastI(), _t_ = 0; _t_ < (Q)->size; I = (Q)->prevI(I), ++_t_)
-
 template<typename T>
 struct Queue
 {
-    T* m_pData {};
-    int m_size {};
-    int m_cap {};
-    int m_first {};
-    int m_last {};
+    T* m_pData;
+    ssize m_size;
+    ssize m_cap;
+    ssize m_headI;
+    ssize m_tailI;
 
     /* */
 
-    Queue() = default;
-    Queue(IAllocator* pAlloc, ssize prealloc = SIZE_MIN)
-        : m_pData {(T*)pAlloc->malloc(prealloc, sizeof(T))},
-          m_cap (prealloc) {}
+    Queue() : m_pData {}, m_size {}, m_cap {}, m_headI {}, m_tailI {} {}
+    Queue(IAllocator* pAlloc, ssize prealloc = SIZE_MIN);
 
     /* */
 
-#define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "Out of capacity, i: {}, m_cap: {}", i, m_cap);
+    T& operator[](ssize i);
+    const T& operator[](ssize i) const;
 
-    T& operator[](int i)             { ADT_RANGE_CHECK; return m_pData[i]; }
-    const T& operator[](int i) const { ADT_RANGE_CHECK; return m_pData[i]; }
+    ssize nextI(ssize i) const;
+    ssize prevI(ssize i) const;
 
-#undef ADT_RANGE_CHECK
+    ssize idx(const T* pElement) const;
+    ssize size() const;
+    ssize cap() const;
+    bool empty() const;
 
-    [[nodiscard]] int nextI(int i) const { return (i + 1) >= m_cap ? 0 : (i + 1); }
-    [[nodiscard]] int prevI(int i) const { return (i - 1) < 0 ? m_cap - 1 : (i - 1); }
-    [[nodiscard]] int firstI() const { return empty() ? -1 : m_first; }
-    [[nodiscard]] int lastI() const { return empty() ? -1 : m_last - 1; }
+    ssize pushBack(IAllocator* pAlloc, const T& x);
+    ssize pushFront(IAllocator* pAlloc, const T& x);
 
-    bool empty() const { return m_size == 0; }
-    T* data() { return m_pData; }
-    const T* data() const { return m_pData; }
-    void destroy(IAllocator* p);
-    T* pushFront(IAllocator* p, const T& val);
-    T* pushBack(IAllocator* p, const T& val);
-    void grow(IAllocator* p, ssize size);
     T* popFront();
     T* popBack();
-    ssize idx(const T* pItem) const;
-    ssize size() const { return m_size; }
+
+    template<typename ...ARGS>
+    ssize emplaceFront(IAllocator* pAlloc, ARGS&&... args) { return pushFront(pAlloc, T(std::forward<ARGS>(args)...)); }
+
+    template<typename ...ARGS>
+    ssize emplaceBack(IAllocator* pAlloc, ARGS&&... args) { return pushBack(pAlloc, T(std::forward<ARGS>(args)...)); }
+
+protected:
+    void grow(IAllocator* pAlloc);
+
+public:
 
     /* */
 
     struct It
     {
-        const Queue* s = nullptr;
-        int i = 0;
-        int counter = 0; /* inc each iteration */
+        Queue* m_p {};
+        ssize m_i {};
+        ssize m_count {};
 
-        It(const Queue* _s, int _i, int _counter) : s(_s), i(_i), counter(_counter) {}
+        /* */
 
-        T& operator*() const { return s->m_pData[i]; }
-        T* operator->() const { return &s->m_pData[i]; }
+        It(const Queue* p, const ssize i) : m_p {const_cast<Queue*>(p)}, m_i {i} {}
+        It(const Queue* p, const ssize i, const ssize count) : m_p {const_cast<Queue*>(p)}, m_i {i}, m_count {count} {}
 
-        It
-        operator++()
-        {
-            i = s->nextI(i);
-            counter++;
-            return {s, i, counter};
-        }
+        /* */
 
-        It operator++(int) { It tmp = *this; ++(*this); return tmp; }
+        T& operator*() noexcept { return m_p->operator[](m_i); }
+        T* operator->() noexcept { return &m_p->operator[](m_i); }
 
         It
-        operator--()
+        operator++() noexcept
         {
-            i = s->prevI(i);
-            counter++;
-            return {s, i, counter};
-        }
+            m_i = m_p->nextI(m_i);
+            ++m_count;
+            return *this;
+        };
 
-        It operator--(int) { It tmp = *this; --(*this); return tmp; }
+        It
+        operator--() noexcept
+        {
+            m_i = m_p->prevI(m_i);
+            ++m_count;
+            return *this;
+        };
 
-        friend bool operator==(const It& l, const It& r) { return l.counter == r.counter; }
-        friend bool operator!=(const It& l, const It& r) { return l.counter != r.counter; }
+        friend bool operator==(const It l, const It r) { return l.m_count == r.m_count; }
+        friend bool operator!=(const It l, const It r) { return l.m_count != r.m_count; }
     };
 
-    It begin() { return {this, firstI(), 0}; }
-    It end() { return {this, {}, m_size}; }
-    It rbegin() { return {this, lastI(), 0}; }
-    It rend() { return {this, {}, m_size}; }
+    It begin() noexcept { return {this, m_headI}; }
+    It end() noexcept { return {this, m_tailI, m_size}; }
+    const It begin() const noexcept { return {this, m_headI}; }
+    const It end() const noexcept { return {this, m_tailI, m_size}; }
 
-    const It begin() const { return {this, firstI(), 0}; }
-    const It end() const { return {this, {}, m_size}; }
-    const It rbegin() const { return {this, lastI(), 0}; }
-    const It rend() const { return {this, {}, m_size}; }
+    It rbegin() noexcept { return {this, prevI(m_tailI)}; }
+    It rend() noexcept { return {this, 0, m_size}; }
+    const It rbegin() const noexcept { return {this, prevI(m_tailI)}; }
+    const It rend() const noexcept { return {this, 0, m_size}; }
 };
 
 template<typename T>
-inline void
-Queue<T>::destroy(IAllocator* p)
+inline
+Queue<T>::Queue(IAllocator* pAlloc, ssize prealloc)
+    : m_size {}, m_headI {}, m_tailI {}
 {
-    p->free(m_pData);
-    *this = {};
+    const ssize cap = nextPowerOf2(prealloc);
+    ADT_ASSERT(isPowerOf2(cap), "nextPowerOf2: {}", cap);
+
+    m_pData = pAlloc->mallocV<T>(cap);
+    m_cap = cap;
 }
 
 template<typename T>
-inline T*
-Queue<T>::pushFront(IAllocator* p, const T& val)
+inline ssize
+Queue<T>::nextI(ssize i) const
+{
+    return (i + 1) & (m_cap - 1);
+}
+
+template<typename T>
+inline ssize
+Queue<T>::prevI(ssize i) const
+{
+    return (i - 1) & (m_cap - 1);
+}
+
+template<typename T>
+inline ssize
+Queue<T>::idx(const T* pElement) const
+{
+    ADT_ASSERT(pElement >= m_pData && pElement < m_pData + m_cap, "out of range pointer");
+    return pElement - m_pData;
+}
+
+template<typename T>
+inline ssize
+Queue<T>::size() const
+{
+    return m_size;
+}
+
+template<typename T>
+inline ssize
+Queue<T>::cap() const
+{
+    return m_cap;
+}
+
+template<typename T>
+inline bool
+Queue<T>::empty() const
+{
+    return m_size <= 0;
+}
+
+template<typename T>
+inline ssize
+Queue<T>::pushBack(IAllocator* pAlloc, const T& x)
 {
     if (m_size >= m_cap)
-        grow(p, utils::max(SIZE_MIN, static_cast<ssize>(m_cap * 2)));
+        grow(pAlloc);
 
-    int i = m_first;
-    int ni = prevI(i);
+    ssize nextTailI = nextI(m_tailI);
 
-    new(m_pData + ni) T(val);
+    const ssize tmp = m_tailI;
+    m_tailI = nextTailI;
 
-    m_first = ni;
+    new(m_pData + tmp) T(x);
     ++m_size;
-
-    return &m_pData[ni];
+    return tmp;
 }
 
 template<typename T>
-inline T*
-Queue<T>::pushBack(IAllocator* p, const T& val)
+inline ssize
+Queue<T>::pushFront(IAllocator* pAlloc, const T& x)
 {
     if (m_size >= m_cap)
-        grow(p, utils::max(SIZE_MIN, static_cast<ssize>(m_cap * 2)));
+        grow(pAlloc);
 
-    int i = m_last;
-    int ni = nextI(i);
+    m_headI = prevI(m_headI);
+    new(m_pData + m_headI) T(x);
 
-    new(m_pData + i) T(val);
-
-    m_last = ni;
     ++m_size;
-
-    return &m_pData[i];
-}
-
-template<typename T>
-inline void
-Queue<T>::grow(IAllocator* p, ssize size)
-{
-    auto nQ = Queue<T>(p, size);
-
-    for (auto& e : *this) nQ.pushBack(p, e);
-
-    p->free(m_pData);
-    *this = nQ;
+    return m_headI;
 }
 
 template<typename T>
 inline T*
 Queue<T>::popFront()
 {
-    ADT_ASSERT(m_size > 0, "empty");
+    ADT_ASSERT(!empty(), "empty");
 
-    T* ret = &m_pData[m_first];
-    m_first = nextI(m_first);
+    const ssize tmp = m_headI;
+    m_headI = nextI(m_headI);
+
     --m_size;
-
-    return ret;
+    return &m_pData[tmp];
 }
 
 template<typename T>
 inline T*
 Queue<T>::popBack()
 {
-    ADT_ASSERT(m_size > 0, "empty");
+    ADT_ASSERT(!empty(), "empty");
 
-    T* ret = &m_pData[lastI()];
-    m_last = prevI(lastI());
+    m_tailI = prevI(m_tailI);
     --m_size;
 
-    return ret;
+    return &m_pData[m_tailI];
 }
 
 template<typename T>
-inline ssize
-Queue<T>::idx(const T* pItem) const
+inline void
+Queue<T>::grow(IAllocator* pAlloc)
 {
-    ssize r = pItem - m_pData;
-    ADT_ASSERT(r >= 0 && r < m_cap, "out of capacity");
-    return r;
+    const ssize newCap = utils::max(ssize(2), m_cap * 2);
+    m_pData = pAlloc->reallocV<T>(m_pData, m_cap, newCap);
+
+    defer( m_cap = newCap );
+
+    if (m_size <= 0) return;
+
+    defer(
+        m_headI = m_size;
+        m_tailI = 0;
+    );
+
+    if (m_headI < m_tailI) /* sequential case */
+    {
+        utils::memCopy(m_pData + m_cap, m_pData + m_headI, m_cap);
+
+        return;
+    }
+    else /* `m_headI == m_tailI` case */
+    {
+        const ssize headToEndSize = m_size - m_headI;
+        /* 1st: from head to the end of the buffer */
+        utils::memCopy(m_pData + m_cap, m_pData + m_headI, headToEndSize);
+
+        /* 2nd: from the start of the buffer to the tail */
+        utils::memCopy(m_pData + m_cap + headToEndSize, m_pData, m_size - headToEndSize);
+
+        return;
+    }
 }
 
 template<typename T>
-struct QueueManaged
+inline T&
+Queue<T>::operator[](ssize i)
 {
-    Queue<T> base {};
+    ADT_ASSERT(i >= 0 && i < m_cap, "out of capacity: i: {}, cap: {}", i, m_cap);
+    return m_pData[i];
+}
 
-    /* */
+template<typename T>
+inline const T&
+Queue<T>::operator[](ssize i) const
+{
+    ADT_ASSERT(i >= 0 && i < m_cap, "out of capacity: i: {}, cap: {}", i, m_cap);
+    return m_pData[i];
+}
 
+template<typename T>
+struct QueueManaged : public Queue<T>
+{
     IAllocator* m_pAlloc {};
 
     /* */
 
-    QueueManaged() = default;
-    QueueManaged(IAllocator* p, ssize prealloc = SIZE_MIN)
-        : base(p, prealloc), m_pAlloc(p) {}
+    QueueManaged() : Queue<T>::Queue() {}
+    QueueManaged(IAllocator* pAlloc, ssize prealloc = SIZE_MIN)
+        : Queue<T>::Queue(pAlloc, prealloc), m_pAlloc {pAlloc} {}
 
     /* */
 
-    T& operator[](ssize i) { return base[i]; }
-    const T& operator[](ssize i) const { return base[i]; }
+    ssize pushBack(const T& x) { return Queue<T>::pushBack(m_pAlloc, x); }
+    ssize pushFront(const T& x) { return Queue<T>::pushFront(m_pAlloc, x); }
 
-    bool empty() const { return base.empty(); }
-    T* data() { return base.data(); }
-    const T* data() const { return base.data(); }
-    void destroy() { base.destroy(m_pAlloc); }
-    T* pushFront(const T& val) { return base.pushFront(m_pAlloc, val); }
-    T* pushBack(const T& val) { return base.pushBack(m_pAlloc, val); }
-    void resize(ssize size) { base.grow(m_pAlloc, size); }
-    T* popFront() { return base.popFront(); }
-    T* popBack() { return base.popBack(); }
-    ssize idx(const T* pItem) { return base.idx(pItem); }
-    ssize size() const { return base.size(); }
+    template<typename ...ARGS>
+    ssize emplaceFront(ARGS&&... args) { return Queue<T>::pushFront(m_pAlloc, T(std::forward<ARGS>(args)...)); }
 
-    /* */
-
-    typename Queue<T>::It begin() { return base.begin(); }
-    typename Queue<T>::It end() { return base.end(); }
-    typename Queue<T>::It rbegin() { return base.rbegin(); }
-    typename Queue<T>::It rend() { return base.rend(); }
-
-    const typename Queue<T>::It begin() const { return base.begin(); }
-    const typename Queue<T>::It end() const { return base.end(); }
-    const typename Queue<T>::It rbegin() const { return base.rbegin(); }
-    const typename Queue<T>::It rend() const { return base.rend(); }
+    template<typename ...ARGS>
+    ssize emplaceBack(ARGS&&... args) { return Queue<T>::pushBack(m_pAlloc, T(std::forward<ARGS>(args)...)); }
 };
 
 } /* namespace adt */

@@ -33,14 +33,14 @@ struct BufferAllocator : public IAllocator
 
     template<typename T>
     constexpr BufferAllocator(Span<T> sp) noexcept
-        : BufferAllocator((T*)sp.data(), sp.size() * sizeof(T)) {}
+        : BufferAllocator(reinterpret_cast<u8*>(sp.data()), sp.size() * sizeof(T)) {}
 
     /* */
 
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    constexpr virtual void free(void* ptr) noexcept override final; /* noop */
+    [[deprecated("noop")]] constexpr virtual void free(void* ptr) noexcept override final; /* noop */
     constexpr virtual void freeAll() noexcept override final; /* same as reset */
     constexpr void reset() noexcept;
 };
@@ -65,7 +65,7 @@ inline void*
 BufferAllocator::zalloc(usize mCount, usize mSize)
 {
     auto* p = malloc(mCount, mSize);
-    memset(p, 0, alignUp8(mCount * mSize));
+    memset(p, 0, mCount*mSize);
     return p;
 }
 

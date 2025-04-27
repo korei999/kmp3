@@ -343,7 +343,7 @@ Win::errorMsg()
 void
 Win::update()
 {
-    MutexGuard lock(&m_mtxUpdate);
+    LockGuard lock {&m_mtxUpdate};
 
     const int width = m_termSize.width;
     const int height = m_termSize.height;

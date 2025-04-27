@@ -1,6 +1,9 @@
 #include "TextBuff.hh"
 
+#include "adt/logs.hh"
 #include "adt/print.hh"
+
+#include <cwctype>
 
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
 #define TEXT_BUFF_MOUSE_DISABLE "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
@@ -43,7 +46,7 @@ namespace platform::ansi
 void
 TextBuff::grow(ssize newCap)
 {
-    m_pData = (char*)m_pArena->realloc(m_pData, m_capacity, newCap, 1);
+    m_pData = m_pArena->reallocV<char>(m_pData, m_capacity, newCap);
     m_capacity = newCap;
 }
 
@@ -94,6 +97,8 @@ TextBuff::flush()
     {
         [[maybe_unused]] auto _unused =
             write(STDOUT_FILENO, m_pData, m_size);
+
+        LOG_WARN("\nbytes: {}\n", _unused);
 
         m_size = 0;
     }
@@ -264,27 +269,35 @@ TextBuff::pushDiff()
     ssize col = 0;
     ssize nForwards = 0;
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
+    bool bChangeStyle = false;
 
     for (row = 0; row < m_tHeight; ++row)
     {
         nForwards = 0;
-        move(0, row);
+        bool bMoved = false;
+
+        auto clMove = [&]
+        {
+            if (!bMoved)
+            {
+                move(0, row);
+                bMoved = true;
+            }
+        };
 
         for (col = 0; col < m_tWidth; ++col)
         {
-            auto& front = frontBufferSpan()(col, row);
-            auto& back = backBufferSpan()(col, row);
+            const auto& front = frontBufferSpan()(col, row);
+            const auto& back = backBufferSpan()(col, row);
 
             if (back.eStyle != eLastStyle)
-            {
-                push(styleToStringScratch(back.eStyle));
-                eLastStyle = back.eStyle;
-            }
+                bChangeStyle = true;
 
             if (front != back)
             {
                 if (nForwards > 0)
                 {
+                    clMove();
                     forward(nForwards);
                     nForwards = 0;
                 }
@@ -292,10 +305,18 @@ TextBuff::pushDiff()
                 int colWidth = wcwidth(back.wc);
 
                 if (col + colWidth <= m_tWidth)
+                {
+                    clMove();
+                    if (bChangeStyle)
+                    {
+                        bChangeStyle = false;
+                        push(styleToStringScratch(back.eStyle));
+                        eLastStyle = back.eStyle;
+                    }
                     pushGlyph(back.wc);
+                }
 
-                if (colWidth > 1)
-                    col += colWidth - 1;
+                if (colWidth > 1) col += colWidth - 1;
             }
             else
             {

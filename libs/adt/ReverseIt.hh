@@ -20,7 +20,7 @@ struct ReverseIt
 
     /* */
 
-    ReverseIt(ITERABLE_T& _s) : s(_s) {};
+    ReverseIt(const ITERABLE_T& _s) : s(const_cast<ITERABLE_T&>(_s)) {};
 
     /* */
 

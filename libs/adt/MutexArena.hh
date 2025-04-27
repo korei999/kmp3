@@ -32,7 +32,7 @@ MutexArena::malloc(usize mCount, usize mSize)
 {
     void* r {};
     {
-        MutexGuard lock(&m_mtx);
+        LockGuard lock(&m_mtx);
         r = m_arena.malloc(mCount, mSize);
     }
 
@@ -44,7 +44,7 @@ MutexArena::zalloc(usize mCount, usize mSize)
 {
     void* r {};
     {
-        MutexGuard lock(&m_mtx);
+        LockGuard lock(&m_mtx);
         r = m_arena.malloc(mCount, mSize);
 
     }
@@ -58,7 +58,7 @@ MutexArena::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 {
     void* r {};
     {
-        MutexGuard lock(&m_mtx);
+        LockGuard lock(&m_mtx);
         r = m_arena.realloc(p, oldCount, newCount, mSize);
     }
 

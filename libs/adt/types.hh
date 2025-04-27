@@ -116,4 +116,58 @@ struct Overloaded : Ts...
 
 inline constexpr bool isPowerOf2(usize x) { return (x & (x - 1)) == 0; }
 
+inline constexpr i8
+nextPowerOf2(i8 x)
+{
+    --x;
+
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+
+    return ++x;
+}
+
+inline constexpr i16
+nextPowerOf2(i16 x)
+{
+    --x;
+
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+
+    return ++x;
+}
+
+inline constexpr i32
+nextPowerOf2(i32 x)
+{
+    --x;
+
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+
+    return ++x;
+}
+
+inline constexpr ssize
+nextPowerOf2(ssize x)
+{
+    --x;
+
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+
+    return ++x;
+}
+
 } /* namespace adt */

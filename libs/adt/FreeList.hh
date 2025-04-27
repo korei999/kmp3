@@ -302,12 +302,12 @@ FreeList::malloc(usize nMembers, usize mSize)
         CERR("[FreeList]: no fitting block for '{}' bytes\n", realSize);
 #endif
 
-again:
+GOTO_again:
         pBlock = blockPrepend(utils::max(m_blockSize, requested*2 + sizeof(FreeListBlock) + sizeof(FreeList::Node)));
     }
 
     auto* pFree = findFittingNode(requested);
-    if (!pFree) goto again;
+    if (!pFree) goto GOTO_again;
 
     splitNode(pFree, realSize);
 

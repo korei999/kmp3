@@ -302,14 +302,14 @@ Player::destroy()
 void
 Player::pushErrorMsg(Player::Msg msg)
 {
-    MutexGuard lock {&m_mtxQ};
+    LockGuard lock {&m_mtxQ};
     m_qErrorMsgs.pushBack(msg);
 }
 
 Player::Msg
 Player::popErrorMsg()
 {
-    MutexGuard lock {&m_mtxQ};
+    LockGuard lock {&m_mtxQ};
 
     if (!m_qErrorMsgs.empty())
         return *m_qErrorMsgs.popFront();

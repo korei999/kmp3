@@ -51,14 +51,14 @@ template<typename T>
 inline void
 Heap<T>::minBubbleUp(ssize i)
 {
-again:
+GOTO_again:
     if (HeapParentI(i) == NPOS) return;
 
     if (m_vec[HeapParentI(i)] > m_vec[i])
     {
         utils::swap(&m_vec[i], &m_vec[HeapParentI(i)]);
         i = HeapParentI(i);
-        goto again;
+        goto GOTO_again;
     }
 }
 
@@ -66,14 +66,14 @@ template<typename T>
 inline void
 Heap<T>::maxBubbleUp(ssize i)
 {
-again:
+GOTO_again:
     if (HeapParentI(i) == NPOS) return;
 
     if (m_vec[HeapParentI(i)] < m_vec[i])
     {
         utils::swap(&m_vec[i], &m_vec[HeapParentI(i)]);
         i = HeapParentI(i);
-        goto again;
+        goto GOTO_again;
     }
 }
 
@@ -84,7 +84,7 @@ Heap<T>::minBubbleDown(ssize i)
     ssize smallest, left, right;
     Vec<T>& a = m_vec;
 
-again:
+GOTO_again:
     left = HeapLeftI(i);
     right = HeapRightI(i);
 
@@ -99,7 +99,7 @@ again:
     {
         utils::swap(&a[i], &a[smallest]);
         i = smallest;
-        goto again;
+        goto GOTO_again;
     }
 }
 
@@ -110,7 +110,7 @@ Heap<T>::maxBubbleDown(ssize i)
     ssize largest, left, right;
     Vec<T>& a = m_vec;
 
-again:
+GOTO_again:
     left = HeapLeftI(i);
     right = HeapRightI(i);
 
@@ -125,7 +125,7 @@ again:
     {
         utils::swap(&a[i], &a[largest]);
         i = largest;
-        goto again;
+        goto GOTO_again;
     }
 }
 

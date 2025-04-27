@@ -158,6 +158,21 @@ struct Int
 #endif
     };
 
+    ADT_ALWAYS_INLINE Type
+    compareExchange(Type* pExpected, Type desired, ORDER eSucces, ORDER eFailure) noexcept
+    {
+#ifdef ADT_USE_LINUX_ATOMICS
+
+        return __atomic_compare_exchange_n(&m_volInt, pExpected, desired, false /* weak */, orderMap(eSucces), orderMap(eFailure));
+
+#elif defined ADT_USE_WIN32_ATOMICS
+
+        ADT_ASSERT(false, "not implemented");
+        return {};
+
+#endif
+    };
+
     /* */
 protected:
 

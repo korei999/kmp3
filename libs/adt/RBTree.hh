@@ -427,7 +427,7 @@ RBTree<T>::remove(RBNode<T>* elm)
         old->left()->setParent(elm);
         if (old->right())
             old->right()->setParent(elm);
-        goto color;
+        goto GOTO_color;
     }
     parent = elm->parent();
     color = elm->color();
@@ -442,7 +442,7 @@ RBTree<T>::remove(RBNode<T>* elm)
     }
     else
         m_pRoot = child;
-color:
+GOTO_color:
     if (color == RB_COLOR::BLACK)
         _RBRemoveColor(this, parent, child);
 

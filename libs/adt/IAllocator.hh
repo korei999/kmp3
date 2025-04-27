@@ -69,12 +69,12 @@ struct IAllocator
  * Classes can receive react to nullptr by preserving their state or replace their state with preallocated stub. */
 struct AllocException : public IException
 {
-    const char* m_ntsMsg {};
+    StringFixed<128> m_sfMsg {};
 
     /* */
 
     AllocException() = default;
-    AllocException(const char* ntsMsg) : m_ntsMsg(ntsMsg) {}
+    AllocException(const StringView svMsg) : m_sfMsg {svMsg} {}
 
     /* */
 
@@ -86,11 +86,11 @@ struct AllocException : public IException
     printErrorMsg(FILE* fp) const override
     {
         char aBuff[128] {};
-        snprintf(aBuff, sizeof(aBuff) - 1, "AllocException: '%s', errno: '%s'\n", m_ntsMsg, strerror(errno));
+        print::toSpan(aBuff, "AllocException: '{}', errno: '{}'\n", m_sfMsg, strerror(errno));
         fputs(aBuff, fp);
     }
 
-    virtual const char* getMsg() const override { return m_ntsMsg; }
+    virtual StringView getMsg() const override { return m_sfMsg; }
 };
 
 } /* namespace adt */
