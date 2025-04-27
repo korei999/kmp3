@@ -151,11 +151,11 @@ Win::timeSlider()
     const int xOff = m_prevImgWidth + 2;
     const int yOff = 10;
 
-    int n = 0;
+    ssize n = 0;
 
     /* play/pause indicator */
     {
-        bool bPaused = mix.isPaused().load(atomic::ORDER::ACQUIRE);
+        const bool bPaused = mix.isPaused().load(atomic::ORDER::ACQUIRE);
         const StringView svIndicator = bPaused ? "I>" : "II";
 
         using STYLE = TEXT_BUFF_STYLE;
@@ -173,12 +173,13 @@ Win::timeSlider()
 
         for (long i = n + 1, t = 0; i < wMax; ++i, ++t)
         {
-            wchar_t wch[2] = {L'─', L'\0'};
+            const char* nts = [&]
+            {
+                if (t == std::floor(timePlace)) return "╂";
+                else return "─";
+            }();
 
-            if (t == std::floor(timePlace))
-                wch[0] = L'╂';
-
-            m_textBuff.wideString(xOff + i, yOff, TEXT_BUFF_STYLE::NORM, {wch, 3});
+            m_textBuff.string(xOff + i, yOff, TEXT_BUFF_STYLE::NORM, nts);
         }
     }
 }
@@ -191,27 +192,26 @@ Win::songList()
 
     for (ssize h = m_firstIdx, i = 0; i < m_listHeight - 1; ++h, ++i)
     {
-        if (h < pl.m_vSearchIdxs.size())
-        {
-            const u16 songIdx = pl.m_vSearchIdxs[h];
-            const StringView svSong = pl.m_vShortSongs[songIdx];
+        if (h >= pl.m_vSearchIdxs.size()) break;
 
-            const bool bSelected = songIdx == pl.m_selected ? true : false;
+        const u16 songIdx = pl.m_vSearchIdxs[h];
+        const StringView svSong = pl.m_vShortSongs[songIdx];
 
-            using STYLE = TEXT_BUFF_STYLE;
+        const bool bSelected = songIdx == pl.m_selected ? true : false;
 
-            STYLE eStyle = STYLE::NORM;
+        using STYLE = TEXT_BUFF_STYLE;
 
-            if (h == pl.m_focused && bSelected)
-                eStyle = STYLE::BOLD | STYLE::YELLOW | STYLE::REVERSE;
-            else if (h == pl.m_focused)
-                eStyle = STYLE::REVERSE;
-            else if (bSelected)
-                eStyle = STYLE::BOLD | STYLE::YELLOW;
+        STYLE eStyle = STYLE::NORM;
 
-            /* leave some width space for the scroll bar */
-            m_textBuff.string(1, i + split + 1, eStyle, svSong, m_termSize.width - 3);
-        }
+        if (h == pl.m_focused && bSelected)
+            eStyle = STYLE::BOLD | STYLE::YELLOW | STYLE::REVERSE;
+        else if (h == pl.m_focused)
+            eStyle = STYLE::REVERSE;
+        else if (bSelected)
+            eStyle = STYLE::BOLD | STYLE::YELLOW;
+
+        /* leave some width space for the scroll bar */
+        m_textBuff.string(1, i + split + 1, eStyle, svSong, m_termSize.width - 3);
     }
 }
 
@@ -247,8 +247,8 @@ Win::bottomLine()
     namespace c = common;
 
     const auto& pl = *app::g_pPlayer;
-    int height = m_termSize.height;
-    int width = m_termSize.width;
+    const int height = m_termSize.height;
+    const int width = m_termSize.width;
 
     /* selected / focused */
     {

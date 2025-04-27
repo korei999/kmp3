@@ -3,8 +3,6 @@
 #include "adt/logs.hh"
 #include "adt/print.hh"
 
-#include <cwctype>
-
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
 #define TEXT_BUFF_MOUSE_DISABLE "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
 #define TEXT_BUFF_KEYPAD_ENABLE "\x1b[?1h\033="
@@ -98,7 +96,7 @@ TextBuff::flush()
         [[maybe_unused]] auto _unused =
             write(STDOUT_FILENO, m_pData, m_size);
 
-        LOG_WARN("\nbytes: {}\n", _unused);
+        // LOG("flush bytes: {}\n", _unused);
 
         m_size = 0;
     }
@@ -113,7 +111,7 @@ TextBuff::moveTopLeft()
 void
 TextBuff::up(int steps)
 {
-    char aBuff[32] {};
+    char aBuff[16] {};
     ssize n = print::toSpan(aBuff, "\x1b[{}A", steps);
     push(aBuff, n);
 }
@@ -121,7 +119,7 @@ TextBuff::up(int steps)
 void
 TextBuff::down(int steps)
 {
-    char aBuff[32] {};
+    char aBuff[16] {};
     ssize n = print::toSpan(aBuff, "\x1b[{}B", steps);
     push(aBuff, n);
 }
@@ -129,7 +127,7 @@ TextBuff::down(int steps)
 void
 TextBuff::forward(int steps)
 {
-    char aBuff[32] {};
+    char aBuff[16] {};
     ssize n = print::toSpan(aBuff, "\x1b[{}C", steps);
     push(aBuff, n);
 }
@@ -137,7 +135,7 @@ TextBuff::forward(int steps)
 void
 TextBuff::back(int steps)
 {
-    char aBuff[32] {};
+    char aBuff[16] {};
     ssize n = print::toSpan(aBuff, "\x1b[{}D", steps);
     push(aBuff, n);
 }
@@ -145,7 +143,7 @@ TextBuff::back(int steps)
 void
 TextBuff::move(int x, int y)
 {
-    char aBuff[32] {};
+    char aBuff[16] {};
     ssize n = print::toSpan(aBuff, "\x1b[{};{}H", y + 1, x + 1);
     push(aBuff, n);
 }
@@ -235,6 +233,8 @@ TextBuff::destroy()
     m_imgArena.freeAll();
 #endif
 
+    present();
+
     hideCursor(false);
     clearKittyImages();
     push(TEXT_BUFF_KEYPAD_DISABLE);
@@ -248,7 +248,7 @@ TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 {
     m_pArena = pArena;
 #ifdef OPT_CHAFA
-    m_imgArena = Arena(SIZE_1M);
+    m_imgArena = Arena {SIZE_1M};
 #endif
 
     clearTerm();
@@ -271,6 +271,9 @@ TextBuff::pushDiff()
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
     bool bChangeStyle = false;
 
+    /* won't hurt */
+    push(TEXT_BUFF_NORM);
+
     for (row = 0; row < m_tHeight; ++row)
     {
         nForwards = 0;
@@ -290,8 +293,7 @@ TextBuff::pushDiff()
             const auto& front = frontBufferSpan()(col, row);
             const auto& back = backBufferSpan()(col, row);
 
-            if (back.eStyle != eLastStyle)
-                bChangeStyle = true;
+            if (back.eStyle != eLastStyle) bChangeStyle = true;
 
             if (front != back)
             {

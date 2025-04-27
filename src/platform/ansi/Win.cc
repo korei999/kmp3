@@ -40,29 +40,15 @@ void
 sigwinchHandler(int)
 {
     auto& win = *(Win*)app::g_pWin;
-    auto& pl = *app::g_pPlayer;
 
-    win.m_termSize = getTermSize();
-    LOG_GOOD("term: {}\n", win.m_termSize);
-
-    win.adjustListHeight();
-    win.m_textBuff.resize(win.m_termSize.width, win.m_termSize.height);
-
-    pl.m_bSelectionChanged = true;
-    win.m_bRedraw = true;
-
-    win.m_bClear = true;
-    win.m_lastResizeTime = utils::timeNowMS();
-
-    /* adapt list height if window size increased */
-    const int listHeight = win.m_listHeight - 2;
-    if (pl.m_focused > pl.m_vSearchIdxs.size() - listHeight && pl.m_vSearchIdxs.size() > listHeight)
-        win.m_firstIdx = pl.m_vSearchIdxs.size() - listHeight - 1;
+    win.resizeHandler();
 }
 
 bool
 Win::start(Arena* pArena)
 {
+    const auto& pl = *app::g_pPlayer;
+
     m_pArena = pArena;
     m_termSize = getTermSize();
 
@@ -95,6 +81,8 @@ void
 Win::draw()
 {
     update();
+
+    m_firstIdxPrev = m_firstIdx;
 }
 
 void
@@ -140,6 +128,29 @@ Win::adjustListHeight()
     const int split = app::g_pPlayer->m_imgHeight + 1;
     const int height = m_termSize.height;
     m_listHeight = height - split - 2;
+}
+
+void
+Win::resizeHandler()
+{
+    Player& pl = app::player();
+
+    m_termSize = getTermSize();
+    LOG_GOOD("term: {}\n", m_termSize);
+
+    adjustListHeight();
+    m_textBuff.resize(m_termSize.width, m_termSize.height);
+
+    pl.m_bSelectionChanged = true;
+    m_bRedraw = true;
+
+    m_bClear = true;
+    m_lastResizeTime = utils::timeNowMS();
+
+    /* adapt list height if window size increased */
+    const int listHeight = m_listHeight - 2;
+    if (pl.m_focused > pl.m_vSearchIdxs.size() - listHeight && pl.m_vSearchIdxs.size() > listHeight)
+        m_firstIdx = pl.m_vSearchIdxs.size() - listHeight - 1;
 }
 
 } /* namespace platform::ansi */

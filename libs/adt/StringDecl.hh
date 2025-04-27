@@ -2,7 +2,7 @@
 
 #include "SpanDecl.hh"
 
-#include <cstring>
+#include <cstring> /* IWYU pragma: keep */
 
 namespace adt
 {

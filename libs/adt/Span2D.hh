@@ -9,14 +9,14 @@ template<typename T>
 struct Span2D
 {
     T* m_pData {};
-    int m_width {};
-    int m_height {};
-    int m_stride {};
+    i32 m_width {};
+    i32 m_height {};
+    i32 m_stride {};
 
     /* */
 
     constexpr Span2D() = default;
-    constexpr Span2D(T* pData, int width, int height, int stride)
+    constexpr Span2D(T* pData, i32 width, i32 height, i32 stride)
         : m_pData(pData), m_width(width), m_height(height), m_stride(stride) {}
 
     /* */
@@ -25,22 +25,22 @@ struct Span2D
 
     /* */
 
-    constexpr T& operator()(int x, int y) { return at(x, y); }
-    constexpr const T& operator()(int x, int y) const { return at(x, y); }
+    constexpr T& operator()(i32 x, i32 y) { return at(x, y); }
+    constexpr const T& operator()(i32 x, i32 y) const { return at(x, y); }
 
     constexpr T* data() { return m_pData; }
     constexpr const T* data() const { return m_pData; }
 
-    constexpr int width() const { return m_width; }
-    constexpr int height() const { return m_height; }
-    constexpr int stride() const { return m_stride; }
+    constexpr i32 width() const { return m_width; }
+    constexpr i32 height() const { return m_height; }
+    constexpr i32 stride() const { return m_stride; }
     constexpr bool empty() const { return m_width <= 0 || m_height <= 0 || m_stride <= 0; }
 
     /* */
 
 protected:
     constexpr T&
-    at(int x, int y) const
+    at(i32 x, i32 y) const
     {
         ADT_ASSERT(x >= 0 && x < m_width && y >= 0 && y < m_height,
             "x: {}, y: {}, width: {}, height: {}, stride: {}",

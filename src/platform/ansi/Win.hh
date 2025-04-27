@@ -53,6 +53,7 @@ protected:
     termios m_termOg {};
     TermSize m_termSize {};
     adt::i16 m_firstIdx {};
+    adt::i16 m_firstIdxPrev {};
     int m_prevImgWidth = 0;
     adt::Mutex m_mtxUpdate {};
     adt::f64 m_time {};
@@ -73,6 +74,8 @@ public:
     virtual void subStringSearch() final;
     virtual void centerAroundSelection() final;
     virtual void adjustListHeight() final;
+
+    virtual void resizeHandler();
 
     /* */
 
