@@ -52,9 +52,8 @@ Win::info()
 {
     const auto& pl = *app::g_pPlayer;
     const int hOff = m_prevImgWidth + 2;
-    const int width = m_termSize.width;
 
-    Span sp = s_scratch.nextMem<char>(width*4);
+    Span sp = s_scratch.nextMem<char>();
 
     auto clDrawLine = [&](
         const int y,

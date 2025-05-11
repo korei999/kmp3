@@ -1,6 +1,6 @@
 #pragma once
 
-#include "adt/types.hh"
+#include "types.hh"
 
 namespace adt::rng
 {

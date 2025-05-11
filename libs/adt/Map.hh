@@ -15,7 +15,7 @@ namespace adt
 constexpr f32 MAP_DEFAULT_LOAD_FACTOR = 0.5f;
 constexpr f32 MAP_DEFAULT_LOAD_FACTOR_INV = 1.0f / MAP_DEFAULT_LOAD_FACTOR;
 
-enum class MAP_RESULT_STATUS : u8 { FOUND, NOT_FOUND, INSERTED };
+enum class MAP_RESULT_STATUS : u8 { NOT_FOUND, FOUND, INSERTED };
 
 template<typename K, typename V>
 struct KeyVal

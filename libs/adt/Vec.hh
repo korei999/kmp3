@@ -374,97 +374,42 @@ Vec<T>::growIfNeeded(IAllocator* p)
 }
 
 template<typename T>
-struct VecManaged
+struct VecManaged : Vec<T>
 {
-    Vec<T> base {};
-
-    /* */
-
     IAllocator* m_pAlloc = nullptr;
 
     /* */
 
+    using Vec<T>::Vec;
+
     VecManaged() = default;
-    VecManaged(IAllocator* p, ssize prealloc = 1) : base(p, prealloc), m_pAlloc(p) {}
-    VecManaged(IAllocator* p, ssize preallocSize, const T& fillWith) : base(p, preallocSize, fillWith) {}
+    VecManaged(IAllocator* p, ssize prealloc = 1) : Vec<T>(p, prealloc), m_pAlloc(p) {}
+    VecManaged(IAllocator* p, ssize preallocSize, const T& fillWith) : Vec<T>(p, preallocSize, fillWith) {}
 
     /* */
 
-    explicit operator Span<T>() const { return {Span<T>(base)}; }
+    ssize push(const T& data) { return Vec<T>::push(m_pAlloc, data); }
 
-    /* */
-
-    T& operator[](ssize i)             noexcept { return base[i]; }
-    const T& operator[](ssize i) const noexcept { return base[i]; }
-
-    [[nodiscard]] bool empty() const noexcept { return base.empty(); }
-
-    ssize push(const T& data) { return base.push(m_pAlloc, data); }
-
-    void pushSpan(const Span<T> sp) { base.pushSpan(m_pAlloc, sp); }
+    void pushSpan(const Span<T> sp) { Vec<T>::pushSpan(m_pAlloc, sp); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-        ssize emplace(ARGS&&... args) { return base.emplace(m_pAlloc, std::forward<ARGS>(args)...); }
+        ssize emplace(ARGS&&... args) { return Vec<T>::emplace(m_pAlloc, std::forward<ARGS>(args)...); }
 
-    [[nodiscard]] T& last() noexcept { return base.last(); }
+    void setSize(ssize size) { Vec<T>::setSize(m_pAlloc, size); }
 
-    [[nodiscard]] const T& last() const noexcept { return base.last(); }
+    void setCap(ssize cap) { Vec<T>::setCap(m_pAlloc, cap); }
 
-    [[nodiscard]] T& first() noexcept { return base.first(); }
-
-    [[nodiscard]] const T& first() const noexcept { return base.first(); }
-
-    T* pop() noexcept { return base.pop(); }
-
-    void setSize(ssize size) { base.setSize(m_pAlloc, size); }
-
-    void setCap(ssize cap) { base.setCap(m_pAlloc, cap); }
-
-    void swapWithLast(ssize i) noexcept { base.swapWithLast(i); }
-
-    void popAsLast(ssize i) noexcept { base.popAsLast(i); }
-
-    void removeAndShift(ssize i) noexcept { base.removeAndShift(i); }
-
-    [[nodiscard]] ssize idx(const T* const x) const noexcept { return base.idx(x); }
-
-    [[nodiscard]] ssize lastI() const noexcept { return base.lastI(); }
-
-    void destroy() { base.destroy(m_pAlloc); }
-
-    [[nodiscard]] ssize size() const noexcept { return base.size(); }
-
-    [[nodiscard]] ssize cap() const noexcept { return base.cap(); }
-
-    [[nodiscard]] T* data() noexcept { return base.data(); }
-
-    [[nodiscard]] const T* data() const noexcept { return base.data(); }
-
-    void zeroOut() noexcept { base.zeroOut(); }
+    void destroy() { Vec<T>::destroy(m_pAlloc); }
 
     [[nodiscard]] VecManaged<T>
     clone(IAllocator* pAlloc)
     {
-        auto nBase = base.clone(pAlloc);
+        Vec<T> nBase = Vec<T>::clone(pAlloc);
         VecManaged<T> nVec;
-        nVec.base = nBase;
+        new(&nVec) Vec<T> {nBase};
         nVec.m_pAlloc = pAlloc;
         return nVec;
     }
-
-    [[nodiscard]] bool search(const T& x) const { return base.search(x); }
-
-    /* */
-
-    typename Vec<T>::It begin()  noexcept { return base.begin(); }
-    typename Vec<T>::It end()    noexcept { return base.end(); }
-    typename Vec<T>::It rbegin() noexcept { return base.rbegin(); }
-    typename Vec<T>::It rend()   noexcept { return base.rend(); }
-
-    const typename Vec<T>::It begin()  const noexcept { return base.begin(); }
-    const typename Vec<T>::It end()    const noexcept { return base.end(); }
-    const typename Vec<T>::It rbegin() const noexcept { return base.rbegin(); }
-    const typename Vec<T>::It rend()   const noexcept { return base.rend(); }
 };
 
 } /* namespace adt */

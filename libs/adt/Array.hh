@@ -4,6 +4,7 @@
 #include "sort.hh"
 
 #include <initializer_list>
+#include <new>
 
 namespace adt
 {
@@ -44,7 +45,7 @@ struct Array
     constexpr T* data() { return m_aData; }
     constexpr const T* data() const { return m_aData; }
     constexpr bool empty() const { return m_size <= 0; }
-    constexpr ssize push(const T& x);
+    ssize push(const T& x); /* placement new cannot be constexpr something... */
     template<typename ...ARGS> requires (std::is_constructible_v<T, ARGS...>) constexpr ssize emplace(ARGS&&... args);
     constexpr ssize fakePush();
     constexpr T* pop();
@@ -91,7 +92,7 @@ struct Array
 };
 
 template<typename T, ssize CAP> requires(CAP > 0)
-inline constexpr ssize
+inline ssize
 Array<T, CAP>::push(const T& x)
 {
     ADT_ASSERT(size() < CAP, "pushing over capacity");
@@ -216,7 +217,9 @@ Array<T, CAP>::Array(ssize size, ARGS&&... args)
 template<typename T, ssize CAP> requires(CAP > 0)
 constexpr Array<T, CAP>::Array(std::initializer_list<T> list)
 {
-    for (auto& e : list) push(e);
+    setSize(list.size());
+    for (ssize i = 0; i < size(); ++i)
+        m_aData[i] = *(list.begin() + i);
 }
 
 namespace sort

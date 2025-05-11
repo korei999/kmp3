@@ -8,6 +8,8 @@
 #include "adt/QueueArray.hh"
 #include "adt/Thread.hh"
 
+#include <limits>
+
 enum class PLAYER_REPEAT_METHOD: adt::u8 { NONE, TRACK, PLAYLIST, ESIZE };
 ADT_ENUM_BITWISE_OPERATORS(PLAYER_REPEAT_METHOD);
 

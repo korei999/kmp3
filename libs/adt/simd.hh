@@ -571,6 +571,18 @@ f32Fillx4(Span<f32> src, const f32 x)
         src[i] = x;
 }
 
+inline void
+i16Fillx8(Span<i16> src, const i16 x)
+{
+    __m128i pack = _mm_set1_epi16(x);
+    ssize i = 0;
+    for (; i + 7 < src.size(); i += 8)
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(&src[i]), pack);
+
+    for (; i < src.size(); ++i)
+        src[i] = x;
+}
+
 /* 128 bit end */
 
 #if defined ADT_AVX2

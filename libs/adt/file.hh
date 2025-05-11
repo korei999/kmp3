@@ -29,7 +29,7 @@ namespace file
 enum class TYPE : u8 { UNHANDLED, FILE, DIRECTORY };
 
 [[nodiscard]] inline String
-load(IAllocator* pAlloc, StringView svPath)
+load(IAllocator* pAlloc, const StringView svPath)
 {
     FILE* pf = fopen(svPath.data(), "rb");
     if (!pf)
@@ -53,41 +53,64 @@ load(IAllocator* pAlloc, StringView svPath)
     return ret;
 }
 
+template<ssize SIZE>
+[[nodiscard]] inline StringFixed<SIZE>
+load(const StringView svPath)
+{
+    FILE* pf = fopen(svPath.data(), "rb");
+    if (!pf)
+    {
+        LOG_WARN("failed to open '{}' file\n", svPath);
+        return {};
+    }
+    ADT_DEFER( fclose(pf) );
+
+    StringFixed<SIZE> ret {};
+
+    fseek(pf, 0, SEEK_END);
+    const ssize size = utils::min(ssize(ftell(pf)), SIZE - 1);
+    rewind(pf);
+
+    fread(ret.data(), 1, size, pf);
+
+    return ret;
+}
+
 [[nodiscard]] inline StringView
-getPathEnding(StringView svPath)
+getPathEnding(const StringView svPath)
 {
     ssize lastSlash = svPath.lastOf('/');
 
     if (lastSlash == NPOS || (lastSlash + 1) == svPath.size()) /* nothing after slash */
         return svPath;
 
-    return StringView(&svPath[lastSlash + 1], &svPath[svPath.m_size - 1] - &svPath[lastSlash]);
+    return StringView(const_cast<char*>(&svPath[lastSlash + 1]), &svPath[svPath.m_size - 1] - &svPath[lastSlash]);
 }
 
 [[nodiscard]] inline String
-replacePathEnding(IAllocator* pAlloc, StringView svPath, StringView svEnding)
+replacePathEnding(IAllocator* pAlloc, const StringView svPath, const StringView svEnding)
 {
     ADT_ASSERT(pAlloc != nullptr, " ");
 
     ssize lastSlash = svPath.lastOf('/');
-    StringView sNoEnding = {&svPath[0], lastSlash + 1};
+    const StringView sNoEnding = {const_cast<char*>(&svPath[0]), lastSlash + 1};
     String r = StringCat(pAlloc, sNoEnding, svEnding);
     return r;
 }
 
 inline void
-replacePathEnding(Span<char>* spBuff, StringView svPath, StringView svEnding)
+replacePathEnding(Span<char>* spBuff, const StringView svPath, const StringView svEnding)
 {
     ADT_ASSERT(spBuff != nullptr, " ");
 
     ssize lastSlash = svPath.lastOf('/');
-    StringView svNoEnding = {&svPath[0], lastSlash + 1};
+    const StringView svNoEnding = {const_cast<char*>(&svPath[0]), lastSlash + 1};
     ssize n = print::toSpan(*spBuff, "{}{}", svNoEnding, svEnding);
     spBuff->m_size = n;
 }
 
 [[nodiscard]] inline String
-appendDirPath(IAllocator* pAlloc, StringView svDir, StringView svPath)
+appendDirPath(IAllocator* pAlloc, const StringView svDir, const StringView svPath)
 {
     ADT_ASSERT(pAlloc != nullptr, " ");
 

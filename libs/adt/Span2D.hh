@@ -40,6 +40,17 @@ struct Span2D
 
 protected:
     constexpr T&
+    at(i32 x, i32 y)
+    {
+        ADT_ASSERT(x >= 0 && x < m_width && y >= 0 && y < m_height,
+            "x: {}, y: {}, width: {}, height: {}, stride: {}",
+            x, y, m_width, m_height, m_stride
+        );
+
+        return m_pData[y*m_stride + x];
+    }
+
+    constexpr const T&
     at(i32 x, i32 y) const
     {
         ADT_ASSERT(x >= 0 && x < m_width && y >= 0 && y < m_height,

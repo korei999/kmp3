@@ -23,17 +23,17 @@ struct BufferAllocator : public IAllocator
     constexpr BufferAllocator() = default;
 
     constexpr BufferAllocator(u8* pMemory, usize capacity) noexcept
-        : m_pMemBuffer(pMemory),
-          m_cap(capacity) {}
+        : m_pMemBuffer {pMemory},
+          m_cap {capacity} {}
 
     template<typename T, ssize N>
     BufferAllocator(T (&aMem)[N]) noexcept
-        : m_pMemBuffer(static_cast<u8*>(aMem)),
-          m_cap(N * sizeof(T)) {}
+        : m_pMemBuffer {reinterpret_cast<u8*>(aMem)},
+          m_cap {N * sizeof(T)} {}
 
     template<typename T>
     constexpr BufferAllocator(Span<T> sp) noexcept
-        : BufferAllocator(reinterpret_cast<u8*>(sp.data()), sp.size() * sizeof(T)) {}
+        : BufferAllocator {reinterpret_cast<u8*>(sp.data()), sp.size() * sizeof(T)} {}
 
     /* */
 
@@ -51,7 +51,7 @@ BufferAllocator::malloc(usize mCount, usize mSize)
     usize realSize = alignUp8(mCount * mSize);
 
     if (m_size + realSize > m_cap)
-        throw AllocException("FixedAllocator::malloc(): out of memory");
+        throw AllocException("BufferAllocator::malloc(): out of memory");
 
     void* ret = &m_pMemBuffer[m_size];
     m_size += realSize;
@@ -79,7 +79,7 @@ BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
     usize realSize = alignUp8(newCount * mSize);
 
     if ((m_size + realSize - m_lastAllocSize) > m_cap)
-        throw AllocException("FixedAllocator::realloc(): out of memory");
+        throw AllocException("BufferAllocator::realloc(): out of memory");
 
     if (p == m_pLastAlloc)
     {

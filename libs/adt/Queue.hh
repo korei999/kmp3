@@ -5,6 +5,8 @@
 #include "assert.hh"
 #include "defer.hh"
 
+#include <new>
+
 namespace adt
 {
 

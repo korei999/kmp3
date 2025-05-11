@@ -1,11 +1,12 @@
 #include "frame.hh"
 
-#include "adt/Arena.hh"
-#include "adt/defer.hh"
-#include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
+
+#include "adt/Arena.hh"
 #include "adt/Thread.hh"
+#include "adt/defer.hh"
+#include "adt/logs.hh"
 
 #ifdef OPT_MPRIS
     #include "mpris.hh"

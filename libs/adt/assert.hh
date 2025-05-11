@@ -3,6 +3,10 @@
 #include "types.hh"
 #include "printDecl.hh" /* IWYU pragma: keep */
 
+#if __has_include(<unistd.h>)
+    #include <unistd.h>
+#endif
+
 namespace adt
 {
 
@@ -10,7 +14,7 @@ inline void
 assertionFailed(const char* cnd, const char* msg, const char* file, int line, const char* func)
 {
     char aBuff[256] {};
-    print::toBuffer(aBuff, sizeof(aBuff) - 1,
+    [[maybe_unused]] const ssize n = print::toBuffer(aBuff, sizeof(aBuff) - 1,
         "[{}, {}: {}()] assertion( {} ) failed.\n(msg) '{}'\n",
         file, line, func, cnd, msg
     );
@@ -22,12 +26,13 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
         "Assertion failed",
         MB_ICONWARNING | MB_OK | MB_DEFBUTTON2
     );
-#else
-    fputs(aBuff, stderr);
-    fflush(stderr);
-#endif
 
     *(volatile int*)0 = 0; /* die */
+#else
+    write(STDERR_FILENO, aBuff, n);
+
+    abort();
+#endif
 }
 
 } /* namespace adt */

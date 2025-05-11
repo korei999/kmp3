@@ -21,12 +21,11 @@
     #include <sysinfoapi.h>
 #endif
 
-#include "types.hh"
+#include "PairDecl.hh"
 #include "assert.hh"
 
 #include <ctime>
 #include <cstring>
-#include <cmath>
 
 namespace adt::utils
 {
@@ -71,6 +70,14 @@ template<typename T>
 min(const T& l, const T& r)
 {
     return l < r ? l : r;
+}
+
+template<typename T>
+[[nodiscard]] inline Pair<T, T>
+minMax(const T& l, const T& r)
+{
+    if (l > r) return {r, l};
+    else return {l, r};
 }
 
 [[nodiscard]] inline constexpr ssize
@@ -246,7 +253,8 @@ reverse(auto* a, const ssize size)
 {
     ADT_ASSERT(size > 0, " ");
 
-    for (ssize i = 0; i < size / 2; ++i)
+    const ssize halfSize = size >> 1;
+    for (ssize i = 0; i < halfSize; ++i)
         swap(&a[i], &a[size - 1 - i]);
 }
 
@@ -262,6 +270,30 @@ search(const CON_T<T>& c, LAMBDA f)
 {
     for (const auto& el : c)
         if (f(el)) return c.idx(&el);
+
+    return NPOS;
+}
+
+template<typename T, typename B>
+[[nodiscard]] inline ssize
+binarySearch(const T& array, const B& x)
+{
+    static_assert(std::is_same_v<std::remove_cvref_t<decltype(array[0])>, std::remove_cvref_t<B>>);
+
+    ADT_ASSERT(array.size() > 0, "");
+
+    ssize lo = 0, hi = array.size();
+    while (lo < hi)
+    {
+        const ssize mid = (lo + hi) >> 1;
+
+        const bool less = (array[mid] < x);
+        lo = less ? mid + 1 : lo;
+        hi = less ? hi : mid;
+    }
+
+    if (lo < array.size() && array[lo] == x)
+        return lo;
 
     return NPOS;
 }

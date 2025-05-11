@@ -3,6 +3,9 @@
 #include "IAllocator.hh"
 #include "utils.hh"
 
+#include <new>
+#include <cstddef>
+
 namespace adt
 {
 
@@ -21,7 +24,7 @@ template<typename T>
 constexpr ListNode<T>*
 ListNodeAlloc(IAllocator* pA, const T& x)
 {
-    auto* pNew = (ListNode<T>*)pA->malloc(1, sizeof(ListNode<T>));
+    auto* pNew = (ListNode<T>*)pA->alloc<ListNode<T>>();
     new(&pNew->data) T(x);
 
     return pNew;
@@ -51,6 +54,10 @@ struct List
     constexpr ListNode<T>* pushBack(IAllocator* pA, const T& x);
 
     constexpr void remove(ListNode<T>* p);
+
+    void remove(T* p);
+
+    void removeFree(IAllocator* pAlloc, T* p);
 
     constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p);
 
@@ -186,6 +193,23 @@ List<T>::remove(ListNode<T>* p)
     }
 
     --m_size;
+}
+
+template<typename T>
+inline void
+List<T>::remove(T* p)
+{
+    ListNode<T>* pNode = (u8*)(p) - sizeof(void*)*2;
+    remove(pNode);
+}
+
+template<typename T>
+inline void
+List<T>::removeFree(IAllocator* pAlloc, T* p)
+{
+    ListNode<T>* pNode = (ListNode<T>*)((u8*)(p) - offsetof(ListNode<T>, data));
+    remove(pNode);
+    pAlloc->free(pNode);
 }
 
 template<typename T>

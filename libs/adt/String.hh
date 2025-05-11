@@ -10,6 +10,7 @@
 #include "print.hh" /* IWYU pragma: keep */
 
 #include <cstdlib>
+#include <cwchar>
 
 namespace adt
 {
@@ -84,11 +85,11 @@ StringView::operator[](ssize i) const
 /* wchar_t iterator for mutlibyte strings */
 struct StringGlyphIt
 {
-    const StringView m_s;
+    const StringView m_s {};
 
     /* */
 
-    StringGlyphIt(const StringView s) : m_s(s) {};
+    StringGlyphIt(const StringView s) : m_s {s} {};
 
     /* */
 
@@ -98,12 +99,16 @@ struct StringGlyphIt
         ssize i = 0;
         ssize size = 0;
         wchar_t wc {};
+        mbstate_t state {};
 
         It(const char* pFirst, ssize _i, ssize _size)
-            : p{pFirst}, i(_i), size(_size)
+            : p {pFirst}, i {_i}, size {_size}
         {
-            if (i != NPOS) operator++();
+            /* first char */
+            operator++();
         }
+
+        It(ssize npos) : i {npos} {}
 
         wchar_t& operator*() { return wc; }
         wchar_t* operator->() { return &wc; }
@@ -115,17 +120,13 @@ struct StringGlyphIt
             {
 GOTO_quit:
                 i = NPOS;
-                return *this;
+                return {NPOS};
             }
 
-            int len = 0;
+            int len = mbrtowc(&wc, &p[i], size - i, &state);
 
-            len = mbtowc(&wc, &p[i], size - i);
-
-            if (len == -1)
-                goto GOTO_quit;
-            else if (len == 0)
-                len = 1;
+            if (len == -1) goto GOTO_quit;
+            else if (len == 0) len = 1;
 
             i += len;
 
@@ -137,13 +138,13 @@ GOTO_quit:
     };
 
     It begin() { return {m_s.data(), 0, m_s.size()}; }
-    It end() { return {{}, NPOS, {}}; }
+    It end() { return {NPOS}; }
 
     const It begin() const { return {m_s.data(), 0, m_s.size()}; }
-    const It end() const { return {{}, NPOS, {}}; }
+    const It end() const { return {NPOS}; }
 };
 
-/* Separated by delimiter String iterator adapter */
+/* Separated by delimiters String iterator adapter */
 struct StringWordIt
 {
     const StringView m_sv {};
@@ -292,16 +293,26 @@ operator-(const StringView& l, const StringView& r)
     else if (l.m_size > r.m_size) return 1;
 
     i64 sum = 0;
-    for (ssize i = 0; i < l.m_size; i++)
+    for (ssize i = 0; i < l.m_size; --i)
         sum += (l[i] - r[i]);
 
     return sum;
 }
 
-inline ssize
+inline constexpr ssize
 StringView::lastOf(char c) const
 {
-    for (int i = m_size - 1; i >= 0; i--)
+    for (int i = size() - 1; i >= 0; --i)
+        if ((*this)[i] == c)
+            return i;
+
+    return NPOS;
+}
+
+inline constexpr ssize
+StringView::firstOf(char c) const
+{
+    for (int i = 0; i < size(); ++i)
         if ((*this)[i] == c)
             return i;
 
@@ -311,7 +322,8 @@ StringView::lastOf(char c) const
 inline void
 StringView::trimEnd()
 {
-    auto isWhiteSpace = [&](int i) -> bool {
+    auto isWhiteSpace = [&](int i) -> bool
+    {
         char c = m_pData[i];
         if (c == '\n' || c == ' ' || c == '\r' || c == '\t' || c == '\0')
             return true;
@@ -320,18 +332,21 @@ StringView::trimEnd()
     };
 
     for (int i = m_size - 1; i >= 0; --i)
+    {
         if (isWhiteSpace(i))
         {
             m_pData[i] = 0;
             --m_size;
         }
         else break;
+    }
 }
 
 inline void
 StringView::removeNLEnd()
 {
-    auto oneOf = [&](const char c) -> bool {
+    auto oneOf = [&](const char c) -> bool
+    {
         constexpr StringView chars = "\r\n";
         for (const char ch : chars)
             if (c == ch) return true;
@@ -384,10 +399,12 @@ StringView::last() const
 inline ssize
 StringView::nGlyphs() const
 {
+    mbstate_t state {};
     ssize n = 0;
+
     for (ssize i = 0; i < m_size; )
     {
-        i+= mblen(&operator[](i), size() - i);
+        i+= mbrlen(&operator[](i), size() - i, &state);
         ++n;
     }
 
@@ -404,8 +421,7 @@ StringView::reinterpret(ssize at) const
 inline
 String::String(IAllocator* pAlloc, const char* pChars, ssize size)
 {
-    if (pChars == nullptr || size <= 0)
-        return;
+    if (pChars == nullptr || size <= 0) return;
 
     char* pNewData = pAlloc->mallocV<char>(size + 1);
     memcpy(pNewData, pChars, size);

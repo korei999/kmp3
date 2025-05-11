@@ -51,7 +51,7 @@ enum class ORDER : int
 };
 
 ADT_ALWAYS_INLINE void
-fence(const ORDER eOrder)
+fence([[maybe_unused]] const ORDER eOrder)
 {
 #ifdef ADT_USE_WIN32_ATOMICS
 
@@ -88,7 +88,7 @@ struct Int
     /* */
 
     ADT_ALWAYS_INLINE Type
-    load(const ORDER eOrder) const noexcept
+    load([[maybe_unused]] const ORDER eOrder) const noexcept
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
@@ -102,7 +102,7 @@ struct Int
     }
 
     ADT_ALWAYS_INLINE void
-    store(const int val, const ORDER eOrder) noexcept
+    store(const int val, [[maybe_unused]] const ORDER eOrder) noexcept
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
@@ -116,7 +116,7 @@ struct Int
     }
 
     ADT_ALWAYS_INLINE Type
-    fetchAdd(const int val, const ORDER eOrder) noexcept
+    fetchAdd(const int val, [[maybe_unused]] const ORDER eOrder) noexcept
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
@@ -130,7 +130,7 @@ struct Int
     }
 
     ADT_ALWAYS_INLINE Type
-    fetchSub(const int val, const ORDER eOrder) noexcept
+    fetchSub(const int val, [[maybe_unused]] const ORDER eOrder) noexcept
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
@@ -144,7 +144,7 @@ struct Int
     }
 
     ADT_ALWAYS_INLINE Type
-    compareExchangeWeak(Type* pExpected, Type desired, ORDER eSucces, ORDER eFailure) noexcept
+    compareExchangeWeak(Type* pExpected, Type desired, [[maybe_unused]] ORDER eSucces, [[maybe_unused]] ORDER eFailure) noexcept
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
@@ -152,14 +152,16 @@ struct Int
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
-        ADT_ASSERT(false, "not implemented");
-        return {};
+        Type old = InterlockedCompareExchange(&m_volInt, desired, *pExpected);
+        if (old != *pExpected) *pExpected = old;
+
+        return old;
 
 #endif
     };
 
     ADT_ALWAYS_INLINE Type
-    compareExchange(Type* pExpected, Type desired, ORDER eSucces, ORDER eFailure) noexcept
+    compareExchange(Type* pExpected, Type desired, [[maybe_unused]] ORDER eSucces, [[maybe_unused]] ORDER eFailure) noexcept
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
@@ -167,8 +169,10 @@ struct Int
 
 #elif defined ADT_USE_WIN32_ATOMICS
 
-        ADT_ASSERT(false, "not implemented");
-        return {};
+        Type old = InterlockedCompareExchange(&m_volInt, desired, *pExpected);
+        if (old != *pExpected) *pExpected = old;
+
+        return old;
 
 #endif
     };
@@ -177,7 +181,7 @@ struct Int
 protected:
 
     ADT_ALWAYS_INLINE static constexpr int
-    orderMap(const ORDER eOrder) noexcept
+    orderMap([[maybe_unused]] const ORDER eOrder) noexcept
     {
 #ifdef ADT_USE_LINUX_ATOMICS
 
