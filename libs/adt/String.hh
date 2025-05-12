@@ -126,7 +126,7 @@ GOTO_quit:
             int len = mbrtowc(&wc, &p[i], size - i, &state);
 
             if (len == -1) goto GOTO_quit;
-            else if (len == 0) len = 1;
+            else if (len == 0 || len < -1) len = 1;
 
             i += len;
 
