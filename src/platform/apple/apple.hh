@@ -29,7 +29,7 @@ struct Mixer : public audio::IMixer
 
     /* */
 
-    void setConfig(adt::f64 sampleRate, int nChannels);
+    void setConfig(adt::f64 sampleRate, int nChannels, bool bSaveNewConfig);
 
     OSStatus writeCallBack(
         AudioUnitRenderActionFlags* pIOActionFlags,

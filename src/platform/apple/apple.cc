@@ -11,10 +11,15 @@ namespace platform::apple
 {
 
 void
-Mixer::setConfig(adt::f64 sampleRate, int nChannels)
+Mixer::setConfig(adt::f64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
-    m_sampleRate = sampleRate;
-    m_nChannels = nChannels;
+    sampleRate = utils::clamp(sampleRate, f64(defaults::MIN_SAMPLE_RATE), f64(defaults::MAX_SAMPLE_RATE));
+
+    if (bSaveNewConfig)
+    {
+        m_changedSampleRate = m_sampleRate = sampleRate;
+        m_nChannels = nChannels;
+    }
 
     AudioStreamBasicDescription streamFormat {};
     streamFormat.mSampleRate = sampleRate;
@@ -193,8 +198,7 @@ Mixer::play(StringView svPath)
         m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
     }
 
-    setConfig(app::decoder().getSampleRate(), app::decoder().getChannelsCount());
-    m_changedSampleRate = app::decoder().getSampleRate();
+    setConfig(app::decoder().getSampleRate(), app::decoder().getChannelsCount(), true);
 
     if (!math::eq(prevSpeed, 1.0))
         changeSampleRate(f64(m_sampleRate) * prevSpeed, false);
@@ -220,10 +224,8 @@ Mixer::togglePause()
 void
 Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 {
-    sampleRate = utils::clamp(sampleRate, defaults::MIN_SAMPLE_RATE, defaults::MAX_SAMPLE_RATE);
-
     pause(true);
-    setConfig(sampleRate, m_nChannels);
+    setConfig(sampleRate, m_nChannels, false);
     pause(false);
 
     if (bSave) m_sampleRate = sampleRate;
