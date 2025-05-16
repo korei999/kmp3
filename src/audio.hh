@@ -12,13 +12,13 @@ namespace audio
 constexpr adt::u64 CHUNK_SIZE = (1 << 18); /* big enough */
 
 /* Platrform abstracted audio interface */
-class IMixer
+struct IMixer
 {
-protected:
     adt::atomic::Int m_atom_bPaused {false};
 #ifdef OPT_MPRIS
     adt::atomic::Int m_atom_bUpdateMpris {false};
 #endif
+    adt::atomic::Int m_bSongEnd {false};
     bool m_bMuted = false;
     bool m_bRunning = true;
     adt::u32 m_sampleRate = 48000;
@@ -28,7 +28,6 @@ protected:
     adt::i64 m_currentTimeStamp {};
     adt::i64 m_nTotalSamples {};
 
-public:
     virtual void init() = 0;
     virtual void destroy() = 0;
     virtual void play(adt::StringView svPath) = 0;

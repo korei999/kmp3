@@ -222,7 +222,7 @@ Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i
     }
 
     if (err == audio::ERROR::END_OF_FILE)
-        app::player().onSongEnd();
+        m_bSongEnd.store(true, atomic::ORDER::RELEASE);
 }
 
 void

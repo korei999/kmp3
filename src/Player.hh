@@ -45,9 +45,9 @@ struct Player
     adt::IAllocator* m_pAlloc {};
 
     struct {
-        adt::StringFixed<128> sTitle {};
-        adt::StringFixed<128> sAlbum {};
-        adt::StringFixed<128> sArtist {};
+        adt::StringFixed<128> sfTitle {};
+        adt::StringFixed<128> sfAlbum {};
+        adt::StringFixed<128> sfArtist {};
     } m_info {};
 
     adt::u8 m_imgHeight {};
@@ -91,6 +91,7 @@ struct Player
     void pause(bool bPause);
     void togglePause();
     void onSongEnd();
+    void nextSongIfPrevEnded();
     PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward);
     void select(long i);
     void selectNext();

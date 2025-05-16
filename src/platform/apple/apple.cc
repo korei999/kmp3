@@ -15,6 +15,8 @@ Mixer::setConfig(adt::f64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
     sampleRate = utils::clamp(sampleRate, f64(defaults::MIN_SAMPLE_RATE), f64(defaults::MAX_SAMPLE_RATE));
 
+    LOG_BAD("\n NEW SAPMLE RATE: {}\n\n", sampleRate);
+
     if (bSaveNewConfig)
     {
         m_changedSampleRate = m_sampleRate = sampleRate;
@@ -115,7 +117,7 @@ Mixer::writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSa
     }
 
     if (err == audio::ERROR::END_OF_FILE)
-        app::player().onSongEnd();
+        m_bSongEnd.store(true, atomic::ORDER::RELEASE);
 }
 
 void
@@ -209,6 +211,10 @@ Mixer::play(StringView svPath)
 void
 Mixer::pause(bool bPause)
 {
+    bool bCurr = m_atom_bPaused.load(atomic::ORDER::ACQUIRE);
+    LOG_GOOD("PAUSE/CURR: [{}, {}]\n", bPause, bCurr);
+    if (bCurr == bPause) return;
+
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
     if (bPause) AudioOutputUnitStop(m_unit);

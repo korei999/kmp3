@@ -151,12 +151,12 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
 void
 Player::updateInfo()
 {
-    m_info.sTitle = app::decoder().getMetadata("title");
-    m_info.sAlbum = app::decoder().getMetadata("album");
-    m_info.sArtist = app::decoder().getMetadata("artist");
+    m_info.sfTitle = app::decoder().getMetadata("title");
+    m_info.sfAlbum = app::decoder().getMetadata("album");
+    m_info.sfArtist = app::decoder().getMetadata("artist");
 
-    if (m_info.sTitle.size() == 0)
-        m_info.sTitle = m_vShortSongs[m_selected];
+    if (m_info.sfTitle.size() == 0)
+        m_info.sfTitle = m_vShortSongs[m_selected];
 
     m_bSelectionChanged = true;
 }
@@ -212,6 +212,19 @@ Player::onSongEnd()
 
     app::g_pMixer->play(m_vSongs[m_selected]);
     updateInfo();
+}
+
+void
+Player::nextSongIfPrevEnded()
+{
+    int bEnd = true;
+    if (app::mixer().m_bSongEnd.compareExchange(
+            &bEnd, false,
+            atomic::ORDER::RELAXED, atomic::ORDER::RELAXED)
+    )
+    {
+        app::player().onSongEnd();
+    }
 }
 
 PLAYER_REPEAT_METHOD
