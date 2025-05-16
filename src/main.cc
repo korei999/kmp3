@@ -23,18 +23,18 @@ using namespace adt;
 static void
 setTermEnv()
 {
-    const StringView sTerm = getenv("TERM");
-    app::g_svTerm = sTerm;
+    const StringView svTerm = getenv("TERM");
+    app::g_svTerm = svTerm;
 
-    if (sTerm == "foot")
+    if (svTerm == "foot")
         app::g_eTerm = app::TERM::FOOT;
-    else if (sTerm == "xterm-kitty")
+    else if (svTerm == "xterm-kitty")
         app::g_eTerm = app::TERM::KITTY;
-    else if (sTerm == "xterm-ghostty")
+    else if (svTerm == "xterm-ghostty")
         app::g_eTerm = app::TERM::GHOSTTY;
-    else if (sTerm == "alacritty")
+    else if (svTerm == "alacritty")
         app::g_eTerm = app::TERM::ALACRITTY;
-    else if (sTerm == "xterm-256color")
+    else if (svTerm == "xterm-256color")
         app::g_eTerm = app::TERM::XTERM_256COLOR;
     else app::g_eTerm = app::TERM::ELSE;
 
@@ -101,8 +101,10 @@ startup(int argc, char** argv)
     bool bFreeArgv = false;
 
     app::g_eUIFrontend = app::UI::ANSI;
-#ifdef OPT_PIPEWIRE
+#if OPT_PIPEWIRE
     app::g_eMixer = app::MIXER::PIPEWIRE;
+#elif defined __APPLE__
+    app::g_eMixer = app::MIXER::COREAUDIO;
 #endif
 
     parseArgs(argc, argv);

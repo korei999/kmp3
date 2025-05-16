@@ -10,6 +10,10 @@
     #include "platform/pipewire/Mixer.hh"
 #endif
 
+#ifdef __APPLE__
+    #include "platform/apple/apple.hh"
+#endif
+
 using namespace adt;
 
 namespace app
@@ -67,6 +71,12 @@ allocMixer(IAllocator* pAlloc)
 #ifdef OPT_PIPEWIRE
         case MIXER::PIPEWIRE:
         pMix = pAlloc->alloc<platform::pipewire::Mixer>();
+        break;
+#endif
+
+#ifdef __APPLE__
+        case MIXER::COREAUDIO:
+        pMix = pAlloc->alloc<platform::apple::Mixer>();
         break;
 #endif
     }

@@ -32,6 +32,10 @@ getLogicalCoresCountWIN32()
 }
 
     #define ADT_GET_NPROCS() getLogicalCoresCountWIN32()
+#elif defined __APPLE__
+
+    #define ADT_GET_NPROCS() sysconf(_SC_NPROCESSORS_ONLN)
+
 #else
     #define ADT_GET_NPROCS() 4
 #endif

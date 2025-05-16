@@ -3,6 +3,8 @@
 #include "audio.hh"
 #include "Image.hh"
 
+#include "adt/Thread.hh"
+
 extern "C"
 {
 
@@ -40,7 +42,7 @@ struct Decoder : audio::IDecoder
 
     /* */
 
-private:
+    adt::Mutex m_mtx = adt::Mutex {adt::Mutex::TYPE::PLAIN};
     AVStream* m_pStream {};
     AVFormatContext* m_pFormatCtx {};
     AVCodecContext* m_pCodecCtx {};

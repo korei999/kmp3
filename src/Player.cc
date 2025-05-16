@@ -317,7 +317,12 @@ Player::popErrorMsg()
 }
 
 Player::Player(IAllocator* p, int nArgs, char** ppArgs)
-    : m_pAlloc(p), m_vSongs(p, nArgs), m_vShortSongs(p, nArgs), m_vSongIdxs(p, nArgs), m_vSearchIdxs(p, nArgs)
+    : m_pAlloc {p},
+      m_vSongs {p, nArgs},
+      m_vShortSongs {p, nArgs},
+      m_vSongIdxs {p, nArgs},
+      m_vSearchIdxs {p, nArgs},
+      m_mtxQ {Mutex::TYPE::PLAIN}
 {
     for (int i = 0; i < nArgs; ++i)
     {

@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef __linux__
+#if __has_include(<unistd.h>)
     #include <unistd.h>
 #elif _WIN32
     #ifndef WIN32_LEAN_AND_MEAN
@@ -120,7 +120,7 @@ compareRev(const T& l, const T& r)
 [[nodiscard]] inline ssize
 timeNowUS()
 {
-#ifdef __linux__
+#if __has_include(<unistd.h>)
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     time_t micros = ts.tv_sec * 1'000'000;
@@ -152,7 +152,7 @@ timeNowS()
 inline void
 sleepMS(f64 ms)
 {
-#ifdef __linux__
+#if __has_include(<unistd.h>)
     usleep(ms * 1000.0);
 #elif _WIN32
     Sleep(ms);
@@ -162,7 +162,7 @@ sleepMS(f64 ms)
 inline void
 sleepS(f64 s)
 {
-#ifdef __linux__
+#if __has_include(<unistd.h>)
     usleep(s * 1'000'000.0);
 #elif _WIN32
     Sleep(s * 1000.0);

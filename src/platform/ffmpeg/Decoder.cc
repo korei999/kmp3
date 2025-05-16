@@ -187,9 +187,9 @@ Decoder::getCoverImage()
 }
 
 audio::ERROR
-Decoder::open(StringView sPath)
+Decoder::open(StringView svPath)
 {
-    String sPathNullTerm = String(StdAllocator::inst(), sPath); /* with null char */
+    String sPathNullTerm = String(StdAllocator::inst(), svPath); /* with null char */
     defer( sPathNullTerm.destroy(StdAllocator::inst()) );
 
     int err = 0;

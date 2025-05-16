@@ -4,7 +4,7 @@
 #include "logs.hh"
 #include "defer.hh"
 
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
 
     #define ADT_USE_LINUX_FILE
 
@@ -29,12 +29,12 @@ namespace file
 enum class TYPE : u8 { UNHANDLED, FILE, DIRECTORY };
 
 [[nodiscard]] inline String
-load(IAllocator* pAlloc, const StringView svPath)
+load(IAllocator* pAlloc, const char* ntsPath)
 {
-    FILE* pf = fopen(svPath.data(), "rb");
+    FILE* pf = fopen(ntsPath, "rb");
     if (!pf)
     {
-        LOG_WARN("failed to open '{}' file\n", svPath);
+        LOG_WARN("failed to open '{}' file\n", ntsPath);
         return {};
     }
     ADT_DEFER( fclose(pf) );
@@ -55,12 +55,12 @@ load(IAllocator* pAlloc, const StringView svPath)
 
 template<ssize SIZE>
 [[nodiscard]] inline StringFixed<SIZE>
-load(const StringView svPath)
+load(const char* ntsPath)
 {
-    FILE* pf = fopen(svPath.data(), "rb");
+    FILE* pf = fopen(ntsPath, "rb");
     if (!pf)
     {
-        LOG_WARN("failed to open '{}' file\n", svPath);
+        LOG_WARN("failed to open '{}' file\n", ntsPath);
         return {};
     }
     ADT_DEFER( fclose(pf) );

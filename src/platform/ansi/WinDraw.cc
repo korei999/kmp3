@@ -26,7 +26,7 @@ Win::coverImage()
 
         const int split = pl.m_imgHeight;
 
-        m_textBuff.clearKittyImages(); /* shouldn't hurt if TERM is not kitty */
+        m_textBuff.clearKittyImages(); /* BUG: some terminals just print the text (default macos terminal) */
         m_textBuff.forceClean(1, 1, m_prevImgWidth + 1, split + 1);
 
         Image img = app::decoder().getCoverImage();

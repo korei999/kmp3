@@ -63,7 +63,7 @@ run()
 #ifdef OPT_MPRIS
     mpris::init();
 
-    Thread thMPris(mprisPollLoop, {});
+    Thread thMPris {mprisPollLoop, {}};
     defer(
         /* NOTE: prevent deadlock if something throws */
         app::g_bRunning = false;

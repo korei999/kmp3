@@ -159,7 +159,7 @@ if (OPT_TERMBOX2)
     )
 endif()
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     find_package(PkgConfig REQUIRED)
 
     pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswresample)
@@ -221,6 +221,18 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
                 add_definitions("-DOPT_MPRIS -DOPT_BASU")
             endif()
         endif()
+    endif()
+
+    if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+            "-framework CoreAudio"
+            "-framework AudioToolbox"
+            "-framework CoreServices"  # if you use CFRunLoop, etc.
+        )
+        target_sources(
+            ${CMAKE_PROJECT_NAME} PRIVATE
+            "src/platform/apple/apple.cc"
+        )
     endif()
 endif()
 

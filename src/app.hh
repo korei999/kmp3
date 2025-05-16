@@ -27,6 +27,10 @@ enum class MIXER : adt::u8
 #ifdef OPT_PIPEWIRE
     PIPEWIRE
 #endif
+
+#ifdef __APPLE__
+    COREAUDIO,
+#endif
 };
 
 enum class TERM : adt::u8 { ELSE, XTERM, XTERM_256COLOR, KITTY, FOOT, GHOSTTY, ALACRITTY };
