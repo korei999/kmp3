@@ -117,6 +117,7 @@ struct String : public StringView
     String release(); /* return this String resource and set to zero */
 };
 
+/* Holds SIZE - 1 characters, terminates with '\0'. */
 template<int SIZE>
 struct StringFixed
 {
@@ -149,6 +150,7 @@ struct StringFixed
 
     bool operator==(const StringFixed& other) const;
     bool operator==(const adt::StringView sv) const;
+    template<isize ARRAY_SIZE> bool operator==(const char (&aBuff)[ARRAY_SIZE]) const;
 
     auto& data() { return m_aBuff; }
     const auto& data() const { return m_aBuff; }
@@ -156,5 +158,7 @@ struct StringFixed
     isize size() const;
     void destroy();
 };
+
+template<int SIZE_L, int SIZE_R> inline bool operator==(const StringFixed<SIZE_L>& l, const StringFixed<SIZE_R>& r);
 
 } /* namespace adt */

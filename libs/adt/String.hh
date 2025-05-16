@@ -474,10 +474,9 @@ StringFixed<SIZE>::StringFixed(const StringView svName)
     /* memcpy doesn't like nullptrs */
     if (!svName.data() || svName.size() <= 0) return;
 
-    memcpy(m_aBuff,
-        svName.data(),
-        utils::min(svName.size(), static_cast<isize>(sizeof(m_aBuff)))
-    );
+    const isize size = utils::min(svName.size(), isize(SIZE - 1));
+    memcpy(m_aBuff, svName.data(), size);
+    m_aBuff[size] = '\0';
 }
 
 template<int SIZE>
@@ -485,7 +484,9 @@ template<int SIZE_B>
 inline
 StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other)
 {
-    memcpy(m_aBuff, other.m_aBuff, utils::min(SIZE, SIZE_B));
+    const isize size = utils::min(SIZE - 1, SIZE_B);
+    memcpy(m_aBuff, other.m_aBuff, size);
+    m_aBuff[size] = '\0';
 }
 
 template<int SIZE>
@@ -506,7 +507,7 @@ template<int SIZE>
 inline bool
 StringFixed<SIZE>::operator==(const StringFixed<SIZE>& other) const
 {
-    return memcmp(m_aBuff, other.m_aBuff, SIZE) == 0;
+    return StringView(*this) == StringView(other);
 }
 
 template<int SIZE>
@@ -516,18 +517,26 @@ StringFixed<SIZE>::operator==(const StringView sv) const
     return StringView(m_aBuff) == sv;
 }
 
+template<int SIZE>
+template<isize ARRAY_SIZE>
+inline bool
+StringFixed<SIZE>::operator==(const char (&aBuff)[ARRAY_SIZE]) const
+{
+    return StringView(*this) == aBuff;
+}
+
 template<int SIZE_L, int SIZE_R>
 inline bool
 operator==(const StringFixed<SIZE_L>& l, const StringFixed<SIZE_R>& r)
 {
-    return memcmp(l.m_aBuff, r.m_aBuff, utils::min(SIZE_L, SIZE_R)) == 0;
+    return StringView(l) == StringView(r);
 }
 
 inline String
 StringCat(IAllocator* p, const StringView& l, const StringView& r)
 {
     isize len = l.size() + r.size();
-    char* ret = (char*)p->zalloc(len + 1, sizeof(char));
+    char* ret = p->zallocV<char>(len + 1);
 
     isize pos = 0;
     for (isize i = 0; i < l.size(); ++i, ++pos)
