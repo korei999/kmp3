@@ -43,6 +43,7 @@ extern IWindow* g_pWin;
 extern bool g_bRunning;
 extern bool g_bNoImage;
 extern bool g_bSixelOrKitty;
+extern bool g_bChafaSymbols;
 
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;

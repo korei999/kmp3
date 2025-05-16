@@ -52,6 +52,7 @@ setTermEnv()
     }
     else
     {
+        app::g_bChafaSymbols = true;
     #ifndef OPT_CHAFA_SYMBOLS
         app::g_bNoImage = true;
     #endif

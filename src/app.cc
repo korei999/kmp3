@@ -27,6 +27,7 @@ IWindow* g_pWin {};
 bool g_bRunning {};
 bool g_bNoImage {};
 bool g_bSixelOrKitty {};
+bool g_bChafaSymbols {};
 
 Player* g_pPlayer {};
 audio::IMixer* g_pMixer {};

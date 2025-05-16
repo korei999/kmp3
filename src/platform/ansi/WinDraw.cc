@@ -26,7 +26,8 @@ Win::coverImage()
 
         const int split = pl.m_imgHeight;
 
-        m_textBuff.clearKittyImages(); /* BUG: some terminals just print the text (default macos terminal) */
+        if (!app::g_bChafaSymbols)
+            m_textBuff.clearKittyImages();
         m_textBuff.forceClean(1, 1, m_prevImgWidth + 1, split + 1);
 
         Image img = app::decoder().getCoverImage();
