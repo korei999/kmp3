@@ -21,7 +21,7 @@
 
 #elif defined __APPLE__
 
-    #define ADT_GET_NPROCS() sysconf(_SC_NPROCESSORS_ONLN)
+    #define ADT_GET_NPROCS() static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN))
 
 #elif defined _WIN32
 
