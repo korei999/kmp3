@@ -34,7 +34,7 @@ swapBytes(u64 x)
            ((x & 0x00000000000000ffllu) << 7 * 8);
 }
 
-template <typename T>
+template<typename T>
 inline constexpr T
 maskBits(u64 nBits)
 {
