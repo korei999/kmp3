@@ -40,9 +40,9 @@ template <isize SIZE>
 [[nodiscard]] constexpr isize
 charBuffStringSize(const char (&aCharBuff)[SIZE])
 {
-    isize i = 0;
     if (SIZE == 0) return 0;
 
+    isize i = 0;
     while (i < SIZE && aCharBuff[i] != '\0') ++i;
 
     return i;
