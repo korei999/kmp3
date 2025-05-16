@@ -5,28 +5,28 @@
 namespace adt
 {
 
-inline constexpr ssize
-HeapParentI(const ssize i)
+inline constexpr isize
+HeapParentI(const isize i)
 {
     return ((i + 1) / 2) - 1;
 }
 
-inline constexpr ssize
-HeapLeftI(const ssize i)
+inline constexpr isize
+HeapLeftI(const isize i)
 {
     return ((i + 1) * 2) - 1;
 }
 
-inline constexpr ssize
-HeapRightI(const ssize i)
+inline constexpr isize
+HeapRightI(const isize i)
 {
     return HeapLeftI(i) + 1;
 }
 
 inline void
-maxHeapify(auto* a, const ssize size, ssize i)
+maxHeapify(auto* a, const isize size, isize i)
 {
-    ssize largest, left, right;
+    isize largest, left, right;
 
 GOTO_again:
     left = HeapLeftI(i);
@@ -39,7 +39,7 @@ GOTO_again:
     if (right < size && a[right] > a[largest])
         largest = right;
 
-    if (largest != (ssize)i)
+    if (largest != (isize)i)
     {
         utils::swap(&a[i], &a[largest]);
         i = largest;
@@ -53,18 +53,18 @@ namespace sort
 enum ORDER : u8 { INC, DEC };
 
 inline constexpr bool
-sorted(const auto* a, const ssize size, const ORDER eOrder = INC)
+sorted(const auto* a, const isize size, const ORDER eOrder = INC)
 {
     if (size <= 1) return true;
 
     if (eOrder == ORDER::INC)
     {
-        for (ssize i = 1; i < size; ++i)
+        for (isize i = 1; i < size; ++i)
             if (a[i - 1] > a[i]) return false;
     }
     else
     {
-        for (ssize i = size - 2; i >= 0; --i)
+        for (isize i = size - 2; i >= 0; --i)
             if (a[i + 1] > a[i]) return false;
     }
 
@@ -77,14 +77,14 @@ sorted(const auto& a, const ORDER eOrder = INC)
     return sorted(a.data(), a.size(), eOrder);
 }
 
-template<typename T, ssize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
+template<typename T, isize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
 inline constexpr void
-insertion(T* p, ssize l, ssize h)
+insertion(T* p, isize l, isize h)
 {
-    for (ssize i = l + 1; i < h + 1; ++i)
+    for (isize i = l + 1; i < h + 1; ++i)
     {
         T key = p[i];
-        ssize j = i;
+        isize j = i;
         for (; j > l && FN_CMP(p[j - 1], key) > 0; --j)
             p[j] = p[j - 1];
 
@@ -92,7 +92,7 @@ insertion(T* p, ssize l, ssize h)
     }
 }
 
-template<template<typename> typename CON_T, typename T, ssize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
+template<template<typename> typename CON_T, typename T, isize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
 inline constexpr void
 insertion(CON_T<T>* a)
 {
@@ -102,13 +102,13 @@ insertion(CON_T<T>* a)
 }
 
 inline constexpr void
-heapMax(auto* a, const ssize size)
+heapMax(auto* a, const isize size)
 {
-    ssize heapSize = size;
-    for (ssize p = HeapParentI(heapSize); p >= 0; --p)
+    isize heapSize = size;
+    for (isize p = HeapParentI(heapSize); p >= 0; --p)
         maxHeapify(a, heapSize, p);
 
-    for (ssize i = size - 1; i > 0; --i)
+    for (isize i = size - 1; i > 0; --i)
     {
         utils::swap(&a[i], &a[0]);
 
@@ -125,9 +125,9 @@ median3(const auto& x, const auto& y, const auto& z)
     else return z;
 }
 
-template<typename T, ssize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
-inline constexpr ssize
-partition(T a[], ssize l, ssize r, const T& pivot)
+template<typename T, isize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
+inline constexpr isize
+partition(T a[], isize l, isize r, const T& pivot)
 {
     while (l <= r)
     {
@@ -140,9 +140,9 @@ partition(T a[], ssize l, ssize r, const T& pivot)
     return r;
 }
 
-template<typename T, ssize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
+template<typename T, isize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
 inline constexpr void
-quick(T a[], ssize l, ssize r)
+quick(T a[], isize l, isize r)
 {
     if (l < r)
     {
@@ -153,7 +153,7 @@ quick(T a[], ssize l, ssize r)
         }
 
         T pivot = a[ median3(l, (l + r) / 2, r) ];
-        ssize i = l, j = r;
+        isize i = l, j = r;
 
         while (i <= j)
         {
@@ -168,7 +168,7 @@ quick(T a[], ssize l, ssize r)
     }
 }
 
-template<template<typename> typename CON_T, typename T, ssize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
+template<template<typename> typename CON_T, typename T, isize (*FN_CMP)(const T&, const T&) = utils::compare<T>>
 inline constexpr void
 quick(CON_T<T>* pArrayContainer)
 {

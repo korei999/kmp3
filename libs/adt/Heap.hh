@@ -16,16 +16,16 @@ struct Heap
     /* */
 
     Heap() = default;
-    Heap(IAllocator* pA, ssize prealloc = SIZE_MIN)
+    Heap(IAllocator* pA, isize prealloc = SIZE_MIN)
         : m_vec(pA, prealloc) {}
 
     /* */
 
     void destroy(IAllocator* pA);
-    void minBubbleUp(ssize i);
-    void maxBubbleUp(ssize i);
-    void minBubbleDown(ssize i);
-    void maxBubbleDown(ssize i);
+    void minBubbleUp(isize i);
+    void maxBubbleUp(isize i);
+    void minBubbleDown(isize i);
+    void maxBubbleDown(isize i);
     void pushMin(IAllocator* pA, const T& x);
     void pushMax(IAllocator* pA, const T& x);
     [[nodiscard]] T minExtract();
@@ -49,7 +49,7 @@ Heap<T>::destroy(IAllocator* pA)
 
 template<typename T>
 inline void
-Heap<T>::minBubbleUp(ssize i)
+Heap<T>::minBubbleUp(isize i)
 {
 GOTO_again:
     if (HeapParentI(i) == NPOS) return;
@@ -64,7 +64,7 @@ GOTO_again:
 
 template<typename T>
 inline void
-Heap<T>::maxBubbleUp(ssize i)
+Heap<T>::maxBubbleUp(isize i)
 {
 GOTO_again:
     if (HeapParentI(i) == NPOS) return;
@@ -79,9 +79,9 @@ GOTO_again:
 
 template<typename T>
 inline void
-Heap<T>::minBubbleDown(ssize i)
+Heap<T>::minBubbleDown(isize i)
 {
-    ssize smallest, left, right;
+    isize smallest, left, right;
     Vec<T>& a = m_vec;
 
 GOTO_again:
@@ -105,9 +105,9 @@ GOTO_again:
 
 template<typename T>
 inline void
-Heap<T>::maxBubbleDown(ssize i)
+Heap<T>::maxBubbleDown(isize i)
 {
-    ssize largest, left, right;
+    isize largest, left, right;
     Vec<T>& a = m_vec;
 
 GOTO_again:
@@ -153,7 +153,7 @@ HeapMinFromVec(IAllocator* pA, const Vec<T>& a)
     q.m_vec.size = a.m_size;
     utils::memCopy(q.m_vec.pData, a.m_pData, a.m_size);
 
-    for (ssize i = q.m_vec.size / 2; i >= 0; --i)
+    for (isize i = q.m_vec.size / 2; i >= 0; --i)
         q.minBubbleDown(i);
 
     return q;
@@ -167,7 +167,7 @@ HeapMaxFromVec(IAllocator* pA, const Vec<T>& a)
     q.m_vec.size = a.m_size;
     utils::memCopy(q.m_vec.pData, a.m_pData, a.m_size);
 
-    for (ssize i = q.m_vec.size / 2; i >= 0; --i)
+    for (isize i = q.m_vec.size / 2; i >= 0; --i)
         q.maxBubbleDown(i);
 
     return q;
@@ -211,7 +211,7 @@ Heap<T>::minSort(IAllocator* pA, Vec<T>* a)
 {
     Heap<T> s = HeapMinFromVec(pA, *a);
 
-    for (ssize i = 0; i < a->size; ++i)
+    for (isize i = 0; i < a->size; ++i)
         (*a)[i] = s.minExtract();
 
     s.destroy(pA);
@@ -223,7 +223,7 @@ HeapMaxSort(IAllocator* pA, VecManaged<T>* a)
 {
     Heap<T> s = HeapMaxFromVec(pA, *a);
 
-    for (ssize i = 0; i < a->size; ++i)
+    for (isize i = 0; i < a->size; ++i)
         (*a)[i] = s.maxExtract();
 
     s.destroy(pA);

@@ -58,7 +58,7 @@ struct Set
     /* */
 
     Set() = default;
-    Set(IAllocator* pAllocator, ssize prealloc = SIZE_MIN);
+    Set(IAllocator* pAllocator, isize prealloc = SIZE_MIN);
 
     /* */
 };

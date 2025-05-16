@@ -36,6 +36,22 @@ struct Span2D
     constexpr i32 stride() const { return m_stride; }
     constexpr bool empty() const { return m_width <= 0 || m_height <= 0 || m_stride <= 0; }
 
+    constexpr bool inRange(i32 x, i32 y) const { if (x >= 0 && x < m_width && y >= 0 && y < m_height) return true; else return false; }
+
+    constexpr bool
+    tryAt(i32 x, i32 y, auto clFunc)
+    {
+        if (x >= 0 && x < m_width && y >= 0 && y < m_height)
+        {
+            clFunc(m_pData[y*m_stride + x]);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     /* */
 
 protected:

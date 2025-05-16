@@ -15,10 +15,10 @@
 namespace adt
 {
 
-[[nodiscard]] constexpr ssize
+[[nodiscard]] constexpr isize
 ntsSize(const char* nts)
 {
-    ssize i = 0;
+    isize i = 0;
     if (!nts) return 0;
 
 #if defined __has_constexpr_builtin
@@ -36,11 +36,11 @@ ntsSize(const char* nts)
     return i;
 }
 
-template <ssize SIZE>
-[[nodiscard]] constexpr ssize
+template <isize SIZE>
+[[nodiscard]] constexpr isize
 charBuffStringSize(const char (&aCharBuff)[SIZE])
 {
-    ssize i = 0;
+    isize i = 0;
     if (SIZE == 0) return 0;
 
     while (i < SIZE && aCharBuff[i] != '\0') ++i;
@@ -53,14 +53,14 @@ StringView::StringView(const char* nts)
     : m_pData(const_cast<char*>(nts)), m_size(ntsSize(nts)) {}
 
 inline constexpr
-StringView::StringView(char* pStr, ssize len)
+StringView::StringView(char* pStr, isize len)
     : m_pData(pStr), m_size(len) {}
 
 inline constexpr
 StringView::StringView(Span<char> sp)
     : StringView(sp.data(), sp.size()) {}
 
-template<ssize SIZE>
+template<isize SIZE>
 inline constexpr
 StringView::StringView(const char (&aCharBuff)[SIZE])
     : m_pData(const_cast<char*>(aCharBuff)),
@@ -69,13 +69,13 @@ StringView::StringView(const char (&aCharBuff)[SIZE])
 #define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: {}, m_size: {}", i, m_size);
 
 inline constexpr char&
-StringView::operator[](ssize i)
+StringView::operator[](isize i)
 {
     ADT_RANGE_CHECK; return m_pData[i];
 }
 
 constexpr const char&
-StringView::operator[](ssize i) const
+StringView::operator[](isize i) const
 {
     ADT_RANGE_CHECK; return m_pData[i];
 }
@@ -96,19 +96,19 @@ struct StringGlyphIt
     struct It
     {
         const char* p {};
-        ssize i = 0;
-        ssize size = 0;
+        isize i = 0;
+        isize size = 0;
         wchar_t wc {};
         mbstate_t state {};
 
-        It(const char* pFirst, ssize _i, ssize _size)
+        It(const char* pFirst, isize _i, isize _size)
             : p {pFirst}, i {_i}, size {_size}
         {
             /* first char */
             operator++();
         }
 
-        It(ssize npos) : i {npos} {}
+        It(isize npos) : i {npos} {}
 
         wchar_t& operator*() { return wc; }
         wchar_t* operator->() { return &wc; }
@@ -159,20 +159,20 @@ struct StringWordIt
         StringView m_svCurrWord {};
         const StringView m_svStr;
         const StringView m_svSeps {};
-        ssize m_i = 0;
+        isize m_i = 0;
 
         /* */
 
-        It(const StringView sv, ssize pos, const StringView svSeps, bool)
+        It(const StringView sv, isize pos, const StringView svSeps, bool)
             : m_svStr(sv), m_svSeps(svSeps),  m_i(pos)
         {
             if (pos != NPOS) operator++();
         }
 
-        It(const StringView sv, ssize pos, const StringView svSeps)
+        It(const StringView sv, isize pos, const StringView svSeps)
             : m_svStr(sv), m_svSeps(svSeps),  m_i(pos) {}
 
-        explicit It(ssize i) : m_i(i) {}
+        explicit It(isize i) : m_i(i) {}
 
         /* */
 
@@ -188,8 +188,8 @@ struct StringWordIt
                 return *this;
             }
 
-            ssize start = m_i;
-            ssize end = m_i;
+            isize start = m_i;
+            isize end = m_i;
 
             auto oneOf = [&](char c) -> bool
             {
@@ -222,10 +222,10 @@ struct StringWordIt
     const It end() const { return It(NPOS); }
 };
 
-constexpr inline ssize
+constexpr inline isize
 StringView::idx(const char* const p) const
 {
-    ssize i = p - m_pData;
+    isize i = p - m_pData;
     ADT_ASSERT(i >= 0 && i < size(), "out of range: idx: {}: size: {}", i, size());
 
     return i;
@@ -239,7 +239,7 @@ StringView::beginsWith(const StringView r) const
     if (l.size() < r.size())
         return false;
 
-    for (ssize i = 0; i < r.size(); ++i)
+    for (isize i = 0; i < r.size(); ++i)
         if (l[i] != r[i])
             return false;
 
@@ -254,7 +254,7 @@ StringView::endsWith(const StringView r) const
     if (l.m_size < r.m_size)
         return false;
 
-    for (ssize i = r.m_size - 1, j = l.m_size - 1; i >= 0; --i, --j)
+    for (isize i = r.m_size - 1, j = l.m_size - 1; i >= 0; --i, --j)
         if (r[i] != l[j])
             return false;
 
@@ -293,13 +293,13 @@ operator-(const StringView& l, const StringView& r)
     else if (l.m_size > r.m_size) return 1;
 
     i64 sum = 0;
-    for (ssize i = 0; i < l.m_size; --i)
+    for (isize i = 0; i < l.m_size; --i)
         sum += (l[i] - r[i]);
 
     return sum;
 }
 
-inline constexpr ssize
+inline constexpr isize
 StringView::lastOf(char c) const
 {
     for (int i = size() - 1; i >= 0; --i)
@@ -309,7 +309,7 @@ StringView::lastOf(char c) const
     return NPOS;
 }
 
-inline constexpr ssize
+inline constexpr isize
 StringView::firstOf(char c) const
 {
     for (int i = 0; i < size(); ++i)
@@ -362,7 +362,7 @@ StringView::contains(const StringView r) const
 {
     if (m_size < r.m_size || m_size == 0 || r.m_size == 0) return false;
 
-    for (ssize i = 0; i < m_size - r.m_size + 1; ++i)
+    for (isize i = 0; i < m_size - r.m_size + 1; ++i)
     {
         const StringView sSub {const_cast<char*>(&(*this)[i]), r.m_size};
         if (sSub == r)
@@ -396,13 +396,13 @@ StringView::last() const
     return operator[](m_size - 1);
 }
 
-inline ssize
+inline isize
 StringView::nGlyphs() const
 {
     mbstate_t state {};
-    ssize n = 0;
+    isize n = 0;
 
-    for (ssize i = 0; i < m_size; )
+    for (isize i = 0; i < m_size; )
     {
         i+= mbrlen(&operator[](i), size() - i, &state);
         ++n;
@@ -413,13 +413,13 @@ StringView::nGlyphs() const
 
 template<typename T>
 ADT_NO_UB inline T
-StringView::reinterpret(ssize at) const
+StringView::reinterpret(isize at) const
 {
     return *(T*)(&operator[](at));
 }
 
 inline
-String::String(IAllocator* pAlloc, const char* pChars, ssize size)
+String::String(IAllocator* pAlloc, const char* pChars, isize size)
 {
     if (pChars == nullptr || size <= 0) return;
 
@@ -476,7 +476,7 @@ StringFixed<SIZE>::StringFixed(const StringView svName)
 
     memcpy(m_aBuff,
         svName.data(),
-        utils::min(svName.size(), static_cast<ssize>(sizeof(m_aBuff)))
+        utils::min(svName.size(), static_cast<isize>(sizeof(m_aBuff)))
     );
 }
 
@@ -489,7 +489,7 @@ StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other)
 }
 
 template<int SIZE>
-inline ssize
+inline isize
 StringFixed<SIZE>::size() const
 {
     return strnlen(m_aBuff, SIZE);
@@ -526,13 +526,13 @@ operator==(const StringFixed<SIZE_L>& l, const StringFixed<SIZE_R>& r)
 inline String
 StringCat(IAllocator* p, const StringView& l, const StringView& r)
 {
-    ssize len = l.size() + r.size();
+    isize len = l.size() + r.size();
     char* ret = (char*)p->zalloc(len + 1, sizeof(char));
 
-    ssize pos = 0;
-    for (ssize i = 0; i < l.size(); ++i, ++pos)
+    isize pos = 0;
+    for (isize i = 0; i < l.size(); ++i, ++pos)
         ret[pos] = l[i];
-    for (ssize i = 0; i < r.size(); ++i, ++pos)
+    for (isize i = 0; i < r.size(); ++i, ++pos)
         ret[pos] = r[i];
 
     ret[len] = '\0';

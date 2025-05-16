@@ -14,13 +14,13 @@ namespace adt
 inline constexpr usize alignUp(usize x, usize to) { return ((x) + to - 1) & (~(to - 1)); }
 inline constexpr usize alignUp8(usize x) { return alignUp(x, 8); }
 
-constexpr ssize SIZE_MIN = 2;
-constexpr ssize SIZE_1K = 1024;
-constexpr ssize SIZE_8K = SIZE_1K * 8;
-constexpr ssize SIZE_1M = SIZE_1K * SIZE_1K;
-constexpr ssize SIZE_8M = SIZE_1M * 8;
-constexpr ssize SIZE_1G = SIZE_1M * SIZE_1K;
-constexpr ssize SIZE_8G = SIZE_1G * 8;
+constexpr isize SIZE_MIN = 2;
+constexpr isize SIZE_1K = 1024;
+constexpr isize SIZE_8K = SIZE_1K * 8;
+constexpr isize SIZE_1M = SIZE_1K * SIZE_1K;
+constexpr isize SIZE_8M = SIZE_1M * 8;
+constexpr isize SIZE_1G = SIZE_1M * SIZE_1K;
+constexpr isize SIZE_8G = SIZE_1G * 8;
 
 #define ADT_WARN_LEAK [[deprecated("warning: memory leak")]]
 
@@ -37,21 +37,21 @@ struct IAllocator
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    mallocV(ssize mCount) noexcept(false) /* AllocException */
+    mallocV(isize mCount) noexcept(false) /* AllocException */
     {
         return reinterpret_cast<T*>(malloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    zallocV(ssize mCount) noexcept(false) /* AllocException */
+    zallocV(isize mCount) noexcept(false) /* AllocException */
     {
         return reinterpret_cast<T*>(zalloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    reallocV(T* ptr, ssize oldCount, ssize newCount) noexcept(false) /* AllocException */
+    reallocV(T* ptr, isize oldCount, isize newCount) noexcept(false) /* AllocException */
     {
         return reinterpret_cast<T*>(realloc(ptr, oldCount, newCount, sizeof(T)));
     }

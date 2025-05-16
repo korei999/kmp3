@@ -97,7 +97,7 @@ procSeekString(const Span<wchar_t> spBuff)
     }
     else
     {
-        ssize sec;
+        isize sec;
         if (aSecondsBuff.size() == 0) sec = atoll(aMinutesBuff.data());
         else sec = atoll(aSecondsBuff.data()) + atoll(aMinutesBuff.data())*60;
 

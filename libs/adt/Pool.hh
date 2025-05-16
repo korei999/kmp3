@@ -14,7 +14,7 @@ struct PoolHandle
 
     /* */
 
-    ssize i = NPOS; /* index of m_aNodes */
+    isize i = NPOS; /* index of m_aNodes */
 
     /* */
 
@@ -22,25 +22,25 @@ struct PoolHandle
 };
 
 /* statically allocated reusable resource collection */
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 struct Pool
 {
     Array<T, CAP> m_aNodes {};
     Array<PoolHandle<T>, CAP> m_aFreeIdxs {};
     bool m_aOccupied[CAP] {};
-    ssize m_nOccupied {};
+    isize m_nOccupied {};
 
     /* */
 
     T& operator[](PoolHandle<T> h)             { return at(h); }
     const T& operator[](PoolHandle<T> h) const { return at(h); }
 
-    ssize firstI() const;
-    ssize lastI() const;
-    ssize nextI(ssize i) const;
-    ssize prevI(ssize i) const;
+    isize firstI() const;
+    isize lastI() const;
+    isize nextI(isize i) const;
+    isize prevI(isize i) const;
 
-    ssize idx(const T* const p) const;
+    isize idx(const T* const p) const;
 
     [[nodiscard]] PoolHandle<T> make();
     [[nodiscard]] PoolHandle<T> make(const T& value); /* push resource and get handle back */
@@ -51,8 +51,8 @@ struct Pool
     void giveBack(PoolHandle<T> hnd);
     void giveBack(T* hnd);
 
-    ssize cap() const { return CAP; }
-    ssize size() const { return m_nOccupied; }
+    isize cap() const { return CAP; }
+    isize size() const { return m_nOccupied; }
 
     bool empty() const { return size() == 0; }
 
@@ -67,11 +67,11 @@ public:
     struct It
     {
         Pool* s {};
-        ssize i {};
+        isize i {};
 
         /* */
 
-        It(const Pool* _self, ssize _i) : s(const_cast<Pool*>(_self)), i(_i) {}
+        It(const Pool* _self, isize _i) : s(const_cast<Pool*>(_self)), i(_i) {}
 
         /* */
 
@@ -88,7 +88,7 @@ public:
         It
         operator++(int)
         {
-            ssize tmp = i;
+            isize tmp = i;
             i = s->nextI(i);
             return {s, tmp};
         }
@@ -103,7 +103,7 @@ public:
         It
         operator--(int)
         {
-            ssize tmp = i;
+            isize tmp = i;
             i = s->prevI(i);
             return {s, tmp};
         }
@@ -119,33 +119,33 @@ public:
     const It end() const { return {this, size() == 0 ? -1 : lastI() + 1}; }
 };
 
-template<typename T, ssize CAP>
-inline ssize
+template<typename T, isize CAP>
+inline isize
 Pool<T, CAP>::firstI() const
 {
     if (m_aNodes.m_size == 0) return -1;
 
-    for (ssize i = 0; i < m_aNodes.m_size; ++i)
+    for (isize i = 0; i < m_aNodes.m_size; ++i)
         if (m_aOccupied[i]) return i;
 
     return m_aNodes.m_size;
 }
 
-template<typename T, ssize CAP>
-inline ssize
+template<typename T, isize CAP>
+inline isize
 Pool<T, CAP>::lastI() const
 {
     if (m_aNodes.m_size == 0) return -1;
 
-    for (ssize i = ssize(m_aNodes.m_size) - 1; i >= 0; --i)
+    for (isize i = isize(m_aNodes.m_size) - 1; i >= 0; --i)
         if (m_aOccupied[i]) return i;
 
     return m_aNodes.m_size;
 }
 
-template<typename T, ssize CAP>
-inline ssize
-Pool<T, CAP>::nextI(ssize i) const
+template<typename T, isize CAP>
+inline isize
+Pool<T, CAP>::nextI(isize i) const
 {
     do ++i;
     while (i < m_aNodes.m_size && !m_aOccupied[i]);
@@ -153,9 +153,9 @@ Pool<T, CAP>::nextI(ssize i) const
     return i;
 }
 
-template<typename T, ssize CAP>
-inline ssize
-Pool<T, CAP>::prevI(ssize i) const
+template<typename T, isize CAP>
+inline isize
+Pool<T, CAP>::prevI(isize i) const
 {
     do --i;
     while (i >= 0 && !m_aOccupied[i]);
@@ -163,16 +163,16 @@ Pool<T, CAP>::prevI(ssize i) const
     return i;
 }
 
-template<typename T, ssize CAP>
-inline ssize
+template<typename T, isize CAP>
+inline isize
 Pool<T, CAP>::idx(const T* const p) const
 {
-    ssize r = p - &m_aNodes[0];
+    isize r = p - &m_aNodes[0];
     ADT_ASSERT(r >= 0 && r < CAP, "out of range");
     return r;
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 inline PoolHandle<T>
 Pool<T, CAP>::make()
 {
@@ -197,7 +197,7 @@ Pool<T, CAP>::make()
     return ret;
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 inline PoolHandle<T>
 Pool<T, CAP>::make(const T& value)
 {
@@ -206,7 +206,7 @@ Pool<T, CAP>::make(const T& value)
     return idx;
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
 inline PoolHandle<T>
 Pool<T, CAP>::emplace(ARGS&&... args)
@@ -216,7 +216,7 @@ Pool<T, CAP>::emplace(ARGS&&... args)
     return idx;
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 inline void
 Pool<T, CAP>::giveBack(PoolHandle<T> hnd)
 {
@@ -228,14 +228,14 @@ Pool<T, CAP>::giveBack(PoolHandle<T> hnd)
     m_aOccupied[hnd.i] = false;
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 inline void
 Pool<T, CAP>::giveBack(T* hnd)
 {
     giveBack(PoolHandle<T>(idx(hnd)));
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 inline T&
 Pool<T, CAP>::at(PoolHandle<T> h)
 {
@@ -247,15 +247,15 @@ Pool<T, CAP>::at(PoolHandle<T> h)
 namespace print
 {
 
-template<typename T, ssize CAP>
-inline ssize
+template<typename T, isize CAP>
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const Pool<T, CAP>& x)
 {
     return print::formatToContextTemplateSize(ctx, fmtArgs, x, x.size());
 }
 
 template<typename T>
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const PoolHandle<T>& x)
 {
     return formatToContext(ctx, fmtArgs, x.i);

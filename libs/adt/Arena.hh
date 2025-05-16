@@ -160,7 +160,11 @@ Arena::realloc(void* ptr, usize oldCount, usize mCount, usize mSize)
     const usize realSize = alignUp8(requested);
 
     auto* pBlock = findBlockFromPtr(static_cast<u8*>(ptr));
-    if (!pBlock) throw AllocException("pointer doesn't belong to this arena");
+    if (!pBlock)
+    {
+        errno = ENOBUFS;
+        throw AllocException("pointer doesn't belong to this arena");
+    }
 
     if (ptr == pBlock->pLastAlloc &&
         pBlock->pLastAlloc + realSize < pBlock->pMem + pBlock->size) /* bump case */

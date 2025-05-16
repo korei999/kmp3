@@ -26,7 +26,7 @@ struct BufferAllocator : public IAllocator
         : m_pMemBuffer {pMemory},
           m_cap {capacity} {}
 
-    template<typename T, ssize N>
+    template<typename T, isize N>
     BufferAllocator(T (&aMem)[N]) noexcept
         : m_pMemBuffer {reinterpret_cast<u8*>(aMem)},
           m_cap {N * sizeof(T)} {}
@@ -51,7 +51,10 @@ BufferAllocator::malloc(usize mCount, usize mSize)
     usize realSize = alignUp8(mCount * mSize);
 
     if (m_size + realSize > m_cap)
+    {
+        errno = ENOBUFS;
         throw AllocException("BufferAllocator::malloc(): out of memory");
+    }
 
     void* ret = &m_pMemBuffer[m_size];
     m_size += realSize;
@@ -79,7 +82,10 @@ BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
     usize realSize = alignUp8(newCount * mSize);
 
     if ((m_size + realSize - m_lastAllocSize) > m_cap)
+    {
+        errno = ENOBUFS;
         throw AllocException("BufferAllocator::realloc(): out of memory");
+    }
 
     if (p == m_pLastAlloc)
     {

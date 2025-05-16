@@ -550,7 +550,7 @@ i32Fillx4(Span<i32> src, const i32 x)
 {
     const i32 pack = x;
 
-    ssize i = 0;
+    isize i = 0;
     for (; i + 3 < src.size(); i += 4)
         i32x4Store(&src[i], pack);
 
@@ -563,7 +563,7 @@ f32Fillx4(Span<f32> src, const f32 x)
 {
     f32x4 pack = x;
 
-    ssize i = 0;
+    isize i = 0;
     for (; i + 3 < src.size(); i += 4)
         f32x4Store(&src[i], pack);
 
@@ -575,7 +575,7 @@ inline void
 i16Fillx8(Span<i16> src, const i16 x)
 {
     __m128i pack = _mm_set1_epi16(x);
-    ssize i = 0;
+    isize i = 0;
     for (; i + 7 < src.size(); i += 8)
         _mm_storeu_si128(reinterpret_cast<__m128i*>(&src[i]), pack);
 
@@ -1114,7 +1114,7 @@ i32Fillx8(Span<i32> src, const i32 x)
 {
     const i32 pack = x;
 
-    ssize i = 0;
+    isize i = 0;
     for (; i + 7 < src.size(); i += 8)
         i32x8Store(&src[i], pack);
 
@@ -1127,7 +1127,7 @@ f32Fillx8(Span<f32> src, const f32 x)
 {
     f32x8 pack = x;
 
-    ssize i = 0;
+    isize i = 0;
     for (; i + 7 < src.size(); i += 8)
         f32x8Store(&src[i], pack);
 

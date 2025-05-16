@@ -44,7 +44,7 @@ maskBits(u64 nBits)
 struct Reader
 {
     StringView m_svFile {};
-    ssize m_pos {};
+    isize m_pos {};
 
     /* */
 
@@ -53,11 +53,11 @@ struct Reader
 
     /* */
 
-    char& operator[](ssize i) { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: {}, size: {}\n", i, m_svFile.size()); return m_svFile[i]; }
-    const char& operator[](ssize i) const { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: {}, size: {}\n", i, m_svFile.size()); return m_svFile[i]; }
+    char& operator[](isize i) { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: {}, size: {}\n", i, m_svFile.size()); return m_svFile[i]; }
+    const char& operator[](isize i) const { ADT_ASSERT(i >= 0 && i < m_svFile.size(), "out of range: i: {}, size: {}\n", i, m_svFile.size()); return m_svFile[i]; }
 
-    void skipBytes(ssize n);
-    StringView readString(ssize bytes);
+    void skipBytes(isize n);
+    StringView readString(isize bytes);
     u8 read8();
     u16 read16();
     u16 read16Rev();
@@ -69,13 +69,13 @@ struct Reader
 };
 
 inline void 
-Reader::skipBytes(ssize n)
+Reader::skipBytes(isize n)
 {
     m_pos += n;
 }
 
 inline StringView
-Reader::readString(ssize bytes)
+Reader::readString(isize bytes)
 {
     StringView ret(&m_svFile[m_pos], bytes);
     m_pos += bytes;
@@ -141,7 +141,7 @@ Reader::finished()
 struct BitReader
 {
     StringView m_svFile {};
-    ssize m_pos {};
+    isize m_pos {};
 
     /* */
 
@@ -151,19 +151,19 @@ struct BitReader
     /* */
 
     template<typename T = u64>
-    [[nodiscard]] T read(ssize nBits);
+    [[nodiscard]] T read(isize nBits);
 };
 
 template<typename T>
 inline T
-BitReader::read(ssize nBits)
+BitReader::read(isize nBits)
 {
     T ret = 0;
 
-    for (ssize i = 0; i < nBits; ++i)
+    for (isize i = 0; i < nBits; ++i)
     {
-        const ssize byteI = (m_pos + i) / 8;
-        const ssize bitI = 7 - ((m_pos + i) % 8);
+        const isize byteI = (m_pos + i) / 8;
+        const isize bitI = 7 - ((m_pos + i) % 8);
 
         if (byteI >= m_svFile.size())
             return ret;

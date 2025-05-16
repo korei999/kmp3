@@ -11,26 +11,26 @@ template<typename T>
 struct View
 {
     T* m_pData {};
-    ssize m_count {};
-    ssize m_byteStride {};
+    isize m_count {};
+    isize m_byteStride {};
 
     /* */
 
     View() = default;
-    View(const T* pData, ssize size, ssize stride);
+    View(const T* pData, isize size, isize stride);
 
     /* */
 
-    T& operator[](ssize i) { return at(i); }
-    const T& operator[](ssize i) const { return at(i); }
+    T& operator[](isize i) { return at(i); }
+    const T& operator[](isize i) const { return at(i); }
 
     bool empty() const { return m_count <= 0; }
-    ssize size() const { return m_count; }  /* NOTE: element count (not byte size). */
-    ssize stride() const { return m_byteStride; }
-    ssize idx(const T* const pElement) const; /* NOTE: requires division (slow), for i loops should be preferred instead. */
+    isize size() const { return m_count; }  /* NOTE: element count (not byte size). */
+    isize stride() const { return m_byteStride; }
+    isize idx(const T* const pElement) const; /* NOTE: requires division (slow), for i loops should be preferred instead. */
 
 protected:
-    T& at(ssize i) const;
+    T& at(isize i) const;
     u8* u8Data() { return (u8*)(m_pData); }
     const u8* u8Data() const { return (const u8*)(m_pData); }
 
@@ -40,11 +40,11 @@ public:
     struct It
     {
         View* pView;
-        ssize i {};
+        isize i {};
 
         /* */
 
-        It(const View* self, ssize _i) : pView(const_cast<View*>(self)), i(_i) {}
+        It(const View* self, isize _i) : pView(const_cast<View*>(self)), i(_i) {}
 
         /* */
 
@@ -71,7 +71,7 @@ public:
 };
 
 template<typename T>
-View<T>::View(const T* pData, ssize size, ssize stride)
+View<T>::View(const T* pData, isize size, isize stride)
     : m_pData(const_cast<T*>(pData)), m_count(size)
 {
     if (stride == 0) m_byteStride = (sizeof(T));
@@ -80,7 +80,7 @@ View<T>::View(const T* pData, ssize size, ssize stride)
 
 template<typename T>
 inline T&
-View<T>::at(ssize i) const
+View<T>::at(isize i) const
 {
     ADT_ASSERT(i >= 0 && i < m_count, "i: {}, size: {}, stride: {}", i, m_count, m_byteStride);
 
@@ -90,7 +90,7 @@ View<T>::at(ssize i) const
 }
 
 template<typename T>
-inline ssize
+inline isize
 View<T>::idx(const T* const pElement) const
 {
     auto* p = reinterpret_cast<const u8*>(pElement);

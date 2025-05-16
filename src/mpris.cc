@@ -339,7 +339,7 @@ setLoopStatus(
     LOG("mpris::setLoopStatus(): {}\n", t);
 
     auto eMethod = app::g_pPlayer->m_eReapetMethod;
-    for (ssize i = 0; i < utils::size(mapPlayerRepeatMethodStrings); ++i)
+    for (isize i = 0; i < utils::size(mapPlayerRepeatMethodStrings); ++i)
         if (t == mapPlayerRepeatMethodStrings[i])
             eMethod = PLAYER_REPEAT_METHOD(i);
 
@@ -578,7 +578,7 @@ init()
 
     g_bReady = false;
     int res = 0;
-    const ssize nTries = 50;
+    const isize nTries = 50;
 
     res = sd_bus_default_user(&s_pBus);
     if (res < 0) goto out;
@@ -614,7 +614,7 @@ init()
     // if (res < 0) goto out;
 
     static char aBuff[64];
-    for (ssize i = 0; i < nTries; ++i)
+    for (isize i = 0; i < nTries; ++i)
     {
         memset(aBuff, 0, sizeof(aBuff));
         print::toSpan(aBuff, "org.mpris.MediaPlayer2.kmp3_{}", i);

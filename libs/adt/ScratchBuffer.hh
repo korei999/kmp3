@@ -11,7 +11,7 @@ namespace adt
 struct ScratchBuffer
 {
     Span<u8> m_sp {};
-    ssize m_pos {};
+    isize m_pos {};
 
     /* */
 
@@ -19,38 +19,38 @@ struct ScratchBuffer
 
     template<typename T>
     ScratchBuffer(Span<T> sp) noexcept
-        : m_sp {reinterpret_cast<u8*>(sp.data()), ssize(sp.size() * sizeof(T))} {}
+        : m_sp {reinterpret_cast<u8*>(sp.data()), isize(sp.size() * sizeof(T))} {}
 
     template<typename T, usize SIZE>
     ScratchBuffer(T (&aBuff)[SIZE]) noexcept
-        : m_sp {reinterpret_cast<u8*>(aBuff), ssize(SIZE * sizeof(T))} {}
+        : m_sp {reinterpret_cast<u8*>(aBuff), isize(SIZE * sizeof(T))} {}
 
     template<typename T>
-    ScratchBuffer(T* pMem, ssize size) noexcept
+    ScratchBuffer(T* pMem, isize size) noexcept
         : m_sp {reinterpret_cast<u8*>(pMem), size} {}
 
     /* */
 
     /* nextMem() + memset() to zero */
     template<typename T>
-    [[nodiscard]] Span<T> nextMemZero(ssize mCount) noexcept;
+    [[nodiscard]] Span<T> nextMemZero(isize mCount) noexcept;
 
     template<typename T>
     [[nodiscard]] Span<T> nextMem() noexcept;
 
     void zeroOut() noexcept;
 
-    ssize cap() const noexcept { return m_sp.size(); }
+    isize cap() const noexcept { return m_sp.size(); }
 
 protected:
     template<typename T>
-    ssize calcTypeCap() const noexcept { return static_cast<ssize>(cap() / sizeof(T)); }
+    isize calcTypeCap() const noexcept { return static_cast<isize>(cap() / sizeof(T)); }
 };
 
 
 template<typename T>
 inline Span<T>
-ScratchBuffer::nextMemZero(ssize mCount) noexcept
+ScratchBuffer::nextMemZero(isize mCount) noexcept
 {
     auto sp = nextMem<T>();
     memset(sp.data(), 0, mCount * sizeof(T));

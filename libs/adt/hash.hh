@@ -138,7 +138,7 @@ private:
 
 template<typename T>
 inline usize
-func(const T* pBuff, ssize byteSize, usize seed = 0)
+func(const T* pBuff, isize byteSize, usize seed = 0)
 {
     return xxh64::hash((const char*)pBuff, byteSize, seed);
 }
@@ -150,7 +150,7 @@ func(const T& x)
     return xxh64::hash((const char*)&x, sizeof(T), 0);
 }
 
-template<ssize N>
+template<isize N>
 constexpr usize
 func(const char (&aChars)[N])
 {

@@ -31,10 +31,10 @@ namespace adt::utils
 {
 
 /* bit number starts from 0 */
-inline constexpr ssize
-setBit(ssize num, ssize bit, bool val)
+inline constexpr isize
+setBit(isize num, isize bit, bool val)
 {
-    return (num & ~((ssize)1 << bit)) | ((ssize)val << bit);
+    return (num & ~((isize)1 << bit)) | ((isize)val << bit);
 }
 
 template<typename T>
@@ -80,7 +80,7 @@ minMax(const T& l, const T& r)
     else return {l, r};
 }
 
-[[nodiscard]] inline constexpr ssize
+[[nodiscard]] inline constexpr isize
 size(const auto& a)
 {
     return sizeof(a) / sizeof(a[0]);
@@ -100,7 +100,7 @@ even(const auto& a)
 }
 
 template<typename T>
-[[nodiscard]] inline constexpr ssize
+[[nodiscard]] inline constexpr isize
 compare(const T& l, const T& r)
 {
     if (l == r) return 0;
@@ -109,7 +109,7 @@ compare(const T& l, const T& r)
 }
 
 template<typename T>
-[[nodiscard]] inline constexpr ssize
+[[nodiscard]] inline constexpr isize
 compareRev(const T& l, const T& r)
 {
     if (l == r) return 0;
@@ -117,7 +117,7 @@ compareRev(const T& l, const T& r)
     else return -1;
 }
 
-[[nodiscard]] inline ssize
+[[nodiscard]] inline isize
 timeNowUS()
 {
 #if __has_include(<unistd.h>)
@@ -170,9 +170,9 @@ sleepS(f64 s)
 }
 
 inline constexpr void
-addNSToTimespec(timespec* const pTs, const ssize nsec)
+addNSToTimespec(timespec* const pTs, const isize nsec)
 {
-    constexpr ssize nsecMax = 1000000000;
+    constexpr isize nsecMax = 1000000000;
     /* overflow check */
     if (pTs->tv_nsec + nsec >= nsecMax)
     {
@@ -184,7 +184,7 @@ addNSToTimespec(timespec* const pTs, const ssize nsec)
 
 template<typename T>
 inline void
-memCopy(T* pDest, const T* const pSrc, ssize size)
+memCopy(T* pDest, const T* const pSrc, isize size)
 {
     ADT_ASSERT(pDest != nullptr && pSrc != nullptr, " ");
     memcpy(pDest, pSrc, size * sizeof(T));
@@ -193,7 +193,7 @@ memCopy(T* pDest, const T* const pSrc, ssize size)
 /* typed memmove (don't mistake for std::move) */
 template<typename T>
 inline void
-memMove(T* pDest, const T* const pSrc, ssize size)
+memMove(T* pDest, const T* const pSrc, isize size)
 {
     ADT_ASSERT(pDest != nullptr && pSrc != nullptr, " ");
     memmove(pDest, pSrc, size * sizeof(T));
@@ -201,7 +201,7 @@ memMove(T* pDest, const T* const pSrc, ssize size)
 
 template<typename T>
 inline void
-memSet(T* pDest, int byte, ssize size)
+memSet(T* pDest, int byte, isize size)
 {
     ADT_ASSERT(pDest != nullptr, " ");
     memset(pDest, byte, size * sizeof(T));
@@ -209,9 +209,9 @@ memSet(T* pDest, int byte, ssize size)
 
 template<typename T>
 inline constexpr void
-fill(T* pData, T x, ssize size)
+fill(T* pData, T x, isize size)
 {
-    for (ssize i = 0; i < size; ++i)
+    for (isize i = 0; i < size; ++i)
         pData[i] = x;
 }
 
@@ -249,12 +249,12 @@ searchMin(CON_T<T>* s)
 }
 
 inline constexpr void
-reverse(auto* a, const ssize size)
+reverse(auto* a, const isize size)
 {
     ADT_ASSERT(size > 0, " ");
 
-    const ssize halfSize = size >> 1;
-    for (ssize i = 0; i < halfSize; ++i)
+    const isize halfSize = size >> 1;
+    for (isize i = 0; i < halfSize; ++i)
         swap(&a[i], &a[size - 1 - i]);
 }
 
@@ -265,7 +265,7 @@ reverse(auto* a)
 }
 
 template<template<typename> typename CON_T, typename T, typename LAMBDA>
-[[nodiscard]] inline ssize
+[[nodiscard]] inline isize
 search(const CON_T<T>& c, LAMBDA f)
 {
     for (const auto& el : c)
@@ -275,17 +275,17 @@ search(const CON_T<T>& c, LAMBDA f)
 }
 
 template<typename T, typename B>
-[[nodiscard]] inline ssize
+[[nodiscard]] inline isize
 binarySearch(const T& array, const B& x)
 {
     static_assert(std::is_same_v<std::remove_cvref_t<decltype(array[0])>, std::remove_cvref_t<B>>);
 
     ADT_ASSERT(array.size() > 0, "");
 
-    ssize lo = 0, hi = array.size();
+    isize lo = 0, hi = array.size();
     while (lo < hi)
     {
-        const ssize mid = (lo + hi) >> 1;
+        const isize mid = (lo + hi) >> 1;
 
         const bool less = (array[mid] < x);
         lo = less ? mid + 1 : lo;
@@ -300,14 +300,14 @@ binarySearch(const T& array, const B& x)
 
 template<typename T> requires(std::is_integral_v<T>)
 inline T
-cycleForward(const T& idx, ssize size)
+cycleForward(const T& idx, isize size)
 {
     return (idx + 1) % size;
 }
 
 template<typename T> requires(std::is_integral_v<T>)
 inline T
-cycleBackward(const T& idx, ssize size)
+cycleBackward(const T& idx, isize size)
 {
     return (idx + (size - 1)) % size;
 }

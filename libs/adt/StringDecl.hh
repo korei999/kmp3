@@ -10,16 +10,16 @@ namespace adt
 struct IAllocator;
 struct String;
 
-[[nodiscard]] constexpr ssize ntsSize(const char* nts);
+[[nodiscard]] constexpr isize ntsSize(const char* nts);
 
-template <ssize SIZE>
-[[nodiscard]] constexpr ssize charBuffStringSize(const char (&aCharBuff)[SIZE]);
+template <isize SIZE>
+[[nodiscard]] constexpr isize charBuffStringSize(const char (&aCharBuff)[SIZE]);
 
 /* Just pointer + size, no allocations, has to be cloned into String to store safely */
 struct StringView
 {
     char* m_pData {};
-    ssize m_size {};
+    isize m_size {};
 
     /* */
 
@@ -27,11 +27,11 @@ struct StringView
 
     constexpr StringView(const char* nts);
 
-    constexpr StringView(char* pStr, ssize len);
+    constexpr StringView(char* pStr, isize len);
 
     constexpr StringView(Span<char> sp);
 
-    template<ssize SIZE>
+    template<isize SIZE>
     constexpr StringView(const char (&aCharBuff)[SIZE]);
 
     /* */
@@ -40,18 +40,18 @@ struct StringView
 
     /* */
 
-    constexpr char& operator[](ssize i);
-    constexpr const char& operator[](ssize i) const;
+    constexpr char& operator[](isize i);
+    constexpr const char& operator[](isize i) const;
 
     constexpr const char* data() const { return m_pData; }
     constexpr char* data() { return m_pData; }
-    constexpr ssize size() const { return m_size; }
+    constexpr isize size() const { return m_size; }
     constexpr bool empty() const { return size() == 0; }
-    constexpr ssize idx(const char* const pChar) const;
+    constexpr isize idx(const char* const pChar) const;
     [[nodiscard]] bool beginsWith(const StringView r) const;
     [[nodiscard]] bool endsWith(const StringView r) const;
-    constexpr ssize lastOf(char c) const;
-    constexpr ssize firstOf(char c) const;
+    constexpr isize lastOf(char c) const;
+    constexpr isize firstOf(char c) const;
     void trimEnd();
     void removeNLEnd(); /* remove \r\n */
     [[nodiscard]] bool contains(const StringView r) const;
@@ -59,10 +59,10 @@ struct StringView
     [[nodiscard]] const char& first() const;
     [[nodiscard]] char& last();
     [[nodiscard]] const char& last() const;
-    [[nodiscard]] ssize nGlyphs() const;
+    [[nodiscard]] isize nGlyphs() const;
 
     template<typename T>
-    T reinterpret(ssize at) const;
+    T reinterpret(isize at) const;
 
     /* */
 
@@ -105,7 +105,7 @@ inline String StringCat(IAllocator* p, const StringView& l, const StringView& r)
 struct String : public StringView
 {
     String() = default;
-    String(IAllocator* pAlloc, const char* pChars, ssize size);
+    String(IAllocator* pAlloc, const char* pChars, isize size);
     String(IAllocator* pAlloc, const char* nts);
     String(IAllocator* pAlloc, Span<char> spChars);
     String(IAllocator* pAlloc, const StringView sv);
@@ -120,7 +120,7 @@ struct String : public StringView
 template<int SIZE>
 struct StringFixed
 {
-    static constexpr ssize CAP = SIZE;
+    static constexpr isize CAP = SIZE;
     static_assert(SIZE > 1);
 
     /* */
@@ -150,10 +150,10 @@ struct StringFixed
     bool operator==(const StringFixed& other) const;
     bool operator==(const adt::StringView sv) const;
 
-    char* data() { return m_aBuff; }
-    const char* data() const { return m_aBuff; }
+    auto& data() { return m_aBuff; }
+    const auto& data() const { return m_aBuff; }
 
-    ssize size() const;
+    isize size() const;
     void destroy();
 };
 

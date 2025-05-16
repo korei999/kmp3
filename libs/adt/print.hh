@@ -38,18 +38,18 @@ struct Context
 {
     StringView fmt {};
     char* const pBuff {};
-    const ssize buffSize {};
-    ssize buffIdx {};
-    ssize fmtIdx {};
+    const isize buffSize {};
+    isize buffIdx {};
+    isize fmtIdx {};
     FormatArgs prevFmtArgs {};
     bool bUpdateFmtArgs {};
 };
 
-inline ssize
+inline isize
 printArgs(Context ctx) noexcept
 {
-    ssize nRead = 0;
-    for (ssize i = ctx.fmtIdx; i < ctx.fmt.size(); ++i, ++nRead)
+    isize nRead = 0;
+    for (isize i = ctx.fmtIdx; i < ctx.fmt.size(); ++i, ++nRead)
     {
         if (ctx.buffIdx >= ctx.buffSize) break;
         ctx.pBuff[ctx.buffIdx++] = ctx.fmt[i];
@@ -67,22 +67,22 @@ oneOfChars(const char x, const StringView chars) noexcept
     return false;
 }
 
-inline ssize
-parseFormatArg(FormatArgs* pArgs, const StringView fmt, ssize fmtIdx) noexcept
+inline isize
+parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtIdx) noexcept
 {
-    ssize nRead = 1;
+    isize nRead = 1;
     bool bDone = false;
     bool bColon = false;
     bool bFloatPresicion = false;
 
     char aBuff[64] {};
-    ssize i = fmtIdx + 1;
+    isize i = fmtIdx + 1;
 
     auto clSkipUntil = [&](const StringView chars) -> void
     {
         memset(aBuff, 0, sizeof(aBuff));
-        ssize bIdx = 0;
-        while (bIdx < (ssize)sizeof(aBuff) - 1 && i < fmt.size() && !oneOfChars(fmt[i], chars))
+        isize bIdx = 0;
+        while (bIdx < (isize)sizeof(aBuff) - 1 && i < fmt.size() && !oneOfChars(fmt[i], chars))
         {
             aBuff[bIdx++] = fmt[i++];
             ++nRead;
@@ -171,7 +171,7 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 {
     bool bNegative = false;
 
-    ssize i = 0;
+    isize i = 0;
     auto clPush = [&](char c) -> bool
     {
         if (i < spBuff.size())
@@ -235,10 +235,10 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
     utils::reverse(spBuff.data(), i);
 }
 
-inline ssize
+inline isize
 copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept
 {
-    ssize i = 0;
+    isize i = 0;
 
     auto clCopySpan = [&]
     {
@@ -249,8 +249,8 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexc
     if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::JUSTIFY_RIGHT))
     {
         /* leave space for the string */
-        ssize nSpaces = fmtArgs.maxLen - strnlen(spSrc.data(), spSrc.size());
-        ssize j = 0;
+        isize nSpaces = fmtArgs.maxLen - strnlen(spSrc.data(), spSrc.size());
+        isize j = 0;
 
         if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i && nSpaces > 0)
         {
@@ -276,39 +276,39 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexc
     return i;
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const StringView& str) noexcept
 {
     return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
 }
 
 template<int SIZE> requires(SIZE > 1)
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const StringFixed<SIZE>& str) noexcept
 {
     return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const char* str) noexcept
 {
     return formatToContext(ctx, fmtArgs, StringView(str));
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, char* const& pNullTerm) noexcept
 {
     return formatToContext(ctx, fmtArgs, StringView(pNullTerm));
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, bool b) noexcept
 {
     return formatToContext(ctx, fmtArgs, b ? "true" : "false");
 }
 
 template<typename INT_T> requires std::is_integral_v<INT_T>
-inline constexpr ssize
+inline constexpr isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
 {
     char buff[64] {};
@@ -319,7 +319,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
     return copyBackToContext(ctx, fmtArgs, {buff});
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
 {
     char aBuff[64] {};
@@ -331,7 +331,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
     return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
 {
     char aBuff[128] {};
@@ -343,7 +343,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
     return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept
 {
     char aBuff[8] {};
@@ -356,13 +356,13 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept
     return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const char32_t x) noexcept
 {
     return formatToContext(ctx, fmtArgs, (wchar_t)x);
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const char x) noexcept
 {
     char aBuff[4] {};
@@ -371,14 +371,14 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const char x) noexcept
     return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, null) noexcept
 {
     return formatToContext(ctx, fmtArgs, StringView("nullptr"));
 }
 
 template<typename PTR_T> requires std::is_pointer_v<PTR_T>
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p) noexcept
 {
     if (p == nullptr)
@@ -391,7 +391,7 @@ formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p) noexcept
 
 template<typename T>
 inline constexpr void
-_printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& arg) noexcept
+_printArgInternal(isize& nRead, isize& i, bool& bArg, Context& ctx, const T& arg) noexcept
 {
     for (; i < ctx.fmt.size(); ++i, ++nRead)
     {
@@ -405,7 +405,7 @@ _printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& arg
             ctx.bUpdateFmtArgs = false;
 
             fmtArgs = ctx.prevFmtArgs;
-            ssize addBuff = formatToContext(ctx, fmtArgs, arg);
+            isize addBuff = formatToContext(ctx, fmtArgs, arg);
 
             ctx.buffIdx += addBuff;
             nRead += addBuff;
@@ -424,8 +424,8 @@ _printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& arg
 
         if (bArg)
         {
-            ssize addBuff = 0;
-            ssize add = parseFormatArg(&fmtArgs, ctx.fmt, i);
+            isize addBuff = 0;
+            isize add = parseFormatArg(&fmtArgs, ctx.fmt, i);
 
             if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
             {
@@ -452,12 +452,12 @@ _printArgInternal(ssize& nRead, ssize& i, bool& bArg, Context& ctx, const T& arg
 }
 
 template<typename T, typename ...ARGS_T>
-inline constexpr ssize
+inline constexpr isize
 printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
 {
-    ssize nRead = 0;
+    isize nRead = 0;
     bool bArg = false;
-    ssize i = ctx.fmtIdx;
+    isize i = ctx.fmtIdx;
 
     /* NOTE: ugly edge case, when we need to fill with spaces but fmt is out of range */
     if (ctx.bUpdateFmtArgs && ctx.fmtIdx >= ctx.fmt.size())
@@ -473,8 +473,8 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
     return nRead;
 }
 
-template<ssize SIZE, typename ...ARGS_T>
-inline ssize
+template<isize SIZE, typename ...ARGS_T>
+inline isize
 toFILE(FILE* fp, const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
     char aBuff[SIZE] {};
@@ -485,8 +485,8 @@ toFILE(FILE* fp, const StringView fmt, const ARGS_T&... tArgs) noexcept
 }
 
 template<typename ...ARGS_T>
-inline constexpr ssize
-toBuffer(char* pBuff, ssize buffSize, const StringView fmt, const ARGS_T&... tArgs) noexcept
+inline constexpr isize
+toBuffer(char* pBuff, isize buffSize, const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
     if (!pBuff || buffSize <= 0)
         return 0;
@@ -496,14 +496,14 @@ toBuffer(char* pBuff, ssize buffSize, const StringView fmt, const ARGS_T&... tAr
 }
 
 template<typename ...ARGS_T>
-inline constexpr ssize
+inline constexpr isize
 toString(StringView* pDest, const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
     return toBuffer(pDest->data(), pDest->size(), fmt, tArgs...);
 }
 
 template<typename ...ARGS_T>
-inline constexpr ssize
+inline constexpr isize
 toSpan(Span<char> sp, const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
     /* leave 1 byte for '\0' */
@@ -511,23 +511,23 @@ toSpan(Span<char> sp, const StringView fmt, const ARGS_T&... tArgs) noexcept
 }
 
 template<typename ...ARGS_T>
-inline ssize
+inline isize
 out(const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
     return toFILE(stdout, fmt, tArgs...);
 }
 
 template<typename ...ARGS_T>
-inline ssize
+inline isize
 err(const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
     return toFILE(stderr, fmt, tArgs...);
 }
 
-inline ssize
+inline isize
 FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
 {
-    ssize i = 0;
+    isize i = 0;
     auto clPush = [&](char c) -> bool
     {
         if (i < spFmt.size())
@@ -565,7 +565,7 @@ FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
             else
                 intToBuffer(fmtArgs.maxLen, {aBuff}, {});
 
-            for (ssize j = 0; j < utils::size(aBuff) && aBuff[j]; ++j)
+            for (isize j = 0; j < utils::size(aBuff) && aBuff[j]; ++j)
                 if (!clPush(aBuff[j])) return i;
         }
     }
@@ -576,8 +576,8 @@ FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
 }
 
 template<template<typename> typename CON_T, typename T>
-inline ssize
-formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const ssize contSize) noexcept
+inline isize
+formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const isize contSize) noexcept
 {
     if (contSize <= 0)
     {
@@ -587,7 +587,7 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const
     }
 
     char aFmtBuff[64] {};
-    ssize nFmtRead = FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
+    isize nFmtRead = FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
 
     StringView sFmtArg = aFmtBuff;
     aFmtBuff[nFmtRead++] = ',';
@@ -595,8 +595,8 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const
     StringView sFmtArgComma(aFmtBuff);
 
     char aBuff[1024] {};
-    ssize nRead = 0;
-    ssize i = 0;
+    isize nRead = 0;
+    isize i = 0;
 
     for (const auto& e : x)
     {
@@ -608,9 +608,9 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const
     return copyBackToContext(ctx, fmtArgs, {aBuff});
 }
 
-template<template<typename, ssize> typename CON_T, typename T, ssize SIZE>
-inline ssize
-formatToContextTemplateSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE>& x, const ssize contSize) noexcept
+template<template<typename, isize> typename CON_T, typename T, isize SIZE>
+inline isize
+formatToContextTemplateSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE>& x, const isize contSize) noexcept
 {
     if (contSize <= 0)
     {
@@ -620,7 +620,7 @@ formatToContextTemplateSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE
     }
 
     char aFmtBuff[64] {};
-    ssize nFmtRead = FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
+    isize nFmtRead = FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
 
     StringView sFmtArg = aFmtBuff;
     aFmtBuff[nFmtRead++] = ',';
@@ -628,8 +628,8 @@ formatToContextTemplateSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE
     StringView sFmtArgComma(aFmtBuff);
 
     char aBuff[1024] {};
-    ssize nRead = 0;
-    ssize i = 0;
+    isize nRead = 0;
+    isize i = 0;
 
     for (const auto& e : x)
     {
@@ -642,14 +642,14 @@ formatToContextTemplateSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE
 }
 
 template<template<typename> typename CON_T, typename T>
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x) noexcept
 {
     return formatToContextExpSize(ctx, fmtArgs, x, x.size());
 }
 
-template<typename T, ssize N>
-inline ssize
+template<typename T, isize N>
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const T (&a)[N]) noexcept
 {
     return formatToContext(ctx, fmtArgs, Span(a, N));

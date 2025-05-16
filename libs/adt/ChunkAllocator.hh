@@ -51,7 +51,7 @@ struct ChunkAllocator : public IAllocator
     /* */
 
     template<typename T> ADT_WARN_IMPOSSIBLE_OPERATION constexpr T*
-    reallocV(T* ptr, ssize oldCount, ssize newCount)
+    reallocV(T* ptr, isize oldCount, isize newCount)
     {
         ADT_ASSERT_ALWAYS(false, "can't realloc"); return nullptr;
     };
@@ -70,11 +70,11 @@ ChunkAllocator::allocBlock()
 
     r->head = (ChunkAllocatorNode*)r->pMem;
 
-    ssize chunks = m_blockCap / m_chunkSize;
+    isize chunks = m_blockCap / m_chunkSize;
 
     auto* head = r->head;
     ChunkAllocatorNode* p = head;
-    for (ssize i = 0; i < chunks - 1; ++i)
+    for (isize i = 0; i < chunks - 1; ++i)
     {
         p->next = (ChunkAllocatorNode*)((u8*)p + m_chunkSize);
         p = p->next;

@@ -464,7 +464,7 @@ RBTree<T>::insert(bool bAllowDuplicates, RBNode<T>* elm)
 {
     RBNode<T>* parent = nullptr;
     RBNode<T>* tmp = m_pRoot;
-    ssize comp = 0;
+    isize comp = 0;
     while (tmp)
     {
         parent = tmp;
@@ -616,7 +616,7 @@ RBSearch(RBNode<T>* p, const T& data)
     auto it = p;
     while (it)
     {
-        ssize cmp = utils::compare(data, it->m_data);
+        isize cmp = utils::compare(data, it->m_data);
         if (cmp == 0) return it;
         else if (cmp < 0) it = it->left();
         else it = it->right();
@@ -706,7 +706,7 @@ namespace print
 {
 
 template<typename T>
-inline ssize
+inline isize
 formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const RBNode<T>& node)
 {
     char aBuff[128] {};

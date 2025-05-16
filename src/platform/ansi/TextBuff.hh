@@ -110,14 +110,14 @@ struct TextBuff
     adt::Arena* m_pArena {};
 
     char* m_pData {};
-    adt::ssize m_size {};
-    adt::ssize m_capacity {};
+    adt::isize m_size {};
+    adt::isize m_capacity {};
 
-    adt::ssize m_tWidth {};
-    adt::ssize m_tHeight {};
+    adt::isize m_tWidth {};
+    adt::isize m_tHeight {};
 
-    adt::ssize m_newTWidth {};
-    adt::ssize m_newTHeight {};
+    adt::isize m_newTWidth {};
+    adt::isize m_newTHeight {};
 
     bool m_bResize {};
     bool m_bChanged {};
@@ -142,7 +142,7 @@ struct TextBuff
 
     /* direct write api (cpu heavy) */
     void push(const char ch);
-    void push(const char* pBuff, const adt::ssize buffSize);
+    void push(const char* pBuff, const adt::isize buffSize);
     void push(const adt::StringView svBuff);
     void flush();
     void moveTopLeft();
@@ -161,12 +161,12 @@ struct TextBuff
     /* */
 
     /* main api (more efficient using damage tracking) */
-    void start(adt::Arena* pArena, adt::ssize termWidth, adt::ssize termHeight);
+    void start(adt::Arena* pArena, adt::isize termWidth, adt::isize termHeight);
     void destroy();
     void clean();
     void present();
     void erase();
-    void resize(adt::ssize width, adt::ssize height);
+    void resize(adt::isize width, adt::isize height);
 
     void string(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::StringView sv, int maxSvLen = 99999);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, adt::Span<wchar_t> sp);
@@ -181,12 +181,12 @@ struct TextBuff
 private:
     adt::Span2D<TextBuffCell> frontBufferSpan();
     adt::Span2D<TextBuffCell> backBufferSpan();
-    void grow(adt::ssize newCap);
+    void grow(adt::isize newCap);
     void reset();
     void clearBackBuffer();
     void pushDiff();
     void resetBuffers();
-    void resizeBuffers(adt::ssize width, adt::ssize height);
+    void resizeBuffers(adt::isize width, adt::isize height);
 
 #ifdef OPT_CHAFA
     void showImages();

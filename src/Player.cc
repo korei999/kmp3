@@ -110,10 +110,10 @@ Player::focusSelectedCenter()
 void
 Player::setDefaultIdxs(Vec<u16>* pIdxs)
 {
-    ssize size = m_vSongs.size();
+    isize size = m_vSongs.size();
     pIdxs->setSize(m_pAlloc, size);
 
-    for (ssize i = 0; i < size; ++i)
+    for (isize i = 0; i < size; ++i)
         (*pIdxs)[i] = i;
 }
 
@@ -124,9 +124,9 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
         return;
 
     Array<wchar_t, 64> aUpperRight {};
-    ssize maxLen = utils::min(spBuff.size(), aUpperRight.cap());
+    isize maxLen = utils::min(spBuff.size(), aUpperRight.cap());
 
-    for (ssize i = 0; i < maxLen && spBuff[i]; ++i)
+    for (isize i = 0; i < maxLen && spBuff[i]; ++i)
         aUpperRight.push(wchar_t(towupper(spBuff[i])));
 
     VecManaged<wchar_t> aSongToUpper(pAlloc, m_longestString + 1);

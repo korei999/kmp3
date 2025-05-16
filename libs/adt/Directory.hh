@@ -86,7 +86,7 @@ struct Directory
             if (!p || (p && !p->m_pEntry)) return {};
 
             usize n = strnlen(p->m_pEntry->d_name, sizeof(p->m_pEntry->d_name));
-            return {p->m_pEntry->d_name, static_cast<ssize>(n)};
+            return {p->m_pEntry->d_name, static_cast<isize>(n)};
         }
 
         It
@@ -222,7 +222,7 @@ Directory::Directory(const char* ntsPath)
 
     if (!sv.endsWith("/*"))
     {
-        if (sv.size() < static_cast<ssize>(sizeof(m_aBuff) - 4))
+        if (sv.size() < static_cast<isize>(sizeof(m_aBuff) - 4))
         {
             strncpy(m_aBuff, ntsPath, sizeof(m_aBuff));
 

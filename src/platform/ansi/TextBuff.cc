@@ -42,7 +42,7 @@ namespace platform::ansi
 {
 
 void
-TextBuff::grow(ssize newCap)
+TextBuff::grow(isize newCap)
 {
     m_pData = m_pArena->reallocV<char>(m_pData, m_capacity, newCap);
     m_capacity = newCap;
@@ -53,7 +53,7 @@ TextBuff::push(const char ch)
 {
     if (m_size >= m_capacity)
     {
-        const ssize newCap = utils::max(ssize(2), m_capacity*2);
+        const isize newCap = utils::max(isize(2), m_capacity*2);
         grow(newCap);
     }
 
@@ -61,11 +61,11 @@ TextBuff::push(const char ch)
 }
 
 void
-TextBuff::push(const char* pBuff, const ssize buffSize)
+TextBuff::push(const char* pBuff, const isize buffSize)
 {
     if (buffSize + m_size >= m_capacity)
     {
-        const ssize newCap = utils::max(buffSize + m_size, m_capacity*2);
+        const isize newCap = utils::max(buffSize + m_size, m_capacity*2);
         grow(newCap);
     }
 
@@ -112,7 +112,7 @@ void
 TextBuff::up(int steps)
 {
     char aBuff[16] {};
-    ssize n = print::toSpan(aBuff, "\x1b[{}A", steps);
+    isize n = print::toSpan(aBuff, "\x1b[{}A", steps);
     push(aBuff, n);
 }
 
@@ -120,7 +120,7 @@ void
 TextBuff::down(int steps)
 {
     char aBuff[16] {};
-    ssize n = print::toSpan(aBuff, "\x1b[{}B", steps);
+    isize n = print::toSpan(aBuff, "\x1b[{}B", steps);
     push(aBuff, n);
 }
 
@@ -128,7 +128,7 @@ void
 TextBuff::forward(int steps)
 {
     char aBuff[16] {};
-    ssize n = print::toSpan(aBuff, "\x1b[{}C", steps);
+    isize n = print::toSpan(aBuff, "\x1b[{}C", steps);
     push(aBuff, n);
 }
 
@@ -136,7 +136,7 @@ void
 TextBuff::back(int steps)
 {
     char aBuff[16] {};
-    ssize n = print::toSpan(aBuff, "\x1b[{}D", steps);
+    isize n = print::toSpan(aBuff, "\x1b[{}D", steps);
     push(aBuff, n);
 }
 
@@ -144,7 +144,7 @@ void
 TextBuff::move(int x, int y)
 {
     char aBuff[16] {};
-    ssize n = print::toSpan(aBuff, "\x1b[{};{}H", y + 1, x + 1);
+    isize n = print::toSpan(aBuff, "\x1b[{};{}H", y + 1, x + 1);
     push(aBuff, n);
 }
 
@@ -170,7 +170,7 @@ void
 TextBuff::clearLine(TEXT_BUFF_ARG eArg)
 {
     char aBuff[32] {};
-    ssize n = print::toSpan(aBuff, "\x1b[{}K", int(eArg));
+    isize n = print::toSpan(aBuff, "\x1b[{}K", int(eArg));
     push(aBuff, n);
 }
 
@@ -198,7 +198,7 @@ TextBuff::clearKittyImages()
 }
 
 void
-TextBuff::resizeBuffers(ssize width, ssize height)
+TextBuff::resizeBuffers(isize width, isize height)
 {
     m_vBack.setSize(StdAllocator::inst(), width * height);
     m_vFront.setSize(StdAllocator::inst(), width * height);
@@ -216,7 +216,7 @@ TextBuff::erase()
 }
 
 void
-TextBuff::resize(ssize width, ssize height)
+TextBuff::resize(isize width, isize height)
 {
     m_bResize = true;
     m_newTWidth = width;
@@ -244,7 +244,7 @@ TextBuff::destroy()
 }
 
 void
-TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
+TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
 {
     m_pArena = pArena;
 #ifdef OPT_CHAFA
@@ -265,9 +265,9 @@ TextBuff::start(Arena* pArena, ssize termWidth, ssize termHeight)
 void
 TextBuff::pushDiff()
 {
-    ssize row = 0;
-    ssize col = 0;
-    ssize nForwards = 0;
+    isize row = 0;
+    isize col = 0;
+    isize nForwards = 0;
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
     bool bChangeStyle = false;
 
@@ -345,7 +345,7 @@ TextBuff::showImages()
         else
         {
             auto& vLines = im.img.uData.vLines;
-            for (ssize lineIdx = 0; lineIdx < vLines.size(); ++lineIdx)
+            for (isize lineIdx = 0; lineIdx < vLines.size(); ++lineIdx)
             {
                 move(im.x, im.y + lineIdx);
                 push(vLines[lineIdx]);
@@ -404,7 +404,7 @@ TextBuff::clean()
         clearBackBuffer();
     }
 
-    ssize scratchSize = SIZE_1K;
+    isize scratchSize = SIZE_1K;
     m_scratch = Span((char*)m_pArena->malloc(scratchSize, 1), scratchSize);
 }
 
@@ -478,7 +478,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
         int colWidth = wcwidth(wc);
         if (colWidth > 1)
         {
-            for (ssize i = 1; i < colWidth; ++i)
+            for (isize i = 1; i < colWidth; ++i)
             {
                 if (x + i >= bb.width() || y >= bb.height())
                     return;
@@ -515,8 +515,8 @@ TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
     Span<char> sp = m_scratch.nextMemZero<char>(128);
     if (sp.size() <= 0) return {};
 
-    ssize size = sp.size() - 1;
-    ssize n = 0;
+    isize size = sp.size() - 1;
+    isize n = 0;
 
     n += print::toBuffer(sp.data() + n, size - n, "\x1b[0");
 
@@ -590,15 +590,15 @@ TextBuff::forceClean(int x, int y, int width, int height)
     if (x < 0 || y < 0)
         return;
 
-    width = utils::min((ssize)width, m_tWidth);
-    height = utils::min((ssize)height, m_tHeight);
+    width = utils::min((isize)width, m_tWidth);
+    height = utils::min((isize)height, m_tHeight);
 
     auto spFront = frontBufferSpan();
     auto spBack = backBufferSpan();
 
-    for (ssize row = y; row < height; ++row)
+    for (isize row = y; row < height; ++row)
     {
-        for (ssize col = x; col < width; ++col)
+        for (isize col = x; col < width; ++col)
         {
             auto& front = spFront(col, row);
             auto& back = spBack(col, row);

@@ -59,7 +59,7 @@ struct Player
     adt::Vec<adt::u16> m_vSearchIdxs {}; /* search index buffer */
     long m_focused {};
     long m_selected {};
-    adt::ssize m_longestString {};
+    adt::isize m_longestString {};
     PLAYER_REPEAT_METHOD m_eReapetMethod {};
     bool m_bSelectionChanged {};
     adt::Mutex m_mtxQ {};

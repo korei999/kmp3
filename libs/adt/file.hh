@@ -4,7 +4,7 @@
 #include "logs.hh"
 #include "defer.hh"
 
-#if defined __linux__ || defined __APPLE__
+#if __has_include(<unistd.h>)
 
     #define ADT_USE_LINUX_FILE
 
@@ -42,7 +42,7 @@ load(IAllocator* pAlloc, const char* ntsPath)
     String ret {};
 
     fseek(pf, 0, SEEK_END);
-    ssize size = ftell(pf) + 1;
+    isize size = ftell(pf) + 1;
     rewind(pf);
 
     ret.m_pData = reinterpret_cast<char*>(pAlloc->malloc(size, sizeof(char)));
@@ -53,7 +53,7 @@ load(IAllocator* pAlloc, const char* ntsPath)
     return ret;
 }
 
-template<ssize SIZE>
+template<isize SIZE>
 [[nodiscard]] inline StringFixed<SIZE>
 load(const char* ntsPath)
 {
@@ -68,7 +68,7 @@ load(const char* ntsPath)
     StringFixed<SIZE> ret {};
 
     fseek(pf, 0, SEEK_END);
-    const ssize size = utils::min(ssize(ftell(pf)), SIZE - 1);
+    const isize size = utils::min(isize(ftell(pf)), SIZE - 1);
     rewind(pf);
 
     fread(ret.data(), 1, size, pf);
@@ -79,7 +79,7 @@ load(const char* ntsPath)
 [[nodiscard]] inline StringView
 getPathEnding(const StringView svPath)
 {
-    ssize lastSlash = svPath.lastOf('/');
+    isize lastSlash = svPath.lastOf('/');
 
     if (lastSlash == NPOS || (lastSlash + 1) == svPath.size()) /* nothing after slash */
         return svPath;
@@ -92,7 +92,7 @@ replacePathEnding(IAllocator* pAlloc, const StringView svPath, const StringView 
 {
     ADT_ASSERT(pAlloc != nullptr, " ");
 
-    ssize lastSlash = svPath.lastOf('/');
+    isize lastSlash = svPath.lastOf('/');
     const StringView sNoEnding = {const_cast<char*>(&svPath[0]), lastSlash + 1};
     String r = StringCat(pAlloc, sNoEnding, svEnding);
     return r;
@@ -103,9 +103,9 @@ replacePathEnding(Span<char>* spBuff, const StringView svPath, const StringView 
 {
     ADT_ASSERT(spBuff != nullptr, " ");
 
-    ssize lastSlash = svPath.lastOf('/');
+    isize lastSlash = svPath.lastOf('/');
     const StringView svNoEnding = {const_cast<char*>(&svPath[0]), lastSlash + 1};
-    ssize n = print::toSpan(*spBuff, "{}{}", svNoEnding, svEnding);
+    isize n = print::toSpan(*spBuff, "{}{}", svNoEnding, svEnding);
     spBuff->m_size = n;
 }
 
@@ -115,7 +115,7 @@ appendDirPath(IAllocator* pAlloc, const StringView svDir, const StringView svPat
     ADT_ASSERT(pAlloc != nullptr, " ");
 
     String newString {};
-    ssize buffSize = svDir.size() + svPath.size() + 2;
+    isize buffSize = svDir.size() + svPath.size() + 2;
     char* pData = pAlloc->zallocV<char>(buffSize);
     newString.m_pData = pData;
 
@@ -200,7 +200,7 @@ map(const char* ntsPath)
         return {};
     }
 
-    ssize fileSize = sb.st_size;
+    isize fileSize = sb.st_size;
 
     void* pData = mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (pData == MAP_FAILED)

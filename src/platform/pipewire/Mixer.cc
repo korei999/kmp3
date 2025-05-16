@@ -290,7 +290,7 @@ Mixer::onProcess()
 
     const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3);
 
-    ssize destI = 0;
+    isize destI = 0;
     for (u32 frameIdx = 0; frameIdx < nFrames; frameIdx++)
     {
         /* fill the buffer when it's empty */

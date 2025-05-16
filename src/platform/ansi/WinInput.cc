@@ -32,7 +32,7 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
 
     for (; type < TYPE_MAX; type++)
     {
-        ssize size = strlen(aCmpMap[type]);
+        isize size = strlen(aCmpMap[type]);
 
         if (spBuff.size() >= size && (strncmp(aCmpMap[type], spBuff.data(), size)) == 0)
             break;
@@ -90,7 +90,7 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
         [[fallthrough]];
         case TYPE_1015:
         {
-            ssize indexFail = -1;
+            isize indexFail = -1;
 
             enum
             {
@@ -100,10 +100,10 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
                 FIRST_LAST_MAX
             };
 
-            ssize aIndices[FIRST_LAST_MAX] = {indexFail, indexFail, indexFail};
+            isize aIndices[FIRST_LAST_MAX] = {indexFail, indexFail, indexFail};
             bool bCapital = 0;
 
-            for (ssize i = 0; i < spBuff.size(); ++i)
+            for (isize i = 0; i < spBuff.size(); ++i)
             {
                 if (spBuff[i] == ';')
                 {

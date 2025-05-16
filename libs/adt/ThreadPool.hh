@@ -55,7 +55,7 @@ struct IThreadPoolWithMemory : IThreadPool
     virtual ScratchBuffer& scratch() = 0;
 };
 
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 struct ThreadPool : IThreadPool
 {
     Span<Thread> m_spThreads {};
@@ -104,7 +104,7 @@ protected:
     THREAD_STATUS loop();
 };
 
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 inline
 ThreadPool<QUEUE_SIZE>::ThreadPool(IAllocator* pAlloc, int nThreads)
     : m_spThreads(pAlloc->zallocV<Thread>(nThreads), nThreads),
@@ -116,7 +116,7 @@ ThreadPool<QUEUE_SIZE>::ThreadPool(IAllocator* pAlloc, int nThreads)
     start();
 }
 
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 inline
 ThreadPool<QUEUE_SIZE>::ThreadPool(
     IAllocator* pAlloc,
@@ -137,7 +137,7 @@ ThreadPool<QUEUE_SIZE>::ThreadPool(
     start();
 }
 
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 inline THREAD_STATUS
 ThreadPool<QUEUE_SIZE>::loop()
 {
@@ -178,7 +178,7 @@ ThreadPool<QUEUE_SIZE>::loop()
     return THREAD_STATUS(0);
 }
 
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 inline void
 ThreadPool<QUEUE_SIZE>::start()
 {
@@ -197,7 +197,7 @@ ThreadPool<QUEUE_SIZE>::start()
 #endif
 }
 
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 inline void
 ThreadPool<QUEUE_SIZE>::wait()
 {
@@ -207,7 +207,7 @@ ThreadPool<QUEUE_SIZE>::wait()
         m_cndWait.wait(&m_mtxQ);
 }
 
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 inline void
 ThreadPool<QUEUE_SIZE>::destroy(IAllocator* pAlloc)
 {
@@ -231,13 +231,13 @@ ThreadPool<QUEUE_SIZE>::destroy(IAllocator* pAlloc)
     }
 }
 
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 inline bool
 ThreadPool<QUEUE_SIZE>::add(Task task)
 {
     ADT_ASSERT(m_bStarted, "forgot to `start()` this ThreadPool: (m_bStarted: '{}')", m_bStarted);
 
-    ssize i;
+    isize i;
 
     {
         LockGuard lock {&m_mtxQ};
@@ -254,7 +254,7 @@ ThreadPool<QUEUE_SIZE>::add(Task task)
 
 /* ThreadPool with ScratchBuffers created for each thread.
  * Any thread can access its own thread local buffer with `threadPool.scratch()`. */
-template<ssize QUEUE_SIZE>
+template<isize QUEUE_SIZE>
 struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
 {
     static inline thread_local u8* gtl_pScratchMem;
@@ -264,10 +264,10 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
 
     using ThreadPool<QUEUE_SIZE>::ThreadPool;
 
-    ThreadPoolWithMemory(IAllocator* pAlloc, ssize nBytesEachBuffer, int nThreads = utils::max(ADT_GET_NPROCS() - 1, 2))
+    ThreadPoolWithMemory(IAllocator* pAlloc, isize nBytesEachBuffer, int nThreads = utils::max(ADT_GET_NPROCS() - 1, 2))
         : ThreadPool<QUEUE_SIZE>(
             pAlloc,
-            +[](void* p) { allocScratchForThisThread(reinterpret_cast<ssize>(p)); },
+            +[](void* p) { allocScratchForThisThread(reinterpret_cast<isize>(p)); },
             reinterpret_cast<void*>(nBytesEachBuffer),
             +[](void*) { destroyScratchForThisThread(); },
             nullptr,
@@ -300,7 +300,7 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
     /* */
 
     static void
-    allocScratchForThisThread(ssize size)
+    allocScratchForThisThread(isize size)
     {
         ADT_ASSERT(gtl_pScratchMem == nullptr, "already allocated");
 

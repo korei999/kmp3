@@ -64,7 +64,7 @@ Win::info()
     {
         utils::memSet(sp.data(), 0, sp.size());
 
-        ssize n = print::toSpan(sp, svPrefix);
+        isize n = print::toSpan(sp, svPrefix);
         m_textBuff.string(hOff, y, {}, sp.data());
 
         if (svLine.size() > 0)
@@ -91,7 +91,7 @@ Win::volume()
     const bool bMuted = app::g_pMixer->isMuted();
 
     Span sp = s_scratch.nextMemZero<char>(width + 1);
-    ssize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
+    isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
 
     const int maxVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
 
@@ -150,7 +150,7 @@ Win::timeSlider()
     const int xOff = m_prevImgWidth + 2;
     const int yOff = 10;
 
-    ssize n = 0;
+    isize n = 0;
 
     /* play/pause indicator */
     {
@@ -189,7 +189,7 @@ Win::songList()
     const auto& pl = *app::g_pPlayer;
     const int split = pl.m_imgHeight + 1;
 
-    for (ssize h = m_firstIdx, i = 0; i < m_listHeight - 1; ++h, ++i)
+    for (isize h = m_firstIdx, i = 0; i < m_listHeight - 1; ++h, ++i)
     {
         if (h >= pl.m_vSearchIdxs.size()) break;
 
@@ -233,10 +233,10 @@ Win::scrollBar()
     if (blockI + barHeight >= m_listHeight - 1)
         blockI -= (blockI + barHeight) - (m_listHeight - 1);
 
-    for (ssize i = 0; i < m_listHeight - 1; ++i)
+    for (isize i = 0; i < m_listHeight - 1; ++i)
         m_textBuff.string(m_termSize.width - 1, split + i + 1, STYLE::DIM, "│");
 
-    for (ssize i = 0; i < barHeight && i + blockI < m_listHeight - 1; ++i)
+    for (isize i = 0; i < barHeight && i + blockI < m_listHeight - 1; ++i)
         m_textBuff.string(m_termSize.width - 1, i + blockI + split + 1, STYLE::DIM, "█");
 }
 
@@ -253,7 +253,7 @@ Win::bottomLine()
     {
         Span sp = s_scratch.nextMemZero<char>(width + 1);
 
-        ssize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);
+        isize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};

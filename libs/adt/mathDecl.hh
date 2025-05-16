@@ -566,7 +566,7 @@ inline M4 transformation(const V3& translation, const V3& scale);
 namespace adt::print
 {
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs, const math::V2& x)
 {
     ctx.fmt = "{:.3}, {:.3}";
@@ -574,7 +574,7 @@ formatToContext(Context ctx, FormatArgs, const math::V2& x)
     return printArgs(ctx, x.x, x.y);
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs, const math::V3& x)
 {
     ctx.fmt = "{:.3}, {:.3}, {:.3}";
@@ -582,7 +582,7 @@ formatToContext(Context ctx, FormatArgs, const math::V3& x)
     return printArgs(ctx, x.x, x.y, x.z);
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs, const math::V4& x)
 {
     ctx.fmt = "{:.3}, {:.3}, {:.3}, {:.3}";
@@ -590,27 +590,27 @@ formatToContext(Context ctx, FormatArgs, const math::V4& x)
     return printArgs(ctx, x.x, x.y, x.z, x.w);
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4& x)
 {
     i32 aBuff[4] {x.x, x.y, x.z, x.w};
     return formatToContext(ctx, fmtArgs, aBuff);
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x)
 {
     u16 aBuff[4] {x.x, x.y, x.z, x.w};
     return formatToContext(ctx, fmtArgs, aBuff);
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const math::Qt& x)
 {
     return formatToContext(ctx, fmtArgs, x.base);
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs, const math::M2& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}"
@@ -619,7 +619,7 @@ formatToContext(Context ctx, FormatArgs, const math::M2& x)
     return printArgs(ctx, x.d[0], x.d[1], x.d[2], x.d[3]);
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs, const math::M3& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}"
@@ -633,7 +633,7 @@ formatToContext(Context ctx, FormatArgs, const math::M3& x)
     );
 }
 
-inline ssize
+inline isize
 formatToContext(Context ctx, FormatArgs, const math::M4& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}, {:.3}"

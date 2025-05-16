@@ -19,6 +19,10 @@
 
     #define ADT_GET_NPROCS() get_nprocs()
 
+#elif defined __APPLE__
+
+    #define ADT_GET_NPROCS() sysconf(_SC_NPROCESSORS_ONLN)
+
 #elif defined _WIN32
 
     #include <sysinfoapi.h>
@@ -32,10 +36,6 @@ getLogicalCoresCountWIN32()
 }
 
     #define ADT_GET_NPROCS() getLogicalCoresCountWIN32()
-#elif defined __APPLE__
-
-    #define ADT_GET_NPROCS() sysconf(_SC_NPROCESSORS_ONLN)
-
 #else
     #define ADT_GET_NPROCS() 4
 #endif
@@ -45,6 +45,8 @@ getNCores()
 {
 #ifdef __linux__
     return get_nprocs();
+#elif __APPLE__
+    return ADT_GET_NPROCS();
 #elif _WIN32
     SYSTEM_INFO info;
     GetSystemInfo(&info);
@@ -58,7 +60,7 @@ getNCores()
 namespace adt
 {
 
-constexpr ssize THREAD_WAIT_INFINITE = 0xffffffff;
+constexpr isize THREAD_WAIT_INFINITE = 0xffffffff;
 
 
 #ifdef ADT_USE_PTHREAD
@@ -495,15 +497,15 @@ CndVar::timedWait(Mutex* pMtx, f64 ms)
 #ifdef ADT_USE_PTHREAD
 
     timespec ts {
-        .tv_sec = ssize(ms / 1000.0),
-        .tv_nsec = (ssize(ms) % 1000) * 1000'000,
+        .tv_sec = isize(ms / 1000.0),
+        .tv_nsec = (isize(ms) % 1000) * 1000'000,
     };
     [[maybe_unused]] int err = pthread_cond_timedwait(&m_cnd, &pMtx->m_mtx, &ts);
     ADT_ASSERT(err == 0, "err: {}", err);
 
 #elif defined ADT_USE_WIN32THREAD
 
-    SleepConditionVariableCS(&m_cnd, &pMtx->m_mtx, ssize(ms));
+    SleepConditionVariableCS(&m_cnd, &pMtx->m_mtx, isize(ms));
 
 #endif
 }

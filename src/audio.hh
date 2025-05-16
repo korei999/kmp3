@@ -102,7 +102,7 @@ struct IDecoder
         const int nFrames,
         const int nChannles,
         long* pSamplesWritten,
-        adt::ssize* pPcmPos
+        adt::isize* pPcmPos
     ) = 0;
 
     [[nodiscard]] virtual adt::u32 getSampleRate() = 0;

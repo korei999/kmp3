@@ -35,11 +35,11 @@ struct List
 {
     ListNode<T>* m_pFirst {};
     ListNode<T>* m_pLast {};
-    ssize m_size {};
+    isize m_size {};
 
     /* */
 
-    [[nodiscard]] constexpr ssize size() const { return m_size; }
+    [[nodiscard]] constexpr isize size() const { return m_size; }
 
     [[nodiscard]] constexpr bool empty() const { return m_size <= 0; }
 
@@ -349,7 +349,7 @@ struct ListManaged
 
     /* */
 
-    [[nodiscard]] constexpr ssize size() const { return base.size(); }
+    [[nodiscard]] constexpr isize size() const { return base.size(); }
 
     [[nodiscard]] constexpr bool empty() const { return base.empty(); }
 

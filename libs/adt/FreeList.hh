@@ -87,10 +87,10 @@ protected:
 };
 
 template<>
-inline constexpr ssize
+inline constexpr isize
 utils::compare(const FreeListData& l, const FreeListData& r)
 {
-    return (ssize)l.size() - (ssize)r.size();
+    return (isize)l.size() - (isize)r.size();
 }
 
 inline FreeList::Node*
@@ -181,20 +181,20 @@ inline FreeList::Node*
 FreeList::findFittingNode(const usize size)
 {
     auto* it = m_tree.getRoot();
-    const ssize realSize = size + sizeof(FreeList::Node);
+    const isize realSize = size + sizeof(FreeList::Node);
 
     FreeList::Node* pLastFitting {};
     while (it)
     {
         ADT_ASSERT(it->m_data.isFree(), "non free node in the free list");
 
-        ssize nodeSize = it->m_data.size();
+        isize nodeSize = it->m_data.size();
 
         if (nodeSize >= realSize)
             pLastFitting = it;
 
         /* save size for the header */
-        ssize cmp = realSize - nodeSize;
+        isize cmp = realSize - nodeSize;
 
         if (cmp == 0) break;
         else if (cmp < 0) it = it->left();
@@ -249,14 +249,14 @@ FreeList::verify()
 inline FreeList::Node*
 FreeList::splitNode(FreeList::Node* pNode, usize realSize)
 {
-    ssize splitSize = ssize(pNode->m_data.size()) - ssize(realSize);
+    isize splitSize = isize(pNode->m_data.size()) - isize(realSize);
 
     ADT_ASSERT(splitSize >= 0, " ");
 
     ADT_ASSERT(pNode->m_data.isFree(), "splitting non free node (corruption)");
     m_tree.remove(pNode);
 
-    if (splitSize <= (ssize)sizeof(FreeList::Node))
+    if (splitSize <= (isize)sizeof(FreeList::Node))
     {
         pNode->m_data.setFree(false);
         return pNode;
@@ -382,10 +382,10 @@ FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
     }
 
     auto* pNode = _FreeListNodeFromPtr(ptr);
-    ssize nodeSize = (ssize)pNode->m_data.size() - (ssize)sizeof(FreeList::Node);
+    isize nodeSize = (isize)pNode->m_data.size() - (isize)sizeof(FreeList::Node);
     ADT_ASSERT(nodeSize > 0, "0 or negative size allocation (corruption), nodeSize: {}", nodeSize);
 
-    if ((ssize)newCount*(ssize)mSize <= nodeSize)
+    if ((isize)newCount*(isize)mSize <= nodeSize)
         return ptr;
 
     ADT_ASSERT(!pNode->m_data.isFree(), "trying to realloc non free node");

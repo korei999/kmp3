@@ -15,8 +15,6 @@ Mixer::setConfig(adt::f64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
     sampleRate = utils::clamp(sampleRate, f64(defaults::MIN_SAMPLE_RATE), f64(defaults::MAX_SAMPLE_RATE));
 
-    LOG_BAD("\n NEW SAPMLE RATE: {}\n\n", sampleRate);
-
     if (bSaveNewConfig)
     {
         m_changedSampleRate = m_sampleRate = sampleRate;
@@ -60,7 +58,7 @@ Mixer::writeCallBack(
 
     const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3);
 
-    ssize destI = 0;
+    isize destI = 0;
     for (u32 i = 0; i < inNumberFrames; ++i)
     {
         /* fill the buffer when it's empty */
@@ -212,7 +210,6 @@ void
 Mixer::pause(bool bPause)
 {
     bool bCurr = m_atom_bPaused.load(atomic::ORDER::ACQUIRE);
-    LOG_GOOD("PAUSE/CURR: [{}, {}]\n", bPause, bCurr);
     if (bCurr == bPause) return;
 
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);

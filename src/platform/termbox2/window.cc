@@ -321,7 +321,7 @@ drawSongList()
 
     const auto& aIdxBuff = pl.m_vSearchIdxs;
 
-    for (ssize h = g_firstIdx, i = 0; i < win.m_listHeight - 1 && h < aIdxBuff.size(); ++h, ++i)
+    for (isize h = g_firstIdx, i = 0; i < win.m_listHeight - 1 && h < aIdxBuff.size(); ++h, ++i)
     {
         const u16 songIdx = aIdxBuff[h];
         const StringView sSong = pl.m_vShortSongs[songIdx];
@@ -593,7 +593,7 @@ drawCoverImage()
             }
             else
             {
-                for (ssize lineIdx = 1, i = 0; lineIdx < chafaImg.uData.vLines.size(); ++lineIdx, ++i)
+                for (isize lineIdx = 1, i = 0; lineIdx < chafaImg.uData.vLines.size(); ++lineIdx, ++i)
                 {
                     tb_set_cursor(1 + xOff, lineIdx);
                     const auto& sLine = chafaImg.uData.vLines[i];

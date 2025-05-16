@@ -9,8 +9,8 @@
 namespace adt
 {
 
-#define ADT_VEC_FOREACH_I(A, I) for (ssize I = 0; I < (A)->size; ++I)
-#define ADT_VEC_FOREACH_I_REV(A, I) for (ssize I = (A)->size - 1; I != -1U ; --I)
+#define ADT_VEC_FOREACH_I(A, I) for (isize I = 0; I < (A)->size; ++I)
+#define ADT_VEC_FOREACH_I_REV(A, I) for (isize I = (A)->size - 1; I != -1U ; --I)
 
 /* TODO: overflow checks are pretty naive */
 
@@ -19,19 +19,19 @@ template<typename T>
 struct Vec
 {
     T* m_pData = nullptr;
-    ssize m_size = 0;
-    ssize m_capacity = 0;
+    isize m_size = 0;
+    isize m_capacity = 0;
 
     /* */
 
     Vec() = default;
 
-    Vec(IAllocator* p, ssize prealloc = SIZE_MIN)
+    Vec(IAllocator* p, isize prealloc = SIZE_MIN)
         : m_pData((T*)p->zalloc(prealloc, sizeof(T))),
           m_size(0),
           m_capacity(prealloc) {}
 
-    Vec(IAllocator* p, ssize preallocSize, const T& fillWith);
+    Vec(IAllocator* p, isize preallocSize, const T& fillWith);
 
     /* */
 
@@ -41,19 +41,19 @@ struct Vec
 
 #define ADT_RANGE_CHECK ADT_ASSERT(i >= 0 && i < m_size, "i: {}, m_size: {}", i, m_size);
 
-    T& operator[](ssize i)             noexcept { ADT_RANGE_CHECK; return m_pData[i]; }
-    const T& operator[](ssize i) const noexcept { ADT_RANGE_CHECK; return m_pData[i]; }
+    T& operator[](isize i)             noexcept { ADT_RANGE_CHECK; return m_pData[i]; }
+    const T& operator[](isize i) const noexcept { ADT_RANGE_CHECK; return m_pData[i]; }
 
 #undef ADT_RANGE_CHECK
 
     [[nodiscard]] bool empty() const noexcept { return m_size <= 0; }
 
-    ssize push(IAllocator* p, const T& data);
+    isize push(IAllocator* p, const T& data);
 
     void pushSpan(IAllocator* p, const Span<T> sp);
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-        ssize emplace(IAllocator* p, ARGS&&... args);
+        isize emplace(IAllocator* p, ARGS&&... args);
 
     [[nodiscard]] T& last() noexcept;
 
@@ -65,25 +65,25 @@ struct Vec
 
     T* pop() noexcept;
 
-    void setSize(IAllocator* p, ssize size);
+    void setSize(IAllocator* p, isize size);
 
-    void setCap(IAllocator* p, ssize cap);
+    void setCap(IAllocator* p, isize cap);
 
-    void swapWithLast(ssize i) noexcept;
+    void swapWithLast(isize i) noexcept;
 
-    void popAsLast(ssize i) noexcept;
+    void popAsLast(isize i) noexcept;
 
-    void removeAndShift(ssize i) noexcept;
+    void removeAndShift(isize i) noexcept;
 
-    [[nodiscard]] ssize idx(const T* const x) const noexcept;
+    [[nodiscard]] isize idx(const T* const x) const noexcept;
 
-    [[nodiscard]] ssize lastI() const noexcept;
+    [[nodiscard]] isize lastI() const noexcept;
 
     void destroy(IAllocator* p) noexcept;
 
-    [[nodiscard]] ssize size() const noexcept;
+    [[nodiscard]] isize size() const noexcept;
 
-    [[nodiscard]] ssize cap() const noexcept;
+    [[nodiscard]] isize cap() const noexcept;
 
     [[nodiscard]] T* data() noexcept;
 
@@ -98,7 +98,7 @@ struct Vec
     /* */
 
 private:
-    void grow(IAllocator* p, ssize newCapacity);
+    void grow(IAllocator* p, isize newCapacity);
 
     void growIfNeeded(IAllocator* p);
 
@@ -137,7 +137,7 @@ public:
 
 template<typename T>
 inline
-Vec<T>::Vec(IAllocator* p, ssize prealloc, const T& defaultVal)
+Vec<T>::Vec(IAllocator* p, isize prealloc, const T& defaultVal)
     : Vec(p, prealloc)
 {
     setSize(p, prealloc);
@@ -146,7 +146,7 @@ Vec<T>::Vec(IAllocator* p, ssize prealloc, const T& defaultVal)
 }
 
 template<typename T>
-inline ssize
+inline isize
 Vec<T>::push(IAllocator* p, const T& data)
 {
     growIfNeeded(p);
@@ -163,7 +163,7 @@ Vec<T>::pushSpan(IAllocator* p, const Span<T> sp)
 
     if (m_size + sp.size() > m_capacity)
     {
-        ssize newSize = utils::max(static_cast<ssize>((sp.size() + m_size)*1.33), m_size*2);
+        isize newSize = utils::max(static_cast<isize>((sp.size() + m_size)*1.33), m_size*2);
         ADT_ASSERT(newSize > m_size, "overflow");
         grow(p, newSize);
     }
@@ -174,7 +174,7 @@ Vec<T>::pushSpan(IAllocator* p, const Span<T> sp)
 
 template<typename T>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-inline ssize
+inline isize
 Vec<T>::emplace(IAllocator* p, ARGS&&... args)
 {
     growIfNeeded(p);
@@ -220,7 +220,7 @@ Vec<T>::pop() noexcept
 
 template<typename T>
 inline void
-Vec<T>::setSize(IAllocator* p, ssize size)
+Vec<T>::setSize(IAllocator* p, isize size)
 {
     if (m_capacity < size)
         grow(p, size);
@@ -230,7 +230,7 @@ Vec<T>::setSize(IAllocator* p, ssize size)
 
 template<typename T>
 inline void
-Vec<T>::setCap(IAllocator* p, ssize cap)
+Vec<T>::setCap(IAllocator* p, isize cap)
 {
     if (cap == 0)
     {
@@ -246,7 +246,7 @@ Vec<T>::setCap(IAllocator* p, ssize cap)
 
 template<typename T>
 inline void
-Vec<T>::swapWithLast(ssize i) noexcept
+Vec<T>::swapWithLast(isize i) noexcept
 {
     ADT_ASSERT(m_size > 0, "empty");
     utils::swap(&operator[](i), &operator[](m_size - 1));
@@ -254,7 +254,7 @@ Vec<T>::swapWithLast(ssize i) noexcept
 
 template<typename T>
 inline void
-Vec<T>::popAsLast(ssize i) noexcept
+Vec<T>::popAsLast(isize i) noexcept
 {
     ADT_ASSERT(m_size > 0, "empty");
     operator[](i) = last();
@@ -263,7 +263,7 @@ Vec<T>::popAsLast(ssize i) noexcept
 
 template<typename T>
 inline void
-Vec<T>::removeAndShift(ssize i) noexcept
+Vec<T>::removeAndShift(isize i) noexcept
 {
     ADT_ASSERT(m_size > 0, "empty");
 
@@ -274,16 +274,16 @@ Vec<T>::removeAndShift(ssize i) noexcept
 }
 
 template<typename T>
-inline ssize
+inline isize
 Vec<T>::idx(const T* const x) const noexcept
 {
-    ssize r = ssize(x - m_pData);
+    isize r = isize(x - m_pData);
     ADT_ASSERT(r >= 0 && r < m_capacity,"r: {}, cap: {}, addr: {}. Must take the address of the reference", r, m_capacity, (void*)x);
     return r;
 }
 
 template<typename T>
-inline ssize
+inline isize
 Vec<T>::lastI() const noexcept
 {
     return idx(&last());
@@ -298,14 +298,14 @@ Vec<T>::destroy(IAllocator* p) noexcept
 }
 
 template<typename T>
-inline ssize
+inline isize
 Vec<T>::size() const noexcept
 {
     return m_size;
 }
 
 template<typename T>
-inline ssize
+inline isize
 Vec<T>::cap() const noexcept
 {
     return m_capacity;
@@ -355,7 +355,7 @@ Vec<T>::search(const T& x) const
 
 template<typename T>
 inline void
-Vec<T>::grow(IAllocator* p, ssize newCapacity)
+Vec<T>::grow(IAllocator* p, isize newCapacity)
 {
     m_pData = (T*)p->realloc(m_pData, m_capacity, newCapacity, sizeof(T));
     m_capacity = newCapacity;
@@ -367,7 +367,7 @@ Vec<T>::growIfNeeded(IAllocator* p)
 {
     if (m_size >= m_capacity)
     {
-        ssize newCap = utils::max(decltype(m_capacity)(SIZE_MIN), m_capacity * 2);
+        isize newCap = utils::max(decltype(m_capacity)(SIZE_MIN), m_capacity * 2);
         ADT_ASSERT(newCap > m_capacity, "can't grow (capacity overflow), newCap: {}, m_capacity: {}", newCap, m_capacity);
         grow(p, newCap);
     }
@@ -383,21 +383,21 @@ struct VecManaged : Vec<T>
     using Vec<T>::Vec;
 
     VecManaged() = default;
-    VecManaged(IAllocator* p, ssize prealloc = 1) : Vec<T>(p, prealloc), m_pAlloc(p) {}
-    VecManaged(IAllocator* p, ssize preallocSize, const T& fillWith) : Vec<T>(p, preallocSize, fillWith) {}
+    VecManaged(IAllocator* p, isize prealloc = 1) : Vec<T>(p, prealloc), m_pAlloc(p) {}
+    VecManaged(IAllocator* p, isize preallocSize, const T& fillWith) : Vec<T>(p, preallocSize, fillWith) {}
 
     /* */
 
-    ssize push(const T& data) { return Vec<T>::push(m_pAlloc, data); }
+    isize push(const T& data) { return Vec<T>::push(m_pAlloc, data); }
 
     void pushSpan(const Span<T> sp) { Vec<T>::pushSpan(m_pAlloc, sp); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-        ssize emplace(ARGS&&... args) { return Vec<T>::emplace(m_pAlloc, std::forward<ARGS>(args)...); }
+        isize emplace(ARGS&&... args) { return Vec<T>::emplace(m_pAlloc, std::forward<ARGS>(args)...); }
 
-    void setSize(ssize size) { Vec<T>::setSize(m_pAlloc, size); }
+    void setSize(isize size) { Vec<T>::setSize(m_pAlloc, size); }
 
-    void setCap(ssize cap) { Vec<T>::setCap(m_pAlloc, cap); }
+    void setCap(isize cap) { Vec<T>::setCap(m_pAlloc, cap); }
 
     void destroy() { Vec<T>::destroy(m_pAlloc); }
 

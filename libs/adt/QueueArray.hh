@@ -7,7 +7,7 @@
 namespace adt
 {
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 struct QueueArray
 {
     enum PUSH_WAY : u8 { HEAD, TAIL };
@@ -17,38 +17,38 @@ struct QueueArray
     /* */
 
     T m_aData[CAP] {};
-    ssize m_headI {};
-    ssize m_tailI {};
+    isize m_headI {};
+    isize m_tailI {};
 
     /* */
 
-    T& operator[](ssize i) noexcept             { ADT_ASSERT(i >= 0 && i < CAP, "out of CAP({}), i: {}", CAP, i); return m_aData[i]; }
-    const T& operator[](ssize i) const noexcept { ADT_ASSERT(i >= 0 && i < CAP, "out of CAP({}), i: {}", CAP, i); return m_aData[i]; }
+    T& operator[](isize i) noexcept             { ADT_ASSERT(i >= 0 && i < CAP, "out of CAP({}), i: {}", CAP, i); return m_aData[i]; }
+    const T& operator[](isize i) const noexcept { ADT_ASSERT(i >= 0 && i < CAP, "out of CAP({}), i: {}", CAP, i); return m_aData[i]; }
 
-    ssize cap() const noexcept;
+    isize cap() const noexcept;
 
     bool empty() const noexcept;
 
-    ssize pushBack(const T& x) noexcept; /* Index of inserted element, -1 on failure. */
+    isize pushBack(const T& x) noexcept; /* Index of inserted element, -1 on failure. */
 
-    ssize pushFront(const T& x) noexcept;
-
-    template<typename ...ARGS>
-    ssize emplaceBack(ARGS&&... args) noexcept;
+    isize pushFront(const T& x) noexcept;
 
     template<typename ...ARGS>
-    ssize emplaceFront(ARGS&&... args) noexcept;
+    isize emplaceBack(ARGS&&... args) noexcept;
+
+    template<typename ...ARGS>
+    isize emplaceFront(ARGS&&... args) noexcept;
 
     T* popFront() noexcept;
 
     T* popBack() noexcept;
 
     template<PUSH_WAY E_WAY>
-    ssize fakePush() noexcept;
+    isize fakePush() noexcept;
 
 protected:
-    static ssize nextI(ssize i) noexcept;
-    static ssize prevI(ssize i) noexcept;
+    static isize nextI(isize i) noexcept;
+    static isize prevI(isize i) noexcept;
 public:
 
     /* */
@@ -56,11 +56,11 @@ public:
     struct It
     {
         QueueArray* m_p {};
-        ssize m_i {};
+        isize m_i {};
 
         /* */
 
-        It(const QueueArray* p, const ssize i) : m_p{const_cast<QueueArray*>(p)}, m_i{i} {}
+        It(const QueueArray* p, const isize i) : m_p{const_cast<QueueArray*>(p)}, m_i{i} {}
 
         /* */
 
@@ -96,98 +96,98 @@ public:
     const It rend() const noexcept { return {this, prevI(m_headI)}; }
 };
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 inline bool
 QueueArray<T, CAP>::empty() const noexcept
 {
     return m_headI == m_tailI;
 }
 
-template<typename T, ssize CAP>
-inline ssize
+template<typename T, isize CAP>
+inline isize
 QueueArray<T, CAP>::cap() const noexcept
 {
     return CAP;
 }
 
-template<typename T, ssize CAP>
-inline ssize
+template<typename T, isize CAP>
+inline isize
 QueueArray<T, CAP>::pushBack(const T& x) noexcept
 {
-    ssize i = fakePush<PUSH_WAY::TAIL>();
+    isize i = fakePush<PUSH_WAY::TAIL>();
     if (i >= 0) new(m_aData + i) T(x);
 
     return i;
 }
 
-template<typename T, ssize CAP>
-inline ssize
+template<typename T, isize CAP>
+inline isize
 QueueArray<T, CAP>::pushFront(const T& x) noexcept
 {
-    ssize i = fakePush<PUSH_WAY::HEAD>();
+    isize i = fakePush<PUSH_WAY::HEAD>();
     if (i >= 0) new(m_aData + i) T(x);
 
     return i;
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 template<typename ...ARGS>
-inline ssize
+inline isize
 QueueArray<T, CAP>::emplaceBack(ARGS&&... args) noexcept
 {
-    ssize i = fakePush<PUSH_WAY::TAIL>();
+    isize i = fakePush<PUSH_WAY::TAIL>();
     if (i >= 0) new(m_aData + i) T(std::forward<ARGS>(args)...);
 
     return i;
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 template<typename ...ARGS>
-inline ssize
+inline isize
 QueueArray<T, CAP>::emplaceFront(ARGS&&... args) noexcept
 {
-    ssize i = fakePush<PUSH_WAY::HEAD>();
+    isize i = fakePush<PUSH_WAY::HEAD>();
     if (i >= 0) new(m_aData + i) T(std::forward<ARGS>(args)...);
 
     return i;
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 template<QueueArray<T, CAP>::PUSH_WAY E_WAY>
-inline ssize
+inline isize
 QueueArray<T, CAP>::fakePush() noexcept
 {
     if constexpr (E_WAY == PUSH_WAY::TAIL)
     {
-        ssize nextTailI = nextI(m_tailI);
+        isize nextTailI = nextI(m_tailI);
         if (nextTailI == m_headI) return -1; /* full case */
 
-        ssize prevTailI = m_tailI;
+        isize prevTailI = m_tailI;
         m_tailI = nextTailI;
         return prevTailI;
     }
     else
     {
-        ssize nextHeadI = prevI(m_headI);
+        isize nextHeadI = prevI(m_headI);
         if (nextHeadI == m_tailI) return -1;
 
         return m_headI = nextHeadI;
     }
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 inline T*
 QueueArray<T, CAP>::popFront() noexcept
 {
     if (empty()) return nullptr;
 
-    ssize tmp = m_headI;
+    isize tmp = m_headI;
     m_headI = nextI(m_headI);
 
     return &m_aData[tmp];
 }
 
-template<typename T, ssize CAP>
+template<typename T, isize CAP>
 inline T*
 QueueArray<T, CAP>::popBack() noexcept
 {
@@ -198,16 +198,16 @@ QueueArray<T, CAP>::popBack() noexcept
     return &m_aData[m_tailI];
 }
 
-template<typename T, ssize CAP>
-inline ssize
-QueueArray<T, CAP>::nextI(ssize i) noexcept
+template<typename T, isize CAP>
+inline isize
+QueueArray<T, CAP>::nextI(isize i) noexcept
 {
     return (i + 1) & (CAP - 1);
 }
 
-template<typename T, ssize CAP>
-inline ssize
-QueueArray<T, CAP>::prevI(ssize i) noexcept
+template<typename T, isize CAP>
+inline isize
+QueueArray<T, CAP>::prevI(isize i) noexcept
 {
     return (i - 1) & (CAP - 1);
 }

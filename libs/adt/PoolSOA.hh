@@ -100,15 +100,15 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
         return static_cast<const SOAArrayHolder<STRUCT, CAP, MEMBER>&>(*this).m_arrays[h.i];
     }
 
-    ssize size() const { return static_cast<ssize>(m_size); }
-    ssize cap() const { return static_cast<ssize>(CAP); }
+    isize size() const { return static_cast<isize>(m_size); }
+    isize cap() const { return static_cast<isize>(CAP); }
 
     int
     firstI() const
     {
         if (m_size == 0) return -1;
 
-        for (ssize i = 0; i < m_size; ++i)
+        for (isize i = 0; i < m_size; ++i)
             if (m_aOccupiedIdxs[i]) return i;
 
         return NPOS;
@@ -119,7 +119,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
     {
         if (m_size == 0) return -1;
 
-        for (ssize i = m_size - 1; i >= 0; --i)
+        for (isize i = m_size - 1; i >= 0; --i)
             if (m_aOccupiedIdxs[i]) return i;
 
         return NPOS;
@@ -171,7 +171,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
         It
         operator++(int)
         {
-            ssize tmp = i;
+            isize tmp = i;
             i = s->nextI(i);
             return {s, tmp};
         }
@@ -186,7 +186,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
         It
         operator--(int)
         {
-            ssize tmp = i;
+            isize tmp = i;
             i = s->prevI(i);
             return {s, tmp};
         }
