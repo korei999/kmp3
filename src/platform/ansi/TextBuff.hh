@@ -170,7 +170,7 @@ struct TextBuff
 
     void string(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::StringView sv, int maxSvLen = 99999);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, adt::Span<wchar_t> sp);
-    adt::StringView styleToStringScratch(TEXT_BUFF_STYLE eStyle);
+    adt::StringView styleToString(adt::ScratchBuffer* pScratch, TEXT_BUFF_STYLE eStyle);
 
 #ifdef OPT_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);

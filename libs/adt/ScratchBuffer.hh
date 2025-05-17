@@ -12,6 +12,9 @@ struct ScratchBuffer
 {
     Span<u8> m_sp {};
     isize m_pos {};
+#ifndef NDEBUG
+    bool m_bTaken {};
+#endif
 
     /* */
 
@@ -38,6 +41,8 @@ struct ScratchBuffer
     template<typename T>
     [[nodiscard]] Span<T> nextMem() noexcept;
 
+    void reset() noexcept;
+
     void zeroOut() noexcept;
 
     isize cap() const noexcept { return m_sp.size(); }
@@ -61,6 +66,10 @@ template<typename T>
 Span<T>
 ScratchBuffer::nextMem() noexcept
 {
+#ifndef NDEBUG
+    ADT_ASSERT(m_bTaken != true, "must reset() between nextMem() calls");
+    m_bTaken = true;
+#endif
     return {reinterpret_cast<T*>(m_sp.data()), calcTypeCap<T>()};
 }
 
@@ -69,6 +78,14 @@ ScratchBuffer::zeroOut() noexcept
 {
     m_pos = 0;
     memset(m_sp.data(), 0, m_sp.size());
+}
+
+inline void
+ScratchBuffer::reset() noexcept
+{
+#ifndef NDEBUG
+    m_bTaken = false;
+#endif
 }
 
 } /* namespace adt */

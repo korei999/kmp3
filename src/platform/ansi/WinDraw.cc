@@ -55,6 +55,7 @@ Win::info()
     const int hOff = m_prevImgWidth + 2;
 
     Span sp = s_scratch.nextMem<char>();
+    defer( s_scratch.reset() );
 
     auto clDrawLine = [&](
         const int y,
@@ -92,6 +93,8 @@ Win::volume()
     const bool bMuted = app::g_pMixer->isMuted();
 
     Span sp = s_scratch.nextMemZero<char>(width + 1);
+    defer( s_scratch.reset() );
+
     isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
 
     const int maxVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
@@ -253,6 +256,7 @@ Win::bottomLine()
     /* selected / focused */
     {
         Span sp = s_scratch.nextMemZero<char>(width + 1);
+        defer( s_scratch.reset() );
 
         isize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);
         if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)

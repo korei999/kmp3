@@ -63,8 +63,7 @@ Decoder::getTotalMS()
     auto sr = getSampleRate();
     auto nChannels = getChannelsCount();
 
-    if (sr == 0 || nChannels == 0)
-        return 0;
+    if (sr == 0 || nChannels == 0) return 0;
     else return (totalCount / sr / nChannels) * 1000;
 }
 
@@ -339,7 +338,7 @@ Decoder::getCurrentSamplePos()
 i64
 Decoder::getTotalSamplesCount()
 {
-    if (!m_pFormatCtx) return {};
+    if (!m_pFormatCtx || !m_pStream) return {};
 
     i64 res = (m_pFormatCtx->duration / (f64)AV_TIME_BASE) * m_pStream->codecpar->sample_rate * m_pStream->codecpar->ch_layout.nb_channels;
     return res;

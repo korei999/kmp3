@@ -381,16 +381,18 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 void
 Mixer::seekMS(f64 ms)
 {
-    LockGuard lock {&m_mtxDecoder};
+    {
+        LockGuard lock {&m_mtxDecoder};
 
-    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
+        if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
-    ms = utils::clamp(ms, 0.0, (f64)getTotalMS());
-    app::decoder().seekMS(ms);
+        ms = utils::clamp(ms, 0.0, f64(app::decoder().getTotalMS()));
+        app::decoder().seekMS(ms);
 
-    m_currMs = ms;
-    m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
-    m_nTotalSamples = app::decoder().getTotalSamplesCount();
+        m_currMs = ms;
+        m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
+        m_nTotalSamples = app::decoder().getTotalSamplesCount();
+    }
 
     mpris::seeked();
 }

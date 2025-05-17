@@ -381,7 +381,7 @@ Mutex::unlock()
 #ifdef ADT_USE_PTHREAD
 
     [[maybe_unused]] int err = pthread_mutex_unlock(&m_mtx);
-    ADT_ASSERT(err == 0, "err: {}", err);
+    ADT_ASSERT(err == 0, "err: {} ('{}')", err, strerror(err));
 
 #elif defined ADT_USE_WIN32THREAD
 

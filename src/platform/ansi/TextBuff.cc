@@ -1,6 +1,6 @@
 #include "TextBuff.hh"
 
-#include "adt/logs.hh"
+#include "adt/defer.hh"
 #include "adt/print.hh"
 
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
@@ -95,8 +95,6 @@ TextBuff::flush()
     {
         [[maybe_unused]] auto _unused =
             write(STDOUT_FILENO, m_pData, m_size);
-
-        // LOG("flush bytes: {}\n", _unused);
 
         m_size = 0;
     }
@@ -312,7 +310,8 @@ TextBuff::pushDiff()
                     if (bChangeStyle)
                     {
                         bChangeStyle = false;
-                        push(styleToStringScratch(back.eStyle));
+                        push(styleToString(&m_scratch, back.eStyle));
+                        m_scratch.reset();
                         eLastStyle = back.eStyle;
                     }
                     pushGlyph(back.wc);
@@ -501,6 +500,7 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
         return;
 
     Span spBuff = m_scratch.nextMemZero<char>(sp.size() * 8);
+    defer( m_scratch.reset() );
 
     if (spBuff.size() > 0)
     {
@@ -510,9 +510,9 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
 }
 
 StringView
-TextBuff::styleToStringScratch(TEXT_BUFF_STYLE eStyle)
+TextBuff::styleToString(ScratchBuffer* pScratch, TEXT_BUFF_STYLE eStyle)
 {
-    Span<char> sp = m_scratch.nextMemZero<char>(128);
+    Span<char> sp = pScratch->nextMemZero<char>(128);
     if (sp.size() <= 0) return {};
 
     isize size = sp.size() - 1;
