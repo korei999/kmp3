@@ -368,7 +368,7 @@ TextBuff::clearBackBuffer()
 {
     for (auto& cell : m_vBack)
     {
-        cell.sf = " ";
+        cell.sf = "  ";
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
 }
@@ -378,7 +378,7 @@ TextBuff::resetBuffers()
 {
     for (auto& cell : m_vFront)
     {
-        cell.sf = " ";
+        cell.sf = "  ";
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
 
