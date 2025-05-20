@@ -269,6 +269,7 @@ TextBuff::pushDiff()
     isize nForwards = 0;
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
     bool bChangeStyle = false;
+    mbstate_t mbState {};
 
     /* won't hurt */
     push(TEXT_BUFF_NORM);
@@ -278,7 +279,7 @@ TextBuff::pushDiff()
         nForwards = 0;
         bool bMoved = false;
 
-        auto clMove = [&]
+        auto clMoveIfMovedNot = [&]
         {
             if (!bMoved)
             {
@@ -298,18 +299,19 @@ TextBuff::pushDiff()
             {
                 if (nForwards > 0)
                 {
-                    clMove();
+                    clMoveIfMovedNot();
                     forward(nForwards);
                     nForwards = 0;
                 }
 
-                wchar_t aBuff[4] {};
-                const int nWideCharsConverted = mbstowcs(aBuff, back.sf.data(), back.sf.size());
-                int colWidth = wcswidth(aBuff, nWideCharsConverted);
+                wchar_t aBuff[8] {};
+                const char* pSv = back.sf.data();
+                const int nWideCharsConverted = mbsnrtowcs(aBuff, &pSv, back.sf.size(), utils::size(aBuff), &mbState);
+                const int colWidth = wcswidth(aBuff, nWideCharsConverted);
 
                 if (col + colWidth <= m_tWidth)
                 {
-                    clMove();
+                    clMoveIfMovedNot();
                     if (bChangeStyle)
                     {
                         bChangeStyle = false;
@@ -368,7 +370,7 @@ TextBuff::clearBackBuffer()
 {
     for (auto& cell : m_vBack)
     {
-        cell.sf = "  ";
+        cell.sf = " ";
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
 }
@@ -378,7 +380,7 @@ TextBuff::resetBuffers()
 {
     for (auto& cell : m_vFront)
     {
-        cell.sf = "  ";
+        cell.sf = " ";
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
 
@@ -485,8 +487,9 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
 
         wchar_t aBuff[8] {};
         const char* pSv = sv.data();
-        int nWideCharsConverted = mbsnrtowcs(aBuff, &pSv, sv.size(), utils::size(aBuff), &mbState);
-        int colWidth = wcswidth(aBuff, nWideCharsConverted);
+        const int nWideCharsConverted = mbsnrtowcs(aBuff, &pSv, sv.size(), utils::size(aBuff), &mbState);
+        const int colWidth = wcswidth(aBuff, nWideCharsConverted);
+
         if (colWidth > 1)
         {
             for (isize i = 1; i < colWidth; ++i)
