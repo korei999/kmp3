@@ -468,7 +468,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
     {
         if (x >= m_tWidth || max >= maxSvLen) break;
 
-        if (fb(x, y) != TextBuffCell{wc, eStyle})
+        if (fb(x, y) != TextBuffCell {wc, eStyle})
             m_bChanged = true;
 
         bb(x, y).wc = wc;
@@ -477,7 +477,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
         int colWidth = wcwidth(wc);
         if (colWidth > 1)
         {
-            for (isize i = 1; i < colWidth; ++i)
+            for (int i = 1; i < colWidth; ++i)
             {
                 if (x + i >= bb.width() || y >= bb.height())
                     return;
@@ -499,12 +499,14 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
         return;
 
+    mbstate_t mbState {};
     Span spBuff = m_scratch.nextMemZero<char>(sp.size() * 8);
     defer( m_scratch.reset() );
 
     if (spBuff.size() > 0)
     {
-        int len = wcstombs(spBuff.data(), sp.data(), spBuff.size() - 1);
+        const wchar_t* pSrc = sp.data();
+        const int len = wcsrtombs(spBuff.data(), &pSrc, spBuff.size(), &mbState);
         string(x, y, eStyle, {spBuff.data(), len});
     }
 }
