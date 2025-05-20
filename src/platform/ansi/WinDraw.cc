@@ -268,7 +268,7 @@ Win::bottomLine()
             n += print::toSpan({sp.data() + n, sp.size() - 1 - n}, " (repeat {})", sArg);
         }
 
-        m_textBuff.string(width - n - 1, height - 1, {}, {sp.data(), sp.size() - 1});
+        m_textBuff.string(width - n - 1, height - 1, {}, {sp.data(), n});
     }
 
     if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||

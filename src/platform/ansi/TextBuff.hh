@@ -89,14 +89,14 @@ ADT_ENUM_BITWISE_OPERATORS(TEXT_BUFF_STYLE);
 
 struct TextBuffCell
 {
-    wchar_t wc {};
+    adt::StringFixed<9> sf {};
     TEXT_BUFF_STYLE eStyle {};
 };
 
 inline bool
 operator==(const TextBuffCell& l, const TextBuffCell& r)
 {
-    return (l.wc == r.wc) && (l.eStyle == r.eStyle);
+    return (l.sf == r.sf) && (l.eStyle == r.eStyle);
 }
 
 inline bool

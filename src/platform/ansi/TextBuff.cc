@@ -1,6 +1,7 @@
 #include "TextBuff.hh"
 
 #include "adt/defer.hh"
+#include "adt/logs.hh"
 #include "adt/print.hh"
 
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
@@ -302,7 +303,9 @@ TextBuff::pushDiff()
                     nForwards = 0;
                 }
 
-                int colWidth = wcwidth(back.wc);
+                wchar_t aBuff[4] {};
+                const int nWideCharsConverted = mbstowcs(aBuff, back.sf.data(), back.sf.size());
+                int colWidth = wcswidth(aBuff, nWideCharsConverted);
 
                 if (col + colWidth <= m_tWidth)
                 {
@@ -314,7 +317,7 @@ TextBuff::pushDiff()
                         m_scratch.reset();
                         eLastStyle = back.eStyle;
                     }
-                    pushGlyph(back.wc);
+                    push(back.sf);
                 }
 
                 if (colWidth > 1) col += colWidth - 1;
@@ -365,7 +368,7 @@ TextBuff::clearBackBuffer()
 {
     for (auto& cell : m_vBack)
     {
-        cell.wc = L' ';
+        cell.sf = " ";
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
 }
@@ -375,7 +378,7 @@ TextBuff::resetBuffers()
 {
     for (auto& cell : m_vFront)
     {
-        cell.wc = L' ';
+        cell.sf = " ";
         cell.eStyle = TEXT_BUFF_STYLE::NORM;
     }
 
@@ -463,18 +466,27 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
     Span2D bb = backBufferSpan();
     Span2D fb = frontBufferSpan();
 
+    mbstate_t mbState {};
     int max = 0;
-    for (const auto& wc : StringGlyphIt(str))
+
+    ADT_ASSERT(str.size() == isize(strnlen(str.data(), str.size())),
+        "str: '{}', size: {}, strlen: {}\n", str, str.size(), strlen(str.data())
+    );
+
+    for (const StringView sv : StringGraphemeIt(str))
     {
         if (x >= m_tWidth || max >= maxSvLen) break;
 
-        if (fb(x, y) != TextBuffCell{wc, eStyle})
+        if (fb(x, y) != TextBuffCell {sv, eStyle})
             m_bChanged = true;
 
-        bb(x, y).wc = wc;
+        bb(x, y).sf = sv;
         bb(x, y).eStyle = eStyle;
 
-        int colWidth = wcwidth(wc);
+        wchar_t aBuff[8] {};
+        const char* pSv = sv.data();
+        int nWideCharsConverted = mbsnrtowcs(aBuff, &pSv, sv.size(), utils::size(aBuff), &mbState);
+        int colWidth = wcswidth(aBuff, nWideCharsConverted);
         if (colWidth > 1)
         {
             for (isize i = 1; i < colWidth; ++i)
@@ -483,7 +495,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
                     return;
 
                 auto& back = bb(x + i, y);
-                back.wc = L' ';
+                back.sf = " ";
                 back.eStyle = eStyle;
             }
         }
@@ -604,8 +616,8 @@ TextBuff::forceClean(int x, int y, int width, int height)
             auto& back = spBack(col, row);
 
             /* trigger diff */
-            front.wc = 666;
-            back.wc = L' ';
+            front.sf = "";
+            back.sf = " ";
         }
     }
 }
