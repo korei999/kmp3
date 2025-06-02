@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <utility>
+#include <new> /* IWYU pragma: keep */
 
 namespace adt
 {

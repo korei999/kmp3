@@ -15,7 +15,7 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
 {
     char aBuff[256] {};
     [[maybe_unused]] const isize n = print::toBuffer(aBuff, sizeof(aBuff) - 1,
-        "[{}, {}: {}()] assertion( {} ) failed.\n(msg) '{}'\n",
+        "[{}, {}: {}()] assertion( {} ) failed.\n(msg) \"{}\"\n",
         file, line, func, cnd, msg
     );
 

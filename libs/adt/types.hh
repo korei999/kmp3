@@ -105,16 +105,37 @@ constexpr InitFlag INIT {};
 
 template<typename METHOD_T>
 [[nodiscard]] constexpr void*
-methodPointer(METHOD_T ptr)
+methodPointerNonVirtual(METHOD_T ptr)
 {
     return *reinterpret_cast<void**>(&ptr);
 }
+
+template<typename MemFn> struct PfnFromMethod;
+
+/* non-const methods */
+template<typename R, typename C, typename ...ARGS>
+struct PfnFromMethod<R (C::*)(ARGS...)>
+{
+    using type = R (*)(C*, ARGS...);
+};
+
+/* const methods */
+template<typename R, typename C, typename ...ARGS>
+struct PfnFromMethod<R (C::*)(ARGS...) const>
+{
+    using type = R (*)(const C*, ARGS...);
+};
+
+template<typename MemFn>
+using PfnFromMethodType = typename PfnFromMethod<MemFn>::type;
 
 template<typename ...Ts>
 struct Overloaded : Ts...
 {
     using Ts::operator()...; /* Inherit the call operators of all bases */
 };
+
+struct Empty { };
 
 inline constexpr bool isPowerOf2(usize x) { return (x & (x - 1)) == 0; }
 

@@ -156,7 +156,7 @@ struct TextBuff
     void clearTerm();
     void clearLine(TEXT_BUFF_ARG eArg);
     void hideCursor(bool bHide);
-    void pushGlyph(wchar_t wc);
+    void pushWChar(wchar_t wc);
     void clearKittyImages();
     /* */
 

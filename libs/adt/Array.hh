@@ -4,7 +4,7 @@
 #include "sort.hh"
 
 #include <initializer_list>
-#include <new>
+#include <new> /* IWYU pragma: keep */
 
 namespace adt
 {
@@ -46,6 +46,9 @@ struct Array
     constexpr const T* data() const { return m_aData; }
     constexpr bool empty() const { return m_size <= 0; }
     isize push(const T& x); /* placement new cannot be constexpr something... */
+    isize pushSorted(sort::ORDER eOrder, const T& x);
+    template<sort::ORDER ORDER> isize pushSorted(const T& x);
+    isize pushAt(isize i, const T& x);
     template<typename ...ARGS> requires (std::is_constructible_v<T, ARGS...>) constexpr isize emplace(ARGS&&... args);
     constexpr isize fakePush();
     constexpr T* pop();
@@ -100,6 +103,66 @@ Array<T, CAP>::push(const T& x)
     new(m_aData + m_size++) T(x);
 
     return m_size - 1;
+}
+
+template<typename T, isize CAP> requires(CAP > 0)
+inline isize
+Array<T, CAP>::pushSorted(const sort::ORDER eOrder, const T& x)
+{
+    ADT_ASSERT(size() < CAP, "pushing over capacity");
+
+    if (eOrder == sort::ORDER::INC)
+        return pushSorted<sort::ORDER::INC>(x);
+    else return pushSorted<sort::ORDER::DEC>(x);
+}
+
+template<typename T, isize CAP> requires(CAP > 0)
+template<sort::ORDER ORDER>
+inline isize
+Array<T, CAP>::pushSorted(const T& x)
+{
+    ADT_ASSERT(size() < CAP, "pushing over capacity");
+
+    isize res = -1;
+
+    if constexpr (ORDER == sort::ORDER::INC)
+    {
+        for (isize i = 0; i < size(); ++i)
+        {
+            if (utils::compare(x, operator[](i)) <= 0)
+            {
+                res = pushAt(i, x);
+                break;
+            }
+        }
+    }
+    else
+    {
+        for (isize i = 0; i < size(); ++i)
+        {
+            if (utils::compare(x, operator[](i)) >= 0)
+            {
+                res = pushAt(i, x);
+                break;
+            }
+        }
+    }
+
+    /* if failed to pushAt */
+    if (res == -1) return push(x);
+
+    return res;
+}
+
+template<typename T, isize CAP> requires(CAP > 0)
+inline isize
+Array<T, CAP>::pushAt(const isize i, const T& x)
+{
+    fakePush();
+    utils::memMove(&operator[](i + 1), &operator[](i), size() - 1 - i);
+    new(&operator[](i)) T(x);
+
+    return i;
 }
 
 template<typename T, isize CAP> requires(CAP > 0)

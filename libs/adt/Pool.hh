@@ -7,33 +7,38 @@
 namespace adt
 {
 
-template<typename T>
-struct PoolHandle
-{
-    using ResourceType = T;
-
-    /* */
-
-    isize i = NPOS; /* index of m_aNodes */
-
-    /* */
-
-    explicit operator bool() const { return i != -1; }
-};
-
 /* statically allocated reusable resource collection */
 template<typename T, isize CAP>
 struct Pool
 {
-    Array<T, CAP> m_aNodes {};
-    Array<PoolHandle<T>, CAP> m_aFreeIdxs {};
+    struct Handle
+    {
+        using ResourceType = T;
+
+        /* */
+
+        isize i = NPOS; /* index of m_aSlots */
+
+        /* */
+
+        explicit operator bool() const { return i != -1; }
+    };
+
+
+    T m_aSlots[CAP] {};
+    Array<Handle, CAP> m_aFreeSlots {};
     bool m_aOccupied[CAP] {};
     isize m_nOccupied {};
 
     /* */
 
-    T& operator[](PoolHandle<T> h)             { return at(h); }
-    const T& operator[](PoolHandle<T> h) const { return at(h); }
+    ADT_WARN_INIT Pool() = default;
+    Pool(InitFlag);
+
+    /* */
+
+    T& operator[](Handle h)             { return at(h); }
+    const T& operator[](Handle h) const { return at(h); }
 
     isize firstI() const;
     isize lastI() const;
@@ -42,14 +47,14 @@ struct Pool
 
     isize idx(const T* const p) const;
 
-    [[nodiscard]] PoolHandle<T> make();
-    [[nodiscard]] PoolHandle<T> make(const T& value); /* push resource and get handle back */
+    [[nodiscard]] Handle insert();
+    [[nodiscard]] Handle insert(const T& value); /* push and construct */
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-    [[nodiscard]] PoolHandle<T> emplace(ARGS&&... args);
+    [[nodiscard]] Handle emplace(ARGS&&... args);
 
-    void giveBack(PoolHandle<T> hnd);
-    void giveBack(T* hnd);
+    void remove(Handle hnd);
+    void remove(T* hnd);
 
     isize cap() const { return CAP; }
     isize size() const { return m_nOccupied; }
@@ -59,7 +64,7 @@ struct Pool
     /* */
 
 private:
-    T& at(PoolHandle<T> h);
+    T& at(Handle h);
 
     /* */
 
@@ -75,8 +80,8 @@ public:
 
         /* */
 
-        auto& operator*() { return s->m_aNodes[i]; }
-        auto* operator->() { return &s->m_aNodes[i]; }
+        auto& operator*() { return s->m_aSlots[i]; }
+        auto* operator->() { return &s->m_aSlots[i]; }
 
         It
         operator++()
@@ -108,47 +113,56 @@ public:
             return {s, tmp};
         }
 
-        friend bool operator==(const It& l, const It& r) { return l.i == r.i; }
-        friend bool operator!=(const It& l, const It& r) { return l.i != r.i; }
+        friend bool operator==(const It l, const It r) { return l.i == r.i; }
+        friend bool operator!=(const It l, const It r) { return l.i != r.i; }
     };
 
     It begin() { return {this, firstI()}; }
-    It end() { return {this, size() == 0 ? -1 : lastI() + 1}; }
+    It end() { return {this, -1}; }
 
     const It begin() const { return {this, firstI()}; }
-    const It end() const { return {this, size() == 0 ? -1 : lastI() + 1}; }
+    const It end() const { return {this, -1}; }
 };
+
+template<typename T, isize CAP>
+inline
+Pool<T, CAP>::Pool(InitFlag)
+{
+    m_aFreeSlots.setSize(CAP);
+    for (isize i = 0; i < CAP; ++i)
+        m_aFreeSlots[i] = Handle {CAP - 1 - i};
+}
 
 template<typename T, isize CAP>
 inline isize
 Pool<T, CAP>::firstI() const
 {
-    if (m_aNodes.m_size == 0) return -1;
+    if (m_aFreeSlots.size() >= CAP) return -1;
 
-    for (isize i = 0; i < m_aNodes.m_size; ++i)
+    for (isize i = 0; i < CAP; ++i)
         if (m_aOccupied[i]) return i;
 
-    return m_aNodes.m_size;
+    return -1;
 }
 
 template<typename T, isize CAP>
 inline isize
 Pool<T, CAP>::lastI() const
 {
-    if (m_aNodes.m_size == 0) return -1;
+    if (m_aFreeSlots.size() >= CAP) return -1;
 
-    for (isize i = isize(m_aNodes.m_size) - 1; i >= 0; --i)
+    for (isize i = CAP - 1; i >= 0; --i)
         if (m_aOccupied[i]) return i;
 
-    return m_aNodes.m_size;
+    return -1;
 }
 
 template<typename T, isize CAP>
 inline isize
 Pool<T, CAP>::nextI(isize i) const
 {
-    do ++i;
-    while (i < m_aNodes.m_size && !m_aOccupied[i]);
+    do if (++i >= CAP) return -1;
+    while (!m_aOccupied[i]);
 
     return i;
 }
@@ -157,8 +171,8 @@ template<typename T, isize CAP>
 inline isize
 Pool<T, CAP>::prevI(isize i) const
 {
-    do --i;
-    while (i >= 0 && !m_aOccupied[i]);
+    do if (++i < 0) return -1;
+    while (!m_aOccupied[i]);
 
     return i;
 }
@@ -167,81 +181,75 @@ template<typename T, isize CAP>
 inline isize
 Pool<T, CAP>::idx(const T* const p) const
 {
-    isize r = p - &m_aNodes[0];
+    isize r = p - &m_aSlots[0];
     ADT_ASSERT(r >= 0 && r < CAP, "out of range");
     return r;
 }
 
 template<typename T, isize CAP>
-inline PoolHandle<T>
-Pool<T, CAP>::make()
+inline Pool<T, CAP>::Handle
+Pool<T, CAP>::insert()
 {
-    PoolHandle<T> ret {.i = -1};
+    Handle ret {.i = -1};
 
-    if (m_nOccupied >= CAP)
+    if (m_aFreeSlots.empty())
     {
-#ifndef NDEBUG
-        print::err("no free element, returning -1", stderr);
-#endif
-        return {-1};
+        print::err("pool is empty, returning -1\n");
+        return ret;
     }
 
+    ret = *m_aFreeSlots.pop();
+    m_aOccupied[ret.i] = true;
     ++m_nOccupied;
 
-    if (m_aFreeIdxs.m_size > 0)
-        ret = *m_aFreeIdxs.pop();
-    else ret.i = m_aNodes.fakePush();
-
-    ADT_ASSERT(!m_aOccupied[ret.i], "must not be occupied");
-    m_aOccupied[ret.i] = true;
     return ret;
 }
 
 template<typename T, isize CAP>
-inline PoolHandle<T>
-Pool<T, CAP>::make(const T& value)
+inline Pool<T, CAP>::Handle
+Pool<T, CAP>::insert(const T& value)
 {
-    auto idx = make();
+    auto idx = insert();
     new(&operator[](idx)) T(value);
     return idx;
 }
 
 template<typename T, isize CAP>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-inline PoolHandle<T>
+inline Pool<T, CAP>::Handle
 Pool<T, CAP>::emplace(ARGS&&... args)
 {
-    auto idx = make();
+    auto idx = insert();
     new(&operator[](idx)) T(std::forward<ARGS>(args)...);
     return idx;
 }
 
 template<typename T, isize CAP>
 inline void
-Pool<T, CAP>::giveBack(PoolHandle<T> hnd)
+Pool<T, CAP>::remove(Handle hnd)
 {
     ADT_ASSERT(m_nOccupied > 0, "nothing to return");
     --m_nOccupied;
 
-    m_aFreeIdxs.push(hnd);
+    m_aFreeSlots.push(hnd);
     ADT_ASSERT(m_aOccupied[hnd.i], "returning unoccupied node");
     m_aOccupied[hnd.i] = false;
 }
 
 template<typename T, isize CAP>
 inline void
-Pool<T, CAP>::giveBack(T* hnd)
+Pool<T, CAP>::remove(T* hnd)
 {
-    giveBack(PoolHandle<T>(idx(hnd)));
+    remove(Handle(idx(hnd)));
 }
 
 template<typename T, isize CAP>
 inline T&
-Pool<T, CAP>::at(PoolHandle<T> h)
+Pool<T, CAP>::at(Handle h)
 {
-    ADT_ASSERT(h.i >= 0 && h.i < m_aNodes.size(), "i: {}, size: {}", h.i, m_aNodes.size());
+    ADT_ASSERT(h.i >= 0 && h.i < CAP, "i: {}, CAP: {}", h.i, CAP);
     ADT_ASSERT(m_aOccupied[h.i], "trying to access unoccupied node");
-    return m_aNodes[h.i];
+    return m_aSlots[h.i];
 }
 
 namespace print
@@ -249,14 +257,7 @@ namespace print
 
 template<typename T, isize CAP>
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const Pool<T, CAP>& x)
-{
-    return print::formatToContextTemplateSize(ctx, fmtArgs, x, x.size());
-}
-
-template<typename T>
-inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const PoolHandle<T>& x)
+formatToContext(Context ctx, FormatArgs fmtArgs, const typename Pool<T, CAP>::Handle& x)
 {
     return formatToContext(ctx, fmtArgs, x.i);
 }

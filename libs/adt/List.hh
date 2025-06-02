@@ -3,7 +3,6 @@
 #include "IAllocator.hh"
 #include "utils.hh"
 
-#include <new>
 #include <cstddef>
 
 namespace adt

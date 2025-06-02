@@ -180,7 +180,7 @@ TextBuff::hideCursor(bool bHide)
 }
 
 void
-TextBuff::pushGlyph(wchar_t wc)
+TextBuff::pushWChar(wchar_t wc)
 {
     char aBuff[8] {};
     int len = wctomb(aBuff, wc);
@@ -314,7 +314,7 @@ TextBuff::pushDiff()
                         m_scratch.reset();
                         eLastStyle = back.eStyle;
                     }
-                    pushGlyph(back.wc);
+                    pushWChar(back.wc);
                 }
 
                 if (colWidth > 1) col += colWidth - 1;
@@ -464,7 +464,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
     Span2D fb = frontBufferSpan();
 
     int max = 0;
-    for (const auto& wc : StringGlyphIt(str))
+    for (const auto& wc : StringWCharIt(str))
     {
         if (x >= m_tWidth || max >= maxSvLen) break;
 

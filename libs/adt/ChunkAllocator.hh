@@ -51,7 +51,7 @@ struct ChunkAllocator : public IAllocator
     /* */
 
     template<typename T> ADT_WARN_IMPOSSIBLE_OPERATION constexpr T*
-    reallocV(T* ptr, isize oldCount, isize newCount)
+    reallocV(T*, isize, isize)
     {
         ADT_ASSERT_ALWAYS(false, "can't realloc"); return nullptr;
     };

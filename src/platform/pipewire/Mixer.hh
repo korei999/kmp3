@@ -61,7 +61,7 @@ public:
 
     /* */
 
-    static void* getOnProcessPFN() { return adt::methodPointer(&Mixer::onProcess); }
+    static void* getOnProcessPFN() { return adt::methodPointerNonVirtual(&Mixer::onProcess); }
 
     /* */
 

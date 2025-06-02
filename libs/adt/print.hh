@@ -377,6 +377,12 @@ formatToContext(Context ctx, FormatArgs fmtArgs, null) noexcept
     return formatToContext(ctx, fmtArgs, StringView("nullptr"));
 }
 
+inline isize
+formatToContext(Context ctx, FormatArgs fmtArgs, Empty) noexcept
+{
+    return formatToContext(ctx, fmtArgs, StringView("Empty"));
+}
+
 template<typename PTR_T> requires std::is_pointer_v<PTR_T>
 inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p) noexcept
@@ -575,9 +581,8 @@ FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
     return i;
 }
 
-template<template<typename> typename CON_T, typename T>
 inline isize
-formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const isize contSize) noexcept
+formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isize contSize) noexcept
 {
     if (contSize <= 0)
     {
@@ -603,6 +608,36 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const
         const StringView fmt = i == contSize - 1 ? sFmtArg : sFmtArgComma;
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, e);
         ++i;
+    }
+
+    return copyBackToContext(ctx, fmtArgs, {aBuff});
+}
+
+inline isize
+formatToContextUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept
+{
+    if (!x.data())
+    {
+        ctx.fmt = "{}";
+        ctx.fmtIdx = 0;
+        return printArgs(ctx, "(empty)");
+    }
+
+    char aFmtBuff[64] {};
+    isize nFmtRead = FormatArgsToFmt(fmtArgs, {aFmtBuff, sizeof(aFmtBuff) - 2});
+
+    StringView sFmtArg = aFmtBuff;
+    aFmtBuff[nFmtRead++] = ',';
+    aFmtBuff[nFmtRead++] = ' ';
+    StringView sFmtArgComma(aFmtBuff);
+
+    char aBuff[1024] {};
+    isize nRead = 0;
+
+    for (auto it = x.begin(); it != x.end(); ++it)
+    {
+        const StringView fmt = !it.next() ? sFmtArg : sFmtArgComma;
+        nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, *it);
     }
 
     return copyBackToContext(ctx, fmtArgs, {aBuff});

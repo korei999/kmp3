@@ -12,7 +12,7 @@ struct String;
 
 [[nodiscard]] constexpr isize ntsSize(const char* nts);
 
-template <isize SIZE>
+template<isize SIZE>
 [[nodiscard]] constexpr isize charBuffStringSize(const char (&aCharBuff)[SIZE]);
 
 /* Just pointer + size, no allocations, has to be cloned into String to store safely */
@@ -59,7 +59,7 @@ struct StringView
     [[nodiscard]] const char& first() const;
     [[nodiscard]] char& last();
     [[nodiscard]] const char& last() const;
-    [[nodiscard]] isize nGlyphs() const;
+    [[nodiscard]] isize multiByteSize() const;
 
     template<typename T>
     T reinterpret(isize at) const;

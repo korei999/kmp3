@@ -33,7 +33,6 @@
 #include "logs.hh"
 
 #include <cstdio>
-#include <new> /* IWYU pragma: keep */
 
 #ifdef _WIN32
     #undef IN

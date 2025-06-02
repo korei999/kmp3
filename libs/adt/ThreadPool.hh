@@ -52,7 +52,7 @@ struct IThreadPool
 
 struct IThreadPoolWithMemory : IThreadPool
 {
-    virtual ScratchBuffer& scratch() = 0;
+    virtual ScratchBuffer& scratchBuffer() = 0;
 };
 
 template<isize QUEUE_SIZE>
@@ -185,7 +185,7 @@ ThreadPool<QUEUE_SIZE>::start()
     for (auto& thread : m_spThreads)
     {
         thread = Thread(
-            reinterpret_cast<ThreadFn>(methodPointer(&ThreadPool::loop)),
+            reinterpret_cast<ThreadFn>(methodPointerNonVirtual(&ThreadPool::loop)),
             this
         );
     }
@@ -258,7 +258,7 @@ template<isize QUEUE_SIZE>
 struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
 {
     static inline thread_local u8* gtl_pScratchMem;
-    static inline thread_local ScratchBuffer gtl_scratch;
+    static inline thread_local ScratchBuffer gtl_scratchBuff;
 
     /* */
 
@@ -267,32 +267,32 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
     ThreadPoolWithMemory(IAllocator* pAlloc, isize nBytesEachBuffer, int nThreads = utils::max(ADT_GET_NPROCS() - 1, 2))
         : ThreadPool<QUEUE_SIZE>(
             pAlloc,
-            +[](void* p) { allocScratchForThisThread(reinterpret_cast<isize>(p)); },
+            +[](void* p) { allocScratchBufferForThisThread(reinterpret_cast<isize>(p)); },
             reinterpret_cast<void*>(nBytesEachBuffer),
-            +[](void*) { destroyScratchForThisThread(); },
+            +[](void*) { destroyScratchBufferForThisThread(); },
             nullptr,
             nThreads
         )
     {
-        allocScratchForThisThread(nBytesEachBuffer);
+        allocScratchBufferForThisThread(nBytesEachBuffer);
     }
 
     /* */
 
     virtual void wait() override { ThreadPool<QUEUE_SIZE>::wait(); }
     virtual bool add(Task task) override { return ThreadPool<QUEUE_SIZE>::add(task); }
-    virtual ScratchBuffer& scratch() override { return gtl_scratch; }
+    virtual ScratchBuffer& scratchBuffer() override { return gtl_scratchBuff; }
 
     void
     destroy(IAllocator* pAlloc)
     {
         ThreadPool<QUEUE_SIZE>::destroy(pAlloc);
-        destroyScratchForThisThread();
+        destroyScratchBufferForThisThread();
     }
 
-    /* `destroyScratchForThisThread()` later. */
+    /* `destroyScratchBufferForThisThread()` later. */
     void
-    destroyKeepScratch(IAllocator* pAlloc)
+    destroyKeepScratchBuffer(IAllocator* pAlloc)
     {
         ThreadPool<QUEUE_SIZE>::destroy(pAlloc);
     }
@@ -300,20 +300,20 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
     /* */
 
     static void
-    allocScratchForThisThread(isize size)
+    allocScratchBufferForThisThread(isize size)
     {
         ADT_ASSERT(gtl_pScratchMem == nullptr, "already allocated");
 
         gtl_pScratchMem = StdAllocator::inst()->zallocV<u8>(size);
-        gtl_scratch = ScratchBuffer {gtl_pScratchMem, size};
+        gtl_scratchBuff = ScratchBuffer {gtl_pScratchMem, size};
     }
 
     static void
-    destroyScratchForThisThread()
+    destroyScratchBufferForThisThread()
     {
         StdAllocator::inst()->free(gtl_pScratchMem);
         gtl_pScratchMem = {};
-        gtl_scratch = {};
+        gtl_scratchBuff = {};
     }
 };
 

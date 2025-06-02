@@ -36,7 +36,7 @@ ntsSize(const char* nts)
     return i;
 }
 
-template <isize SIZE>
+template<isize SIZE>
 [[nodiscard]] constexpr isize
 charBuffStringSize(const char (&aCharBuff)[SIZE])
 {
@@ -83,13 +83,13 @@ StringView::operator[](isize i) const
 #undef ADT_RANGE_CHECK
 
 /* wchar_t iterator for mutlibyte strings */
-struct StringGlyphIt
+struct StringWCharIt
 {
     const StringView m_s {};
 
     /* */
 
-    StringGlyphIt(const StringView s) : m_s {s} {};
+    StringWCharIt(const StringView s) : m_s {s} {};
 
     /* */
 
@@ -142,6 +142,114 @@ GOTO_quit:
 
     const It begin() const { return {m_s.data(), 0, m_s.size()}; }
     const It end() const { return {NPOS}; }
+};
+
+/* Grapheme cluster iterator */
+struct StringGraphemeIt
+{
+    const StringView m_sv {};
+
+    StringGraphemeIt(const StringView sv) : m_sv {sv} {};
+
+    /* */
+
+    static bool
+    isRegional(const wchar_t wc)
+    {
+        return u32(wc) >= 0x1F1E6 && u32(wc) <= 0x1F1FF;
+    }
+
+    /* */
+
+    struct It
+    {
+        const char* m_pStr {};
+        isize m_size {};
+        isize m_i {};
+        isize m_clusterI {};
+        isize m_clusterSize {};
+        mbstate_t m_mbState {};
+
+        /* */
+
+        It(isize _NPOS) : m_i {_NPOS} {}
+        It(const StringView sv) : m_pStr {sv.data()}, m_size {sv.size()} { operator++(); }
+
+        /* */
+
+        const StringView operator*() const { return {const_cast<char*>(&m_pStr[m_clusterI]), m_clusterSize}; }
+
+        It
+        operator++()
+        {
+            if (!m_pStr || m_i >= m_size)
+            {
+                m_i = NPOS;
+                return NPOS;
+            }
+
+            wchar_t wc1;
+            int nBytesDecoded = mbrtowc(&wc1, &m_pStr[m_i], m_size - m_i, &m_mbState);
+            if (nBytesDecoded == -1 || nBytesDecoded == -2)
+            {
+                /* just skip */
+                nBytesDecoded = 1;
+                wc1 = L' ';
+                m_mbState = {};
+            }
+
+            m_clusterI = m_i;
+            m_i += nBytesDecoded;
+
+            if (isRegional(wc1))
+            {
+                mbstate_t mb2 {};
+                wchar_t wc2;
+                int nBytesDecoded2 = mbrtowc(&wc2, &m_pStr[m_i], m_size - m_i, &mb2);
+                if (nBytesDecoded2 > 0 && isRegional(wc2))
+                    m_i += nBytesDecoded2;
+            }
+
+            while (m_i < m_size)
+            {
+                mbstate_t mb2 {};
+                wchar_t wc2;
+                int nBytesDecoded2 = mbrtowc(&wc2, &m_pStr[m_i], m_size - m_i, &mb2);
+                if (nBytesDecoded2 == 0 || nBytesDecoded2 == -1 || nBytesDecoded2 == -2)
+                    break;
+
+                /* zero-width joiner (ZWJ) */
+                if (wc2 == 0x200D)
+                {
+                    m_i += nBytesDecoded2;
+                    mbstate_t mb3 {};
+                    wchar_t wc3;
+                    int nBytesDecoded3 = mbrtowc(&wc3, &m_pStr[m_i], m_size - m_i, &mb3);
+                    if (nBytesDecoded3 > 0)
+                    {
+                        m_i += nBytesDecoded3;
+                        continue;
+                    }
+                    break;
+                }
+
+                if (wcwidth(wc2) != 0)
+                    break;
+                m_i += nBytesDecoded2;
+            }
+
+            m_clusterSize = m_i - m_clusterI;
+            return *this;
+        }
+
+        /* */
+
+        friend bool operator==(const It& l, const It& r) { return l.m_i == r.m_i; }
+        friend bool operator!=(const It& l, const It& r) { return l.m_i != r.m_i; }
+    };
+
+    It begin() { return m_sv; }
+    It end() { return NPOS; }
 };
 
 /* Separated by delimiters String iterator adapter */
@@ -360,16 +468,25 @@ StringView::removeNLEnd()
 inline bool
 StringView::contains(const StringView r) const
 {
-    if (m_size < r.m_size || m_size == 0 || r.m_size == 0) return false;
+    if (m_size < r.m_size || m_size == 0 || r.m_size == 0)
+        return false;
+
+#if __has_include(<unistd.h>)
+
+    return memmem(data(), size(), r.data(), r.size()) != nullptr;
+
+#else
 
     for (isize i = 0; i < m_size - r.m_size + 1; ++i)
     {
-        const StringView sSub {const_cast<char*>(&(*this)[i]), r.m_size};
-        if (sSub == r)
+        const StringView svSub {const_cast<char*>(&(*this)[i]), r.m_size};
+        if (svSub == r)
             return true;
     }
 
     return false;
+
+#endif
 }
 
 inline char&
@@ -397,7 +514,7 @@ StringView::last() const
 }
 
 inline isize
-StringView::nGlyphs() const
+StringView::multiByteSize() const
 {
     mbstate_t state {};
     isize n = 0;

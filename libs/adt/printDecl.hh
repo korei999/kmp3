@@ -54,6 +54,8 @@ inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const char x) noex
 
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, null) noexcept;
 
+inline isize formatToContext(Context ctx, FormatArgs fmtArgs, Empty) noexcept;
+
 template<typename PTR_T> requires std::is_pointer_v<PTR_T>
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, PTR_T p) noexcept;
 
@@ -80,8 +82,9 @@ inline isize err(const StringView fmt, const ARGS_T&... tArgs) noexcept;
 
 inline isize FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept;
 
-template<template<typename> typename CON_T, typename T>
-inline isize formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const CON_T<T>& x, const isize contSize) noexcept;
+inline isize formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isize contSize) noexcept;
+
+inline isize formatToContextUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept;
 
 template<template<typename, isize> typename CON_T, typename T, isize SIZE>
 inline isize formatToContextTemplateSize(Context ctx, FormatArgs fmtArgs, const CON_T<T, SIZE>& x, const isize contSize) noexcept;

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "adt/IAllocator.hh"
+#include "IAllocator.hh"
+#include "print.hh"
 
 namespace adt
 {
@@ -24,19 +25,23 @@ struct SList
 
     /* */
 
+    Node* data() { return m_pHead; }
+    const Node* data() const { return m_pHead; }
+
     Node* insert(IAllocator* pAlloc, const T& x); /* prepend */
+    Node* insert(Node* pNode); /* prepend */
 
     void remove(Node* pNode); /* O(n) */
+    void remove(IAllocator* pAlloc, Node* pNode); /* O(n) */
+    void remove(Node* pPrev, Node* pNode); /* O(1) */
+    void remove(IAllocator* pAlloc, Node* pPrev, Node* pNode); /* O(1); free(pNode) */
 
-    void removeFree(IAllocator* pAlloc, Node* pNode);
-
-    void remove(Node* pPrev, Node* pNode);
+    void destroy(IAllocator* pAlloc);
 
     /* */
 
     struct It
     {
-        Node* m_prev {};
         Node* m_current {};
 
         It() = default;
@@ -45,13 +50,13 @@ struct SList
         T& operator*() noexcept { return m_current->data; }
         T* operator->() noexcept { return &m_current->data; }
 
-        It operator++() noexcept { m_prev = m_current; return m_current = m_current->pNext; }
+        It operator++() noexcept { return m_current = m_current->pNext; }
 
         Node* current() noexcept { return m_current; }
         const Node* current() const noexcept { return m_current; }
 
-        Node* prev() noexcept { return m_prev; }
-        const Node* prev() const noexcept { return m_prev; }
+        Node* next() noexcept { return m_current->pNext; }
+        const Node* next() const noexcept { return m_current->pNext; }
 
         friend constexpr bool operator==(const It& l, const It& r) noexcept { return l.m_current == r.m_current; }
         friend constexpr bool operator!=(const It& l, const It& r) noexcept { return l.m_current != r.m_current; }
@@ -62,6 +67,10 @@ struct SList
 
     const It begin() const noexcept { return {m_pHead}; }
     const It end() const  noexcept { return {}; }
+
+    /* */
+protected:
+    Node* insertNode(Node* pNew); /* prepend */
 };
 
 template<typename T>
@@ -77,8 +86,13 @@ template<typename T>
 inline SList<T>::Node*
 SList<T>::insert(IAllocator* pAlloc, const T& x)
 {
-    Node* pNew = Node::alloc(pAlloc, x);
+    return insertNode(Node::alloc(pAlloc, x));
+}
 
+template<typename T>
+inline SList<T>::Node*
+SList<T>::insertNode(Node* pNew)
+{
     pNew->pNext = m_pHead;
     m_pHead = pNew;
 
@@ -86,15 +100,22 @@ SList<T>::insert(IAllocator* pAlloc, const T& x)
 }
 
 template<typename T>
+inline SList<T>::Node*
+SList<T>::insert(Node* pNode)
+{
+    insertNode(pNode);
+}
+
+template<typename T>
 inline void
 SList<T>::remove(Node* pNode)
 {
-    for (auto it = begin(); it != end(); ++it)
+    for (Node* curr = m_pHead, * prev = nullptr; curr; prev = curr, curr = curr->pNext)
     {
-        if (it.current() == pNode)
+        if (curr == pNode)
         {
-            if (it.prev()) it.prev()->pNext = it.current()->pNext;
-            else m_pHead = it.current()->pNext;
+            if (prev) prev->pNext = curr->pNext;
+            else m_pHead = curr->pNext;
 
             break;
         }
@@ -103,7 +124,7 @@ SList<T>::remove(Node* pNode)
 
 template<typename T>
 inline void
-SList<T>::removeFree(IAllocator* pAlloc, Node* pNode)
+SList<T>::remove(IAllocator* pAlloc, Node* pNode)
 {
     remove(pNode);
     pAlloc->free(pNode);
@@ -113,6 +134,8 @@ template<typename T>
 inline void
 SList<T>::remove(Node* pPrev, Node* pNode)
 {
+    ADT_ASSERT(m_pHead != nullptr, "head: '{}'", m_pHead);
+
     if (pNode == m_pHead)
     {
         m_pHead = pNode->pNext;
@@ -123,5 +146,41 @@ SList<T>::remove(Node* pPrev, Node* pNode)
         pPrev->pNext = pNode->pNext;
     }
 }
+
+template<typename T>
+inline void
+SList<T>::remove(IAllocator* pAlloc, Node* pPrev, Node* pNode)
+{
+    remove(pPrev, pNode);
+    pAlloc->free(pNode);
+}
+
+template<typename T>
+inline void
+SList<T>::destroy(IAllocator* pAlloc)
+{
+    for (
+        Node* curr = m_pHead, * tmp = nullptr;
+        curr && (tmp = curr->pNext, true);
+        curr = tmp
+    )
+    {
+        pAlloc->free(curr);
+    }
+
+    *this = {};
+}
+
+namespace print
+{
+
+template<typename T>
+inline isize
+formatToContext(Context ctx, FormatArgs fmtArgs, const SList<T>& x)
+{
+    return print::formatToContextUntilEnd(ctx, fmtArgs, x);
+}
+
+} /* namespace print */
 
 } /* namespace adt */

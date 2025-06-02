@@ -5,7 +5,6 @@
 #include "print.hh" /* IWYU pragma: keep */
 
 #include <cstdlib>
-#include <new>
 
 #ifdef ADT_USE_MIMALLOC
     #include "mimalloc.h"

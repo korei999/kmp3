@@ -222,32 +222,6 @@ clamp(const T& x, const T& _min, const T& _max)
     return max(_min, min(_max, x));
 }
 
-template<template<typename> typename CON_T, typename T>
-[[nodiscard]] inline T&
-searchMax(CON_T<T>* s)
-{
-    ADT_ASSERT(!empty(s), " ");
-
-    auto _max = s->begin();
-    for (auto it = ++s->begin(); it != s->end(); ++it)
-        if (*it > *_max) _max = it;
-
-    return *_max;
-}
-
-template<template<typename> typename CON_T, typename T>
-[[nodiscard]] inline T&
-searchMin(CON_T<T>* s)
-{
-    ADT_ASSERT(!empty(s), " ");
-
-    auto _min = s->begin();
-    for (auto it = ++s->begin(); it != s->end(); ++it)
-        if (*it < *_min) _min = it;
-
-    return *_min;
-}
-
 inline constexpr void
 reverse(auto* a, const isize size)
 {
@@ -264,12 +238,12 @@ reverse(auto* a)
     reverse(a->data(), a->size());
 }
 
-template<template<typename> typename CON_T, typename T, typename LAMBDA>
+template<typename LAMBDA>
 [[nodiscard]] inline isize
-search(const CON_T<T>& c, LAMBDA f)
+search(const auto& a, LAMBDA cl)
 {
-    for (const auto& el : c)
-        if (f(el)) return c.idx(&el);
+    for (const auto& e : a)
+        if (cl(e)) return cl.idx(&e);
 
     return NPOS;
 }
@@ -299,17 +273,35 @@ binarySearch(const T& array, const B& x)
 }
 
 template<typename T> requires(std::is_integral_v<T>)
-inline T
+[[nodiscard]] inline T
 cycleForward(const T& idx, isize size)
 {
     return (idx + 1) % size;
 }
 
 template<typename T> requires(std::is_integral_v<T>)
-inline T
+[[nodiscard]] inline T
 cycleBackward(const T& idx, isize size)
 {
     return (idx + (size - 1)) % size;
+}
+
+template<typename T> requires(std::is_integral_v<T>)
+[[nodiscard]] inline T
+cycleForwardPowerOf2(const T& i, isize size)
+{
+    ADT_ASSERT(isPowerOf2(size), "size: {}", size);
+
+    return (i + 1) & (size - 1);
+}
+
+template<typename T> requires(std::is_integral_v<T>)
+[[nodiscard]] inline T
+cycleBackwardPowerOf2(const T& i, isize size)
+{
+    ADT_ASSERT(isPowerOf2(size), "size: {}", size);
+
+    return (i - 1) & (size - 1);
 }
 
 } /* namespace adt::utils */
