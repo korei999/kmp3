@@ -14,6 +14,10 @@
     #include "platform/apple/apple.hh"
 #endif
 
+#ifdef OPT_SNDIO
+    #include "platform/sndio/Mixer.hh"
+#endif
+
 using namespace adt;
 
 namespace app
@@ -31,7 +35,7 @@ bool g_bChafaSymbols {};
 
 Player* g_pPlayer {};
 audio::IMixer* g_pMixer {};
-platform::ffmpeg::Decoder g_decoder;
+platform::ffmpeg::Decoder g_decoder {};
 
 IWindow*
 allocWindow(IAllocator* pAlloc)
@@ -78,6 +82,12 @@ allocMixer(IAllocator* pAlloc)
 #ifdef __APPLE__
         case MIXER::COREAUDIO:
         pMix = pAlloc->alloc<platform::apple::Mixer>();
+        break;
+#endif
+
+#ifdef OPT_SNDIO
+        case MIXER::SNDIO:
+        pMix = pAlloc->alloc<platform::sndio::Mixer>();
         break;
 #endif
     }

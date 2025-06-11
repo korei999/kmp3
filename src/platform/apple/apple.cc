@@ -90,34 +90,6 @@ Mixer::writeCallBack(
     return noErr;
 }
 
-/* TODO: duplicated from pipewire */
-void
-Mixer::writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos)
-{
-    audio::ERROR err {};
-    {
-        LockGuard lock {&app::decoder().m_mtx};
-
-        if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
-
-        err = app::decoder().writeToBuffer(
-            spBuff,
-            nFrames, m_nChannels,
-            pSamplesWritten, pPcmPos
-        );
-
-        if (err == audio::ERROR::END_OF_FILE)
-        {
-            pause(true);
-            app::decoder().close();
-            m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
-        }
-    }
-
-    if (err == audio::ERROR::END_OF_FILE)
-        m_bSongEnd.store(true, atomic::ORDER::RELEASE);
-}
-
 void
 Mixer::init()
 {

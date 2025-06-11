@@ -4,12 +4,12 @@
 
 #include "adt/String.hh"
 #include "adt/atomic.hh"
-#include "adt/utils.hh"
 
 namespace audio
 {
 
 constexpr adt::u64 CHUNK_SIZE = (1 << 18); /* big enough */
+extern adt::f32 g_aRenderBuffer[CHUNK_SIZE];
 
 /* Platrform abstracted audio interface */
 struct IMixer
@@ -18,7 +18,9 @@ struct IMixer
 #ifdef OPT_MPRIS
     adt::atomic::Int m_atom_bUpdateMpris {false};
 #endif
-    adt::atomic::Int m_bSongEnd {false};
+    adt::atomic::Int m_atom_bSongEnd {false};
+    adt::atomic::Int m_atom_bDecodes {false};
+
     bool m_bMuted = false;
     bool m_bRunning = true;
     adt::u32 m_sampleRate = 48000;
@@ -42,22 +44,23 @@ struct IMixer
 
     /* */
 
-    bool isMuted() const { return m_bMuted; }
-    void toggleMute() { adt::utils::toggle(&m_bMuted); }
-    adt::u32 getSampleRate() const { return m_sampleRate; }
-    adt::u32 getChangedSampleRate() const { return m_changedSampleRate; }
-    adt::u8 getNChannels() const { return m_nChannels; }
-    adt::u64 getTotalSamplesCount() const { return m_nTotalSamples; }
-    adt::u64 getCurrentTimeStamp() const { return m_currentTimeStamp; }
-    const adt::atomic::Int& isPaused() const { return m_atom_bPaused; }
-    adt::f64 getVolume() const { return m_volume; }
-    void volumeDown(const adt::f32 step) { setVolume(m_volume - step); }
-    void volumeUp(const adt::f32 step) { setVolume(m_volume + step); }
-    [[nodiscard]] adt::f64 calcCurrentMS() { return (adt::f64(m_currentTimeStamp) / adt::f64(m_sampleRate) / adt::f64(m_nChannels)) * 1000.0; }
-    [[nodiscard]] adt::f64 calcTotalMS() { return (adt::f64(m_nTotalSamples) / adt::f64(m_sampleRate) / adt::f64(m_nChannels)) * 1000.0; }
-    void changeSampleRateDown(int ms, bool bSave) { changeSampleRate(m_changedSampleRate - ms, bSave); }
-    void changeSampleRateUp(int ms, bool bSave) { changeSampleRate(m_changedSampleRate + ms, bSave); }
-    void restoreSampleRate() { changeSampleRate(m_sampleRate, false); }
+    void writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
+    bool isMuted() const;
+    void toggleMute();
+    adt::u32 getSampleRate() const;
+    adt::u32 getChangedSampleRate() const;
+    adt::u8 getNChannels() const;
+    adt::u64 getTotalSamplesCount() const;
+    adt::u64 getCurrentTimeStamp() const;
+    const adt::atomic::Int& isPaused() const;
+    adt::f64 getVolume() const;
+    void volumeDown(const adt::f32 step);
+    void volumeUp(const adt::f32 step);
+    [[nodiscard]] adt::f64 calcCurrentMS();
+    [[nodiscard]] adt::f64 calcTotalMS();
+    void changeSampleRateDown(int ms, bool bSave);
+    void changeSampleRateUp(int ms, bool bSave);
+    void restoreSampleRate();
 
 #ifdef OPT_MPRIS
     const adt::atomic::Int& mprisHasToUpdate() const { return m_atom_bUpdateMpris; }
@@ -105,6 +108,8 @@ struct IDecoder
         adt::isize* pPcmPos
     ) = 0;
 
+    virtual void init() = 0;
+    virtual void destroy() = 0;
     [[nodiscard]] virtual adt::u32 getSampleRate() = 0;
     virtual void seekMS(adt::f64 ms) = 0;
     [[nodiscard]] virtual adt::i64 getCurrentSamplePos() = 0;

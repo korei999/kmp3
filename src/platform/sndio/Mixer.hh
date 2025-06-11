@@ -2,15 +2,24 @@
 
 #include "audio.hh"
 
-#include <AudioToolbox/AudioToolbox.h>
+#include "adt/Thread.hh"
 
-namespace platform::apple
+#include <sndio.h>
+
+namespace platform::sndio
 {
 
 struct Mixer : public audio::IMixer
 {
-    AudioUnit m_unit {};
+    sio_par m_par {};
+    sio_hdl* m_pHdl {};
+
     adt::f64 m_currMs {};
+    adt::atomic::Int m_atom_bRunning {false};
+    adt::atomic::Int m_atom_bLoopDone {false};
+    adt::Thread m_thrdLoop {};
+    adt::Mutex m_mtxLoop {adt::INIT};
+    adt::CndVar m_cndLoop {adt::INIT};
 
     /* */
 
@@ -28,15 +37,10 @@ struct Mixer : public audio::IMixer
 
     /* */
 
-    void setConfig(adt::f64 sampleRate, int nChannels, bool bSaveNewConfig);
+    void setConfig(adt::u64 sampleRate, int nChannels, bool bSaveNewConfig);
 
-    OSStatus writeCallBack(
-        AudioUnitRenderActionFlags* pIOActionFlags,
-        const AudioTimeStamp* pInTimeStamp,
-        adt::u32 inBusNumber,
-        adt::u32 inNumberFrames,
-        AudioBufferList* pIOData
-    );
+    adt::THREAD_STATUS loop();
+
 };
 
-} /* namespace platform::apple */
+} /* namespace platform::sndio */

@@ -67,15 +67,15 @@ parseArgs(int argc, char** argv)
 {
     for (int i = 1; i < argc; ++i)
     {
-        auto sArg = StringView(argv[i]);
-        if (sArg.beginsWith("--"))
+        const StringView svArg = argv[i];
+        if (svArg.beginsWith("--"))
         {
-            if (sArg == "--ansi")
+            if (svArg == "--ansi")
             {
                 app::g_eUIFrontend = app::UI::ANSI;
                 LOG_NOTIFY("setting HANDMADE ui\n");
             }
-            else if (sArg == "--termbox2")
+            else if (svArg == "--termbox2")
             {
 #ifdef OPT_TERMBOX2
                 app::g_eUIFrontend = app::UI::TERMBOX;
@@ -85,10 +85,22 @@ parseArgs(int argc, char** argv)
                 exit(0);
 #endif
             }
-            else if (sArg == "--no-image")
+            else if (svArg == "--no-image")
             {
                 app::g_bNoImage = true;
                 LOG_BAD("--no-image: {}\n", app::g_bNoImage);
+            }
+            else if (svArg == "--sndio")
+            {
+                app::g_eMixer = app::MIXER::SNDIO;
+            }
+            else if (svArg == "--pipewire")
+            {
+                app::g_eMixer = app::MIXER::PIPEWIRE;
+            }
+            else if (svArg == "--coreaudio")
+            {
+                app::g_eMixer = app::MIXER::COREAUDIO;
             }
         }
         else return;
@@ -104,6 +116,8 @@ startup(int argc, char** argv)
     app::g_eUIFrontend = app::UI::ANSI;
 #if OPT_PIPEWIRE
     app::g_eMixer = app::MIXER::PIPEWIRE;
+#elif defined OPT_SNDIO
+    app::g_eMixer = app::MIXER::SNDIO;
 #elif defined __APPLE__
     app::g_eMixer = app::MIXER::COREAUDIO;
 #endif
@@ -115,7 +129,7 @@ startup(int argc, char** argv)
     close(STDERR_FILENO); /* hide mpg123 and other errors */
 #endif
 
-    VecManaged<String> aInput(argc);
+    VecManaged<String> aInput;
     defer(
         for (auto& s : aInput) s.destroy(&alloc);
         aInput.destroy()
@@ -158,6 +172,9 @@ startup(int argc, char** argv)
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
+    app::decoder().init();
+    defer( app::decoder().destroy() );
+
     app::g_pMixer = app::allocMixer(&alloc);
     app::g_pMixer->init();
     app::g_pMixer->setVolume(defaults::VOLUME);
@@ -183,7 +200,10 @@ startup(int argc, char** argv)
 
         frame::run();
     }
-    else print::out("No accepted input provided\n");
+    else
+    {
+        print::out("No accepted input provided\n");
+    }
 
     if (bFreeArgv) alloc.free(argv);
 }

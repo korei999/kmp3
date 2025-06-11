@@ -1,7 +1,6 @@
 #pragma once
 
 #include "IAllocator.hh"
-#include "assert.hh"
 #include "print.hh" /* IWYU pragma: keep */
 
 #include <cstdlib>
@@ -17,7 +16,7 @@ namespace adt
  * freeAll() method is not supported. */
 struct StdAllocator : IAllocator
 {
-    static StdAllocator* inst();
+    [[nodiscard]] static StdAllocator* inst(); /* nonnull */
 
     /* virtual */
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;

@@ -89,8 +89,6 @@ Mixer::init()
     m_nChannels = 2;
     m_eformat = SPA_AUDIO_FORMAT_F32;
 
-    m_mtxDecoder = Mutex(Mutex::TYPE::RECURSIVE);
-
     pw_init({}, {});
 
     u8 aSetupBuffer[1024] {};
@@ -156,8 +154,7 @@ Mixer::destroy()
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
     pw_deinit();
 
-    m_mtxDecoder.destroy();
-    LOG_NOTIFY("MixerDestroy()\n");
+    LOG_BAD("MixerDestroy()\n");
 }
 
 void
@@ -168,9 +165,7 @@ Mixer::play(StringView svPath)
     pause(true);
 
     {
-        LockGuard lockDec {&m_mtxDecoder};
-
-        m_svPath = svPath;
+        LockGuard lockDec {&app::decoder().m_mtx};
 
         if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) app::decoder().close();
 
@@ -196,33 +191,6 @@ Mixer::play(StringView svPath)
 #ifdef OPT_MPRIS
     m_atom_bUpdateMpris.store(true, atomic::ORDER::RELEASE); /* mark to update in frame::run() */
 #endif
-}
-
-void
-Mixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i64* pPcmPos)
-{
-    audio::ERROR err {};
-    {
-        LockGuard lock {&m_mtxDecoder};
-
-        if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
-
-        err = app::decoder().writeToBuffer(
-            spBuff,
-            nFrames, m_nChannels,
-            pSamplesWritten, pPcmPos
-        );
-
-        if (err == audio::ERROR::END_OF_FILE)
-        {
-            pause(true);
-            app::decoder().close();
-            m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
-        }
-    }
-
-    if (err == audio::ERROR::END_OF_FILE)
-        m_bSongEnd.store(true, atomic::ORDER::RELEASE);
 }
 
 void
@@ -279,11 +247,7 @@ Mixer::onProcess()
     u32 nFrames = (stride > 0) ? (pBuffData.maxsize / stride) : 0;
     if (pPwBuffer->requested) nFrames = SPA_MIN(pPwBuffer->requested, (u64)nFrames);
 
-    static f32 s_aPwBuff[audio::CHUNK_SIZE] {};
-
-    if (nFrames*m_nChannels > utils::size(s_aPwBuff)) nFrames = utils::size(s_aPwBuff);
-
-    m_nLastFrames = nFrames;
+    if (nFrames*m_nChannels > utils::size(audio::g_aRenderBuffer)) nFrames = utils::size(audio::g_aRenderBuffer);
 
     static long s_nDecodedSamples = 0;
     static long s_nWrites = 0;
@@ -296,7 +260,7 @@ Mixer::onProcess()
         /* fill the buffer when it's empty */
         if (s_nWrites >= s_nDecodedSamples)
         {
-            writeFramesLocked({s_aPwBuff}, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
+            writeFramesLocked({audio::g_aRenderBuffer}, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
 
             m_currMs = app::decoder().getCurrentMS();
             s_nWrites = 0;
@@ -305,7 +269,7 @@ Mixer::onProcess()
         for (u32 chIdx = 0; chIdx < m_nChannels; chIdx++)
         {
             /* modify each sample here */
-            pDest[destI++] = s_aPwBuff[s_nWrites++] * vol;
+            pDest[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
         }
     }
 
@@ -382,7 +346,7 @@ void
 Mixer::seekMS(f64 ms)
 {
     {
-        LockGuard lock {&m_mtxDecoder};
+        LockGuard lock {&app::decoder().m_mtx};
 
         if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
@@ -420,7 +384,7 @@ Mixer::getCurrentMS()
 i64
 Mixer::getTotalMS()
 {
-    LockGuard lock {&m_mtxDecoder};
+    LockGuard lock {&app::decoder().m_mtx};
     return app::decoder().getTotalMS();
 }
 

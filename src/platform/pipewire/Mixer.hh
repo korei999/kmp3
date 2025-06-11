@@ -35,14 +35,10 @@ class Mixer : public audio::IMixer
 protected:
     adt::u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
-    adt::atomic::Int m_atom_bDecodes {false};
-    adt::StringView m_svPath {};
 
     pw_thread_loop* m_pThrdLoop {};
     pw_stream* m_pStream {};
-    adt::u32 m_nLastFrames {};
     adt::f64 m_currMs {};
-    adt::Mutex m_mtxDecoder {};
 
     /* */
 
@@ -66,7 +62,6 @@ public:
     /* */
 
 private:
-    void writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
     void setNChannles(adt::u32 nChannles);
     void onProcess();
 };

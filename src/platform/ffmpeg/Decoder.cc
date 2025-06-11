@@ -34,20 +34,43 @@ covertFormat(int format)
 void
 Decoder::close()
 {
-    if (m_pFormatCtx) avformat_close_input(&m_pFormatCtx);
-    if (m_pCodecCtx) avcodec_free_context(&m_pCodecCtx);
-    if (m_pSwr) swr_free(&m_pSwr);
-    if (m_pImgPacket) av_packet_free(&m_pImgPacket);
-    if (m_pImgFrame) av_frame_free(&m_pImgFrame);
+    if (m_pFormatCtx) avformat_close_input(&m_pFormatCtx), m_pFormatCtx = {};
+    if (m_pCodecCtx) avcodec_free_context(&m_pCodecCtx), m_pCodecCtx = {};
+    if (m_pSwr) swr_free(&m_pSwr), m_pSwr = {};
+    if (m_pImgPacket) av_packet_free(&m_pImgPacket), m_pImgPacket = {};
+    if (m_pImgFrame) av_frame_free(&m_pImgFrame), m_pImgFrame = {};
 
 #ifdef OPT_CHAFA
-    if (m_pConverted) av_frame_free(&m_pConverted);
-    if (m_pSwsCtx) sws_freeContext(m_pSwsCtx);
+    if (m_pConverted) av_frame_free(&m_pConverted), m_pConverted = {};
+    if (m_pSwsCtx) sws_freeContext(m_pSwsCtx), m_pSwsCtx = {};
 #endif
 
-    LOG_NOTIFY("close()\n");
+    m_pStream = {};
+    m_audioStreamIdx = {};
+    m_currentSamplePos = {};
+    m_currentMS = {};
+    m_coverImg = {};
 
-    *this = {};
+    /* WARN: don't zero out m_mtx! */
+
+    LOG_NOTIFY("close()\n");
+}
+
+void
+Decoder::init()
+{
+    new(&m_mtx) Mutex {Mutex::TYPE::PLAIN};
+}
+
+void
+Decoder::destroy()
+{
+    LOG_GOOD("Decoder::destroy() ATTEMPT\n");
+
+    close();
+    m_mtx.destroy();
+
+    LOG_BAD("Decoder::destroy()\n");
 }
 
 i64
@@ -285,8 +308,8 @@ Decoder::writeToBuffer(
 
             if (err < 0)
             {
-                char buff[16] {};
-                av_strerror(err, buff, utils::size(buff));
+                char buff[32] {};
+                av_strerror(err, buff, utils::size(buff) - 1);
                 LOG_WARN("swr_convert_frame(): {}\n", buff);
                 continue;
             }
@@ -297,9 +320,10 @@ Decoder::writeToBuffer(
             const auto& nFrameChannles = res.ch_layout.nb_channels;
             ADT_ASSERT(nFrameChannles > 0, " ");
 
-            utils::memCopy(spBuff.data() + nWrites, (f32*)(res.data[0]), maxSamples);
+            utils::memCopy(spBuff.data() + nWrites, reinterpret_cast<f32*>(res.data[0]), maxSamples);
             nWrites += maxSamples;
 
+            /* return when its filled enough */
             if (nWrites >= maxSamples && nWrites >= nFrames * nFrameChannles) /* mul by nChannels */
             {
                 *pSamplesWritten += nWrites;

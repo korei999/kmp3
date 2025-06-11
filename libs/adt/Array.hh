@@ -29,7 +29,8 @@ struct Array
 
     /* */
 
-    constexpr operator Span<T>() const { return {data(), size()}; }
+    constexpr operator Span<T>() { return {m_aData, m_size}; }
+    constexpr operator const Span<const T>() const { return {m_aData, m_size}; }
 
     /* */
 

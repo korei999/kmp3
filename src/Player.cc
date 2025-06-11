@@ -218,7 +218,7 @@ void
 Player::nextSongIfPrevEnded()
 {
     int bEnd = true;
-    if (app::mixer().m_bSongEnd.compareExchange(
+    if (app::mixer().m_atom_bSongEnd.compareExchange(
             &bEnd, false,
             atomic::ORDER::RELAXED, atomic::ORDER::RELAXED)
     )

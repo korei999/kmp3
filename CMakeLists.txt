@@ -8,6 +8,7 @@ message(STATUS "CMAKE_PROJECT_VERSION: '${CMAKE_PROJECT_VERSION}'")
 
 option(OPT_TERMBOX2 "" OFF)
 option(OPT_PIPEWIRE "" ON)
+option(OPT_SNDIO "" ON)
 option(OPT_CHAFA "" ON)
 option(OPT_MPRIS "" ON)
 option(OPT_MIMALLOC "" OFF)
@@ -137,6 +138,7 @@ add_executable(
     src/frame.cc
     src/Player.cc
     src/common.cc
+    src/audio.cc
 
     src/platform/ffmpeg/Decoder.cc
 
@@ -172,13 +174,25 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin" OR C
         if (PIPEWIRE_FOUND)
             add_definitions("-DOPT_PIPEWIRE")
             include_directories(BEFORE ${PIPEWIRE_INCLUDE_DIRS})
-            target_link_libraries(
-                ${CMAKE_PROJECT_NAME} PRIVATE
-                ${PIPEWIRE_LIBRARIES}
-            )
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARIES})
 
-            target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+            target_sources(
+                ${CMAKE_PROJECT_NAME} PRIVATE
                 "src/platform/pipewire/Mixer.cc"
+            )
+        endif()
+    endif()
+
+    if (OPT_SNDIO)
+        pkg_check_modules(SNDIO sndio)
+        if (SNDIO_FOUND)
+            add_definitions("-DOPT_SNDIO")
+            include_directories(BEFORE ${SNDIO_INCLUDE_DIRS})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SNDIO_LIBRARIES})
+
+            target_sources(
+                ${CMAKE_PROJECT_NAME} PRIVATE
+                "src/platform/sndio/Mixer.cc"
             )
         endif()
     endif()

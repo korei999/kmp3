@@ -15,7 +15,7 @@ void init();
 void proc();
 void destroy();
 
-inline void initLocks() { g_mtx = adt::Mutex(adt::Mutex::TYPE::RECURSIVE); g_cnd = adt::CndVar(adt::INIT); }
+inline void initLocks() { g_mtx = adt::Mutex {adt::Mutex::TYPE::RECURSIVE}; g_cnd = adt::CndVar {adt::INIT}; }
 inline void destroyLocks() { g_mtx.destroy(); g_cnd.destroy(); }
 
 void playbackStatusChanged();

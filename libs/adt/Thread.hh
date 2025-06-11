@@ -312,7 +312,8 @@ struct Mutex
     /* */
 
     Mutex() = default;
-    explicit Mutex(TYPE eType);
+    explicit Mutex(InitFlag) noexcept;
+    explicit Mutex(TYPE eType) noexcept;
 
     /* */
 
@@ -332,20 +333,46 @@ private:
 };
 
 inline
-Mutex::Mutex([[maybe_unused]] TYPE eType)
+Mutex::Mutex(InitFlag) noexcept
+{
+#ifdef ADT_USE_PTHREAD
+
+    m_mtx = PTHREAD_MUTEX_INITIALIZER;
+
+#elif defined ADT_USE_WIN32THREAD
+
+    InitializeCriticalSection(&m_mtx);
+
+#endif
+}
+
+inline
+Mutex::Mutex([[maybe_unused]] TYPE eType) noexcept
 {
 #ifdef ADT_USE_PTHREAD
 
     [[maybe_unused]] int err {};
-    pthread_mutexattr_t attr {};
-    err = pthread_mutexattr_init(&attr);
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
-    err = pthread_mutexattr_settype(&attr, pthreadAttrType(eType));
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
-    err = pthread_mutex_init(&m_mtx, &attr);
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
-    err = pthread_mutexattr_destroy(&attr);
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+
+    switch (eType)
+    {
+        case TYPE::PLAIN:
+        m_mtx = PTHREAD_MUTEX_INITIALIZER;
+        break;
+
+        case TYPE::RECURSIVE:
+        {
+            pthread_mutexattr_t attr {};
+            err = pthread_mutexattr_init(&attr);
+            ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+            err = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+            ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+            err = pthread_mutex_init(&m_mtx, &attr);
+            ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+            err = pthread_mutexattr_destroy(&attr);
+            ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+        }
+        break;
+    }
 
 #elif defined ADT_USE_WIN32THREAD
 
