@@ -134,7 +134,8 @@ startup(int argc, char** argv)
 
     setlocale(LC_ALL, "");
 #ifdef NDEBUG
-    close(STDERR_FILENO); /* hide mpg123 and other errors */
+    /* hide mpg123 and other errors */
+    freopen("/dev/null", "w", stderr);
 #endif
 
     VecManaged<String> aInput;
