@@ -2,8 +2,6 @@
 
 #include "Array.hh"
 
-#include <cstdio>
-
 namespace adt
 {
 
@@ -187,7 +185,7 @@ Pool<T, CAP>::idx(const T* const p) const
 }
 
 template<typename T, isize CAP>
-inline Pool<T, CAP>::Handle
+inline typename Pool<T, CAP>::Handle
 Pool<T, CAP>::insert()
 {
     Handle ret {.i = -1};
@@ -198,7 +196,7 @@ Pool<T, CAP>::insert()
         return ret;
     }
 
-    ret = *m_aFreeSlots.pop();
+    ret = m_aFreeSlots.pop();
     m_aOccupied[ret.i] = true;
     ++m_nOccupied;
 
@@ -206,7 +204,7 @@ Pool<T, CAP>::insert()
 }
 
 template<typename T, isize CAP>
-inline Pool<T, CAP>::Handle
+inline typename Pool<T, CAP>::Handle
 Pool<T, CAP>::insert(const T& value)
 {
     auto idx = insert();
@@ -216,7 +214,7 @@ Pool<T, CAP>::insert(const T& value)
 
 template<typename T, isize CAP>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-inline Pool<T, CAP>::Handle
+inline typename Pool<T, CAP>::Handle
 Pool<T, CAP>::emplace(ARGS&&... args)
 {
     auto idx = insert();

@@ -115,7 +115,7 @@ startup(int argc, char** argv)
     close(STDERR_FILENO); /* hide mpg123 and other errors */
 #endif
 
-    VecManaged<String> aInput(&alloc, argc);
+    VecManaged<String> aInput(argc);
     defer(
         for (auto& s : aInput) s.destroy(&alloc);
         aInput.destroy()

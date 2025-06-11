@@ -1,6 +1,6 @@
 #pragma once
 
-#include "print.hh"
+#include "print.hh" /* IWYU pragma: keep */
 
 #include <cstdlib>
 #include <cerrno>

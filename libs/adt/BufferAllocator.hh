@@ -10,7 +10,7 @@ namespace adt
 {
 
 /* Bump allocator, using fixed size memory buffer. */
-struct BufferAllocator : public IAllocator
+struct BufferAllocator : public IArena
 {
     u8* m_pMemBuffer = nullptr;
     usize m_size = 0;

@@ -42,7 +42,7 @@ struct FreeListData
     constexpr void addSize(usize _size) noexcept { setSize(_size + size()); }
 };
 
-struct FreeList : public IAllocator
+struct FreeList : public IArena
 {
     using Node = RBNode<FreeListData>; /* node is the header + the memory chunk */
 
@@ -180,7 +180,7 @@ _FreeListNodeFromPtr(void* p)
 inline FreeList::Node*
 FreeList::findFittingNode(const usize size)
 {
-    auto* it = m_tree.getRoot();
+    auto* it = m_tree.root();
     const isize realSize = size + sizeof(FreeList::Node);
 
     FreeList::Node* pLastFitting {};

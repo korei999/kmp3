@@ -16,9 +16,13 @@ struct QueueArray
 
     /* */
 
-    T m_aData[CAP] {};
+    T m_aData[CAP];
     isize m_headI {};
     isize m_tailI {};
+
+    /* */
+
+    QueueArray() = default;
 
     /* */
 
@@ -39,9 +43,9 @@ struct QueueArray
     template<typename ...ARGS>
     isize emplaceFront(ARGS&&... args) noexcept;
 
-    T* popFront() noexcept;
+    T& popFront() noexcept;
 
-    T* popBack() noexcept;
+    T& popBack() noexcept;
 
     template<PUSH_WAY E_WAY>
     isize fakePush() noexcept;
@@ -153,7 +157,7 @@ QueueArray<T, CAP>::emplaceFront(ARGS&&... args) noexcept
 }
 
 template<typename T, isize CAP>
-template<QueueArray<T, CAP>::PUSH_WAY E_WAY>
+template<typename QueueArray<T, CAP>::PUSH_WAY E_WAY>
 inline isize
 QueueArray<T, CAP>::fakePush() noexcept
 {
@@ -176,26 +180,26 @@ QueueArray<T, CAP>::fakePush() noexcept
 }
 
 template<typename T, isize CAP>
-inline T*
+inline T&
 QueueArray<T, CAP>::popFront() noexcept
 {
-    if (empty()) return nullptr;
+    ADT_ASSERT(!empty(), "");
 
     isize tmp = m_headI;
     m_headI = nextI(m_headI);
 
-    return &m_aData[tmp];
+    return m_aData[tmp];
 }
 
 template<typename T, isize CAP>
-inline T*
+inline T&
 QueueArray<T, CAP>::popBack() noexcept
 {
-    if (empty()) return nullptr;
+    ADT_ASSERT(!empty(), "");
 
     m_tailI = prevI(m_tailI);
 
-    return &m_aData[m_tailI];
+    return m_aData[m_tailI];
 }
 
 template<typename T, isize CAP>

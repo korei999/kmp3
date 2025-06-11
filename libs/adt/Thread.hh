@@ -3,6 +3,7 @@
 #include "types.hh"
 #include "assert.hh"
 
+#include <cstring>
 #include <emmintrin.h>
 
 #include <type_traits>

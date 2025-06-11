@@ -13,7 +13,7 @@ namespace adt
 {
 
 /* fast region based allocator, only freeAll() free's memory, free() does nothing */
-struct Arena : public IAllocator
+struct Arena : public IArena
 {
     struct Block
     {

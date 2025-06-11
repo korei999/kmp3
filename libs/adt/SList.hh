@@ -1,17 +1,16 @@
 #pragma once
 
-#include "IAllocator.hh"
-#include "print.hh"
+#include "StdAllocator.hh"
 
 namespace adt
 {
 
-template<typename  T>
+template<typename T>
 struct SList
 {
     struct Node
     {
-        ADT_NO_UNIQUE_ADDRESS Node* pNext {};
+        Node* pNext {};
         ADT_NO_UNIQUE_ADDRESS T data {};
 
         /* */
@@ -25,8 +24,8 @@ struct SList
 
     /* */
 
-    Node* data() { return m_pHead; }
-    const Node* data() const { return m_pHead; }
+    Node* data() noexcept { return m_pHead; }
+    const Node* data() const noexcept { return m_pHead; }
 
     Node* insert(IAllocator* pAlloc, const T& x); /* prepend */
     Node* insert(Node* pNode); /* prepend */
@@ -36,7 +35,9 @@ struct SList
     void remove(Node* pPrev, Node* pNode); /* O(1) */
     void remove(IAllocator* pAlloc, Node* pPrev, Node* pNode); /* O(1); free(pNode) */
 
-    void destroy(IAllocator* pAlloc);
+    void destroy(IAllocator* pAlloc) noexcept;
+
+    SList release() noexcept;
 
     /* */
 
@@ -74,7 +75,7 @@ protected:
 };
 
 template<typename T>
-inline SList<T>::Node*
+inline typename SList<T>::Node*
 SList<T>::Node::alloc(IAllocator* pAlloc, const T& x)
 {
     Node* pNew = static_cast<Node*>(pAlloc->zalloc(1, sizeof(Node)));
@@ -83,14 +84,14 @@ SList<T>::Node::alloc(IAllocator* pAlloc, const T& x)
 }
 
 template<typename T>
-inline SList<T>::Node*
+inline typename SList<T>::Node*
 SList<T>::insert(IAllocator* pAlloc, const T& x)
 {
     return insertNode(Node::alloc(pAlloc, x));
 }
 
 template<typename T>
-inline SList<T>::Node*
+inline typename SList<T>::Node*
 SList<T>::insertNode(Node* pNew)
 {
     pNew->pNext = m_pHead;
@@ -100,7 +101,7 @@ SList<T>::insertNode(Node* pNew)
 }
 
 template<typename T>
-inline SList<T>::Node*
+inline typename SList<T>::Node*
 SList<T>::insert(Node* pNode)
 {
     insertNode(pNode);
@@ -157,7 +158,7 @@ SList<T>::remove(IAllocator* pAlloc, Node* pPrev, Node* pNode)
 
 template<typename T>
 inline void
-SList<T>::destroy(IAllocator* pAlloc)
+SList<T>::destroy(IAllocator* pAlloc) noexcept
 {
     for (
         Node* curr = m_pHead, * tmp = nullptr;
@@ -171,16 +172,37 @@ SList<T>::destroy(IAllocator* pAlloc)
     *this = {};
 }
 
-namespace print
-{
-
 template<typename T>
-inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const SList<T>& x)
+inline SList<T>
+SList<T>::release() noexcept
 {
-    return print::formatToContextUntilEnd(ctx, fmtArgs, x);
+    return utils::exchange(this, {});
 }
 
-} /* namespace print */
+template<typename T, typename ALLOC_T = StdAllocatorNV>
+struct SListManaged : SList<T>
+{
+    using Base = SList<T>;
+    using Node = Base::Node;
+
+    /* */
+
+    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc;
+
+    /* */
+
+    SListManaged() = default;
+
+    /* */
+
+    Node* insert(const T& x) { return Base::insert(&m_alloc, x); }
+
+    void remove(Node* pNode) { Base::remove(&m_alloc, pNode); }
+    void remove(Node* pPrev, Node* pNode) { Base::remove(&m_alloc, pPrev, pNode); }
+
+    void destroy() noexcept { Base::destroy(&m_alloc); }
+
+    SListManaged release() noexcept { return utils::exchange(this, {}); }
+};
 
 } /* namespace adt */

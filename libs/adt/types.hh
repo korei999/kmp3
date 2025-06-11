@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cstdio>
-#include <cstdlib>
-
 #ifdef ADT_STD_TYPES
     #include <cstdint>
     #include <limits>
@@ -192,5 +189,17 @@ nextPowerOf2(isize x)
 
     return ++x;
 }
+
+template<typename T>
+concept HasSizeMethod = requires(const T& c)
+{ c.size(); };
+
+template<typename T>
+concept HasNextIt = requires(const T& c)
+{ c.begin().next(); };
+
+template<typename T>
+concept IsIndexable = requires(const T& c)
+{ c[0]; };
 
 } /* namespace adt */

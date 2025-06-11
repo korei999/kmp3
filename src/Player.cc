@@ -118,7 +118,7 @@ Player::setDefaultIdxs(Vec<u16>* pIdxs)
 }
 
 void
-Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
+Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
 {
     if (spBuff && wcsnlen(spBuff.data(), spBuff.size()) == 0)
         return;
@@ -129,8 +129,8 @@ Player::subStringSearch(Arena* pAlloc, Span<wchar_t> spBuff)
     for (isize i = 0; i < maxLen && spBuff[i]; ++i)
         aUpperRight.push(wchar_t(towupper(spBuff[i])));
 
-    VecManaged<wchar_t> aSongToUpper(pAlloc, m_longestString + 1);
-    aSongToUpper.setSize(m_longestString + 1);
+    Vec<wchar_t> aSongToUpper(pArena, m_longestString + 1);
+    aSongToUpper.setSize(pArena, m_longestString + 1);
 
     m_vSearchIdxs.setSize(m_pAlloc, 0);
     for (u16 songIdx : m_vSongIdxs)
@@ -325,7 +325,7 @@ Player::popErrorMsg()
     LockGuard lock {&m_mtxQ};
 
     if (!m_qErrorMsgs.empty())
-        return *m_qErrorMsgs.popFront();
+        return m_qErrorMsgs.popFront();
     else return {};
 }
 

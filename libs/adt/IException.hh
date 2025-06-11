@@ -1,7 +1,7 @@
 #pragma once
 
-#include "StringDecl.hh"
-#include "printDecl.hh"
+#include "String.inc"
+#include "print.inc"
 
 namespace adt
 {

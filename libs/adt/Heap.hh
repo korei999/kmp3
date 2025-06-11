@@ -21,7 +21,8 @@ struct Heap
 
     /* */
 
-    void destroy(IAllocator* pA);
+    void destroy(IAllocator* pA) noexcept;
+    [[nodiscard]] Heap release() noexcept;
     void minBubbleUp(isize i);
     void maxBubbleUp(isize i);
     void minBubbleDown(isize i);
@@ -35,16 +36,23 @@ struct Heap
 };
 
 template<typename T>
-Heap<T> HeapMinFromVec(IAllocator* pA, const Vec<T>& a);
+inline Heap<T> HeapMinFromVec(IAllocator* pA, const Vec<T>& a);
 
 template<typename T>
-Heap<T> HeapMaxFromVec(IAllocator* pA, const Vec<T>& a);
+inline Heap<T> HeapMaxFromVec(IAllocator* pA, const Vec<T>& a);
 
 template<typename T>
 inline void
-Heap<T>::destroy(IAllocator* pA)
+Heap<T>::destroy(IAllocator* pA) noexcept
 {
     m_vec.destroy(pA);
+}
+
+template<typename T>
+inline Heap<T>
+Heap<T>::release() noexcept
+{
+    return utils::exchange(this, {});
 }
 
 template<typename T>
@@ -82,22 +90,22 @@ inline void
 Heap<T>::minBubbleDown(isize i)
 {
     isize smallest, left, right;
-    Vec<T>& a = m_vec;
+    Vec<T>& v = m_vec;
 
 GOTO_again:
     left = HeapLeftI(i);
     right = HeapRightI(i);
 
-    if (left < a.size && a[left] < a[i])
+    if (left < v.size && v[left] < v[i])
         smallest = left;
     else smallest = i;
 
-    if (right < a.size && a[right] < a[smallest])
+    if (right < v.size && v[right] < v[smallest])
         smallest = right;
 
     if (smallest != i)
     {
-        utils::swap(&a[i], &a[smallest]);
+        utils::swap(&v[i], &v[smallest]);
         i = smallest;
         goto GOTO_again;
     }
@@ -108,22 +116,22 @@ inline void
 Heap<T>::maxBubbleDown(isize i)
 {
     isize largest, left, right;
-    Vec<T>& a = m_vec;
+    Vec<T>& v = m_vec;
 
 GOTO_again:
     left = HeapLeftI(i);
     right = HeapRightI(i);
 
-    if (left < a.m_size && a[left] > a[i])
+    if (left < v.m_size && v[left] > v[i])
         largest = left;
     else largest = i;
 
-    if (right < a.m_size && a[right] > a[largest])
+    if (right < v.m_size && v[right] > v[largest])
         largest = right;
 
     if (largest != i)
     {
-        utils::swap(&a[i], &a[largest]);
+        utils::swap(&v[i], &v[largest]);
         i = largest;
         goto GOTO_again;
     }
@@ -182,7 +190,7 @@ Heap<T>::minExtract()
     m_vec.swapWithLast(0);
 
     T min;
-    new(&min) T(*m_vec.pop());
+    new(&min) T(m_vec.pop());
 
     minBubbleDown(0);
 
@@ -198,7 +206,7 @@ Heap<T>::maxExtract()
     m_vec.swapWithLast(0);
 
     T max;
-    new(&max) T(*m_vec.pop());
+    new(&max) T(m_vec.pop());
 
     maxBubbleDown(0);
 
@@ -219,7 +227,7 @@ Heap<T>::minSort(IAllocator* pA, Vec<T>* a)
 
 template<typename T>
 inline void
-HeapMaxSort(IAllocator* pA, VecManaged<T>* a)
+Heap<T>::maxSort(IAllocator* pA, Vec<T>* a)
 {
     Heap<T> s = HeapMaxFromVec(pA, *a);
 

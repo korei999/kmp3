@@ -1,15 +1,14 @@
 #pragma once
 
-#include "StringDecl.hh"
+#include "String.inc"
 
 #include "assert.hh"
 #include "IAllocator.hh"
 #include "utils.hh"
-#include "hash.hh"
 #include "Span.hh" /* IWYU pragma: keep */
 #include "print.hh" /* IWYU pragma: keep */
+#include "wcwidth.hh"
 
-#include <cstdlib>
 #include <cwchar>
 
 namespace adt
@@ -46,6 +45,12 @@ charBuffStringSize(const char (&aCharBuff)[SIZE])
     while (i < SIZE && aCharBuff[i] != '\0') ++i;
 
     return i;
+}
+
+inline constexpr int
+wcWidth(wchar_t wc)
+{
+    return mk_wcwidth(wc);
 }
 
 inline constexpr
@@ -233,7 +238,7 @@ struct StringGraphemeIt
                     break;
                 }
 
-                if (wcwidth(wc2) != 0)
+                if (wcWidth(wc2) != 0)
                     break;
                 m_i += nBytesDecoded2;
             }
@@ -489,6 +494,32 @@ StringView::contains(const StringView r) const
 #endif
 }
 
+inline isize
+StringView::subStringAt(const StringView r) const noexcept
+{
+    if (m_size < r.m_size || m_size == 0 || r.m_size == 0)
+        return false;
+
+#if __has_include(<unistd.h>)
+
+    const void* ptr = memmem(data(), size(), r.data(), r.size());
+
+    if (ptr) return idx(static_cast<const char*>(ptr));
+
+#else
+
+    for (isize i = 0; i < m_size - r.m_size + 1; ++i)
+    {
+        const StringView svSub {const_cast<char*>(&(*this)[i]), r.m_size};
+        if (svSub == r)
+            return i;
+    }
+
+#endif
+
+    return -1;
+}
+
 inline char&
 StringView::first()
 {
@@ -561,14 +592,14 @@ String::String(IAllocator* pAlloc, const StringView sv)
     : String(pAlloc, sv.data(), sv.size()) {}
 
 inline void
-String::destroy(IAllocator* pAlloc)
+String::destroy(IAllocator* pAlloc) noexcept
 {
     pAlloc->free(m_pData);
     *this = {};
 }
 
 inline void
-String::replaceWith(IAllocator* pAlloc, StringView svWith)
+String::reallocWith(IAllocator* pAlloc, const StringView svWith)
 {
     if (svWith.empty())
     {
@@ -582,6 +613,12 @@ String::replaceWith(IAllocator* pAlloc, StringView svWith)
     strncpy(data(), svWith.data(), svWith.size());
     m_size = svWith.size();
     data()[size()] = '\0';
+}
+
+inline String
+String::release() noexcept
+{
+    return utils::exchange(this, {});
 }
 
 template<int SIZE>
@@ -608,14 +645,14 @@ StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other)
 
 template<int SIZE>
 inline isize
-StringFixed<SIZE>::size() const
+StringFixed<SIZE>::size() const noexcept
 {
     return strnlen(m_aBuff, SIZE);
 }
 
 template<int SIZE>
 inline void
-StringFixed<SIZE>::destroy()
+StringFixed<SIZE>::destroy() noexcept
 {
     memset(data(), 0, sizeof(m_aBuff));
 }

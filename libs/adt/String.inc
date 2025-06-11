@@ -1,12 +1,12 @@
 #pragma once
 
-#include "SpanDecl.hh"
-
-#include <cstring> /* IWYU pragma: keep */
+#include "Span.inc"
+#include "hash.hh"
 
 namespace adt
 {
 
+struct StdAllocatorNV;
 struct IAllocator;
 struct String;
 
@@ -14,6 +14,8 @@ struct String;
 
 template<isize SIZE>
 [[nodiscard]] constexpr isize charBuffStringSize(const char (&aCharBuff)[SIZE]);
+
+inline constexpr int wcWidth(wchar_t wc);
 
 /* Just pointer + size, no allocations, has to be cloned into String to store safely */
 struct StringView
@@ -55,6 +57,7 @@ struct StringView
     void trimEnd();
     void removeNLEnd(); /* remove \r\n */
     [[nodiscard]] bool contains(const StringView r) const;
+    [[nodiscard]] isize subStringAt(const StringView r) const noexcept;
     [[nodiscard]] char& first();
     [[nodiscard]] const char& first() const;
     [[nodiscard]] char& last();
@@ -66,33 +69,15 @@ struct StringView
 
     /* */
 
-    struct It
-    {
-        char* p;
+    constexpr char* begin() { return &m_pData[0]; }
+    constexpr char* end() { return &m_pData[m_size]; }
+    constexpr char* rbegin() { return &m_pData[m_size - 1]; }
+    constexpr char* rend() { return m_pData - 1; }
 
-        constexpr It(const char* pFirst) : p{const_cast<char*>(pFirst)} {}
-
-        constexpr char& operator*() { return *p; }
-        constexpr char* operator->() { return p; }
-
-        constexpr It operator++() { p++; return *this; }
-        constexpr It operator++(int) { char* tmp = p++; return tmp; }
-        constexpr It operator--() { p--; return *this; }
-        constexpr It operator--(int) { char* tmp = p--; return tmp; }
-
-        friend constexpr bool operator==(It l, It r) { return l.p == r.p; }
-        friend constexpr bool operator!=(It l, It r) { return l.p != r.p; }
-    };
-
-    constexpr It begin() { return {&m_pData[0]}; }
-    constexpr It end() { return {&m_pData[m_size]}; }
-    constexpr It rbegin() { return {&m_pData[m_size - 1]}; }
-    constexpr It rend() { return {m_pData - 1}; }
-
-    constexpr const It begin() const { return {&m_pData[0]}; }
-    constexpr const It end() const { return {&m_pData[m_size]}; }
-    constexpr const It rbegin() const { return {&m_pData[m_size - 1]}; }
-    constexpr const It rend() const { return {m_pData - 1}; }
+    constexpr const char* begin() const { return &m_pData[0]; }
+    constexpr const char* end() const { return &m_pData[m_size]; }
+    constexpr const char* rbegin() const { return &m_pData[m_size - 1]; }
+    constexpr const char* rend() const { return m_pData - 1; }
 };
 
 [[nodiscard]] inline bool operator==(const StringView& l, const StringView& r);
@@ -101,6 +86,9 @@ struct StringView
 [[nodiscard]] inline i64 operator-(const StringView& l, const StringView& r);
 
 inline String StringCat(IAllocator* p, const StringView& l, const StringView& r);
+
+template<>
+inline usize hash::func(const StringView& str);
 
 struct String : public StringView
 {
@@ -112,9 +100,29 @@ struct String : public StringView
 
     /* */
 
-    void destroy(IAllocator* pAlloc);
-    void replaceWith(IAllocator* pAlloc, StringView svWith);
-    String release(); /* return this String resource and set to zero */
+    void destroy(IAllocator* pAlloc) noexcept;
+    void reallocWith(IAllocator* pAlloc, const StringView svWith);
+    [[nodiscard]] String release() noexcept; /* return this String resource and set to zero */
+};
+
+template<typename ALLOC_T = StdAllocatorNV>
+struct StringManaged : public String
+{
+    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc {};
+
+    /* */
+
+    StringManaged() = default;
+    StringManaged(const char* pChars, isize size) : String {&m_alloc, pChars, size} {}
+    StringManaged(const char* nts) : String {&m_alloc, nts} {}
+    StringManaged(Span<char> spChars) : String {&m_alloc, spChars} {}
+    StringManaged(const StringView sv) : String {&m_alloc, sv} {}
+
+    /* */
+
+    void destroy() noexcept { String::destroy(&m_alloc); }
+    void reallocWith(const StringView svWith) { String::reallocWith(&m_alloc, svWith); }
+    [[nodiscard]] String release() noexcept { String r = *this; *this = {}; return r; }
 };
 
 /* Holds SIZE - 1 characters, terminates with '\0'. */
@@ -136,6 +144,8 @@ struct StringFixed
 
     StringFixed(const char* nts) : StringFixed(StringView(nts)) {}
 
+    StringFixed(const char* p, const isize size) : StringFixed(StringView {const_cast<char*>(p), size}) {}
+
     template<int SIZE_B>
     StringFixed(const StringFixed<SIZE_B> other);
 
@@ -155,10 +165,13 @@ struct StringFixed
     auto& data() { return m_aBuff; }
     const auto& data() const { return m_aBuff; }
 
-    isize size() const;
-    void destroy();
+    isize cap() const noexcept { return CAP; }
+
+    isize size() const noexcept;
+    void destroy() noexcept;
 };
 
-template<int SIZE_L, int SIZE_R> inline bool operator==(const StringFixed<SIZE_L>& l, const StringFixed<SIZE_R>& r);
+template<int SIZE_L, int SIZE_R>
+inline bool operator==(const StringFixed<SIZE_L>& l, const StringFixed<SIZE_R>& r);
 
 } /* namespace adt */

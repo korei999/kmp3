@@ -94,7 +94,7 @@ struct Map
     /* */
 
     Map() = default;
-    Map(IAllocator* pAllocator, isize prealloc = SIZE_MIN);
+    Map(IAllocator* pAllocator, isize prealloc = SIZE_MIN, f32 loadFactor = MAP_DEFAULT_LOAD_FACTOR);
 
     /* */
 
@@ -129,7 +129,9 @@ struct Map
 
     MapResult<K, V> tryInsert(IAllocator* p, const K& key, const V& val);
 
-    void destroy(IAllocator* p);
+    void destroy(IAllocator* p) noexcept;
+
+    [[nodiscard]] Map release() noexcept;
 
     [[nodiscard]] isize cap() const;
 
@@ -340,9 +342,16 @@ Map<K, V, FN_HASH>::tryInsert(IAllocator* p, const K& key, const V& val)
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline void
-Map<K, V, FN_HASH>::destroy(IAllocator* p)
+Map<K, V, FN_HASH>::destroy(IAllocator* p) noexcept
 {
     m_vBuckets.destroy(p);
+}
+
+template<typename K, typename V, usize (*FN_HASH)(const K&)>
+inline Map<K, V, FN_HASH>
+Map<K, V, FN_HASH>::release() noexcept
+{
+    return utils::exchange(this, {});
 }
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
@@ -467,46 +476,47 @@ Map<K, V, FN_HASH>::insertionIdx(usize hash, const K& key) const
 }
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
-Map<K, V, FN_HASH>::Map(IAllocator* pAllocator, isize prealloc)
-    : m_vBuckets(pAllocator, nextPowerOf2(isize(prealloc * MAP_DEFAULT_LOAD_FACTOR_INV))),
-      m_maxLoadFactor(MAP_DEFAULT_LOAD_FACTOR)
+Map<K, V, FN_HASH>::Map(IAllocator* pAllocator, isize prealloc, f32 loadFactor)
+    : m_vBuckets {pAllocator, nextPowerOf2(isize(prealloc / loadFactor))},
+      m_nOccupied {},
+      m_maxLoadFactor {loadFactor}
 {
     ADT_ASSERT(isPowerOf2(m_vBuckets.cap()), "");
     m_vBuckets.setSize(pAllocator, m_vBuckets.cap());
 }
 
-template<typename K, typename V, usize (*FN_HASH)(const K&) = hash::func<K>>
+template<typename K, typename V, typename ALLOC_T, usize (*FN_HASH)(const K&) = hash::func<K>>
 struct MapManaged : Map<K, V, FN_HASH>
 {
     using Base = Map<K, V, FN_HASH>;
 
     /* */
 
-    IAllocator* m_pAlloc {};
+    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc {};
 
     /* */
 
     MapManaged() = default;
-    MapManaged(IAllocator* _pAlloc, isize prealloc = SIZE_MIN)
-        : Base(_pAlloc, prealloc), m_pAlloc(_pAlloc) {}
 
     /* */
 
-    MapResult<K, V> insert(const K& key, const V& val) { return Base::insert(m_pAlloc, key, val); }
+    MapResult<K, V> insert(const K& key, const V& val) { return Base::insert(&m_alloc, key, val); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>) MapResult<K, V> emplace(const K& key, ARGS&&... args)
-    { return Base::emplace(m_pAlloc, key, std::forward<ARGS>(args)...); };
+    { return Base::emplace(&m_alloc, key, std::forward<ARGS>(args)...); }
 
-    MapResult<K, V> tryInsert(const K& key, const V& val) { return Base::tryInsert(m_pAlloc, key, val); }
+    MapResult<K, V> tryInsert(const K& key, const V& val) { return Base::tryInsert(&m_alloc, key, val); }
 
-    void destroy() { Base::destroy(m_pAlloc); }
+    void destroy() noexcept { Base::destroy(&m_alloc); }
+
+    MapManaged release() noexcept { return utils::exchange(this, {}); }
 };
 
 namespace print
 {
 
 inline isize
-formatToContext(Context ctx, FormatArgs, MAP_RESULT_STATUS eStatus)
+formatToContext(Context ctx, FormatArgs, const MAP_RESULT_STATUS eStatus)
 {
     ctx.fmt = "{}";
     ctx.fmtIdx = 0;
@@ -535,6 +545,17 @@ formatToContext(Context ctx, FormatArgs, const KeyVal<K, V>& x)
     ctx.fmt = "[{}, {}]";
     ctx.fmtIdx = 0;
     return printArgs(ctx, x.key, x.val);
+}
+
+template<typename K, typename V>
+inline isize
+formatToContext(Context ctx, FormatArgs, const MapResult<K, V>& x)
+{
+    ctx.fmt = "{}, {}, {}";
+    ctx.fmtIdx = 0;
+
+    if (x.pData) return printArgs(ctx, x.data(), x.hash, x.eStatus);
+    return printArgs(ctx, x.pData, x.hash, x.eStatus);
 }
 
 } /* namespace print */

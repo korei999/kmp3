@@ -40,34 +40,39 @@ struct IAllocator
     [[nodiscard]] constexpr T*
     mallocV(isize mCount) noexcept(false) /* AllocException */
     {
-        return reinterpret_cast<T*>(malloc(mCount, sizeof(T)));
+        return static_cast<T*>(malloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     zallocV(isize mCount) noexcept(false) /* AllocException */
     {
-        return reinterpret_cast<T*>(zalloc(mCount, sizeof(T)));
+        return static_cast<T*>(zalloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     reallocV(T* ptr, isize oldCount, isize newCount) noexcept(false) /* AllocException */
     {
-        return reinterpret_cast<T*>(realloc(ptr, oldCount, newCount, sizeof(T)));
+        return static_cast<T*>(realloc(ptr, oldCount, newCount, sizeof(T)));
     }
 
     [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) = 0; /* AllocException */
+
     [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) = 0; /* AllocException */
+
     /* pass oldCount to simpilify memcpy range */
     [[nodiscard]] virtual constexpr void* realloc(void* p, usize oldCount, usize newCount, usize mSize) noexcept(false) = 0; /* AllocException */
+
     virtual constexpr void free(void* ptr) noexcept = 0;
+};
+
+struct IArena : IAllocator
+{
     virtual constexpr void freeAll() noexcept = 0;
 };
 
 /* NOTE: allocator can throw on malloc/zalloc/realloc */
-/* TODO: get rid of exceptions in favor of nullptr.
- * Classes can receive react to nullptr by preserving their state or replace their state with preallocated stub. */
 struct AllocException : public IException
 {
     StringFixed<128> m_sfMsg {};

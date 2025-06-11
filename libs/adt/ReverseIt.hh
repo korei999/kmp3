@@ -1,12 +1,12 @@
 #pragma once
 
+namespace adt
+{
+
 #if defined __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnonnull"
 #endif
-
-namespace adt
-{
 
 /* reverse iterator adapter for auto loops */
 template<typename ITERABLE_T>
@@ -53,8 +53,8 @@ struct ReverseIt
     constexpr const It rend() const { return s.end(); }
 };
 
-} /* namespace adt */
-
 #if defined __GNUC__
 #pragma GCC diagnostic pop
 #endif
+
+} /* namespace adt */

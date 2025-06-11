@@ -15,7 +15,7 @@ struct QueueSPSC
 
     /* */
 
-    T m_pData[CAP] {};
+    T m_pData[CAP];
     atomic::Int m_atomHeadI {};
     atomic::Int m_atomTailI {};
 

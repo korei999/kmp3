@@ -159,15 +159,13 @@ if (OPT_TERMBOX2)
     )
 endif()
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
+if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin" OR CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
     find_package(PkgConfig REQUIRED)
 
     pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswresample)
     include_directories(BEFORE ${FFMPEG_INCLUDE_DIRS})
-    target_link_libraries(
-        ${CMAKE_PROJECT_NAME} PRIVATE
-        ${FFMPEG_LIBRARIES}
-    )
+    target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARIES})
 
     if (OPT_PIPEWIRE)
         pkg_check_modules(PIPEWIRE libpipewire-0.3)

@@ -49,6 +49,7 @@ struct SetResult : public MapResult<T, Empty>
     }
 };
 
+/* Like Map, but keys are also values */
 template<typename T, usize (*FN_HASH)(const T&) = hash::func<T>>
 struct Set : public Map<T, Empty, FN_HASH>
 {

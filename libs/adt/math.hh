@@ -1,8 +1,8 @@
 #pragma once
 
-#include "mathDecl.hh"
-#include "simd.hh"
+#include "math.inc"
 
+#include "simd.hh"
 #include "utils.hh"
 #include "types.hh"
 

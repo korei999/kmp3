@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IAllocator.hh"
+#include "StdAllocator.hh"
 #include "utils.hh"
 
 #include <cstddef>
@@ -44,6 +44,8 @@ struct List
 
     constexpr void destroy(IAllocator* pA);
 
+    constexpr List release() noexcept;
+
     constexpr ListNode<T>* pushFront(ListNode<T>* pNew);
 
     constexpr ListNode<T>* pushBack(ListNode<T>* pNew);
@@ -56,7 +58,7 @@ struct List
 
     void remove(T* p);
 
-    void removeFree(IAllocator* pAlloc, T* p);
+    void remove(IAllocator* pAlloc, T* p);
 
     constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p);
 
@@ -105,6 +107,13 @@ List<T>::destroy(IAllocator* pA)
         pA->free(it);
 
     *this = {};
+}
+
+template<typename T>
+constexpr List<T>
+List<T>::release() noexcept
+{
+    return utils::exchange(this, {});
 }
 
 template<typename T>
@@ -204,7 +213,7 @@ List<T>::remove(T* p)
 
 template<typename T>
 inline void
-List<T>::removeFree(IAllocator* pAlloc, T* p)
+List<T>::remove(IAllocator* pAlloc, T* p)
 {
     ListNode<T>* pNode = (ListNode<T>*)((u8*)(p) - offsetof(ListNode<T>, data));
     remove(pNode);
@@ -332,53 +341,41 @@ List<T>::sort()
     m_pLast = tail;
 }
 
-template<typename T>
-struct ListManaged
+template<typename T, typename ALLOC_T = StdAllocatorNV>
+struct ListManaged : List<T>
 {
-    List<T> base {};
+    using Base = List<T>;
 
     /* */
 
-    IAllocator* m_pAlloc {};
+    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc {};
 
     /* */
 
     ListManaged() = default;
-    ListManaged(IAllocator* pA) : m_pAlloc(pA) {}
 
     /* */
 
-    [[nodiscard]] constexpr isize size() const { return base.size(); }
+    [[nodiscard]] constexpr isize size() const { return Base::size(); }
 
-    [[nodiscard]] constexpr bool empty() const { return base.empty(); }
+    [[nodiscard]] constexpr bool empty() const { return Base::empty(); }
 
-    constexpr ListNode<T>* pushFront(const T& x) { return base.pushFront(m_pAlloc, x); }
+    constexpr ListNode<T>* pushFront(const T& x) { return Base::pushFront(&m_alloc, x); }
 
-    constexpr ListNode<T>* pushBack(const T& x) { return base.pushBack(m_pAlloc, x); }
+    constexpr ListNode<T>* pushBack(const T& x) { return Base::pushBack(&m_alloc, x); }
 
-    constexpr void remove(ListNode<T>* p) { base.remove(p); m_pAlloc->free(p); }
+    constexpr void remove(ListNode<T>* p) { Base::remove(p); &m_alloc->free(p); }
 
-    constexpr void destroy() { base.destroy(m_pAlloc); }
+    constexpr void destroy() { Base::destroy(&m_alloc); }
 
-    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p) { base.insertAfter(pAfter, p); }
+    constexpr ListManaged release() noexcept { return utils::exchange(this, {}); }
 
-    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p) { base.insertBefore(pBefore, p); }
+    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p) { Base::insertAfter(pAfter, p); }
+
+    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p) { Base::insertBefore(pBefore, p); }
 
     template<auto FN_CMP = utils::compare<T>>
-
-    constexpr void sort() { base.template sort<FN_CMP>(); }
-
-    /* */
-
-    typename List<T>::It begin() { return base.begin(); }
-    typename List<T>::It end() { return base.end(); }
-    typename List<T>::It rbegin() { return base.rbegin(); }
-    typename List<T>::It rend() { return base.rend(); }
-
-    const typename List<T>::It begin() const { return base.begin(); }
-    const typename List<T>::It end() const { return base.end(); }
-    const typename List<T>::It rbegin() const { return base.rbegin(); }
-    const typename List<T>::It rend() const { return base.rend(); }
+    constexpr void sort() { Base::template sort<FN_CMP>(); }
 };
 
 } /* namespace adt */

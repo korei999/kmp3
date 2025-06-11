@@ -159,7 +159,7 @@ ThreadPool<QUEUE_SIZE>::loop()
             if (m_atomBDone.load(atomic::ORDER::ACQUIRE))
                 return 0;
 
-            task = *m_qTasks.popFront();
+            task = m_qTasks.popFront();
             m_atomNActiveTasks.fetchAdd(1, atomic::ORDER::SEQ_CST);
         }
 

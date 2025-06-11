@@ -21,7 +21,7 @@
     #include <sysinfoapi.h>
 #endif
 
-#include "PairDecl.hh"
+#include "Pair.hh"
 #include "assert.hh"
 
 #include <ctime>
@@ -46,6 +46,15 @@ swap(T* l, T* r)
     *l = t;
 }
 
+template<typename T>
+[[nodiscard]] inline constexpr T
+exchange(T* pObj, const T& replaceObjWith)
+{
+    T ret = *pObj;
+    *pObj = replaceObjWith;
+    return ret;
+}
+
 inline constexpr void
 toggle(auto* x)
 {
@@ -59,14 +68,14 @@ negate(auto* x)
 }
 
 template<typename T>
-[[nodiscard]] inline const T&
+[[nodiscard]] inline constexpr const T&
 max(const T& l, const T& r)
 {
     return l > r ? l : r;
 }
 
 template<typename T>
-[[nodiscard]] inline const T&
+[[nodiscard]] inline constexpr const T&
 min(const T& l, const T& r)
 {
     return l < r ? l : r;
@@ -116,6 +125,30 @@ compareRev(const T& l, const T& r)
     else if (l < r) return 1;
     else return -1;
 }
+
+template<typename T>
+struct Comparator
+{
+    constexpr isize
+    operator()(const T& l, const T& r) const noexcept
+    {
+        if (l == r) return 0;
+        else if (l > r) return 1;
+        else return -1;
+    }
+};
+
+template<typename T>
+struct ComparatorRev
+{
+    constexpr isize
+    operator()(const T& l, const T& r) const noexcept
+    {
+        if (l == r) return 0;
+        else if (l < r) return 1;
+        else return -1;
+    }
+};
 
 [[nodiscard]] inline isize
 timeNowUS()

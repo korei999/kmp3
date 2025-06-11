@@ -9,34 +9,36 @@
 namespace adt
 {
 
-/* fixed byte size (chunk) per alloc. Calling realloc() is an error */
-struct ChunkAllocatorNode
+struct PoolAllocator : public IArena
 {
-    ChunkAllocatorNode* next;
-    u8 pNodeMem[];
-};
+    /* fixed byte size (chunk) per alloc. Calling realloc() is an error */
+    struct Node
+    {
+        Node* next;
+        u8 pNodeMem[];
+    };
 
-struct ChunkAllocatorBlock
-{
-    ChunkAllocatorBlock* next = nullptr;
-    ChunkAllocatorNode* head = nullptr;
-    usize used = 0;
-    u8 pMem[];
-};
-
-struct ChunkAllocator : public IAllocator
-{
-    usize m_blockCap = 0; 
-    usize m_chunkSize = 0;
-    IAllocator* m_pBackAlloc {};
-    ChunkAllocatorBlock* m_pBlocks = nullptr;
+    struct Block
+    {
+        Block* next = nullptr;
+        Node* head = nullptr;
+        usize used = 0;
+        u8 pMem[];
+    };
 
     /* */
 
-    ChunkAllocator() = default;
-    ChunkAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = StdAllocator::inst()) noexcept(false)
-        : m_blockCap {alignUp(blockSize, chunkSize + sizeof(ChunkAllocatorNode))},
-          m_chunkSize {chunkSize + sizeof(ChunkAllocatorNode)},
+    usize m_blockCap = 0; 
+    usize m_chunkSize = 0;
+    IAllocator* m_pBackAlloc {};
+    Block* m_pBlocks = nullptr;
+
+    /* */
+
+    PoolAllocator() = default;
+    PoolAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = StdAllocator::inst()) noexcept(false)
+        : m_blockCap {alignUp(blockSize, chunkSize + sizeof(Node))},
+          m_chunkSize {chunkSize + sizeof(Node)},
           m_pBackAlloc(pBackAlloc),
           m_pBlocks {allocBlock()} {}
 
@@ -57,26 +59,26 @@ struct ChunkAllocator : public IAllocator
     };
 
 private:
-    [[nodiscard]] ChunkAllocatorBlock* allocBlock();
+    [[nodiscard]] Block* allocBlock();
 };
 
-inline ChunkAllocatorBlock*
-ChunkAllocator::allocBlock()
+inline PoolAllocator::Block*
+PoolAllocator::allocBlock()
 {
     ADT_ASSERT(m_pBackAlloc, "uninitialized: m_pBackAlloc == nullptr");
 
-    usize total = m_blockCap + sizeof(ChunkAllocatorBlock);
-    auto* r = (ChunkAllocatorBlock*)m_pBackAlloc->zalloc(1, total);
+    usize total = m_blockCap + sizeof(Block);
+    Block* r = (Block*)m_pBackAlloc->zalloc(1, total);
 
-    r->head = (ChunkAllocatorNode*)r->pMem;
+    r->head = (Node*)r->pMem;
 
     isize chunks = m_blockCap / m_chunkSize;
 
-    auto* head = r->head;
-    ChunkAllocatorNode* p = head;
+    Node* head = r->head;
+    Node* p = head;
     for (isize i = 0; i < chunks - 1; ++i)
     {
-        p->next = (ChunkAllocatorNode*)((u8*)p + m_chunkSize);
+        p->next = (Node*)((u8*)p + m_chunkSize);
         p = p->next;
     }
     p->next = nullptr;
@@ -85,10 +87,10 @@ ChunkAllocator::allocBlock()
 }
 
 inline void*
-ChunkAllocator::malloc(usize, usize)
+PoolAllocator::malloc(usize, usize)
 {
-    ChunkAllocatorBlock* pBlock = m_pBlocks;
-    ChunkAllocatorBlock* pPrev = nullptr;
+    Block* pBlock = m_pBlocks;
+    Block* pPrev = nullptr;
     while (pBlock)
     {
         if (m_blockCap - pBlock->used >= m_chunkSize) break;
@@ -105,7 +107,7 @@ ChunkAllocator::malloc(usize, usize)
         pBlock = pPrev->next;
     }
 
-    auto* head = pBlock->head;
+    Node* head = pBlock->head;
     pBlock->head = head->next;
     pBlock->used += m_chunkSize;
 
@@ -113,26 +115,28 @@ ChunkAllocator::malloc(usize, usize)
 }
 
 inline void*
-ChunkAllocator::zalloc(usize, usize)
+PoolAllocator::zalloc(usize, usize)
 {
-    auto* p = malloc(0, 0);
-    memset(p, 0, m_chunkSize - sizeof(ChunkAllocatorNode));
+    void* p = malloc(0, 0);
+    memset(p, 0, m_chunkSize - sizeof(Node));
     return p;
 }
 
 inline void*
-ChunkAllocator::realloc(void*, usize, usize, usize)
+PoolAllocator::realloc(void*, usize, usize, usize)
 {
-    ADT_ASSERT_ALWAYS(false, "can't realloc()");
+    ADT_ASSERT_ALWAYS(false, "realloc() is not supported");
+    throw AllocException("PoolAllocator: realloc() is not supported");
+
     return nullptr;
 }
 
 inline void
-ChunkAllocator::free(void* p) noexcept
+PoolAllocator::free(void* p) noexcept
 {
     if (!p) return;
 
-    auto* node = (ChunkAllocatorNode*)((u8*)p - sizeof(ChunkAllocatorNode));
+    auto* node = (Node*)((u8*)p - sizeof(Node));
 
     auto* pBlock = m_pBlocks;
     while (pBlock)
@@ -151,9 +155,9 @@ ChunkAllocator::free(void* p) noexcept
 }
 
 inline void
-ChunkAllocator::freeAll() noexcept
+PoolAllocator::freeAll() noexcept
 {
-    ChunkAllocatorBlock* p = m_pBlocks, * next = nullptr;
+    Block* p = m_pBlocks, * next = nullptr;
     while (p)
     {
         next = p->next;

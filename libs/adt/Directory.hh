@@ -5,8 +5,6 @@
 
 #include "print.hh"
 
-#include <cstdio>
-
 #if __has_include(<dirent.h>)
 
     #define ADT_USE_DIRENT
