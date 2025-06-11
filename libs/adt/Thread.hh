@@ -250,6 +250,9 @@ Thread::start(void* (*pfn)(void*), void* pFnArg, ATTR eAttr)
     [[maybe_unused]] int err {};
     pthread_attr_t attr {};
 
+    err = pthread_attr_init(&attr);
+    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+
     switch (eAttr)
     {
         case ATTR::JOINABLE:
@@ -263,8 +266,6 @@ Thread::start(void* (*pfn)(void*), void* pFnArg, ATTR eAttr)
         break;
     }
 
-    err = pthread_attr_init(&attr);
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
     err = pthread_create(&m_thread, &attr, (void* (*)(void*))pfn, pFnArg);
     ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
     err = pthread_attr_destroy(&attr);
