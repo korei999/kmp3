@@ -161,91 +161,89 @@ if (OPT_TERMBOX2)
     )
 endif()
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin" OR CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
-    find_package(PkgConfig REQUIRED)
+find_package(PkgConfig REQUIRED)
 
-    pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswresample)
-    include_directories(BEFORE ${FFMPEG_INCLUDE_DIRS})
-    target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARIES})
+pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswresample)
+include_directories(BEFORE ${FFMPEG_INCLUDE_DIRS})
+target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARIES})
 
-    if (OPT_PIPEWIRE)
-        pkg_check_modules(PIPEWIRE libpipewire-0.3)
-        if (PIPEWIRE_FOUND)
-            add_definitions("-DOPT_PIPEWIRE")
-            include_directories(BEFORE ${PIPEWIRE_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARIES})
+if (OPT_PIPEWIRE)
+    pkg_check_modules(PIPEWIRE libpipewire-0.3)
+    if (PIPEWIRE_FOUND)
+        add_definitions("-DOPT_PIPEWIRE")
+        include_directories(BEFORE ${PIPEWIRE_INCLUDE_DIRS})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARIES})
 
-            target_sources(
-                ${CMAKE_PROJECT_NAME} PRIVATE
-                "src/platform/pipewire/Mixer.cc"
-            )
-        endif()
-    endif()
-
-    if (OPT_SNDIO)
-        pkg_check_modules(SNDIO sndio)
-        if (SNDIO_FOUND)
-            add_definitions("-DOPT_SNDIO")
-            include_directories(BEFORE ${SNDIO_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SNDIO_LIBRARIES})
-
-            target_sources(
-                ${CMAKE_PROJECT_NAME} PRIVATE
-                "src/platform/sndio/Mixer.cc"
-            )
-        endif()
-    endif()
-
-    if (OPT_CHAFA)
-        pkg_check_modules(CHAFA chafa)
-        pkg_check_modules(SWSCALE libswscale)
-
-        if (CHAFA_FOUND AND SWSCALE_FOUND)
-            message(STATUS "CHAFA_VERSION: '${CHAFA_VERSION}'")
-            if (${CHAFA_VERSION} VERSION_GREATER_EQUAL 1.14)
-                add_definitions("-DOPT_CHAFA_SYMBOLS")
-            endif()
-
-            include_directories(BEFORE ${CHAFA_INCLUDE_DIRS} ${SWSCALE_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES} ${SWSCALE_LIBRARIES})
-            add_definitions("-DOPT_CHAFA")
-            target_sources(
-                ${CMAKE_PROJECT_NAME} PRIVATE
-                "src/platform/chafa/chafa.cc"
-            )
-        endif()
-    endif()
-
-    if(OPT_MPRIS)
-        pkg_check_modules(SYSTEMD libsystemd)
-        if (SYSTEMD_FOUND)
-            include_directories(BEFORE ${SYSTEMD_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
-            target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
-            add_definitions("-DOPT_MPRIS")
-        else()
-            pkg_check_modules(BASU basu)
-            if (${BASU_FOUND})
-                include_directories(BEFORE ${BASU_INCLUDE_DIRS})
-                target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARIES})
-                target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
-                add_definitions("-DOPT_MPRIS -DOPT_BASU")
-            endif()
-        endif()
-    endif()
-
-    if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-            "-framework CoreAudio"
-            "-framework AudioToolbox"
-            "-framework CoreServices"  # if you use CFRunLoop, etc.
-        )
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
-            "src/platform/apple/apple.cc"
+            "src/platform/pipewire/Mixer.cc"
         )
     endif()
+endif()
+
+if (OPT_SNDIO)
+    pkg_check_modules(SNDIO sndio)
+    if (SNDIO_FOUND)
+        add_definitions("-DOPT_SNDIO")
+        include_directories(BEFORE ${SNDIO_INCLUDE_DIRS})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SNDIO_LIBRARIES})
+
+        target_sources(
+            ${CMAKE_PROJECT_NAME} PRIVATE
+            "src/platform/sndio/Mixer.cc"
+        )
+    endif()
+endif()
+
+if (OPT_CHAFA)
+    pkg_check_modules(CHAFA chafa)
+    pkg_check_modules(SWSCALE libswscale)
+
+    if (CHAFA_FOUND AND SWSCALE_FOUND)
+        message(STATUS "CHAFA_VERSION: '${CHAFA_VERSION}'")
+        if (${CHAFA_VERSION} VERSION_GREATER_EQUAL 1.14)
+            add_definitions("-DOPT_CHAFA_SYMBOLS")
+        endif()
+
+        include_directories(BEFORE ${CHAFA_INCLUDE_DIRS} ${SWSCALE_INCLUDE_DIRS})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES} ${SWSCALE_LIBRARIES})
+        add_definitions("-DOPT_CHAFA")
+        target_sources(
+            ${CMAKE_PROJECT_NAME} PRIVATE
+            "src/platform/chafa/chafa.cc"
+        )
+    endif()
+endif()
+
+if(OPT_MPRIS)
+    pkg_check_modules(SYSTEMD libsystemd)
+    if (SYSTEMD_FOUND)
+        include_directories(BEFORE ${SYSTEMD_INCLUDE_DIRS})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
+        target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
+        add_definitions("-DOPT_MPRIS")
+    else()
+        pkg_check_modules(BASU basu)
+        if (${BASU_FOUND})
+            include_directories(BEFORE ${BASU_INCLUDE_DIRS})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARIES})
+            target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
+            add_definitions("-DOPT_MPRIS -DOPT_BASU")
+        endif()
+    endif()
+endif()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+        "-framework CoreAudio"
+        "-framework AudioToolbox"
+        "-framework CoreServices"  # if you use CFRunLoop, etc.
+    )
+    target_sources(
+        ${CMAKE_PROJECT_NAME} PRIVATE
+        "src/platform/apple/apple.cc"
+    )
 endif()
 
 install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

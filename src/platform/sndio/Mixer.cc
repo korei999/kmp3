@@ -112,8 +112,6 @@ Mixer::init()
     constexpr u32 bitsPerSample = 16;
     constexpr u32 bytesPerSample = bitsPerSample / 8;
 
-    int r {};
-
     ADT_ASSERT_ALWAYS(m_pHdl = sio_open(nullptr, SIO_PLAY, 0), "");
 
     sio_initpar(&m_par);
@@ -131,7 +129,7 @@ Mixer::init()
 #define _TRY(FN, ...)                                                                                                  \
     if (!FN(__VA_ARGS__))                                                                                              \
     {                                                                                                                  \
-        print::err(#FN "(): failed\n");                                                                                \
+        print::out(#FN "(): failed\n");                                                                                \
         sio_close(m_pHdl);                                                                                             \
         exit(1);                                                                                                       \
     }

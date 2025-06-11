@@ -92,11 +92,19 @@ parseArgs(int argc, char** argv)
             }
             else if (svArg == "--sndio")
             {
+#ifdef OPT_SNDIO
                 app::g_eMixer = app::MIXER::SNDIO;
+#else
+                print::out("compiled without sndio\n");
+#endif
             }
             else if (svArg == "--pipewire")
             {
+#ifdef OPT_PIPEWIRE
                 app::g_eMixer = app::MIXER::PIPEWIRE;
+#else
+                print::out("compiled without pipewire\n");
+#endif
             }
             else if (svArg == "--coreaudio")
             {
