@@ -290,8 +290,13 @@ struct Mutex
 {
     enum TYPE : u8
     {
+#ifdef ADT_USE_PTHREAD
         PLAIN = PTHREAD_MUTEX_NORMAL,
         RECURSIVE = PTHREAD_MUTEX_RECURSIVE,
+#else
+        PLAIN = 0,
+        RECURSIVE = 1,
+#endif
     };
 
 #ifdef ADT_USE_PTHREAD
