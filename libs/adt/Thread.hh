@@ -297,7 +297,6 @@ struct Mutex
 #ifdef ADT_USE_PTHREAD
 
     pthread_mutex_t m_mtx {};
-    pthread_mutexattr_t m_attr {};
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -332,13 +331,16 @@ Mutex::Mutex([[maybe_unused]] TYPE eType)
 {
 #ifdef ADT_USE_PTHREAD
 
-    [[maybe_unused]] int err {};
-    err = pthread_mutexattr_init(&m_attr);
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
-    err = pthread_mutexattr_settype(&m_attr, pthreadAttrType(eType));
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
-    err = pthread_mutex_init(&m_mtx, &m_attr);
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+    switch (eType)
+    {
+        case TYPE::PLAIN:
+        m_mtx = PTHREAD_MUTEX_INITIALIZER;
+        break;
+
+        case TYPE::RECURSIVE:
+        m_mtx = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+        break;
+    }
 
 #elif defined ADT_USE_WIN32THREAD
 
@@ -399,8 +401,6 @@ Mutex::destroy()
     /* In the LinuxThreads implementation, no resources are associated with mutex objects,
      * thus pthread_mutex_destroy actually does nothing except checking that the mutex is unlocked. */
     [[maybe_unused]] int err = pthread_mutex_destroy(&m_mtx);
-    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
-    err = pthread_mutexattr_destroy(&m_attr);
     ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
     *this = {};
 
