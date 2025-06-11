@@ -290,8 +290,8 @@ struct Mutex
 {
     enum TYPE : u8
     {
-        PLAIN = 0,
-        RECURSIVE = 1,
+        PLAIN = PTHREAD_MUTEX_NORMAL,
+        RECURSIVE = PTHREAD_MUTEX_RECURSIVE,
     };
 
 #ifdef ADT_USE_PTHREAD
@@ -331,16 +331,16 @@ Mutex::Mutex([[maybe_unused]] TYPE eType)
 {
 #ifdef ADT_USE_PTHREAD
 
-    switch (eType)
-    {
-        case TYPE::PLAIN:
-        m_mtx = PTHREAD_MUTEX_INITIALIZER;
-        break;
-
-        case TYPE::RECURSIVE:
-        m_mtx = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-        break;
-    }
+    [[maybe_unused]] int err {};
+    pthread_mutexattr_t attr {};
+    err = pthread_mutexattr_init(&attr);
+    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+    err = pthread_mutexattr_settype(&attr, pthreadAttrType(eType));
+    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+    err = pthread_mutex_init(&m_mtx, &attr);
+    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+    err = pthread_mutexattr_destroy(&attr);
+    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
 
 #elif defined ADT_USE_WIN32THREAD
 
