@@ -182,7 +182,7 @@ if (OPT_PIPEWIRE)
     endif()
 endif()
 
-if (OPT_SNDIO)
+if (OPT_SNDIO OR CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
     pkg_check_modules(SNDIO sndio)
     if (SNDIO_FOUND)
         add_definitions("-DOPT_SNDIO")
