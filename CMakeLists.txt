@@ -123,7 +123,7 @@ if (CMAKE_BUILD_TYPE MATCHES "Debug")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-c99-designator)
 endif()
@@ -238,7 +238,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
         "-framework CoreAudio"
         "-framework AudioToolbox"
-        "-framework CoreServices"  # if you use CFRunLoop, etc.
+        "-framework CoreServices"
     )
     target_sources(
         ${CMAKE_PROJECT_NAME} PRIVATE
