@@ -123,7 +123,7 @@ Mixer::init()
     );
 
     AURenderCallbackStruct callbackStruct {};
-    callbackStruct.inputProc = decltype(AURenderCallbackStruct::inputProc)(methodPointer(&Mixer::writeCallBack));
+    callbackStruct.inputProc = decltype(AURenderCallbackStruct::inputProc)(methodPointerNonVirtual(&Mixer::writeCallBack));
     callbackStruct.inputProcRefCon = this;
 
     AudioUnitSetProperty(
