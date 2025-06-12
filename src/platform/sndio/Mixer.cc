@@ -12,8 +12,7 @@ using namespace adt;
 namespace platform::sndio
 {
 
-static constexpr isize N_BUF_FRAMES = 1024;
-static i16 s_aRenderBuffer[audio::CHUNK_SIZE];
+static constexpr isize N_BUF_FRAMES = 1024 * 2;
 
 void
 Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
@@ -40,6 +39,9 @@ Mixer::loop()
 {
     [[maybe_unused]] int writeStatus {};
 
+    i16* pRenderBuffer = StdAllocator::inst()->zallocV<i16>(audio::CHUNK_SIZE);
+    defer( StdAllocator::inst()->free(pRenderBuffer) );
+
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
         static long s_nDecodedSamples = 0;
@@ -62,7 +64,7 @@ Mixer::loop()
             for (u32 chIdx = 0; chIdx < m_par.pchan; chIdx++)
             {
                 const i16 sample = std::numeric_limits<i16>::max() * (audio::g_aRenderBuffer[s_nWrites++] * vol);
-                s_aRenderBuffer[destI++] = sample;
+                pRenderBuffer[destI++] = sample;
             }
         }
 
@@ -87,7 +89,7 @@ Mixer::loop()
 
             }
 
-            writeStatus = sio_write(m_pHdl, s_aRenderBuffer, N_BUF_FRAMES * m_par.pchan * sizeof(i16));
+            writeStatus = sio_write(m_pHdl, pRenderBuffer, N_BUF_FRAMES * m_par.pchan * sizeof(i16));
         }
     }
 
