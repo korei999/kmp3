@@ -488,7 +488,8 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
             }
         }
 
-        if (colWidth <= 0) colWidth = 1;
+        /* FIXME: hurts damage tracking */
+        if (colWidth < 0) colWidth = 1;
         x += colWidth;
         max += colWidth;
     }
