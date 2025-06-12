@@ -24,7 +24,8 @@
 
 ### Dependencies
 Compiler: `clang >= 14.0` or `gcc >= 12`, `CMake >= 3.20`.\
-Packages: `libpipewire-0.3 libavformat libavcodec libavutil libswresample`.\
+Packages: `libavformat libavcodec libavutil libswresample`.\
+Audio backends: `libpipewire-0.3 #(linux)`, `sndio #(OpenBSD)`, `coreaudio #(Mac)`.\
 For mpris support: `libsystemd` or `basu`.\
 For image support: `chafa glib-2.0 libswscale`.
 
