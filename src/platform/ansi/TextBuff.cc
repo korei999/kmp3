@@ -302,22 +302,25 @@ TextBuff::pushDiff()
                     nForwards = 0;
                 }
 
-                int colWidth = wcwidth(back.wc);
-
-                if (col + colWidth <= m_tWidth)
+                if (back.wc != -1)
                 {
-                    clMove();
-                    if (bChangeStyle)
-                    {
-                        bChangeStyle = false;
-                        push(styleToString(&m_scratch, back.eStyle));
-                        m_scratch.reset();
-                        eLastStyle = back.eStyle;
-                    }
-                    pushWChar(back.wc);
-                }
+                    int colWidth = wcwidth(back.wc);
 
-                if (colWidth > 1) col += colWidth - 1;
+                    if (col + colWidth <= m_tWidth)
+                    {
+                        clMove();
+                        if (bChangeStyle)
+                        {
+                            bChangeStyle = false;
+                            push(styleToString(&m_scratch, back.eStyle));
+                            m_scratch.reset();
+                            eLastStyle = back.eStyle;
+                        }
+                        pushWChar(back.wc);
+                    }
+
+                    if (colWidth > 1) col += colWidth - 1;
+                }
             }
             else
             {
@@ -475,21 +478,18 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
         bb(x, y).eStyle = eStyle;
 
         int colWidth = wcwidth(wc);
-        if (colWidth > 1)
-        {
-            for (int i = 1; i < colWidth; ++i)
-            {
-                if (x + i >= bb.width() || y >= bb.height())
-                    return;
+        if (colWidth < 0) break;
 
-                auto& back = bb(x + i, y);
-                back.wc = L' ';
-                back.eStyle = eStyle;
-            }
+        for (int i = 1; i < colWidth; ++i)
+        {
+            if (x + i >= bb.width() || y >= bb.height())
+                return;
+
+            auto& back = bb(x + i, y);
+            back.wc = -1;
+            back.eStyle = eStyle;
         }
 
-        /* FIXME: hurts damage tracking */
-        if (colWidth < 0) colWidth = 1;
         x += colWidth;
         max += colWidth;
     }
