@@ -342,13 +342,9 @@ List<T>::sort()
 }
 
 template<typename T, typename ALLOC_T = StdAllocatorNV>
-struct ListManaged : List<T>
+struct ListManaged : protected ALLOC_T, public List<T>
 {
     using Base = List<T>;
-
-    /* */
-
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc {};
 
     /* */
 
@@ -356,17 +352,20 @@ struct ListManaged : List<T>
 
     /* */
 
+    ALLOC_T& allocator() { return static_cast<ALLOC_T&>(*this); }
+    const ALLOC_T& allocator() const { return static_cast<ALLOC_T&>(*this); }
+
     [[nodiscard]] constexpr isize size() const { return Base::size(); }
 
     [[nodiscard]] constexpr bool empty() const { return Base::empty(); }
 
-    constexpr ListNode<T>* pushFront(const T& x) { return Base::pushFront(&m_alloc, x); }
+    constexpr ListNode<T>* pushFront(const T& x) { return Base::pushFront(&allocator(), x); }
 
-    constexpr ListNode<T>* pushBack(const T& x) { return Base::pushBack(&m_alloc, x); }
+    constexpr ListNode<T>* pushBack(const T& x) { return Base::pushBack(&allocator(), x); }
 
-    constexpr void remove(ListNode<T>* p) { Base::remove(p); &m_alloc->free(p); }
+    constexpr void remove(ListNode<T>* p) { Base::remove(p); allocator().free(p); }
 
-    constexpr void destroy() { Base::destroy(&m_alloc); }
+    constexpr void destroy() { Base::destroy(&allocator()); }
 
     constexpr ListManaged release() noexcept { return utils::exchange(this, {}); }
 

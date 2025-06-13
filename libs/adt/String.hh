@@ -63,7 +63,7 @@ StringView::StringView(char* pStr, isize len)
 
 inline constexpr
 StringView::StringView(Span<char> sp)
-    : StringView(sp.data(), sp.size()) {}
+    : StringView(sp.m_pData, sp.m_size) {}
 
 template<isize SIZE>
 inline constexpr
@@ -178,7 +178,7 @@ struct StringGraphemeIt
         /* */
 
         It(isize _NPOS) : m_i {_NPOS} {}
-        It(const StringView sv) : m_pStr {sv.data()}, m_size {sv.size()} { operator++(); }
+        It(const StringView sv) : m_pStr {sv.m_pData}, m_size {sv.m_size} { operator++(); }
 
         /* */
 
@@ -295,7 +295,7 @@ struct StringWordIt
         It&
         operator++()
         {
-            if (m_i >= m_svStr.size())
+            if (m_i >= m_svStr.m_size)
             {
                 m_i = NPOS;
                 return *this;
@@ -313,7 +313,7 @@ struct StringWordIt
                 return false;
             };
 
-            while (end < m_svStr.size() && !oneOf(m_svStr[end]))
+            while (end < m_svStr.m_size && !oneOf(m_svStr[end]))
                 end++;
 
             m_svCurrWord = {const_cast<char*>(&m_svStr[start]), end - start};
@@ -349,11 +349,11 @@ StringView::beginsWith(const StringView r) const
 {
     const auto& l = *this;
 
-    if (l.size() < r.size())
+    if (l.m_size < r.m_size)
         return false;
 
-    for (isize i = 0; i < r.size(); ++i)
-        if (l[i] != r[i])
+    for (isize i = 0; i < r.m_size; ++i)
+        if (l.m_pData[i] != r.m_pData[i])
             return false;
 
     return true;
@@ -368,7 +368,7 @@ StringView::endsWith(const StringView r) const
         return false;
 
     for (isize i = r.m_size - 1, j = l.m_size - 1; i >= 0; --i, --j)
-        if (r[i] != l[j])
+        if (r.m_pData[i] != l.m_pData[j])
             return false;
 
     return true;
@@ -377,13 +377,13 @@ StringView::endsWith(const StringView r) const
 inline bool
 operator==(const StringView& l, const StringView& r)
 {
-    if (l.data() == r.data())
+    if (l.m_pData == r.m_pData)
         return true;
 
-    if (l.size() != r.size())
+    if (l.m_size != r.m_size)
         return false;
 
-    return strncmp(l.data(), r.data(), l.size()) == 0; /* strncmp is as fast as handmade AVX2 function. */
+    return strncmp(l.m_pData, r.m_pData, l.m_size) == 0; /* (glibc) strncmp is as fast as handmade SIMD optimized function. */
 }
 
 inline bool
@@ -407,7 +407,7 @@ operator-(const StringView& l, const StringView& r)
 
     i64 sum = 0;
     for (isize i = 0; i < l.m_size; --i)
-        sum += (l[i] - r[i]);
+        sum += (l.m_pData[i] - r.m_pData[i]);
 
     return sum;
 }
@@ -415,8 +415,8 @@ operator-(const StringView& l, const StringView& r)
 inline constexpr isize
 StringView::lastOf(char c) const
 {
-    for (int i = size() - 1; i >= 0; --i)
-        if ((*this)[i] == c)
+    for (int i = m_size - 1; i >= 0; --i)
+        if (m_pData[i] == c)
             return i;
 
     return NPOS;
@@ -425,8 +425,8 @@ StringView::lastOf(char c) const
 inline constexpr isize
 StringView::firstOf(char c) const
 {
-    for (int i = 0; i < size(); ++i)
-        if ((*this)[i] == c)
+    for (int i = 0; i < m_size; ++i)
+        if (m_pData[i] == c)
             return i;
 
     return NPOS;
@@ -478,13 +478,13 @@ StringView::contains(const StringView r) const
 
 #if __has_include(<unistd.h>)
 
-    return memmem(data(), size(), r.data(), r.size()) != nullptr;
+    return memmem(m_pData, m_size, r.m_pData, r.m_size) != nullptr;
 
 #else
 
     for (isize i = 0; i < m_size - r.m_size + 1; ++i)
     {
-        const StringView svSub {const_cast<char*>(&(*this)[i]), r.m_size};
+        const StringView svSub {const_cast<char*>(&m_pData[i]), r.m_size};
         if (svSub == r)
             return true;
     }
@@ -502,7 +502,7 @@ StringView::subStringAt(const StringView r) const noexcept
 
 #if __has_include(<unistd.h>)
 
-    const void* ptr = memmem(data(), size(), r.data(), r.size());
+    const void* ptr = memmem(m_pData, m_size, r.m_pData, r.m_size);
 
     if (ptr) return idx(static_cast<const char*>(ptr));
 
@@ -510,7 +510,7 @@ StringView::subStringAt(const StringView r) const noexcept
 
     for (isize i = 0; i < m_size - r.m_size + 1; ++i)
     {
-        const StringView svSub {const_cast<char*>(&(*this)[i]), r.m_size};
+        const StringView svSub {const_cast<char*>(&m_pData[i]), r.m_size};
         if (svSub == r)
             return i;
     }
@@ -552,7 +552,7 @@ StringView::multiByteSize() const
 
     for (isize i = 0; i < m_size; )
     {
-        i+= mbrlen(&operator[](i), size() - i, &state);
+        i+= mbrlen(&operator[](i), m_size - i, &state);
         ++n;
     }
 
@@ -585,11 +585,11 @@ String::String(IAllocator* pAlloc, const char* nts)
 
 inline
 String::String(IAllocator* pAlloc, Span<char> spChars)
-    : String(pAlloc, spChars.data(), spChars.size()) {}
+    : String(pAlloc, spChars.m_pData, spChars.m_size) {}
 
 inline
 String::String(IAllocator* pAlloc, const StringView sv)
-    : String(pAlloc, sv.data(), sv.size()) {}
+    : String(pAlloc, sv.m_pData, sv.m_size) {}
 
 inline void
 String::destroy(IAllocator* pAlloc) noexcept
@@ -608,11 +608,11 @@ String::reallocWith(IAllocator* pAlloc, const StringView svWith)
     }
 
     if (size() < svWith.size() + 1)
-        m_pData = pAlloc->reallocV<char>(data(), 0, svWith.size() + 1);
+        m_pData = pAlloc->reallocV<char>(m_pData, 0, svWith.m_size + 1);
 
-    strncpy(data(), svWith.data(), svWith.size());
-    m_size = svWith.size();
-    data()[size()] = '\0';
+    strncpy(m_pData, svWith.m_pData, svWith.m_size);
+    m_size = svWith.m_size;
+    m_pData[m_size] = '\0';
 }
 
 inline String
@@ -626,10 +626,10 @@ inline
 StringFixed<SIZE>::StringFixed(const StringView svName)
 {
     /* memcpy doesn't like nullptrs */
-    if (!svName.data() || svName.size() <= 0) return;
+    if (!svName.m_pData || svName.m_size <= 0) return;
 
-    const isize size = utils::min(svName.size(), isize(SIZE - 1));
-    memcpy(m_aBuff, svName.data(), size);
+    const isize size = utils::min(svName.m_size, isize(SIZE - 1));
+    memcpy(m_aBuff, svName.m_pData, size);
     m_aBuff[size] = '\0';
 }
 
@@ -654,7 +654,7 @@ template<int SIZE>
 inline void
 StringFixed<SIZE>::destroy() noexcept
 {
-    memset(data(), 0, sizeof(m_aBuff));
+    memset(m_aBuff, 0, sizeof(m_aBuff));
 }
 
 template<int SIZE>
@@ -693,9 +693,9 @@ StringCat(IAllocator* p, const StringView& l, const StringView& r)
     char* ret = p->zallocV<char>(len + 1);
 
     isize pos = 0;
-    for (isize i = 0; i < l.size(); ++i, ++pos)
+    for (isize i = 0; i < l.m_size; ++i, ++pos)
         ret[pos] = l[i];
-    for (isize i = 0; i < r.size(); ++i, ++pos)
+    for (isize i = 0; i < r.m_size; ++i, ++pos)
         ret[pos] = r[i];
 
     ret[len] = '\0';
@@ -710,7 +710,7 @@ template<>
 inline usize
 hash::func(const StringView& str)
 {
-    return hash::func(str.m_pData, str.size());
+    return hash::func(str.m_pData, str.m_size);
 }
 
 } /* namespace adt */

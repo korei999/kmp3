@@ -29,6 +29,7 @@ struct StdAllocator : IAllocator
 /* non virtual */
 struct StdAllocatorNV
 {
+    /* WARNING: Dirty fix for Managed classes, doesn't return the real address. */
     StdAllocator* operator&() const { return StdAllocator::inst(); }
 
     [[nodiscard]] static void* malloc(usize mCount, usize mSize) noexcept(false)

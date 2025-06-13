@@ -282,29 +282,31 @@ Queue<T>::operator[](isize i) const
 }
 
 template<typename T, typename ALLOC_T = StdAllocatorNV>
-struct QueueManaged : public Queue<T>
+struct QueueManaged : protected ALLOC_T, public Queue<T>
 {
     using Base = Queue<T>;
 
     /* */
 
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc {};
-
-    /* */
-
     QueueManaged() = default;
-    QueueManaged(isize prealloc) : Base {&m_alloc, prealloc} {}
+    QueueManaged(isize prealloc) : Base {&allocator(), prealloc} {}
 
     /* */
 
-    isize pushBack(const T& x) { return Base::pushBack(&m_alloc, x); }
-    isize pushFront(const T& x) { return Base::pushFront(&m_alloc, x); }
+    ALLOC_T& allocator() { return *static_cast<ALLOC_T*>(this); }
+    const ALLOC_T& allocator() const { return *static_cast<ALLOC_T*>(this); }
+
+    isize pushBack(const T& x) { return Base::pushBack(&allocator(), x); }
+    isize pushFront(const T& x) { return Base::pushFront(&allocator(), x); }
 
     template<typename ...ARGS>
-    isize emplaceFront(ARGS&&... args) { return Base::pushFront(&m_alloc, T(std::forward<ARGS>(args)...)); }
+    isize emplaceFront(ARGS&&... args) { return Base::pushFront(&allocator(), T(std::forward<ARGS>(args)...)); }
 
     template<typename ...ARGS>
-    isize emplaceBack(ARGS&&... args) { return Base::pushBack(&m_alloc, T(std::forward<ARGS>(args)...)); }
+    isize emplaceBack(ARGS&&... args) { return Base::pushBack(&allocator(), T(std::forward<ARGS>(args)...)); }
+
+    void destroy() noexcept { Base::destroy(&allocator()); }
+    [[nodiscard]] QueueManaged release() noexcept { return utils::exchange(this, {}); }
 };
 
 } /* namespace adt */

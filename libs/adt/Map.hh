@@ -485,29 +485,30 @@ Map<K, V, FN_HASH>::Map(IAllocator* pAllocator, isize prealloc, f32 loadFactor)
     m_vBuckets.setSize(pAllocator, m_vBuckets.cap());
 }
 
-template<typename K, typename V, typename ALLOC_T, usize (*FN_HASH)(const K&) = hash::func<K>>
-struct MapManaged : Map<K, V, FN_HASH>
+template<typename K, typename V, typename ALLOC_T = StdAllocatorNV, usize (*FN_HASH)(const K&) = hash::func<K>>
+struct MapManaged : protected ALLOC_T, public Map<K, V, FN_HASH>
 {
     using Base = Map<K, V, FN_HASH>;
 
     /* */
 
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc {};
-
-    /* */
-
     MapManaged() = default;
+    MapManaged(isize prealloc, f32 loadFactor = MAP_DEFAULT_LOAD_FACTOR)
+        : ALLOC_T {}, Base::Map(&allocator, prealloc, loadFactor) {}
 
     /* */
 
-    MapResult<K, V> insert(const K& key, const V& val) { return Base::insert(&m_alloc, key, val); }
+    ALLOC_T& allocator() { return *static_cast<ALLOC_T*>(this); }
+    const ALLOC_T& allocator() const { return *static_cast<ALLOC_T*>(this); }
+
+    MapResult<K, V> insert(const K& key, const V& val) { return Base::insert(&allocator(), key, val); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>) MapResult<K, V> emplace(const K& key, ARGS&&... args)
-    { return Base::emplace(&m_alloc, key, std::forward<ARGS>(args)...); }
+    { return Base::emplace(&allocator(), key, std::forward<ARGS>(args)...); }
 
-    MapResult<K, V> tryInsert(const K& key, const V& val) { return Base::tryInsert(&m_alloc, key, val); }
+    MapResult<K, V> tryInsert(const K& key, const V& val) { return Base::tryInsert(&allocator(), key, val); }
 
-    void destroy() noexcept { Base::destroy(&m_alloc); }
+    void destroy() noexcept { Base::destroy(&allocator()); }
 
     MapManaged release() noexcept { return utils::exchange(this, {}); }
 };

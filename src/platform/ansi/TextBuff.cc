@@ -293,7 +293,7 @@ TextBuff::pushDiff()
 
             if (back.eStyle != eLastStyle) bChangeStyle = true;
 
-            if (front != back)
+            if (front != back && back.wc != -1)
             {
                 if (nForwards > 0)
                 {
@@ -301,8 +301,6 @@ TextBuff::pushDiff()
                     forward(nForwards);
                     nForwards = 0;
                 }
-
-                if (back.wc == -1) continue;
 
                 int colWidth = wcwidth(back.wc);
 

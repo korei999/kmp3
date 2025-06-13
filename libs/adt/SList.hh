@@ -180,14 +180,10 @@ SList<T>::release() noexcept
 }
 
 template<typename T, typename ALLOC_T = StdAllocatorNV>
-struct SListManaged : SList<T>
+struct SListManaged : protected ALLOC_T, public SList<T>
 {
     using Base = SList<T>;
     using Node = Base::Node;
-
-    /* */
-
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc;
 
     /* */
 
@@ -195,12 +191,15 @@ struct SListManaged : SList<T>
 
     /* */
 
-    Node* insert(const T& x) { return Base::insert(&m_alloc, x); }
+    ALLOC_T& allocator() { return *static_cast<ALLOC_T*>(this); }
+    const ALLOC_T& allocator() const { return *static_cast<ALLOC_T*>(this); }
 
-    void remove(Node* pNode) { Base::remove(&m_alloc, pNode); }
-    void remove(Node* pPrev, Node* pNode) { Base::remove(&m_alloc, pPrev, pNode); }
+    Node* insert(const T& x) { return Base::insert(&allocator(), x); }
 
-    void destroy() noexcept { Base::destroy(&m_alloc); }
+    void remove(Node* pNode) { Base::remove(&allocator(), pNode); }
+    void remove(Node* pPrev, Node* pNode) { Base::remove(&allocator(), pPrev, pNode); }
+
+    void destroy() noexcept { Base::destroy(&allocator()); }
 
     SListManaged release() noexcept { return utils::exchange(this, {}); }
 };

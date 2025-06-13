@@ -444,55 +444,54 @@ Vec<T>::growOnSpanPush(IAllocator* p, const isize spanSize)
 }
 
 template<typename T, typename ALLOC_T = StdAllocatorNV>
-struct VecManaged : Vec<T>
+struct VecManaged : protected ALLOC_T, Vec<T>
 {
     using Base = Vec<T>;
 
     /* */
 
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc {};
-
-    /* */
-
     VecManaged() = default;
-    VecManaged(const isize prealloc) : m_alloc {} { Base {&m_alloc, prealloc}; }
-    VecManaged(const isize prealloc, const T& fillWith) : m_alloc {} { Base {&m_alloc, prealloc, fillWith}; }
+    VecManaged(const isize prealloc) : ALLOC_T {}, Base {&allocator(), prealloc} {}
+    VecManaged(const isize prealloc, const T& fillWith) : ALLOC_T {}, Base {&allocator(), prealloc, fillWith} {}
 
     /* */
 
-    isize fakePush() { return Base::fakePush(&m_alloc); }
+    ALLOC_T& allocator() { return static_cast<ALLOC_T&>(*this); }
+    const ALLOC_T& allocator() const { return static_cast<ALLOC_T&>(*this); }
 
-    isize push(const T& data) { return Base::push(&m_alloc, data); }
+    isize fakePush() { return Base::fakePush(&allocator()); }
 
-    void pushAt(const isize atI, const T& data) { Base::pushAt(&m_alloc, atI,data); }
+    isize push(const T& data) { return Base::push(&allocator(), data); }
 
-    isize pushSpan(const Span<const T> sp) { return Base::pushSpan(&m_alloc, sp); }
+    void pushAt(const isize atI, const T& data) { Base::pushAt(&allocator(), atI,data); }
 
-    void pushSpanAt(const isize atI, const Span<const T> sp) { Base::pushSpanAt(&m_alloc, atI, sp); }
+    isize pushSpan(const Span<const T> sp) { return Base::pushSpan(&allocator(), sp); }
+
+    void pushSpanAt(const isize atI, const Span<const T> sp) { Base::pushSpanAt(&allocator(), atI, sp); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-    isize emplace(ARGS&&... args) { return Base::emplace(&m_alloc, std::forward<ARGS>(args)...); }
+    isize emplace(ARGS&&... args) { return Base::emplace(&allocator(), std::forward<ARGS>(args)...); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-    void emplaceAt(const isize atI, ARGS&&... args) { Base::emplaceAt(&m_alloc, atI, std::forward<ARGS>(args)...); }
+    void emplaceAt(const isize atI, ARGS&&... args) { Base::emplaceAt(&allocator(), atI, std::forward<ARGS>(args)...); }
 
-    isize pushSorted(const sort::ORDER eOrder, const T& x) { return Base::pushSorted(&m_alloc, eOrder, x); }
+    isize pushSorted(const sort::ORDER eOrder, const T& x) { return Base::pushSorted(&allocator(), eOrder, x); }
 
     template<sort::ORDER ORDER>
-    isize pushSorted(const T& x) { return Base::template pushSorted<ORDER>(&m_alloc, x); }
+    isize pushSorted(const T& x) { return Base::template pushSorted<ORDER>(&allocator(), x); }
 
-    void setSize(isize size) { Base::setSize(&m_alloc, size); }
+    void setSize(isize size) { Base::setSize(&allocator(), size); }
 
-    void setCap(isize cap) { Base::setCap(&m_alloc, cap); }
+    void setCap(isize cap) { Base::setCap(&allocator(), cap); }
 
-    void destroy() noexcept { Base::destroy(&m_alloc); }
+    void destroy() noexcept { Base::destroy(&allocator()); }
 
     [[nodiscard]] VecManaged release() noexcept { return utils::exchange(this, {}); }
 
     [[nodiscard]] VecManaged
     clone()
     {
-        VecManaged ret {&m_alloc, Base::size()};
+        VecManaged ret {&allocator(), Base::size()};
         ret.setSize(ret.cap());
         utils::memCopy(ret.data(), Base::data(), Base::size());
 

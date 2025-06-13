@@ -48,7 +48,7 @@ struct StringView
     constexpr const char* data() const { return m_pData; }
     constexpr char* data() { return m_pData; }
     constexpr isize size() const { return m_size; }
-    constexpr bool empty() const { return size() == 0; }
+    constexpr bool empty() const { return m_size == 0; }
     constexpr isize idx(const char* const pChar) const;
     [[nodiscard]] bool beginsWith(const StringView r) const;
     [[nodiscard]] bool endsWith(const StringView r) const;
@@ -106,22 +106,21 @@ struct String : public StringView
 };
 
 template<typename ALLOC_T = StdAllocatorNV>
-struct StringManaged : public String
+struct StringManaged : protected ALLOC_T, public String
 {
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc {};
-
-    /* */
-
     StringManaged() = default;
-    StringManaged(const char* pChars, isize size) : String {&m_alloc, pChars, size} {}
-    StringManaged(const char* nts) : String {&m_alloc, nts} {}
-    StringManaged(Span<char> spChars) : String {&m_alloc, spChars} {}
-    StringManaged(const StringView sv) : String {&m_alloc, sv} {}
+    StringManaged(const char* pChars, isize size) : String {&allocator(), pChars, size} {}
+    StringManaged(const char* nts) : String {&allocator(), nts} {}
+    StringManaged(Span<char> spChars) : String {&allocator(), spChars} {}
+    StringManaged(const StringView sv) : String {&allocator(), sv} {}
 
     /* */
 
-    void destroy() noexcept { String::destroy(&m_alloc); }
-    void reallocWith(const StringView svWith) { String::reallocWith(&m_alloc, svWith); }
+    ALLOC_T& allocator() { return *static_cast<ALLOC_T*>(this); }
+    const ALLOC_T& allocator() const { return *static_cast<ALLOC_T*>(this); }
+
+    void destroy() noexcept { String::destroy(&allocator()); }
+    void reallocWith(const StringView svWith) { String::reallocWith(&allocator(), svWith); }
     [[nodiscard]] String release() noexcept { String r = *this; *this = {}; return r; }
 };
 
