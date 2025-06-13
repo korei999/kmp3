@@ -302,25 +302,24 @@ TextBuff::pushDiff()
                     nForwards = 0;
                 }
 
-                if (back.wc != -1)
+                if (back.wc == -1) continue;
+
+                int colWidth = wcwidth(back.wc);
+
+                if (col + colWidth <= m_tWidth)
                 {
-                    int colWidth = wcwidth(back.wc);
-
-                    if (col + colWidth <= m_tWidth)
+                    clMove();
+                    if (bChangeStyle)
                     {
-                        clMove();
-                        if (bChangeStyle)
-                        {
-                            bChangeStyle = false;
-                            push(styleToString(&m_scratch, back.eStyle));
-                            m_scratch.reset();
-                            eLastStyle = back.eStyle;
-                        }
-                        pushWChar(back.wc);
+                        bChangeStyle = false;
+                        push(styleToString(&m_scratch, back.eStyle));
+                        m_scratch.reset();
+                        eLastStyle = back.eStyle;
                     }
-
-                    if (colWidth > 1) col += colWidth - 1;
+                    pushWChar(back.wc);
                 }
+
+                if (colWidth > 1) col += colWidth - 1;
             }
             else
             {
