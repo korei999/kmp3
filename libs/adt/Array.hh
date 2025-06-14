@@ -10,9 +10,11 @@ namespace adt
 {
 
 /* statically sized array */
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 struct Array
 {
+    static_assert(CAP > 0);
+
     T m_aData[CAP];
     isize m_size {};
 
@@ -93,7 +95,7 @@ struct Array
     constexpr const T* rend() const noexcept { return {m_aData - 1}; }
 };
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 inline isize
 Array<T, CAP>::push(const T& x)
 {
@@ -104,7 +106,7 @@ Array<T, CAP>::push(const T& x)
     return m_size - 1;
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 inline isize
 Array<T, CAP>::pushSorted(const sort::ORDER eOrder, const T& x)
 {
@@ -113,7 +115,7 @@ Array<T, CAP>::pushSorted(const sort::ORDER eOrder, const T& x)
     return sort::push(eOrder, this, x);
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 template<sort::ORDER ORDER>
 inline isize
 Array<T, CAP>::pushSorted(const T& x)
@@ -123,7 +125,7 @@ Array<T, CAP>::pushSorted(const T& x)
     return sort::push<Array<T, CAP>, T, ORDER>(this, x);
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 inline void
 Array<T, CAP>::pushAt(const isize i, const T& x)
 {
@@ -132,19 +134,19 @@ Array<T, CAP>::pushAt(const isize i, const T& x)
     new(&operator[](i)) T(x);
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
 inline constexpr isize
 Array<T, CAP>::emplace(ARGS&&... args)
 {
     ADT_ASSERT(size() < CAP, "pushing over capacity");
 
-    new(m_aData + m_size++) T(forward<ARGS>(args)...);
+    new(m_aData + m_size++) T(std::forward<ARGS>(args)...);
 
     return m_size - 1;
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr isize
 Array<T, CAP>::fakePush()
 {
@@ -153,7 +155,7 @@ Array<T, CAP>::fakePush()
     return m_size - 1;
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr T&
 Array<T, CAP>::pop() noexcept
 {
@@ -161,7 +163,7 @@ Array<T, CAP>::pop() noexcept
     return m_aData[--m_size];
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr void
 Array<T, CAP>::fakePop() noexcept
 {
@@ -169,21 +171,21 @@ Array<T, CAP>::fakePop() noexcept
     --m_size;
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr isize
 Array<T, CAP>::cap() const noexcept
 {
     return CAP;
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr isize
 Array<T, CAP>::size() const noexcept
 {
     return m_size;
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr void
 Array<T, CAP>::setSize(isize newSize)
 {
@@ -191,7 +193,7 @@ Array<T, CAP>::setSize(isize newSize)
     m_size = newSize;
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr isize
 Array<T, CAP>::idx(const T* const p) const noexcept
 {
@@ -200,39 +202,39 @@ Array<T, CAP>::idx(const T* const p) const noexcept
     return r;
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr T&
 Array<T, CAP>::first() noexcept
 {
     return operator[](0);
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr const T&
 Array<T, CAP>::first() const noexcept
 {
     return operator[](0);
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr T&
 Array<T, CAP>::last() noexcept
 {
     return operator[](m_size - 1);
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr const T&
 Array<T, CAP>::last() const noexcept
 {
     return operator[](m_size - 1);
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 inline constexpr
 Array<T, CAP>::Array(isize size) : m_aData {}, m_size(size) {}
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
 inline constexpr
 Array<T, CAP>::Array(isize size, ARGS&&... args)
@@ -244,7 +246,7 @@ Array<T, CAP>::Array(isize size, ARGS&&... args)
         new(m_aData + i) T(std::forward<ARGS>(args)...);
 }
 
-template<typename T, isize CAP> requires(CAP > 0)
+template<typename T, isize CAP>
 constexpr Array<T, CAP>::Array(const std::initializer_list<T> list)
 {
     setSize(list.size());
