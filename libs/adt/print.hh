@@ -623,7 +623,7 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isi
         ++i;
     }
 
-    return copyBackToContext(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, {}, {aBuff, nRead});
 }
 
 inline isize
@@ -649,11 +649,11 @@ formatToContextUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept
 
     for (auto it = x.begin(); it != x.end(); ++it)
     {
-        const StringView fmt = !it.next() ? sFmtArg : sFmtArgComma;
+        const StringView fmt = it.next() == x.end() ? sFmtArg : sFmtArgComma;
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, *it);
     }
 
-    return copyBackToContext(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, {}, {aBuff, nRead});
 }
 
 template<typename T>

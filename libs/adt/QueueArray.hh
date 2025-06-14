@@ -29,6 +29,9 @@ struct QueueArray
     T& operator[](isize i) noexcept             { ADT_ASSERT(i >= 0 && i < CAP, "out of CAP({}), i: {}", CAP, i); return m_aData[i]; }
     const T& operator[](isize i) const noexcept { ADT_ASSERT(i >= 0 && i < CAP, "out of CAP({}), i: {}", CAP, i); return m_aData[i]; }
 
+    T* data() noexcept { return m_aData; }
+    const T* data() const noexcept { return m_aData; }
+
     isize cap() const noexcept;
 
     bool empty() const noexcept;
@@ -70,6 +73,12 @@ public:
 
         T& operator*() noexcept { return m_p->operator[](m_i); }
         T* operator->() noexcept { return &m_p->operator[](m_i); }
+
+        It current() noexcept { return {m_p, m_i}; }
+        It next() noexcept { return {m_p, QueueArray::nextI(m_i)}; }
+
+        const It current() const noexcept { return {m_p, m_i}; }
+        const It next() const noexcept { return {m_p, QueueArray::nextI(m_i)}; }
 
         It
         operator++() noexcept

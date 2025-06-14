@@ -53,11 +53,11 @@ struct SList
 
         It operator++() noexcept { return m_current = m_current->pNext; }
 
-        Node* current() noexcept { return m_current; }
-        const Node* current() const noexcept { return m_current; }
+        It current() noexcept { return m_current; }
+        const It current() const noexcept { return m_current; }
 
-        Node* next() noexcept { return m_current->pNext; }
-        const Node* next() const noexcept { return m_current->pNext; }
+        It next() noexcept { return m_current->pNext; }
+        const It next() const noexcept { return m_current->pNext; }
 
         friend constexpr bool operator==(const It& l, const It& r) noexcept { return l.m_current == r.m_current; }
         friend constexpr bool operator!=(const It& l, const It& r) noexcept { return l.m_current != r.m_current; }
