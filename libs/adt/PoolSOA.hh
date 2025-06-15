@@ -53,7 +53,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
     {
         if (!m_aFreeHandles.empty())
         {
-            PoolSOAHandle h = *m_aFreeHandles.pop();
+            PoolSOAHandle h = m_aFreeHandles.pop();
             m_aOccupiedIdxs[h.i] = true;
             set(h, x);
             return h;

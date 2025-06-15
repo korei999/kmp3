@@ -284,14 +284,14 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const StringView str) noexcept
 inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const String str) noexcept
 {
-    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
+    return formatToContext(ctx, fmtArgs, StringView(str));
 }
 
 template<int SIZE> requires(SIZE > 1)
 inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const StringFixed<SIZE>& str) noexcept
 {
-    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
+    return formatToContext(ctx, fmtArgs, StringView(str));
 }
 
 inline isize
@@ -392,7 +392,7 @@ template<typename A, typename B>
 inline u32
 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Pair<A, B>& x)
 {
-    ctx.fmt = "{}, {}";
+    ctx.fmt = "[{}, {}]";
     ctx.fmtIdx = 0;
     return printArgs(ctx, x.first, x.second);
 }
@@ -601,7 +601,7 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isi
     {
         ctx.fmt = "{}";
         ctx.fmtIdx = 0;
-        return printArgs(ctx, "(empty)");
+        return printArgs(ctx, "[]");
     }
 
     char aFmtBuff[64] {};
@@ -612,8 +612,9 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isi
     aFmtBuff[nFmtRead++] = ' ';
     StringView sFmtArgComma(aFmtBuff);
 
-    char aBuff[1024] {};
-    isize nRead = 0;
+    char aBuff[512] {};
+    aBuff[0] = '[';
+    isize nRead = 1;
     isize i = 0;
 
     for (const auto& e : x)
@@ -622,6 +623,8 @@ formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isi
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, e);
         ++i;
     }
+
+    if (nRead < utils::size(aBuff)) aBuff[nRead++] = ']';
 
     return copyBackToContext(ctx, {}, {aBuff, nRead});
 }
@@ -633,7 +636,7 @@ formatToContextUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept
     {
         ctx.fmt = "{}";
         ctx.fmtIdx = 0;
-        return printArgs(ctx, "(empty)");
+        return printArgs(ctx, "[]");
     }
 
     char aFmtBuff[64] {};
@@ -644,14 +647,17 @@ formatToContextUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept
     aFmtBuff[nFmtRead++] = ' ';
     StringView sFmtArgComma(aFmtBuff);
 
-    char aBuff[1024] {};
-    isize nRead = 0;
+    char aBuff[512] {};
+    aBuff[0] = '[';
+    isize nRead = 1;
 
     for (auto it = x.begin(); it != x.end(); ++it)
     {
         const StringView fmt = it.next() == x.end() ? sFmtArg : sFmtArgComma;
         nRead += toBuffer(aBuff + nRead, utils::size(aBuff) - nRead, fmt, *it);
     }
+
+    if (nRead < utils::size(aBuff)) aBuff[nRead++] = ']';
 
     return copyBackToContext(ctx, {}, {aBuff, nRead});
 }

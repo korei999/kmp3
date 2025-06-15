@@ -29,7 +29,8 @@ struct Vec
 
     /* */
 
-    explicit operator Span<T>() const { return {data(), size()}; }
+    explicit operator Span<T>() { return {m_pData, m_size}; }
+    explicit operator const Span<const T>() const { return {m_pData, m_size}; }
 
     /* */
 

@@ -34,7 +34,7 @@ using i64 = int64_t;
 using u64 = uint64_t;
 using pdiff = ptrdiff_t;
 using isize = i64;
-using usize = size_t;
+using usize = u64;
 
 constexpr isize NPOS = -1L;
 constexpr u16 NPOS8 = std::numeric_limits<u8>::max();
@@ -53,8 +53,8 @@ using u32 = unsigned int;
 using i64 = signed long long;
 using u64 = unsigned long long;
 using pdiff = long long;
-using isize = long long;
-using usize = unsigned long long;
+using isize = i64;
+using usize = u64;
 
 constexpr int NPOS = -1;
 constexpr u16 NPOS8 = u8(-1);
@@ -176,7 +176,7 @@ nextPowerOf2(i32 x)
 }
 
 inline constexpr isize
-nextPowerOf2(isize x)
+nextPowerOf2(i64 x)
 {
     --x;
 

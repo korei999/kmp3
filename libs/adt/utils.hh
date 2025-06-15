@@ -276,7 +276,7 @@ template<typename LAMBDA>
 search(const auto& a, LAMBDA cl)
 {
     for (const auto& e : a)
-        if (cl(e)) return cl.idx(&e);
+        if (cl(e)) return a.idx(&e);
 
     return NPOS;
 }

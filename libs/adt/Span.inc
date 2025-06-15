@@ -24,7 +24,8 @@ struct Span
 
     /* */
 
-    constexpr operator const Span<const T>() const { return {data(), size()}; }
+    constexpr explicit operator bool() const { return m_pData != nullptr; }
+    constexpr operator const Span<const T>() const { return {m_pData, m_size}; }
 
     constexpr bool empty() const { return m_size <= 0; }
 
@@ -46,8 +47,6 @@ struct Span
     constexpr T& operator[](isize i) noexcept;
 
     constexpr const T& operator[](isize i) const noexcept;
-
-    constexpr operator bool() const { return m_pData != nullptr; }
 
     /* */
 
