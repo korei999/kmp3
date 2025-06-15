@@ -6,9 +6,6 @@
 
 #include <cstring>
 
-#if defined ADT_DBG_MEMORY
-#endif
-
 namespace adt
 {
 
@@ -29,16 +26,29 @@ struct Arena : public IArena
 
     usize m_defaultCapacity {};
     IAllocator* m_pBackAlloc {};
+#ifndef NDEBUG
+    std::source_location m_sourceLocation {};
+#endif
     Block* m_pBlocks {};
 
     /* */
 
     Arena() = default;
 
-    Arena(usize capacity, IAllocator* pBackingAlloc = StdAllocator::inst()) noexcept(false)
+    Arena(
+        usize capacity,
+        IAllocator* pBackingAlloc = StdAllocator::inst()
+#ifndef NDEBUG
+        , std::source_location _DONT_USE_loc = std::source_location::current()
+#endif
+    ) noexcept(false)
         : m_defaultCapacity(alignUp8(capacity)),
           m_pBackAlloc(pBackingAlloc),
-          m_pBlocks(allocBlock(m_defaultCapacity)) {}
+#ifndef NDEBUG
+          m_sourceLocation {_DONT_USE_loc},
+#endif
+          m_pBlocks(allocBlock(m_defaultCapacity))
+    {}
 
     /* */
 
@@ -98,8 +108,10 @@ Arena::allocBlock(usize size)
     /* NOTE: m_pBackAlloc can throw here */
     Block* pBlock = static_cast<Block*>(m_pBackAlloc->zalloc(1, size + sizeof(*pBlock)));
 
-#if defined ADT_DBG_MEMORY
-    print::err("[Arena]: new block of size: {}\n", size);
+#if defined ADT_DBG_MEMORY && !defined NDEBUG
+    print::err("[Arena({}, {})]: new block of size: {}\n",
+        stripSourcePath(m_sourceLocation.file_name()), m_sourceLocation.line(), size
+    );
 #endif
 
     pBlock->size = size;
@@ -124,9 +136,11 @@ Arena::malloc(usize mCount, usize mSize)
     usize realSize = alignUp8(mCount * mSize);
     auto* pBlock = findFittingBlock(realSize);
 
-#if defined ADT_DBG_MEMORY
+#if defined ADT_DBG_MEMORY && !defined NDEBUG
     if (m_defaultCapacity <= realSize)
-        print::err("[Arena]: allocating more than defaultCapacity ({}, {})\n", m_defaultCapacity, realSize);
+        print::err("[Arena({}, {})]: allocating more than defaultCapacity ({}, {})\n",
+            stripSourcePath(m_sourceLocation.file_name()), m_sourceLocation.line(), m_defaultCapacity, realSize
+        );
 #endif
 
     if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, usize(realSize*1.3)));
@@ -225,8 +239,10 @@ Arena::shrinkToFirstBlock() noexcept
 
     while (it->pNext)
     {
-#if defined ADT_DBG_MEMORY
-        print::err("[Arena]: shrinking {} sized block\n", it->size);
+#if defined ADT_DBG_MEMORY && !defined NDEBUG
+        print::err("[Arena({}, {})]: shrinking {} sized block\n",
+            stripSourcePath(m_sourceLocation.file_name()), m_sourceLocation.line(), it->size
+        );
 #endif
         auto* next = it->pNext;
         m_pBackAlloc->free(it);

@@ -8,6 +8,30 @@
     #include <cstdlib> /* IWYU pragma: keep */
 #endif
 
+#ifndef NDEBUG
+    #define ADT_ASSERT(CND, ...)                                                                                       \
+        if (!static_cast<bool>(CND))                                                                                   \
+        {                                                                                                              \
+            char aMsgBuff[128] {};                                                                                     \
+            adt::print::toBuffer(aMsgBuff, sizeof(aMsgBuff) - 1, __VA_ARGS__);                                         \
+            adt::assertionFailed(#CND, aMsgBuff, ADT_LOGS_FILE, __LINE__, __func__);                                   \
+        }
+#else
+    #define ADT_ASSERT(...) (void)0
+#endif
+
+#ifndef ADT_DISABLE_ASSERT_ALWAYS
+    #define ADT_ASSERT_ALWAYS(CND, ...)                                                                                \
+        if (!static_cast<bool>(CND))                                                                                   \
+        {                                                                                                              \
+            char aMsgBuff[128] {};                                                                                     \
+            adt::print::toBuffer(aMsgBuff, sizeof(aMsgBuff) - 1, __VA_ARGS__);                                         \
+            adt::assertionFailed(#CND, aMsgBuff, ADT_LOGS_FILE, __LINE__, __func__);                                   \
+        }
+#else
+    #define ADT_ASSERT_ALWAYS(...) (void)0
+#endif
+
 namespace adt
 {
 
@@ -37,33 +61,3 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
 }
 
 } /* namespace adt */
-
-#ifndef NDEBUG
-    #define ADT_ASSERT(CND, ...)                                                                                       \
-        do                                                                                                             \
-        {                                                                                                              \
-            if (!static_cast<bool>(CND))                                                                               \
-            {                                                                                                          \
-                char aMsgBuff[128] {};                                                                                 \
-                adt::print::toBuffer(aMsgBuff, sizeof(aMsgBuff) - 1, __VA_ARGS__);                                     \
-                adt::assertionFailed(#CND, aMsgBuff, ADT_LOGS_FILE, __LINE__, __func__);                               \
-            }                                                                                                          \
-        } while (0)
-#else
-    #define ADT_ASSERT(...) (void)0
-#endif
-
-#ifndef ADT_DISABLE_ASSERT_ALWAYS
-    #define ADT_ASSERT_ALWAYS(CND, ...)                                                                                \
-        do                                                                                                             \
-        {                                                                                                              \
-            if (!static_cast<bool>(CND))                                                                               \
-            {                                                                                                          \
-                char aMsgBuff[128] {};                                                                                 \
-                adt::print::toBuffer(aMsgBuff, sizeof(aMsgBuff) - 1, __VA_ARGS__);                                     \
-                adt::assertionFailed(#CND, aMsgBuff, ADT_LOGS_FILE, __LINE__, __func__);                               \
-            }                                                                                                          \
-        } while (0)
-#else
-    #define ADT_ASSERT_ALWAYS(...) (void)0
-#endif

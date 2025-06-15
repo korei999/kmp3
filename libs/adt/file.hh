@@ -21,9 +21,7 @@
 
 #endif
 
-namespace adt
-{
-namespace file
+namespace adt::file
 {
 
 enum class TYPE : u8 { UNHANDLED, FILE, DIRECTORY };
@@ -219,5 +217,4 @@ map(const char* ntsPath)
 #endif
 }
 
-} /* namespace file */
-} /* namespace adt */
+} /* namespace adt::file */

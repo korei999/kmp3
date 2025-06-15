@@ -114,7 +114,7 @@ Mixer::init()
     constexpr u32 bitsPerSample = 16;
     constexpr u32 bytesPerSample = bitsPerSample / 8;
 
-    ADT_RUNTIME_EXCEPTION_THROW(m_pHdl = sio_open(SIO_DEVANY, SIO_PLAY, 0));
+    ADT_RUNTIME_EXCEPTION(m_pHdl = sio_open(SIO_DEVANY, SIO_PLAY, 0));
 
     sio_initpar(&m_par);
     m_par.bits = bitsPerSample;
@@ -131,9 +131,8 @@ Mixer::init()
 #define _TRY(FN, ...)                                                                                                  \
     if (!FN(__VA_ARGS__))                                                                                              \
     {                                                                                                                  \
-        print::out(#FN "(): failed\n");                                                                                \
         sio_close(m_pHdl);                                                                                             \
-        exit(1);                                                                                                       \
+        throw RuntimeException(#FN); \
     }
 
     m_atom_bRunning.store(true, atomic::ORDER::RELEASE);
