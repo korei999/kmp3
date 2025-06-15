@@ -34,6 +34,8 @@ typeName()
 template<typename ...ARGS_T> inline isize out(const StringView fmt, const ARGS_T&... tArgs) noexcept;
 template<typename ...ARGS_T> inline isize err(const StringView fmt, const ARGS_T&... tArgs) noexcept;
 
+inline const char* stripSourcePath(const char* ntsSourcePath);
+
 inline isize printArgs(Context ctx) noexcept;
 
 inline constexpr bool oneOfChars(const char x, const StringView chars) noexcept;

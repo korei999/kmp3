@@ -56,7 +56,9 @@ static constexpr adt::StringView _ADT_LOG_SEV_STR[] = {
         do                                                                                                             \
         {                                                                                                              \
             ADT_ASSERT(SEV >= 0 && SEV < _ADT_LOG_SEV_ENUM_SIZE, "wrong _ADT_LOG_SEV*");                               \
-            ADT_CERR("({}{}, {}, {}):\n", _ADT_LOG_SEV_STR[SEV], ADT_LOGS_FILE, __func__, __LINE__);                   \
+            ADT_CERR(                                                                                                  \
+                "({}{}, {}, {}):\n", _ADT_LOG_SEV_STR[SEV], adt::print::stripSourcePath(__FILE__), __func__, __LINE__  \
+            );                                                                                                         \
             ADT_CERR(__VA_ARGS__);                                                                                     \
             switch (SEV)                                                                                               \
             {                                                                                                          \

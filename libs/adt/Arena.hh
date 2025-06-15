@@ -27,7 +27,7 @@ struct Arena : public IArena
     usize m_defaultCapacity {};
     IAllocator* m_pBackAlloc {};
 #ifndef NDEBUG
-    std::source_location m_sourceLocation {};
+    std::source_location m_loc {};
 #endif
     Block* m_pBlocks {};
 
@@ -45,7 +45,7 @@ struct Arena : public IArena
         : m_defaultCapacity(alignUp8(capacity)),
           m_pBackAlloc(pBackingAlloc),
 #ifndef NDEBUG
-          m_sourceLocation {_DONT_USE_loc},
+          m_loc {_DONT_USE_loc},
 #endif
           m_pBlocks(allocBlock(m_defaultCapacity))
     {}
@@ -109,8 +109,8 @@ Arena::allocBlock(usize size)
     Block* pBlock = static_cast<Block*>(m_pBackAlloc->zalloc(1, size + sizeof(*pBlock)));
 
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
-    print::err("[Arena({}, {})]: new block of size: {}\n",
-        stripSourcePath(m_sourceLocation.file_name()), m_sourceLocation.line(), size
+    print::err("[Arena: {}, {}, {}]: new block of size: {}\n",
+        print::stripSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), size
     );
 #endif
 
@@ -138,8 +138,8 @@ Arena::malloc(usize mCount, usize mSize)
 
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
     if (m_defaultCapacity <= realSize)
-        print::err("[Arena({}, {})]: allocating more than defaultCapacity ({}, {})\n",
-            stripSourcePath(m_sourceLocation.file_name()), m_sourceLocation.line(), m_defaultCapacity, realSize
+        print::err("[Arena: {}, {}, {}]: allocating more than defaultCapacity ({}, {})\n",
+            print::stripSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_defaultCapacity, realSize
         );
 #endif
 
@@ -240,8 +240,8 @@ Arena::shrinkToFirstBlock() noexcept
     while (it->pNext)
     {
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
-        print::err("[Arena({}, {})]: shrinking {} sized block\n",
-            stripSourcePath(m_sourceLocation.file_name()), m_sourceLocation.line(), it->size
+        print::err("[Arena: {}, {}, {}]: shrinking {} sized block\n",
+            print::stripSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), it->size
         );
 #endif
         auto* next = it->pNext;

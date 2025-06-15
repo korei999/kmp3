@@ -10,6 +10,17 @@
 #include <cstdlib>
 #include <cuchar> /* IWYU pragma: keep */
 
+#if __has_include(<unistd.h>)
+
+    #include <unistd.h>
+
+#elif defined _WIN32
+
+    #include <direct.h>
+    #define getcwd _getcwd
+
+#endif
+
 namespace adt::print
 {
 
@@ -43,6 +54,20 @@ struct Context
     FormatArgs prevFmtArgs {};
     bool bUpdateFmtArgs {};
 };
+
+inline const char*
+_currentWorkingDirectory()
+{
+    static char aBuff[300] {};
+    return getcwd(aBuff, sizeof(aBuff) - 1);
+}
+
+inline const char*
+stripSourcePath(const char* ntsSourcePath)
+{
+    static const StringView svCwd = _currentWorkingDirectory();
+    return ntsSourcePath + svCwd.size() + 1;
+}
 
 inline isize
 printArgs(Context ctx) noexcept

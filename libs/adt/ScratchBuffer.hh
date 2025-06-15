@@ -16,8 +16,7 @@ struct ScratchBuffer
 
 #ifndef NDEBUG
     bool m_bTaken {};
-    const char* m_ntsFile {};
-    int m_line {};
+    std::source_location m_loc {};
 #endif
 
     /* */
@@ -93,10 +92,11 @@ ScratchBuffer::nextMem(
 ) noexcept
 {
 #ifndef NDEBUG
-    ADT_ASSERT(m_bTaken != true, "must reset() between nextMem() calls. Prev call: [{}, {}]", m_ntsFile, m_line);
+    ADT_ASSERT(m_bTaken != true, "must reset() between nextMem() calls. Prev call: [{}, {}, {}]",
+        m_loc.file_name(), m_loc.function_name(), m_loc.line()
+    );
     m_bTaken = true;
-    m_ntsFile = stripSourcePath(loc.file_name());
-    m_line = loc.line();
+    m_loc = loc;
 #endif
     return {reinterpret_cast<T*>(m_sp.data()), calcTypeCap<T>()};
 }
