@@ -257,6 +257,8 @@ ThreadPool<QUEUE_SIZE>::add(Task task)
 template<isize QUEUE_SIZE>
 struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
 {
+    using Base = ThreadPool<QUEUE_SIZE>;
+
     static inline thread_local u8* gtl_pScratchMem;
     static inline thread_local ScratchBuffer gtl_scratchBuff;
 
@@ -265,7 +267,7 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
     using ThreadPool<QUEUE_SIZE>::ThreadPool;
 
     ThreadPoolWithMemory(IAllocator* pAlloc, isize nBytesEachBuffer, int nThreads = utils::max(ADT_GET_NPROCS() - 1, 2))
-        : ThreadPool<QUEUE_SIZE>(
+        : Base(
             pAlloc,
             +[](void* p) { allocScratchBufferForThisThread(reinterpret_cast<isize>(p)); },
             reinterpret_cast<void*>(nBytesEachBuffer),
@@ -279,14 +281,24 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
 
     /* */
 
-    virtual void wait() override { ThreadPool<QUEUE_SIZE>::wait(); }
-    virtual bool add(Task task) override { return ThreadPool<QUEUE_SIZE>::add(task); }
+    virtual void wait() override { Base::wait(); }
+    virtual bool add(Task task) override { return Base::add(task); }
     virtual ScratchBuffer& scratchBuffer() override { return gtl_scratchBuff; }
+
+    template<typename LAMBDA>
+    bool
+    addLambda(LAMBDA& t)
+    {
+        return Base::addLambda(t);
+    }
+
+    void addRetry(Task task) { while (!Base::add(task)); }
+    void addRetry(ThreadFn pfn, void* pArg) { addRetry({pfn, pArg}); }
 
     void
     destroy(IAllocator* pAlloc)
     {
-        ThreadPool<QUEUE_SIZE>::destroy(pAlloc);
+        Base::destroy(pAlloc);
         destroyScratchBufferForThisThread();
     }
 
@@ -294,7 +306,7 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>, IThreadPoolWithMemory
     void
     destroyKeepScratchBuffer(IAllocator* pAlloc)
     {
-        ThreadPool<QUEUE_SIZE>::destroy(pAlloc);
+        Base::destroy(pAlloc);
     }
 
     /* */
