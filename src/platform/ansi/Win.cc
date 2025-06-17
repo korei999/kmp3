@@ -78,11 +78,6 @@ Win::destroy()
 void
 Win::draw()
 {
-    if (app::mixer().m_atom_bSongEnd.load(atomic::ORDER::ACQUIRE))
-    {
-        app::mixer().m_atom_bSongEnd.store(false, atomic::ORDER::RELEASE);
-        app::player().onSongEnd();
-    }
     app::player().nextSongIfPrevEnded();
 
     update();
