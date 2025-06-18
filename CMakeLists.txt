@@ -6,13 +6,23 @@ message(STATUS "NAME: '${NAME}'")
 project(${NAME} VERSION 0.1 LANGUAGES CXX C)
 message(STATUS "CMAKE_PROJECT_VERSION: '${CMAKE_PROJECT_VERSION}'")
 
-option(OPT_TERMBOX2 "" OFF)
 option(OPT_PIPEWIRE "" ON)
 option(OPT_SNDIO "" ON)
 option(OPT_CHAFA "" ON)
 option(OPT_MPRIS "" ON)
 option(OPT_MIMALLOC "" OFF)
+option(OPT_SSE4_2 "" ON)
 option(OPT_MARCH_NATIVE "" OFF)
+
+if (OPT_SSE4_2)
+    add_definitions("-DADT_SSE4_2")
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        add_compile_options(/arch:SSE4.2)
+    else()
+        add_compile_options(-msse4.2)
+    endif()
+endif()
 
 if (OPT_MARCH_NATIVE)
     add_compile_options(-march=native)
@@ -55,7 +65,7 @@ add_definitions("-DADT_DEFER_LESS_TYPING")
 add_definitions("-DADT_LOGS_LESS_TYPING")
 
 include_directories(BEFORE "src")
-include_directories(BEFORE "libs")
+include_directories(BEFORE "include")
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
@@ -150,15 +160,6 @@ add_executable(
 
 if (OPT_MIMALLOC)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)
-endif()
-
-if (OPT_TERMBOX2)
-    add_definitions("-DOPT_TERMBOX2")
-
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-        "src/platform/termbox2/window.cc"
-        "src/platform/termbox2/input.cc"
-    )
 endif()
 
 find_package(PkgConfig REQUIRED)

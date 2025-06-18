@@ -27,7 +27,7 @@ struct StdAllocator : IAllocator
 };
 
 /* non virtual */
-struct StdAllocatorNV
+struct StdAllocatorNV : AllocatorHelperCRTP<StdAllocatorNV>
 {
     /* WARNING: Dirty fix for Managed classes, doesn't return the real address. */
     StdAllocator* operator&() const { return StdAllocator::inst(); }

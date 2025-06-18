@@ -2,10 +2,6 @@
 
 #include "platform/ansi/Win.hh"
 
-#ifdef OPT_TERMBOX2
-    #include "platform/termbox2/window.hh"
-#endif
-
 #ifdef OPT_PIPEWIRE
     #include "platform/pipewire/Mixer.hh"
 #endif
@@ -51,12 +47,6 @@ allocWindow(IAllocator* pAlloc)
         case UI::ANSI:
         pRet = pAlloc->alloc<platform::ansi::Win>();
         break;
-
-#ifdef OPT_TERMBOX2
-        case UI::TERMBOX:
-        pRet = pAlloc->alloc<platform::termbox2::Win>();
-        break;
-#endif
     }
 
     return pRet;

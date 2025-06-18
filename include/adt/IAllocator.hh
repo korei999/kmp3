@@ -25,13 +25,14 @@ constexpr isize SIZE_8G = SIZE_1G * 8;
 
 #define ADT_WARN_LEAK [[deprecated("warning: memory leak")]]
 
-struct IAllocator
+template<typename BASE>
+struct AllocatorHelperCRTP
 {
     template<typename T, typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
     [[nodiscard]] constexpr T*
     alloc(ARGS&&... args) noexcept(false) /* AllocException */
     {
-        auto* p = (T*)malloc(1, sizeof(T));
+        auto* p = mallocV<T>(1);
         new(p) T(std::forward<ARGS>(args)...);
         return p;
     }
@@ -40,23 +41,72 @@ struct IAllocator
     [[nodiscard]] constexpr T*
     mallocV(isize mCount) noexcept(false) /* AllocException */
     {
-        return static_cast<T*>(malloc(mCount, sizeof(T)));
+        return static_cast<T*>(static_cast<BASE*>(this)->malloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     zallocV(isize mCount) noexcept(false) /* AllocException */
     {
-        return static_cast<T*>(zalloc(mCount, sizeof(T)));
+        return static_cast<T*>(static_cast<BASE*>(this)->zalloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     reallocV(T* ptr, isize oldCount, isize newCount) noexcept(false) /* AllocException */
     {
-        return static_cast<T*>(realloc(ptr, oldCount, newCount, sizeof(T)));
+        return static_cast<T*>(static_cast<BASE*>(this)->realloc(ptr, oldCount, newCount, sizeof(T)));
     }
 
+    template<typename T>
+    [[nodiscard]] constexpr T*
+    relocate(T* p, isize oldCount, isize newCount) noexcept(false) /* AllocException */
+    {
+        /* NOTE: Just never use self referential types and we good. */
+        if constexpr (std::is_trivially_destructible_v<T>)
+        {
+            return reallocV<T>(p, oldCount, newCount);
+        }
+        else
+        {
+            T* pNew = mallocV<T>(newCount);
+            if (!p) return pNew;
+
+            for (isize i = 0; i < oldCount; ++i)
+            {
+                new(pNew + i) T {std::move(p[i])};
+                p[i].~T();
+            }
+
+            static_cast<BASE*>(this)->free(p);
+            return pNew;
+        }
+    }
+
+    template<typename T>
+    constexpr void
+    deallocate(T* p, isize size)
+    {
+        if constexpr (!std::is_trivially_destructible_v<T>)
+            for (isize i = 0; i < size; ++i)
+                p[i].~T();
+
+        static_cast<BASE*>(this)->free(p);
+    }
+
+    template<typename T>
+    constexpr void
+    deallocate(T* p)
+    {
+        if constexpr (!std::is_trivially_destructible_v<T>)
+            p->~T();
+
+        static_cast<BASE*>(this)->free(p);
+    }
+};
+
+struct IAllocator : AllocatorHelperCRTP<IAllocator>
+{
     [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) = 0; /* AllocException */
 
     [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) = 0; /* AllocException */

@@ -104,7 +104,7 @@ public:
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline
 VecSOA<STRUCT, BIND, MEMBERS...>::VecSOA(IAllocator* pAlloc, isize prealloc)
-    : m_pData(pAlloc->mallocV<u8>(prealloc * sizeof(STRUCT))), m_capacity(prealloc) {}
+    : m_pData(pAlloc->zallocV<u8>(prealloc * sizeof(STRUCT))), m_capacity(prealloc) {}
 
 template<typename STRUCT, typename BIND>
 inline void VecSOASetHelper(u8*, const isize, const isize) { /* empty case */ }
@@ -213,7 +213,7 @@ template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline void
 VecSOA<STRUCT, BIND, MEMBERS...>::grow(IAllocator* p, isize newCapacity)
 {
-    u8* pNewData = p->mallocV<u8>(newCapacity * sizeof(STRUCT));
+    u8* pNewData = p->zallocV<u8>(newCapacity * sizeof(STRUCT));
 
     VecSOAReallocHelper<STRUCT, BIND, decltype(std::declval<STRUCT>().*MEMBERS)...>(
         m_pData, pNewData, m_capacity, newCapacity
@@ -228,7 +228,7 @@ template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline void
 VecSOA<STRUCT, BIND, MEMBERS...>::destroy(IAllocator* pAlloc)
 {
-    pAlloc->free(m_pData);
+    pAlloc->deallocate(m_pData, m_size);
     *this = {};
 }
 

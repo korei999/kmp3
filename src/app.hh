@@ -14,10 +14,6 @@ enum class UI : adt::u8
 {
     DUMMY,
     ANSI,
-
-#ifdef OPT_TERMBOX2
-    TERMBOX
-#endif
 };
 
 enum class MIXER : adt::u8

@@ -28,7 +28,11 @@ struct SList
     const Node* data() const noexcept { return m_pHead; }
 
     Node* insert(IAllocator* pAlloc, const T& x); /* prepend */
+    Node* insert(IAllocator* pAlloc, T&& x); /* prepend */
     Node* insert(Node* pNode); /* prepend */
+
+    template<typename ...ARGS>
+    Node* emplace(IAllocator* pAlloc, ARGS&&... args); /* prepend */
 
     void remove(Node* pNode); /* O(n) */
     void remove(IAllocator* pAlloc, Node* pNode); /* O(n) */
@@ -92,6 +96,13 @@ SList<T>::insert(IAllocator* pAlloc, const T& x)
 
 template<typename T>
 inline typename SList<T>::Node*
+SList<T>::insert(IAllocator* pAlloc, T&& x)
+{
+    return emplace(pAlloc, std::move(x));
+}
+
+template<typename T>
+inline typename SList<T>::Node*
 SList<T>::insertNode(Node* pNew)
 {
     pNew->pNext = m_pHead;
@@ -105,6 +116,16 @@ inline typename SList<T>::Node*
 SList<T>::insert(Node* pNode)
 {
     insertNode(pNode);
+}
+
+template<typename T>
+template<typename ...ARGS>
+inline typename SList<T>::Node*
+SList<T>::emplace(IAllocator* pAlloc, ARGS&&... args)
+{
+    static_assert(std::is_constructible_v<T, ARGS...>);
+
+    return insertNode(Node::alloc(pAlloc, std::forward<ARGS>(args)...));
 }
 
 template<typename T>
@@ -166,7 +187,7 @@ SList<T>::destroy(IAllocator* pAlloc) noexcept
         curr = tmp
     )
     {
-        pAlloc->free(curr);
+        pAlloc->deallocate(curr);
     }
 
     *this = {};
@@ -203,5 +224,8 @@ struct SListManaged : protected ALLOC_T, public SList<T>
 
     SListManaged release() noexcept { return utils::exchange(this, {}); }
 };
+
+template<typename T>
+using SListM = SListManaged<T>;
 
 } /* namespace adt */

@@ -241,14 +241,6 @@ memSet(T* pDest, int byte, isize size)
 }
 
 template<typename T>
-inline constexpr void
-fill(T* pData, T x, isize size)
-{
-    for (isize i = 0; i < size; ++i)
-        pData[i] = x;
-}
-
-template<typename T>
 [[nodiscard]] inline constexpr auto
 clamp(const T& x, const T& _min, const T& _max)
 {

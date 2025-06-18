@@ -38,8 +38,8 @@ struct Queue
     isize pushBack(IAllocator* pAlloc, const T& x);
     isize pushFront(IAllocator* pAlloc, const T& x);
 
-    T& popFront();
-    T& popBack();
+    T popFront();
+    T popBack();
 
     template<typename ...ARGS>
     isize emplaceFront(IAllocator* pAlloc, ARGS&&... args) { return pushFront(pAlloc, T(std::forward<ARGS>(args)...)); }
@@ -112,7 +112,7 @@ Queue<T>::Queue(IAllocator* pAlloc, isize prealloc)
     const isize cap = nextPowerOf2(prealloc);
     ADT_ASSERT(isPowerOf2(cap), "nextPowerOf2: {}", cap);
 
-    m_pData = pAlloc->mallocV<T>(cap);
+    m_pData = pAlloc->zallocV<T>(cap);
     m_cap = cap;
 }
 
@@ -191,7 +191,7 @@ Queue<T>::pushFront(IAllocator* pAlloc, const T& x)
 }
 
 template<typename T>
-inline T&
+inline T
 Queue<T>::popFront()
 {
     ADT_ASSERT(!empty(), "empty");
@@ -200,11 +200,16 @@ Queue<T>::popFront()
     m_headI = nextI(m_headI);
 
     --m_size;
-    return m_pData[tmp];
+
+    T ret = std::move(m_pData[tmp]);
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        m_pData[tmp].~T();
+
+    return ret;
 }
 
 template<typename T>
-inline T&
+inline T
 Queue<T>::popBack()
 {
     ADT_ASSERT(!empty(), "empty");
@@ -212,14 +217,18 @@ Queue<T>::popBack()
     m_tailI = prevI(m_tailI);
     --m_size;
 
-    return m_pData[m_tailI];
+    T ret = std::move(m_pData[m_tailI]);
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        m_pData[m_tailI].~T();
+
+    return ret;
 }
 
 template<typename T>
 inline void
 Queue<T>::destroy(IAllocator* pAlloc) noexcept
 {
-    pAlloc->free(m_pData);
+    pAlloc->deallocate(m_pData, m_size);
     *this = {};
 }
 
@@ -235,7 +244,7 @@ inline void
 Queue<T>::grow(IAllocator* pAlloc)
 {
     const isize newCap = utils::max(isize(2), m_cap * 2);
-    m_pData = pAlloc->reallocV<T>(m_pData, m_cap, newCap);
+    m_pData = pAlloc->relocate<T>(m_pData, m_cap, newCap);
 
     defer( m_cap = newCap );
 

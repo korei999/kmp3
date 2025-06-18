@@ -46,9 +46,9 @@ struct QueueArray
     template<typename ...ARGS>
     isize emplaceFront(ARGS&&... args) noexcept;
 
-    T& popFront() noexcept;
+    T popFront() noexcept;
 
-    T& popBack() noexcept;
+    T popBack() noexcept;
 
     template<PUSH_WAY E_WAY>
     isize fakePush() noexcept;
@@ -189,7 +189,7 @@ QueueArray<T, CAP>::fakePush() noexcept
 }
 
 template<typename T, isize CAP>
-inline T&
+inline T
 QueueArray<T, CAP>::popFront() noexcept
 {
     ADT_ASSERT(!empty(), "");
@@ -197,18 +197,24 @@ QueueArray<T, CAP>::popFront() noexcept
     isize tmp = m_headI;
     m_headI = nextI(m_headI);
 
-    return m_aData[tmp];
+    T ret = std::move(m_aData[tmp]);
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        m_aData[tmp].~T();
+    return ret;
 }
 
 template<typename T, isize CAP>
-inline T&
+inline T
 QueueArray<T, CAP>::popBack() noexcept
 {
     ADT_ASSERT(!empty(), "");
 
     m_tailI = prevI(m_tailI);
 
-    return m_aData[m_tailI];
+    T ret = std::move(m_aData[m_tailI]);
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        m_aData[m_tailI].~T();
+    return ret;
 }
 
 template<typename T, isize CAP>

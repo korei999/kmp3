@@ -16,11 +16,9 @@ struct Opt
     /* */
 
     constexpr Opt() = default;
-    constexpr Opt(const T& x)
-    {
-        m_data = x;
-        m_bHasValue = true;
-    }
+    constexpr Opt(const T& x) : m_data {x}, m_bHasValue {true} {}
+
+    constexpr Opt(T&& x) : m_data {std::move(x)}, m_bHasValue {true} {}
 
     /* */
 
@@ -35,10 +33,23 @@ struct Opt
     constexpr const T& valueOrEmpty() const { return m_data; }
 
     constexpr T
+    valueOr(const T& v) const
+    {
+        return valueOrEmplace(v);
+    }
+
+    constexpr T
     valueOr(T&& v) const
     {
+        return valueOrEmplace(std::move(v));
+    }
+
+    template<typename ...ARGS>
+    constexpr T
+    valueOrEmplace(ARGS&&... args) const
+    {
         if (m_bHasValue) return m_data;
-        else return std::forward<T>(v);
+        else return T (std::forward<ARGS>(args)...);
     }
 };
 

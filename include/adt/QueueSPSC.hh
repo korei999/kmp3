@@ -28,6 +28,7 @@ struct QueueSPSC
 
     bool pushBack(const T& x);
     bool forcePushBack(const T& x); /* bump head on failure */
+
     [[nodiscard]] Opt<T> popFront();
 };
 
@@ -96,7 +97,10 @@ QueueSPSC<T, CAP>::popFront()
     if (head == m_atomTailI.load(atomic::ORDER::ACQUIRE))
         return {};
 
-    T ret = m_pData[head];
+    T ret = std::move(m_pData[head]);
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        m_pData[head].~T();
+
     m_atomHeadI.store(nextI(head), atomic::ORDER::RELEASE);
 
     return ret;

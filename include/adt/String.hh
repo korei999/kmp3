@@ -559,6 +559,27 @@ StringView::multiByteSize() const
     return n;
 }
 
+inline i64
+StringView::toI64(int base) const noexcept
+{
+    char* pEnd = m_pData + m_size;
+    return strtoll(m_pData, &pEnd, base);
+}
+
+inline u64
+StringView::toU64(int base) const noexcept
+{
+    char* pEnd = m_pData + m_size;
+    return strtoull(m_pData, &pEnd, base);
+}
+
+inline f64
+StringView::toF64() const noexcept
+{
+    char* pEnd = m_pData + m_size;
+    return strtod(m_pData, &pEnd);
+}
+
 template<typename T>
 ADT_NO_UB inline T
 StringView::reinterpret(isize at) const

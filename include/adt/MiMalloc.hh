@@ -19,7 +19,7 @@ struct MiMalloc : IAllocator
     /* virtual end */
 };
 
-struct MiMallocNV
+struct MiMallocNV : AllocatorHelperCRTP<MiMallocNV>
 {
     /* WARNING: Dirty fix for Managed classes, doesn't return the real address. */
     MiMalloc* operator&() const { return MiMalloc::inst(); }

@@ -75,16 +75,6 @@ parseArgs(int argc, char** argv)
                 app::g_eUIFrontend = app::UI::ANSI;
                 LOG_NOTIFY("setting HANDMADE ui\n");
             }
-            else if (svArg == "--termbox2")
-            {
-#ifdef OPT_TERMBOX2
-                app::g_eUIFrontend = app::UI::TERMBOX;
-                LOG_NOTIFY("setting TERMBOX ui\n");
-#else
-                print::out("compiled without termbox2\n");
-                exit(0);
-#endif
-            }
             else if (svArg == "--no-image")
             {
                 app::g_bNoImage = true;
