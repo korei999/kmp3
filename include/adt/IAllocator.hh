@@ -85,7 +85,7 @@ struct AllocatorHelperCRTP
 
     template<typename T>
     constexpr void
-    deallocate(T* p, isize size)
+    dealloc(T* p, isize size)
     {
         if constexpr (!std::is_trivially_destructible_v<T>)
             for (isize i = 0; i < size; ++i)
@@ -96,7 +96,7 @@ struct AllocatorHelperCRTP
 
     template<typename T>
     constexpr void
-    deallocate(T* p)
+    dealloc(T* p)
     {
         if constexpr (!std::is_trivially_destructible_v<T>)
             p->~T();

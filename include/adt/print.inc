@@ -49,10 +49,8 @@ inline isize copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char>
 
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const StringView str) noexcept;
 
-inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const String str) noexcept;
-
-template<int SIZE> requires(SIZE > 1)
-inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const StringFixed<SIZE>& str) noexcept;
+template<typename STRING_T> requires ConvertsToStringView<STRING_T>
+inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const STRING_T& str) noexcept;
 
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const char* str) noexcept;
 
@@ -111,7 +109,7 @@ inline isize formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const auto&
 inline isize formatToContextUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept;
 
 template<typename T>
-requires HasSizeMethod<T>
+requires (HasSizeMethod<T> && !ConvertsToStringView<T>)
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const T& x) noexcept;
 
 template<typename T>
@@ -123,9 +121,7 @@ inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const T (&a)[N]) n
 
 template<typename T>
 concept Printable = requires(const T& c)
-{
-    print::formatToContext({}, {}, c);
-};
+{ print::formatToContext({}, {}, c); };
 
 template<typename T>
 requires (!Printable<T>)

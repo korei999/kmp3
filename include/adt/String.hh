@@ -412,6 +412,46 @@ operator-(const StringView& l, const StringView& r)
     return sum;
 }
 
+inline bool
+operator<(const StringView& l, const StringView& r)
+{
+    const isize len = utils::min(l.m_size, r.m_size);
+    for (isize i = 0; i < len; ++i)
+    {
+        if (l.m_pData[i] < r.m_pData[i]) return true;
+        else if (r.m_pData[i] < l.m_pData[i]) return false;
+    }
+
+    return l.m_size < r.m_size;
+}
+
+inline bool
+operator<=(const StringView& l, const StringView& r)
+{
+    if (l.m_size == r.m_size) return true;
+    else return operator<(l, r);
+}
+
+inline bool
+operator>(const StringView& l, const StringView& r)
+{
+    const isize len = utils::min(l.m_size, r.m_size);
+    for (isize i = 0; i < len; ++i)
+    {
+        if (l.m_pData[i] > r.m_pData[i]) return true;
+        else if (r.m_pData[i] > l.m_pData[i]) return false;
+    }
+
+    return l.m_size > r.m_size;
+}
+
+inline bool
+operator>=(const StringView& l, const StringView& r)
+{
+    if (l.m_size == r.m_size) return true;
+    else return operator>(l, r);
+}
+
 inline constexpr isize
 StringView::lastOf(char c) const
 {

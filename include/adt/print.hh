@@ -189,7 +189,8 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtIdx) noexcept
     return nRead;
 }
 
-template<typename INT_T> requires std::is_integral_v<INT_T>
+template<typename INT_T>
+requires std::is_integral_v<INT_T>
 inline constexpr void
 intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 {
@@ -306,15 +307,9 @@ formatToContext(Context ctx, FormatArgs fmtArgs, const StringView str) noexcept
     return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
 }
 
-inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const String str) noexcept
-{
-    return formatToContext(ctx, fmtArgs, StringView(str));
-}
-
-template<int SIZE> requires(SIZE > 1)
-inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const StringFixed<SIZE>& str) noexcept
+template<typename STRING_T>
+requires ConvertsToStringView<STRING_T>
+inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const STRING_T& str) noexcept
 {
     return formatToContext(ctx, fmtArgs, StringView(str));
 }
@@ -337,7 +332,8 @@ formatToContext(Context ctx, FormatArgs fmtArgs, bool b) noexcept
     return formatToContext(ctx, fmtArgs, b ? "true" : "false");
 }
 
-template<typename INT_T> requires std::is_integral_v<INT_T>
+template<typename INT_T>
+requires std::is_integral_v<INT_T>
 inline constexpr isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
 {
@@ -422,7 +418,8 @@ formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Pair<A, 
     return printArgs(ctx, x.first, x.second);
 }
 
-template<typename PTR_T> requires std::is_pointer_v<PTR_T>
+template<typename PTR_T>
+requires std::is_pointer_v<PTR_T>
 inline isize
 formatToContext(Context ctx, FormatArgs fmtArgs, const PTR_T p) noexcept
 {
@@ -688,7 +685,7 @@ formatToContextUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept
 }
 
 template<typename T>
-requires HasSizeMethod<T>
+requires (HasSizeMethod<T> && !ConvertsToStringView<T>)
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
 {
     return formatToContextExpSize(ctx, fmtArgs, x, x.size());

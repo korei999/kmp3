@@ -3,7 +3,6 @@
 #include "StdAllocator.hh"
 #include "print.hh" /* IWYU pragma: keep */
 
-#include <cstdlib>
 #include <cstring>
 
 namespace adt
@@ -31,16 +30,28 @@ struct PoolAllocator : public IArena
     usize m_blockCap = 0; 
     usize m_chunkSize = 0;
     IAllocator* m_pBackAlloc {};
+#if !defined NDEBUG && defined ADT_DBG_MEMORY
+    std::source_location m_loc {};
+#endif
     Block* m_pBlocks = nullptr;
 
     /* */
 
     PoolAllocator() = default;
-    PoolAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = StdAllocator::inst()) noexcept(false)
+    PoolAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = StdAllocator::inst()
+#if !defined NDEBUG && defined ADT_DBG_MEMORY
+        , std::source_location _DBG_loc = std::source_location::current()
+
+#endif
+    ) noexcept(false)
         : m_blockCap {alignUp(blockSize, chunkSize + sizeof(Node))},
           m_chunkSize {chunkSize + sizeof(Node)},
           m_pBackAlloc(pBackAlloc),
-          m_pBlocks {allocBlock()} {}
+#if !defined NDEBUG && defined ADT_DBG_MEMORY
+          m_loc {_DBG_loc},
+#endif
+          m_pBlocks {allocBlock()}
+    {}
 
     /* */
 
@@ -69,6 +80,12 @@ PoolAllocator::allocBlock()
 
     usize total = m_blockCap + sizeof(Block);
     Block* r = (Block*)m_pBackAlloc->zalloc(1, total);
+
+#if !defined NDEBUG && defined ADT_DBG_MEMORY
+    print::err("[PoolAllocator: {}, {}, {}]: new block of size: {}\n",
+        print::stripSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_blockCap
+    );
+#endif
 
     r->head = (Node*)r->pMem;
 
@@ -161,7 +178,7 @@ PoolAllocator::freeAll() noexcept
     while (p)
     {
         next = p->next;
-        ::free(p);
+        m_pBackAlloc->free(p);
         p = next;
     }
     m_pBlocks = nullptr;

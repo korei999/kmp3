@@ -187,7 +187,7 @@ SList<T>::destroy(IAllocator* pAlloc) noexcept
         curr = tmp
     )
     {
-        pAlloc->deallocate(curr);
+        pAlloc->dealloc(curr);
     }
 
     *this = {};

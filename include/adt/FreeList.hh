@@ -162,6 +162,7 @@ FreeList::freeAll() noexcept
         it = next;
     }
     m_pBlocks = nullptr;
+    m_totalAllocated = 0;
     m_tree = {};
 }
 

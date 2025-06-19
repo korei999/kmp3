@@ -119,7 +119,7 @@ constexpr void
 List<T>::destroy(IAllocator* pA)
 {
     ADT_LIST_FOREACH_SAFE(this, it, tmp)
-        pA->deallocate(it);
+        pA->dealloc(it);
 
     *this = {};
 }

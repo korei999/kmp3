@@ -360,7 +360,7 @@ template<typename T>
 inline void
 Vec<T>::destroy(IAllocator* p) noexcept
 {
-    p->deallocate(m_pData, m_size);
+    p->dealloc(m_pData, m_size);
     *this = {};
 }
 

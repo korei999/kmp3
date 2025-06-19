@@ -9,6 +9,11 @@ namespace adt
 struct StdAllocatorNV;
 struct IAllocator;
 struct String;
+struct StringView;
+
+template<typename T>
+concept ConvertsToStringView = requires(const T& c)
+{ StringView(c); };
 
 [[nodiscard]] constexpr isize ntsSize(const char* nts);
 
@@ -86,6 +91,10 @@ struct StringView
 [[nodiscard]] inline bool operator==(const StringView& l, const StringView& r);
 [[nodiscard]] inline bool operator==(const StringView& l, const char* r);
 [[nodiscard]] inline bool operator!=(const StringView& l, const StringView& r);
+[[nodiscard]] inline bool operator<(const StringView& l, const StringView& r);
+[[nodiscard]] inline bool operator<=(const StringView& l, const StringView& r);
+[[nodiscard]] inline bool operator>(const StringView& l, const StringView& r);
+[[nodiscard]] inline bool operator>=(const StringView& l, const StringView& r);
 [[nodiscard]] inline i64 operator-(const StringView& l, const StringView& r);
 
 inline String StringCat(IAllocator* p, const StringView& l, const StringView& r);

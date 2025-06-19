@@ -79,32 +79,29 @@ struct RBNode
 template<typename T, typename ...ARGS>
 [[nodiscard]] inline RBNode<T>* RBNodeAlloc(IAllocator* pA, ARGS&&... args);
 
-template<typename T>
-inline RBNode<T>* RBTraversePRE(
+template<typename T, typename LAMBDA>
+inline RBNode<T>*
+RBTraversePre(
     RBNode<T>* p,
-    bool (*pfn)(RBNode<T>* pNode, void* pArg),
-    void* pUserData
+    LAMBDA cl
 );
 
-template<typename T>
-inline RBNode<T>* RBTraverseIN(
+template<typename T, typename LAMBDA>
+inline RBNode<T>* RBTraverseIn(
     RBNode<T>* p,
-    bool (*pfn)(RBNode<T>* pNode, void* pArg),
-    void* pUserData
+    LAMBDA cl
 );
 
-template<typename T>
-inline RBNode<T>* RBTraversePOST(
+template<typename T, typename LAMBDA>
+inline RBNode<T>* RBTraversePost(
     RBNode<T>* p,
-    bool (*pfn)(RBNode<T>* pNode, void* pArg),
-    void* pUserData
+    LAMBDA cl
 );
 
-template<typename T>
+template<typename T, typename LAMBDA>
 inline RBNode<T>* RBTraverse(
     RBNode<T>* p,
-    bool (*pfn)(RBNode<T>* pNode, void* pArg),
-    void* pUserData,
+    LAMBDA cl,
     RB_ORDER order
 );
 
@@ -117,8 +114,14 @@ inline int RBDepth(RBNode<T>* p);
 template<typename T>
 struct RBTree
 {
+    using NodeType = RBNode<T>;
+
+    /* */
+
     RBNode<T>* m_pRoot = nullptr;
     usize m_size = 0;
+
+    /* */
 
     RBNode<T>* root();
     bool empty();
@@ -134,6 +137,8 @@ struct RBTree
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
     RBNode<T>* emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args);
+
+    RBTree release() noexcept { return utils::exchange(this, {}); }
 
     void destroy(IAllocator* pA);
 };
@@ -465,7 +470,7 @@ template<typename T>
 inline void
 RBTree<T>::removeAndFree(IAllocator* p, const T& elm)
 {
-    p->free(RBSearch(m_pRoot, elm));
+    removeAndFree(p, RBSearch(m_pRoot, elm));
 }
 
 /* create RBNode outside then insert */
@@ -541,80 +546,75 @@ RBNodeAlloc(IAllocator* pA, ARGS&& ...args)
     return r;
 }
 
-template<typename T>
+template<typename T, typename LAMBDA>
 inline RBNode<T>*
-RBTraversePRE(
+RBTraversePre(
     RBNode<T>* p,
-    bool (*pfn)(RBNode<T>* pNode, void* pArg),
-    void* pUserData
+    LAMBDA cl
 )
 {
     if (p)
     {
-        if (pfn(p, pUserData)) return {p};
-        RBTraversePRE(p->left(), pfn, pUserData);
-        RBTraversePRE(p->right(), pfn, pUserData);
+        if (cl(p)) return {p};
+        RBTraversePre(p->left(), cl);
+        RBTraversePre(p->right(), cl);
     }
 
     return {};
 }
 
-template<typename T>
+template<typename T, typename LAMBDA>
 inline RBNode<T>*
-RBTraverseIN(
+RBTraverseIn(
     RBNode<T>* p,
-    bool (*pfn)(RBNode<T>* pNode, void* pArg),
-    void* pUserData
+    LAMBDA cl
 )
 {
     if (p)
     {
-        RBTraverseIN(p->left(), pfn, pUserData);
-        if (pfn(p, pUserData)) return {p};
-        RBTraverseIN(p->right(), pfn, pUserData);
+        RBTraverseIn(p->left(), cl);
+        if (cl(p)) return {p};
+        RBTraverseIn(p->right(), cl);
     }
 
     return {};
 }
 
-template<typename T>
+template<typename T, typename LAMBDA>
 inline RBNode<T>*
-RBTraversePOST(
+RBTraversePost(
     RBNode<T>* p,
-    bool (*pfn)(RBNode<T>* pNode, void* pArg),
-    void* pUserData
+    LAMBDA cl
 )
 {
     if (p)
     {
-        RBTraversePOST(p->left(), pfn, pUserData);
-        RBTraversePOST(p->right(), pfn, pUserData);
-        if (pfn(p, pUserData)) return {p};
+        RBTraversePost(p->left(), cl);
+        RBTraversePost(p->right(), cl);
+        if (cl(p)) return {p};
     }
 
     return {};
 }
 
 /* early return if pfn returns true */
-template<typename T>
-inline RBNode<T>*
-RBTraverse(
+template<typename T, typename LAMBDA>
+inline RBNode<T>* RBTraverse(
     RBNode<T>* p,
-    bool (*pfn)(RBNode<T>* pNode, void* pArg),
-    void* pUserData,
+    LAMBDA cl,
     RB_ORDER order
 )
 {
     switch (order)
     {
         case RB_ORDER::PRE:
-        return RBTraversePRE(p, pfn, pUserData);
+        return RBTraversePre(p, cl);
 
         case RB_ORDER::IN:
-        return RBTraverseIN(p, pfn, pUserData);
+        return RBTraverseIn(p, cl);
 
         case RB_ORDER::POST:
-        return RBTraversePOST(p, pfn, pUserData);
+        return RBTraversePost(p, cl);
     }
 
     ADT_ASSERT(false, "incorrect RB_ORDER");
@@ -676,13 +676,16 @@ template<typename T>
 inline void
 RBTree<T>::destroy(IAllocator* pAlloc)
 {
-    auto pfnFree = +[](RBNode<T>* p, void* ptr) -> bool {
-        ((IAllocator*)ptr)->free(p);
-
+    auto pfnFree = +[](RBNode<T>* p, void* ptr) -> bool
+    {
+        if constexpr (!std::is_trivially_destructible_v<T>)
+            p->m_data.~T();
+        static_cast<IAllocator*>(ptr)->free(p);
         return false;
     };
 
     RBTraverse(m_pRoot, pfnFree, pAlloc, RB_ORDER::POST);
+    *this = {};
 }
 
 namespace print
@@ -690,7 +693,7 @@ namespace print
 
 template<typename T>
 inline isize
-formatToContext(Context ctx, [[maybe_unused]]  FormatArgs fmtArgs, const RBNode<T>& node)
+formatToContext(Context ctx, FormatArgs fmtArgs, const RBNode<T>& node)
 {
     char aBuff[128] {};
     const StringView sCol = node.color() == RB_COLOR::BLACK ? ADT_LOGS_COL_BLUE : ADT_LOGS_COL_RED;
