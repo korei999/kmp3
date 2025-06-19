@@ -76,11 +76,8 @@ struct RBNode
     RBNode* const& parentAndColor() const { return m_parentColor; }
 };
 
-template<typename T>
-[[nodiscard]] inline RBNode<T>* RBNodeAlloc(IAllocator* pA, const T& data);
-
 template<typename T, typename ...ARGS>
-[[nodiscard]] inline RBNode<T>* RBNodeAlloc(IAllocator* pA, ARGS&& ...args);
+[[nodiscard]] inline RBNode<T>* RBNodeAlloc(IAllocator* pA, ARGS&&... args);
 
 template<typename T>
 inline RBNode<T>* RBTraversePRE(
@@ -126,11 +123,18 @@ struct RBTree
     RBNode<T>* root();
     bool empty();
     RBNode<T>* remove(RBNode<T>* elm);
+
     void removeAndFree(IAllocator* p, RBNode<T>* elm);
     void removeAndFree(IAllocator* p, const T& elm);
-    RBNode<T>* insert(bool bAllowDuplicates, RBNode<T>* elm);
+
+    RBNode<T>* insertNode(bool bAllowDuplicates, RBNode<T>* elm);
+
     RBNode<T>* insert(IAllocator* pA, bool bAllowDuplicates, const T& data);
-    template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) RBNode<T>* emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args);
+    RBNode<T>* insert(IAllocator* pA, bool bAllowDuplicates, T&& data);
+
+    template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
+    RBNode<T>* emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args);
+
     void destroy(IAllocator* pA);
 };
 
@@ -467,7 +471,7 @@ RBTree<T>::removeAndFree(IAllocator* p, const T& elm)
 /* create RBNode outside then insert */
 template<typename T>
 inline RBNode<T>*
-RBTree<T>::insert(bool bAllowDuplicates, RBNode<T>* elm)
+RBTree<T>::insertNode(bool bAllowDuplicates, RBNode<T>* elm)
 {
     RBNode<T>* parent = nullptr;
     RBNode<T>* tmp = m_pRoot;
@@ -505,34 +509,35 @@ template<typename T>
 inline RBNode<T>*
 RBTree<T>::insert(IAllocator* pA, bool bAllowDuplicates, const T& data)
 {
-    RBNode<T>* pNew = RBNodeAlloc(pA, data);
-    return insert(bAllowDuplicates, pNew);
+    RBNode<T>* pNew = RBNodeAlloc<T>(pA, data);
+    return insertNode(bAllowDuplicates, pNew);
 }
 
 template<typename T>
-template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>) 
+inline RBNode<T>*
+RBTree<T>::insert(IAllocator* pA, bool bAllowDuplicates, T&& data)
+{
+    RBNode<T>* pNew = RBNodeAlloc<T>(pA, std::move(data));
+    return insertNode(bAllowDuplicates, pNew);
+}
+
+template<typename T>
+template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
 inline RBNode<T>*
 RBTree<T>::emplace(IAllocator* pA, bool bAllowDuplicates, ARGS&&... args)
 {
-    RBNode<T>* pNew = RBNodeAlloc(pA, std::forward<ARGS>(args)...);
-    return insert(bAllowDuplicates, pNew);
-}
-
-template<typename T>
-inline RBNode<T>*
-RBNodeAlloc(IAllocator* pA, const T& data)
-{
-    auto* r = (RBNode<T>*)pA->zalloc(1, sizeof(RBNode<T>));
-    new(&r->m_data) T(data);
-    return r;
+    RBNode<T>* pNew = RBNodeAlloc<T>(pA, std::forward<ARGS>(args)...);
+    return insertNode(bAllowDuplicates, pNew);
 }
 
 template<typename T, typename ...ARGS>
 inline RBNode<T>*
 RBNodeAlloc(IAllocator* pA, ARGS&& ...args)
 {
-    auto* r = (RBNode<T>*)pA->zalloc(1, sizeof(RBNode<T>));
-    new(&r->m_data) T(std::forward<ARGS>(args)...);
+    static_assert(std::is_constructible_v<T, ARGS...>);
+
+    auto* r = pA->zallocV<RBNode<T>>(1);
+    new(&r->m_data) T (std::forward<ARGS>(args)...);
     return r;
 }
 

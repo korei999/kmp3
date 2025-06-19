@@ -93,7 +93,7 @@ struct MapResult
     {
         if (eStatus != MAP_RESULT_STATUS::NOT_FOUND)
             return value();
-        else return V {std::forward<ARGS>(v)...};
+        else return V (std::forward<ARGS>(v)...);
     }
 };
 
@@ -130,7 +130,7 @@ struct Map
     MapResult<K, V> insert(IAllocator* p, const K& key, V&& val);
 
     template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>)
-        MapResult<K, V> emplace(IAllocator* p, const K& key, ARGS&&... args);
+    MapResult<K, V> emplace(IAllocator* p, const K& key, ARGS&&... args);
 
     [[nodiscard]] MapResult<K, V> search(const K& key);
     [[nodiscard]] const MapResult<K, V> search(const K& key) const;
@@ -142,6 +142,10 @@ struct Map
     bool tryRemove(const K& key);
 
     MapResult<K, V> tryInsert(IAllocator* p, const K& key, const V& val);
+    MapResult<K, V> tryInsert(IAllocator* p, const K& key, V&& val);
+
+    template<typename ...ARGS>
+    MapResult<K, V> tryEmplace(IAllocator* p, const K& key, ARGS&&... args);
 
     void destroy(IAllocator* p) noexcept;
 
@@ -152,8 +156,6 @@ struct Map
     [[nodiscard]] isize size() const;
 
     void rehash(IAllocator* p, isize size);
-
-    MapResult<K, V> insertHashed(const K& key, const V& val, usize hash);
 
     [[nodiscard]] MapResult<K, V> searchHashed(const K& key, usize keyHash) const;
 
@@ -271,16 +273,18 @@ Map<K, V, FN_HASH>::emplace(IAllocator* p, const K& key, ARGS&&... args)
     const isize idx = insertionIdx(keyHash, key);
     auto& bucket = m_vBuckets[idx];
 
+    V tmpVal = V (std::forward<ARGS>(args)...);
+
     ADT_DEFER(
-        new(&bucket.val) V {std::forward<ARGS>(args)...};
+        utils::moveDestruct(&bucket.val, std::move(tmpVal));
         bucket.eFlags = MAP_BUCKET_FLAGS::OCCUPIED;
     );
 
     if (bucket.key == key)
     {
 #ifndef NDEBUG
-        print::err("[Map::insertHashed]: updating value for existing key('{}'): old: '{}'\n",
-            key, bucket.val
+        print::err("[Map::emplace]: updating value for existing key('{}'): old: '{}', new: '{}'\n",
+            key, bucket.val, tmpVal
         );
 #endif
 
@@ -291,6 +295,7 @@ Map<K, V, FN_HASH>::emplace(IAllocator* p, const K& key, ARGS&&... args)
         };
     }
 
+    if constexpr (!std::is_trivially_destructible_v<K>) bucket.key.~K();
     new(&bucket.key) K(key);
 
     ++m_nOccupied;
@@ -366,7 +371,27 @@ Map<K, V, FN_HASH>::tryInsert(IAllocator* p, const K& key, const V& val)
 {
     auto f = search(key);
     if (f) return f;
-    else return insert(p, key, val);
+    else return emplace(p, key, val);
+}
+
+template<typename K, typename V, usize (*FN_HASH)(const K&)>
+inline MapResult<K, V>
+Map<K, V, FN_HASH>::tryInsert(IAllocator* p, const K& key, V&& val)
+{
+    auto f = search(key);
+    if (f) return f;
+    else return emplace(p, key, std::move(val));
+}
+
+
+template<typename K, typename V, usize (*FN_HASH)(const K&)>
+template<typename ...ARGS>
+inline MapResult<K, V>
+Map<K, V, FN_HASH>::tryEmplace(IAllocator* p, const K& key, ARGS&&... args)
+{
+    auto f = search(key);
+    if (f) return f;
+    else return emplace(p, key, std::forward<ARGS>(args)...);
 }
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
@@ -408,44 +433,6 @@ Map<K, V, FN_HASH>::rehash(IAllocator* p, isize size)
 
     destroy(p);
     *this = mNew;
-}
-
-template<typename K, typename V, usize (*FN_HASH)(const K&)>
-inline MapResult<K, V>
-Map<K, V, FN_HASH>::insertHashed(const K& key, const V& val, usize keyHash)
-{
-    const isize idx = insertionIdx(keyHash, key);
-    auto& bucket = m_vBuckets[idx];
-
-    ADT_DEFER(
-        new(&bucket.val) V(val);
-        bucket.eFlags = MAP_BUCKET_FLAGS::OCCUPIED;
-    );
-
-    if (bucket.key == key)
-    {
-#ifndef NDEBUG
-        print::err("[Map::insertHashed]: updating value for existing key('{}'): old: '{}', new: '{}'\n",
-            key, bucket.val, val
-        );
-#endif
-
-        return {
-            .pData = &bucket,
-            .hash = keyHash,
-            .eStatus = MAP_RESULT_STATUS::FOUND,
-        };
-    }
-
-    new(&bucket.key) K(key);
-
-    ++m_nOccupied;
-
-    return {
-        .pData = &bucket,
-        .hash = keyHash,
-        .eStatus = MAP_RESULT_STATUS::INSERTED
-    };
 }
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
@@ -542,6 +529,11 @@ struct MapManaged : public Map<K, V, FN_HASH>
     { return Base::emplace(&allocator(), key, std::forward<ARGS>(args)...); }
 
     MapResult<K, V> tryInsert(const K& key, const V& val) { return Base::tryInsert(&allocator(), key, val); }
+    MapResult<K, V> tryInsert(const K& key, V&& val) { return Base::tryInsert(&allocator(), key, std::move(val)); }
+
+    template<typename ...ARGS>
+    MapResult<K, V> tryEmplace(IAllocator* p, const K& key, ARGS&&... args)
+    { return Base::tryEmplace(&allocator(), key, std::forward<ARGS>(args)...); }
 
     void destroy() noexcept { Base::destroy(&allocator()); }
 

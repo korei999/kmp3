@@ -58,7 +58,7 @@ struct SetResult : public MapResult<T, Empty>
     {
         if (Base::eStatus != MAP_RESULT_STATUS::NOT_FOUND)
             return value();
-        else return T {std::forward<ARGS>(args)...};
+        else return T (std::forward<ARGS>(args)...);
     }
 };
 
@@ -76,10 +76,9 @@ struct Set : public Map<T, Empty, FN_HASH>
 
     SetResult<T> insert(IAllocator* p, const T& x);
     auto tryInsert() = delete;
-    SetResult<T> insertHashed(const T& x, usize hash);
 
-    template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-    SetResult<T> emplace(IAllocator* p, ARGS&&... args) { return insert(p, {std::forward<T>(args)...}); }
+    template<typename ...ARGS>
+    SetResult<T> emplace(IAllocator* p, ARGS&&... args);
 
     [[nodiscard]] SetResult<T> search(const T& key);
     [[nodiscard]] const SetResult<T> search(const T& key) const;
@@ -125,19 +124,25 @@ template<typename T, usize (*FN_HASH)(const T&)>
 inline SetResult<T>
 Set<T, FN_HASH>::insert(IAllocator* p, const T& x)
 {
+    return emplace(p, x);
+}
+
+template<typename T, usize (*FN_HASH)(const T&)>
+template<typename ...ARGS>
+inline SetResult<T>
+Set<T, FN_HASH>::emplace(IAllocator* p, ARGS&&... args)
+{
+    static_assert(std::is_constructible_v<T, ARGS...>);
+
     if (Base::m_vBuckets.cap() <= 0)
         *this = {p};
     else if (Base::loadFactor() >= Base::m_maxLoadFactor)
         rehash(p, Base::m_vBuckets.cap() * 2);
 
-    return insertHashed(x, FN_HASH(x));
-}
+    T tmpVal = T (std::forward<ARGS>(args)...);
 
-template<typename T, usize (*FN_HASH)(const T&)>
-inline SetResult<T>
-Set<T, FN_HASH>::insertHashed(const T& x, const usize hash)
-{
-    const isize idx = Base::insertionIdx(hash, x);
+    const usize hash = FN_HASH(tmpVal);
+    const isize idx = Base::insertionIdx(hash, tmpVal);
     auto& rBucket = Base::m_vBuckets[idx];
 
     rBucket.eFlags = MAP_BUCKET_FLAGS::OCCUPIED;
@@ -146,13 +151,14 @@ Set<T, FN_HASH>::insertHashed(const T& x, const usize hash)
         &rBucket, hash, MAP_RESULT_STATUS::INSERTED
     };
 
-    if (rBucket.key == x)
+    if (rBucket.key == tmpVal)
     {
         res.eStatus = MAP_RESULT_STATUS::FOUND;
         return res;
     }
 
-    new(&rBucket.key) T(x);
+    utils::moveDestruct(&rBucket.key, std::move(tmpVal));
+
     ++Base::m_nOccupied;
 
     return res;
@@ -178,8 +184,8 @@ Set<T, FN_HASH>::rehash(IAllocator* p, isize size)
 {
     Set mNew {p, size};
 
-    for (const auto& key : *this)
-        mNew.insert(p, key);
+    for (auto& key : *this)
+        mNew.emplace(p, std::move(key));
 
     Base::destroy(p);
     *this = mNew;
