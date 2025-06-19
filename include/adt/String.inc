@@ -3,6 +3,8 @@
 #include "Span.inc"
 #include "hash.hh"
 
+#include <concepts>
+
 namespace adt
 {
 
@@ -12,8 +14,16 @@ struct String;
 struct StringView;
 
 template<typename T>
-concept ConvertsToStringView = requires(const T& c)
-{ StringView(c); };
+concept ConvertsToStringView =
+(requires(const T& t)
+{
+    { t.data() } -> std::same_as<const char*>;
+    { t.size() } -> std::convertible_to<isize>;
+}) ||
+(requires(const T& t)
+{
+    { StringView(t) } -> std::same_as<StringView>;
+});
 
 [[nodiscard]] constexpr isize ntsSize(const char* nts);
 

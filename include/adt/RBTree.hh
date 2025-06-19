@@ -69,7 +69,7 @@ struct RBNode
     RB_COLOR color() const { return (RB_COLOR)((usize)m_parentColor & COLOR_MASK); }
     RB_COLOR setColor(const RB_COLOR eColor) { m_parentColor = (RBNode*)((usize)parent() | (usize)eColor); return eColor; }
 
-    RBNode* parent() const {  return (RBNode*)((usize)m_parentColor & ~COLOR_MASK); }
+    RBNode* parent() const { return (RBNode*)((usize)m_parentColor & ~COLOR_MASK); }
     void setParent(RBNode* par) { m_parentColor = (RBNode*)(((usize)par & ~COLOR_MASK) | (usize)color()); }
 
     RBNode*& parentAndColor() { return m_parentColor; }
@@ -140,7 +140,9 @@ struct RBTree
 
     RBTree release() noexcept { return utils::exchange(this, {}); }
 
-    void destroy(IAllocator* pA);
+    void destroy(IAllocator* pA) noexcept;
+
+    void destructNodes() noexcept;
 };
 
 template<typename T>
@@ -674,18 +676,30 @@ RBPrintNodes(
 
 template<typename T>
 inline void
-RBTree<T>::destroy(IAllocator* pAlloc)
+RBTree<T>::destroy(IAllocator* pAlloc) noexcept
 {
-    auto pfnFree = +[](RBNode<T>* p, void* ptr) -> bool
-    {
-        if constexpr (!std::is_trivially_destructible_v<T>)
-            p->m_data.~T();
-        static_cast<IAllocator*>(ptr)->free(p);
-        return false;
-    };
-
-    RBTraverse(m_pRoot, pfnFree, pAlloc, RB_ORDER::POST);
+    RBTraversePost(m_pRoot, [&](RBNode<T>* p)
+        {
+            if constexpr (!std::is_trivially_destructible_v<T>)
+                p->m_data.~T();
+            pAlloc->free(p);
+            return false;
+        }
+    );
     *this = {};
+}
+
+template<typename T>
+inline void
+RBTree<T>::destructNodes() noexcept
+{
+    RBTraversePre(m_pRoot, [&](RBNode<T>* p)
+        {
+            if constexpr (!std::is_trivially_destructible_v<T>)
+                p->m_data.~T();
+            return false;
+        }
+    );
 }
 
 namespace print

@@ -311,7 +311,7 @@ template<typename STRING_T>
 requires ConvertsToStringView<STRING_T>
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const STRING_T& str) noexcept
 {
-    return formatToContext(ctx, fmtArgs, StringView(str));
+    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), isize(str.size())});
 }
 
 inline isize
