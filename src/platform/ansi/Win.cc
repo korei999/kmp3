@@ -14,26 +14,33 @@ using namespace adt;
 namespace platform::ansi
 {
 
+int
+Win::calcImageHeightSplit()
+{
+    const Image img = app::decoder().getCoverImage();
+
+    if (img.height > 0 && img.width > 0)
+        return app::player().m_imgHeight + 1;
+    else return 12; /* Default offset from the top to the start of the list. */
+}
+
 void
 Win::disableRawMode()
 {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &m_termOg) == -1)
-        throw RuntimeException("tcsetattr() failed");
+    ADT_RUNTIME_EXCEPTION(tcsetattr(STDIN_FILENO, TCSAFLUSH, &m_termOg) != -1);
 }
 
 void
 Win::enableRawMode()
 {
-    if (tcgetattr(STDIN_FILENO, &m_termOg) == -1)
-        throw RuntimeException("tcsetattr() failed");
+    ADT_RUNTIME_EXCEPTION(tcgetattr(STDIN_FILENO, &m_termOg) != -1);
 
     struct termios raw = m_termOg;
     raw.c_lflag &= ~(ECHO | ICANON | ISIG);
     raw.c_cc[VMIN] = 0; /* disable blocking on read() */
     /*raw.c_cc[VTIME] = 1;*/
 
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-        throw RuntimeException("tcsetattr() failed");
+    ADT_RUNTIME_EXCEPTION(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) != -1);
 }
 
 void
@@ -79,10 +86,7 @@ void
 Win::draw()
 {
     app::player().nextSongIfPrevEnded();
-
     update();
-
-    m_firstIdxPrev = m_firstIdx;
 }
 
 void
@@ -90,12 +94,14 @@ Win::procEvents()
 {
     procInput();
 
-    if (m_bUpdateFirst)
+    adjustListHeight();
+    if (m_bUpdateFirstIdx)
     {
         common::fixFirstIdx(
             m_listHeight - 2,
             &m_firstIdx
         );
+        m_bUpdateFirstIdx = false;
     }
 }
 
@@ -118,16 +124,17 @@ Win::subStringSearch()
 }
 
 void
-Win::centerAroundSelection()
+Win::adjustListHeight()
 {
+    const int split = calcImageHeightSplit();
+    const int height = m_termSize.height;
+    m_listHeight = height - split - 2;
 }
 
 void
-Win::adjustListHeight()
+Win::forceResize()
 {
-    const int split = app::g_pPlayer->m_imgHeight + 1;
-    const int height = m_termSize.height;
-    m_listHeight = height - split - 2;
+    resizeHandler();
 }
 
 void
@@ -138,7 +145,6 @@ Win::resizeHandler()
     m_termSize = getTermSize();
     LOG_GOOD("term: {}\n", m_termSize);
 
-    adjustListHeight();
     m_textBuff.resize(m_termSize.width, m_termSize.height);
 
     pl.m_bSelectionChanged = true;
@@ -146,11 +152,6 @@ Win::resizeHandler()
 
     m_bClear = true;
     m_lastResizeTime = utils::timeNowMS();
-
-    /* adapt list height if window size increased */
-    const int listHeight = m_listHeight - 2;
-    if (pl.m_focused > pl.m_vSearchIdxs.size() - listHeight && pl.m_vSearchIdxs.size() > listHeight)
-        m_firstIdx = pl.m_vSearchIdxs.size() - listHeight - 1;
 }
 
 } /* namespace platform::ansi */

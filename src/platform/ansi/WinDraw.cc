@@ -12,7 +12,7 @@ namespace platform::ansi
 {
 
 static u8 s_aMemBuff[SIZE_8K] {};
-static ScratchBuffer s_scratch(s_aMemBuff);
+static ScratchBuffer s_scratch {s_aMemBuff};
 
 #ifdef OPT_CHAFA
 void
@@ -32,12 +32,12 @@ Win::coverImage()
 
         Image img = app::decoder().getCoverImage();
 
-        namespace ch = platform::chafa;
+        namespace c = platform::chafa;
 
-        ch::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? ch::IMAGE_LAYOUT::RAW : ch::IMAGE_LAYOUT::LINES;
+        c::IMAGE_LAYOUT eLayout = app::g_bSixelOrKitty ? c::IMAGE_LAYOUT::RAW : c::IMAGE_LAYOUT::LINES;
 
         /* NOTE: using textBuff's dedicated image arena */
-        auto chafaImg = ch::allocImage(
+        auto chafaImg = c::allocImage(
             &m_textBuff.m_imgArena, eLayout, img, split, m_termSize.width
         );
 
@@ -89,49 +89,43 @@ Win::volume()
 {
     const auto width = m_termSize.width;
     const int off = m_prevImgWidth + 2;
-    const f32 vol = app::g_pMixer->getVolume();
-    const bool bMuted = app::g_pMixer->isMuted();
+    const f32 vol = app::mixer().getVolume();
+    const bool bMuted = app::mixer().isMuted();
 
     Span sp = s_scratch.nextMemZero<char>(width + 1);
     defer( s_scratch.reset() );
 
-    isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
+    const isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
 
-    const int maxVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
+    const int nVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
 
     using STYLE = TEXT_BUFF_STYLE;
 
+    auto clVolumeStringColor = [&](f32 x) -> STYLE
+    {
+        if (x <= 0.33f)
+            return STYLE::GREEN;
+        else if (x > 0.33f && x <= 0.66f)
+            return STYLE::GREEN;
+        else if (x > 0.66f && x <= 1.01f)
+            return STYLE::YELLOW;
+        else return STYLE::RED;
+    };
+
     auto clBarColor = [&](int i) -> STYLE
     {
-        f32 col = f32(i) / ((f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME)));
+        const f32 col = f32(i) / ((f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME)));
 
-        if (col <= 0.33f)
-            return STYLE::GREEN;
-        else if (col > 0.33f && col <= 0.66f)
-            return STYLE::GREEN;
-        else if (col > 0.66f && col <= 1.00f)
-            return STYLE::YELLOW;
-        else return STYLE::RED;
+        return clVolumeStringColor(col);
     };
 
-    auto clVolumeStringColor = [&]() -> STYLE
-    {
-        if (vol <= 0.33f)
-            return STYLE::GREEN;
-        else if (vol > 0.33f && vol <= 0.66f)
-            return STYLE::GREEN;
-        else if (vol > 0.66f && vol <= 1.00f)
-            return STYLE::YELLOW;
-        else return STYLE::RED;
-    };
-
-    const STYLE col = bMuted ? STYLE::BLUE : clVolumeStringColor();
+    const STYLE col = bMuted ? STYLE::BLUE : clVolumeStringColor(vol);
     m_textBuff.string(off, 6, STYLE::BOLD | col, {sp.data(), n});
 
-    for (int i = off + n + 1, nTimes = 0; i < width && nTimes < maxVolumeBars; ++i, ++nTimes)
+    for (int i = off + n + 1, nTimes = 0; i < width && nTimes < nVolumeBars; ++i, ++nTimes)
     {
         STYLE col;
-        wchar_t wc[2] {};
+        wchar_t wc[3] {};
         if (bMuted)
         {
             col = STYLE::BLUE | STYLE::NORM;
@@ -143,7 +137,7 @@ Win::volume()
             wc[0] = common::CHAR_VOL_MUTED;
         }
 
-        m_textBuff.wideString(i, 6, col, {wc, 3});
+        m_textBuff.wideString(i, 6, col, wc);
     }
 }
 
@@ -201,8 +195,10 @@ Win::timeSlider()
 void
 Win::songList()
 {
-    const auto& pl = *app::g_pPlayer;
-    const int split = pl.m_imgHeight + 1;
+    const auto& pl = app::player();
+    const int split = calcImageHeightSplit();
+
+    if (m_firstIdx < 0 || m_firstIdx >= pl.m_vSearchIdxs.size()) return;
 
     for (isize h = m_firstIdx, i = 0; i < m_listHeight - 1; ++h, ++i)
     {
@@ -238,7 +234,7 @@ Win::scrollBar()
 
     if (m_listHeight - 1 >= pl.m_vSearchIdxs.size()) return;
 
-    const int split = pl.m_imgHeight + 1;
+    const int split = calcImageHeightSplit();
 
     const f32 listSizeFactor = m_listHeight / f32(pl.m_vSearchIdxs.size() - 0.9999f);
     const int barHeight = utils::max(1, static_cast<int>(m_listHeight * listSizeFactor));
@@ -260,7 +256,7 @@ Win::bottomLine()
 {
     namespace c = common;
 
-    const auto& pl = *app::g_pPlayer;
+    const auto& pl = app::player();
     const int height = m_termSize.height;
     const int width = m_termSize.width;
 

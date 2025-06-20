@@ -18,6 +18,6 @@ constexpr int MOUSE_STEP = 4;
 constexpr adt::u8 IMAGE_HEIGHT = 11; /* terminal rows height */
 constexpr adt::u8 MIN_IMAGE_HEIGHT = 10;
 constexpr adt::u8 MAX_IMAGE_HEIGHT = 30;
-constexpr adt::f64 DOUBLE_CLICK_DELAY = 300.0;
+constexpr adt::f64 DOUBLE_CLICK_DELAY = 350.0;
 
 } /* namespace defaults */

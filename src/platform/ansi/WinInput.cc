@@ -207,10 +207,10 @@ Win::procMouse(MouseInput in)
     const long height = m_termSize.height;
 
     const long xOff = m_prevImgWidth + 2;
-    const int yOff = pl.m_imgHeight + 1;
+    const int yOff = calcImageHeightSplit();
 
     const long listOff = yOff + 1;
-    const long sliderOff = 10;
+    const long timeSliderOff = 10;
     const long volumeOff = 6;
 
     auto clHoldScrollBar = [&]
@@ -247,8 +247,8 @@ Win::procMouse(MouseInput in)
         return;
     }
 
-    /* click on slider line */
-    if (in.y == sliderOff && in.x >= xOff)
+    /* click on time slider line */
+    if (in.y == timeSliderOff && in.x >= xOff)
     {
         defer( s_bPressed = true );
 
@@ -319,7 +319,7 @@ Win::procMouse(MouseInput in)
 
     if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
     {
-        /* click on scrollbar */
+        /* click on list scrollbar */
         if (in.x == m_termSize.width - 1)
         {
             clHoldScrollBar();
@@ -349,12 +349,12 @@ Win::procMouse(MouseInput in)
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_UP)
     {
-        m_bUpdateFirst = true;
+        m_bUpdateFirstIdx = true;
         pl.focus(pl.m_focused - defaults::MOUSE_STEP);
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
     {
-        m_bUpdateFirst = true;
+        m_bUpdateFirstIdx = true;
         pl.focus(pl.m_focused + defaults::MOUSE_STEP);
     }
 }
@@ -484,9 +484,9 @@ Win::readWChar()
 void
 Win::procInput()
 {
-    Input in = readFromStdin(defaults::UPDATE_RATE);
+    const Input in = readFromStdin(defaults::UPDATE_RATE);
 
-    m_bUpdateFirst = false;
+    m_bUpdateFirstIdx = false;
 
     switch (in.eType)
     {
@@ -495,11 +495,11 @@ Win::procInput()
             int wc = in.key;
             for (const auto& k : keybinds::inl_aKeys)
             {
-                if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == (u32)wc))
+                if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == u32(wc)))
                 {
                     keybinds::exec(k.pfn, k.arg);
                     m_bRedraw = true;
-                    m_bUpdateFirst = true;
+                    m_bUpdateFirstIdx = true;
                 }
             }
         }

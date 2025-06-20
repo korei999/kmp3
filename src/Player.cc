@@ -99,14 +99,6 @@ Player::focusSelected()
     focus(findSongIdxFromSelected());
 }
 
-
-void
-Player::focusSelectedCenter()
-{
-    focusSelected();
-    app::g_pWin->centerAroundSelection();
-}
-
 void
 Player::setDefaultIdxs(Vec<u16>* pIdxs)
 {
@@ -252,7 +244,7 @@ Player::select(long i)
     long idx = utils::clamp(i, 0L, long(m_vSearchIdxs.lastI()));
     m_selected = m_vSearchIdxs[idx];
 
-    app::g_pMixer->play(m_vSongs[m_selected]);
+    app::mixer().play(m_vSongs[m_selected]);
     updateInfo();
 }
 
@@ -291,10 +283,7 @@ Player::setImgSize(long height)
 
     m_bSelectionChanged = true;
     if (app::g_pWin)
-    {
         app::g_pWin->m_bClear = true;
-        app::g_pWin->adjustListHeight();
-    }
 }
 
 void

@@ -59,7 +59,6 @@ inline void focusUp(long step) { focus(player().m_focused - step); }
 inline void focusDown(long step) { focus(player().m_focused + step); }
 inline void selectFocused() { player().selectFocused(); }
 inline void focusSelected() { player().focusSelected(); }
-inline void focusSelectedCenter() { player().focusSelectedCenter(); }
 inline void togglePause() { player().togglePause(); }
 inline void volumeDown(const adt::f32 step) { g_pMixer->volumeDown(step); }
 inline void volumeUp(const adt::f32 step) { g_pMixer->volumeUp(step); }

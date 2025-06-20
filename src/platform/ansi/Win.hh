@@ -53,7 +53,6 @@ protected:
     termios m_termOg {};
     TermSize m_termSize {};
     adt::i16 m_firstIdx {};
-    adt::i16 m_firstIdxPrev {};
     int m_prevImgWidth = 0;
     adt::Mutex m_mtxUpdate {};
     adt::f64 m_time {};
@@ -61,7 +60,7 @@ protected:
     Input m_lastInput {};
     int m_lastMouseSelection {};
     adt::f64 m_lastMouseSelectionTime {};
-    bool m_bUpdateFirst {};
+    bool m_bUpdateFirstIdx {};
 
     /* */
 
@@ -72,14 +71,15 @@ public:
     virtual void procEvents() final;
     virtual void seekFromInput() final;
     virtual void subStringSearch() final;
-    virtual void centerAroundSelection() final;
     virtual void adjustListHeight() final;
-
-    virtual void resizeHandler();
+    virtual void forceResize() final;
 
     /* */
 
 protected:
+    void resizeHandler();
+    int calcImageHeightSplit();
+
     void disableRawMode() noexcept(false); /* RuntimeException */
     void enableRawMode() noexcept(false); /* RuntimeException */
 

@@ -47,14 +47,32 @@ fixFirstIdx(u16 listHeight, i16* pFirstIdx)
     const long focused = pl.m_focused;
     adt::i16 first = *pFirstIdx;
 
-    if (pl.m_vSearchIdxs.size() < listHeight)
-        first = 0;
-    else if (focused > first + listHeight)
-        first = focused - listHeight;
-    else if (focused < first)
-        first = focused;
+    defer( *pFirstIdx = first );
 
-    *pFirstIdx = first;
+    if (pl.m_vSearchIdxs.size() < listHeight) /* List is too small anyway case. */
+    {
+        first = 0;
+        return;
+    }
+    else if (focused > first + listHeight) /* Scroll down case. */
+    {
+        first = focused - listHeight;
+    }
+    else if (focused < first) /* Scroll up case. */
+    {
+        first = focused;
+    }
+
+    /* Case when we are at the last page but the list is not long enough. */
+    if (focused >= pl.m_vSearchIdxs.size() - listHeight - 1)
+    {
+        i16 maxListSizeDiff = (first + listHeight + 1) - pl.m_vSearchIdxs.size();
+        if (maxListSizeDiff > 0)
+        {
+            // LOG_WARN("LAST PAGE: {}, diff: {}\n", focused, maxListSizeDiff);
+            first -= maxListSizeDiff;
+        }
+    }
 }
 
 void

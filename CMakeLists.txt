@@ -11,7 +11,7 @@ option(OPT_SNDIO "" ON)
 option(OPT_CHAFA "" ON)
 option(OPT_MPRIS "" ON)
 option(OPT_MIMALLOC "" OFF)
-option(OPT_SSE4_2 "" ON)
+option(OPT_SSE4_2 "" OFF)
 option(OPT_MARCH_NATIVE "" OFF)
 
 if (OPT_SSE4_2)
