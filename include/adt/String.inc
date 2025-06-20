@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Span.inc"
-#include "hash.hh"
 
 #include <concepts>
 
@@ -12,6 +11,11 @@ struct StdAllocatorNV;
 struct IAllocator;
 struct String;
 struct StringView;
+
+namespace hash
+{
+template<typename T> inline usize func(const T& x);
+}
 
 template<typename T>
 concept ConvertsToStringView =

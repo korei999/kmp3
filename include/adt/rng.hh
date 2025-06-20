@@ -33,6 +33,7 @@ struct PCG32
         return (xorShifted >> rot) | (xorShifted << ((-rot) & 31));
     }
 
+    /* inclusive range */
     u32
     nextInRange(u32 min, u32 max)
     {

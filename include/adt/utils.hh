@@ -23,6 +23,7 @@
 
 #include "Pair.hh"
 #include "assert.hh"
+#include "String.inc"
 
 #include <ctime>
 #include <cstring>
@@ -120,7 +121,28 @@ even(const auto& a)
     return !odd(a);
 }
 
+[[nodiscard]] inline isize
+compare(const StringView& l, const StringView& r)
+{
+    const isize len = utils::min(l.m_size, r.m_size);
+    const isize res = ::strncmp(l.m_pData, r.m_pData, len);
+
+    if (res == 0) return l.m_size > r.m_size;
+    else return res;
+}
+
+[[nodiscard]] inline isize
+compareRev(const StringView& l, const StringView& r)
+{
+    const isize len = utils::min(l.m_size, r.m_size);
+    const isize res = ::strncmp(r.m_pData, l.m_pData, len);
+
+    if (res == 0) return r.m_size > l.m_size;
+    else return res;
+}
+
 template<typename T>
+requires (!std::convertible_to<T, StringView>)
 [[nodiscard]] inline constexpr isize
 compare(const T& l, const T& r)
 {
@@ -130,6 +152,7 @@ compare(const T& l, const T& r)
 }
 
 template<typename T>
+requires (!std::convertible_to<T, StringView>)
 [[nodiscard]] inline constexpr isize
 compareRev(const T& l, const T& r)
 {
@@ -144,9 +167,7 @@ struct Comparator
     constexpr isize
     operator()(const T& l, const T& r) const noexcept
     {
-        if (l == r) return 0;
-        else if (l > r) return 1;
-        else return -1;
+        return compare(l, r);
     }
 };
 
@@ -156,9 +177,7 @@ struct ComparatorRev
     constexpr isize
     operator()(const T& l, const T& r) const noexcept
     {
-        if (l == r) return 0;
-        else if (l < r) return 1;
-        else return -1;
+        return compareRev(l, r);
     }
 };
 
