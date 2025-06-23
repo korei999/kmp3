@@ -8,7 +8,7 @@
 namespace audio
 {
 
-constexpr adt::u64 CHUNK_SIZE = (1 << 18); /* big enough */
+constexpr adt::u64 CHUNK_SIZE = (1 << 17); /* big enough */
 extern adt::f32 g_aRenderBuffer[CHUNK_SIZE];
 
 /* Platrform abstracted audio interface */
