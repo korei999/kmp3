@@ -39,8 +39,10 @@ Mixer::loop()
 {
     [[maybe_unused]] int writeStatus {};
 
-    i16* pRenderBuffer = StdAllocator::inst()->zallocV<i16>(audio::CHUNK_SIZE);
-    defer( StdAllocator::inst()->free(pRenderBuffer) );
+    StdAllocator stdAl;
+
+    i16* pRenderBuffer = stdAl.zallocV<i16>(audio::CHUNK_SIZE);
+    defer( stdAl.free(pRenderBuffer) );
 
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {

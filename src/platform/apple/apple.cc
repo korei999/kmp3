@@ -52,7 +52,6 @@ Mixer::writeCallBack(
 {
     f32 *pDest = static_cast<f32*>(pIOData->mBuffers[0].mData);
 
-    static f32 s_aPCMBuffer[audio::CHUNK_SIZE] {};
     static long s_nDecodedSamples = 0;
     static long s_nWrites = 0;
 
@@ -64,7 +63,7 @@ Mixer::writeCallBack(
         /* fill the buffer when it's empty */
         if (s_nWrites >= s_nDecodedSamples)
         {
-            writeFramesLocked({s_aPCMBuffer}, inNumberFrames, &s_nDecodedSamples, &m_currentTimeStamp);
+            writeFramesLocked({audio::g_aRenderBuffer}, inNumberFrames, &s_nDecodedSamples, &m_currentTimeStamp);
 
             m_currMs = app::decoder().getCurrentMS();
             s_nWrites = 0;
@@ -73,7 +72,7 @@ Mixer::writeCallBack(
         for (u32 chIdx = 0; chIdx < m_nChannels; chIdx++)
         {
             /* modify each sample here */
-            pDest[destI++] = s_aPCMBuffer[s_nWrites++] * vol;
+            pDest[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
         }
     }
 

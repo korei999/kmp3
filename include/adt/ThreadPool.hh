@@ -170,7 +170,7 @@ ThreadPool<QUEUE_SIZE>::loop()
         {
             LockGuard qLock {&m_mtxQ};
 
-            if (m_qTasks.empty() && m_atomNActiveTasks.load(atomic::ORDER::ACQUIRE) == 0)
+            if (m_qTasks.empty() && m_atomNActiveTasks.load(atomic::ORDER::ACQUIRE) <= 0)
                 m_cndWait.signal();
         }
     }
@@ -203,7 +203,7 @@ ThreadPool<QUEUE_SIZE>::wait()
 {
     LockGuard qLock {&m_mtxQ};
 
-    while (!m_qTasks.empty() || m_atomNActiveTasks.load(atomic::ORDER::RELAXED) != 0)
+    while (!m_qTasks.empty() || m_atomNActiveTasks.load(atomic::ORDER::RELAXED) > 0)
         m_cndWait.wait(&m_mtxQ);
 }
 
@@ -223,12 +223,10 @@ ThreadPool<QUEUE_SIZE>::destroy(IAllocator* pAlloc)
     for (auto& thread : m_spThreads)
         thread.join();
 
-    {
-        pAlloc->free(m_spThreads.data());
-        m_mtxQ.destroy();
-        m_cndQ.destroy();
-        m_cndWait.destroy();
-    }
+    pAlloc->free(m_spThreads.data());
+    m_mtxQ.destroy();
+    m_cndQ.destroy();
+    m_cndWait.destroy();
 }
 
 template<isize QUEUE_SIZE>

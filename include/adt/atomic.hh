@@ -82,8 +82,8 @@ struct Int
 
     /* */
 
-    Int() { store(0, ORDER::RELAXED); }
-    explicit Int(const int val) { store(val, ORDER::RELAXED); }
+    Int() : m_volInt(0) {}
+    explicit Int(const int val) : m_volInt(val) {}
 
     /* */
 

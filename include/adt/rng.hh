@@ -33,11 +33,10 @@ struct PCG32
         return (xorShifted >> rot) | (xorShifted << ((-rot) & 31));
     }
 
-    /* inclusive range */
+    /* Inclusive range. */
     u32
     nextInRange(u32 min, u32 max)
     {
-        /* Rejection sampling. */
         u32 range = max - min;
         u32 threshold = -range % range;
         while (true)

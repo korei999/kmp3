@@ -2,7 +2,6 @@
 
 #include "adt/Arena.hh"
 #include "adt/types.hh"
-#include "adt/String.hh"
 #include "adt/Vec.hh"
 #include "adt/enum.hh"
 #include "adt/QueueArray.hh"
