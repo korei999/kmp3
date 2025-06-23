@@ -69,7 +69,7 @@ Mixer::writeCallBack(
             s_nWrites = 0;
         }
 
-        for (u32 chIdx = 0; chIdx < m_nChannels; chIdx++)
+        for (u32 chIdx = 0; chIdx < m_nChannels; ++chIdx)
         {
             /* modify each sample here */
             pDest[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;

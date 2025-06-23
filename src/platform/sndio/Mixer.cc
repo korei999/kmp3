@@ -41,18 +41,19 @@ Mixer::loop()
 
     StdAllocator stdAl;
 
+    /* sndio doesn't support f32 pcm. */
     i16* pRenderBuffer = stdAl.zallocV<i16>(audio::CHUNK_SIZE);
     defer( stdAl.free(pRenderBuffer) );
 
+    long s_nDecodedSamples = 0;
+    long s_nWrites = 0;
+
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
-        static long s_nDecodedSamples = 0;
-        static long s_nWrites = 0;
-
         const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3);
 
         isize destI = 0;
-        for (u32 frameIdx = 0; frameIdx < N_BUF_FRAMES; frameIdx++)
+        for (u32 frameIdx = 0; frameIdx < N_BUF_FRAMES; ++frameIdx)
         {
             /* fill the buffer when it's empty */
             if (s_nWrites >= s_nDecodedSamples)
@@ -63,8 +64,9 @@ Mixer::loop()
                 s_nWrites = 0;
             }
 
-            for (u32 chIdx = 0; chIdx < m_par.pchan; chIdx++)
+            for (u32 chIdx = 0; chIdx < m_par.pchan; ++chIdx)
             {
+                /* Convert to signed 16bit. */
                 const i16 sample = std::numeric_limits<i16>::max() * (audio::g_aRenderBuffer[s_nWrites++] * vol);
                 pRenderBuffer[destI++] = sample;
             }
@@ -96,7 +98,6 @@ Mixer::loop()
     }
 
 GOTO_done:
-
     m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE);
     LOG_BAD("LOOP DONE\n");
 
