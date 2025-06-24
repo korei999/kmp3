@@ -73,8 +73,8 @@ struct StringView
     [[nodiscard]] bool endsWith(const StringView r) const;
     constexpr isize lastOf(char c) const;
     constexpr isize firstOf(char c) const;
-    void trimEnd();
-    void removeNLEnd(); /* remove \r\n */
+    StringView& trimEnd();
+    StringView& removeNLEnd(); /* remove \r\n */
     [[nodiscard]] bool contains(const StringView r) const;
     [[nodiscard]] isize subStringAt(const StringView r) const noexcept;
     [[nodiscard]] char& first();
@@ -100,6 +100,10 @@ struct StringView
     constexpr const char* end() const { return &m_pData[m_size]; }
     constexpr const char* rbegin() const { return &m_pData[m_size - 1]; }
     constexpr const char* rend() const { return m_pData - 1; }
+
+protected:
+    template<typename LAMBDA> StringView& trimEnd(LAMBDA clFill);
+    template<typename LAMBDA> StringView& removeNLEnd(LAMBDA clFill);
 };
 
 [[nodiscard]] inline bool operator==(const StringView& l, const StringView& r);
@@ -126,6 +130,8 @@ struct String : public StringView
 
     /* */
 
+    String& trimEnd(bool bPadWithZeros);
+    String& removeNLEnd(bool bPadWithZeros); /* remove \r\n */
     void destroy(IAllocator* pAlloc) noexcept;
     void reallocWith(IAllocator* pAlloc, const StringView svWith);
     [[nodiscard]] String release() noexcept; /* return this String resource and set to zero */

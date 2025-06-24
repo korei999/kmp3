@@ -532,7 +532,7 @@ struct MapManaged : public Map<K, V, FN_HASH>
     MapResult<K, V> tryInsert(const K& key, V&& val) { return Base::tryInsert(&allocator(), key, std::move(val)); }
 
     template<typename ...ARGS>
-    MapResult<K, V> tryEmplace(IAllocator* p, const K& key, ARGS&&... args)
+    MapResult<K, V> tryEmplace(const K& key, ARGS&&... args)
     { return Base::tryEmplace(&allocator(), key, std::forward<ARGS>(args)...); }
 
     void destroy() noexcept { Base::destroy(&allocator()); }

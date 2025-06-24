@@ -465,42 +465,16 @@ StringView::firstOf(char c) const
     return NPOS;
 }
 
-inline void
+inline StringView&
 StringView::trimEnd()
 {
-    auto isWhiteSpace = [&](int i) -> bool
-    {
-        char c = m_pData[i];
-        if (c == '\n' || c == ' ' || c == '\r' || c == '\t' || c == '\0')
-            return true;
-
-        return false;
-    };
-
-    for (int i = m_size - 1; i >= 0; --i)
-    {
-        if (isWhiteSpace(i))
-        {
-            m_pData[i] = 0;
-            --m_size;
-        }
-        else break;
-    }
+    return trimEnd([](char*) {});
 }
 
-inline void
+inline StringView&
 StringView::removeNLEnd()
 {
-    auto oneOf = [&](const char c) -> bool
-    {
-        constexpr StringView chars = "\r\n";
-        for (const char ch : chars)
-            if (c == ch) return true;
-        return false;
-    };
-
-    while (m_size > 0 && oneOf(last()))
-        m_pData[--m_size] = '\0';
+    return removeNLEnd([](char*) {});
 }
 
 inline bool
@@ -620,6 +594,53 @@ StringView::reinterpret(isize at) const
     return *(T*)(&operator[](at));
 }
 
+template<typename LAMBDA>
+inline StringView&
+StringView::trimEnd(LAMBDA clFill)
+{
+    auto isWhiteSpace = [&](int i) -> bool
+    {
+        char c = m_pData[i];
+        if (c == '\n' || c == ' ' || c == '\r' || c == '\t' || c == '\0')
+            return true;
+
+        return false;
+    };
+
+    for (int i = m_size - 1; i >= 0; --i)
+    {
+        if (isWhiteSpace(i))
+        {
+            clFill(&m_pData[i]);
+            --m_size;
+        }
+        else break;
+    }
+
+    return *this;
+}
+
+template<typename LAMBDA>
+inline StringView&
+StringView::removeNLEnd(LAMBDA clFill)
+{
+    auto oneOf = [&](const char c) -> bool
+    {
+        constexpr StringView chars = "\r\n";
+        for (const char ch : chars)
+            if (c == ch) return true;
+        return false;
+    };
+
+    while (m_size > 0 && oneOf(last()))
+    {
+        --m_size;
+        clFill(&m_pData[m_size]);
+    }
+
+    return *this;
+}
+
 inline
 String::String(IAllocator* pAlloc, const char* pChars, isize size)
 {
@@ -644,6 +665,24 @@ String::String(IAllocator* pAlloc, Span<char> spChars)
 inline
 String::String(IAllocator* pAlloc, const StringView sv)
     : String(pAlloc, sv.m_pData, sv.m_size) {}
+
+inline String&
+String::trimEnd(bool bPadWithZeros)
+{
+    if (bPadWithZeros) StringView::trimEnd([](char* p) { *p = '\0'; });
+    else StringView::trimEnd();
+
+    return *this;
+}
+
+inline String&
+String::removeNLEnd(bool bPadWithZeros)
+{
+    if (bPadWithZeros) StringView::removeNLEnd([](char* p) { *p = '\0'; });
+    else StringView::removeNLEnd();
+
+    return *this;
+}
 
 inline void
 String::destroy(IAllocator* pAlloc) noexcept

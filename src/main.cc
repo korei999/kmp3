@@ -146,7 +146,7 @@ startup(int argc, char** argv)
         while ((nread = getline(&pLine, &len, stdin)) != -1)
         {
             String s = String(&alloc, pLine, nread);
-            s.removeNLEnd();
+            s.removeNLEnd(true);
             aInput.push(s);
         }
 
