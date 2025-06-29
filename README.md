@@ -1,4 +1,4 @@
-![kmp3_5](https://github.com/user-attachments/assets/dc2560dd-7667-481a-9e74-1f7fcaaa0c6e)
+![kmp3_7](https://github.com/user-attachments/assets/5025a0d9-3290-4c8f-a4ae-f935a75dcf72)
 
 ### Features
 - Plays most of the audio/video formats.
