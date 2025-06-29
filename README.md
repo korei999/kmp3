@@ -22,6 +22,10 @@
 - `q` quit.
 - `[` / `]` playback speed shifting fun. `\` Set original speed back.
 
+### Install
+On archlinux use aur package: `yay -S kmp3-git`.\
+Or build from source using instructions below.
+
 ### Dependencies
 Compiler: `clang >= 14.0` or `gcc >= 12`, `CMake >= 3.20`.\
 Packages: `libavformat libavcodec libavutil libswresample`.\
@@ -29,7 +33,7 @@ Audio backends: `libpipewire-0.3 #(linux)`, `sndio #(OpenBSD)`, `coreaudio #(Mac
 For mpris support: `libsystemd` or `basu`.\
 For image support: `chafa glib-2.0 libswscale`.
 
-### Install
+### Build
 ```
 cmake -S . -B build/
 cmake --build build/ -j
