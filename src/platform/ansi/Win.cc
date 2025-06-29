@@ -97,10 +97,7 @@ Win::procEvents()
     adjustListHeight();
     if (m_bUpdateFirstIdx)
     {
-        common::fixFirstIdx(
-            m_listHeight - 2,
-            &m_firstIdx
-        );
+        common::fixFirstIdx(m_listHeight - 2, &m_firstIdx);
         m_bUpdateFirstIdx = false;
     }
 }
@@ -152,6 +149,9 @@ Win::resizeHandler()
 
     m_bClear = true;
     m_lastResizeTime = utils::timeNowMS();
+
+    adjustListHeight();
+    common::fixFirstIdx(m_listHeight - 2, &m_firstIdx);
 }
 
 } /* namespace platform::ansi */
