@@ -177,9 +177,9 @@ startup(int argc, char** argv)
     defer( app::decoder().destroy() );
 
     app::g_pMixer = app::allocMixer(&alloc);
-    app::g_pMixer->init();
-    app::g_pMixer->setVolume(defaults::VOLUME);
-    defer( app::g_pMixer->destroy() );
+    app::mixer().init();
+    app::mixer().setVolume(defaults::VOLUME);
+    defer( app::mixer().destroy() );
 
 #ifdef OPT_MPRIS
     mpris::initLocks();

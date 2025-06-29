@@ -95,8 +95,7 @@ Win::volume()
     Span sp = s_scratch.nextMemZero<char>(width + 1);
     defer( s_scratch.reset() );
 
-    const isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::g_pMixer->getVolume() * 100.0)));
-
+    const isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::mixer().getVolume() * 100.0)));
     const int nVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
 
     using STYLE = TEXT_BUFF_STYLE;
@@ -206,7 +205,6 @@ Win::songList()
 
         const u16 songIdx = pl.m_vSearchIdxs[h];
         const StringView svSong = pl.m_vShortSongs[songIdx];
-
         const bool bSelected = songIdx == pl.m_selected ? true : false;
 
         using STYLE = TEXT_BUFF_STYLE;

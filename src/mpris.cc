@@ -166,7 +166,7 @@ pause(
 )
 {
     LOG("mpris::pause\n");
-    app::g_pMixer->pause(true);
+    app::mixer().pause(true);
     return sd_bus_reply_method_return(m, "");
 }
 
@@ -189,7 +189,7 @@ resume(
 )
 {
     LOG("mpris::resume\n");
-    app::g_pMixer->pause(false);
+    app::mixer().pause(false);
     return sd_bus_reply_method_return(m, "");
 }
 
@@ -204,8 +204,8 @@ seek(
     CK(sd_bus_message_read_basic(m, 'x', &val));
     f64 fval = f64(val);
     fval /= 1000.0;
-    fval += app::g_pMixer->getCurrentMS();
-    app::g_pMixer->seekMS(fval);
+    fval += app::mixer().getCurrentMS();
+    app::mixer().seekMS(fval);
 
     return sd_bus_reply_method_return(m, "");
 }
@@ -226,7 +226,7 @@ seekAbs(
 	CK(sd_bus_message_read_basic(m, 'x', &val));
 
 	if (strncmp(aBuff, pPath, utils::size(aBuff)) == 0)
-        app::g_pMixer->seekMS(val / 1000.0);
+        app::mixer().seekMS(val / 1000.0);
 
 	return sd_bus_reply_method_return(m, "");
 }
@@ -301,7 +301,7 @@ playbackStatus(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    const char* s = app::g_pMixer->isPaused().load(atomic::ORDER::ACQUIRE) ?
+    const char* s = app::mixer().isPaused().load(atomic::ORDER::ACQUIRE) ?
         "Paused" : "Playing";
     return sd_bus_message_append_basic(reply, 's', s);
 }
@@ -359,7 +359,7 @@ getVolume(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 vol = app::g_pMixer->getVolume();
+    f64 vol = app::mixer().getVolume();
     return sd_bus_message_append_basic(reply, 'd', &vol);
 }
 
@@ -376,7 +376,7 @@ setVolume(
 {
     f64 vol;
     CK(sd_bus_message_read_basic(value, 'd', &vol));
-    app::g_pMixer->setVolume(vol);
+    app::mixer().setVolume(vol);
     app::g_pWin->m_bRedraw = true;
 
     return sd_bus_reply_method_return(value, "");
@@ -393,7 +393,7 @@ position(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    i64 t = app::g_pMixer->getCurrentMS();
+    i64 t = app::mixer().getCurrentMS();
     t *= 1000;
 
     return sd_bus_message_append_basic(reply, 'x', &t);
@@ -410,7 +410,7 @@ rate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = f64(app::g_pMixer->getChangedSampleRate()) / f64(app::g_pMixer->getSampleRate());
+    f64 mul = f64(app::mixer().getChangedSampleRate()) / f64(app::mixer().getSampleRate());
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -425,7 +425,7 @@ minRate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = (f64)defaults::MIN_SAMPLE_RATE / (f64)app::g_pMixer->getSampleRate();
+    f64 mul = (f64)defaults::MIN_SAMPLE_RATE / (f64)app::mixer().getSampleRate();
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -440,7 +440,7 @@ maxRate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = (f64)defaults::MAX_SAMPLE_RATE / (f64)app::g_pMixer->getSampleRate();
+    f64 mul = (f64)defaults::MAX_SAMPLE_RATE / (f64)app::mixer().getSampleRate();
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -481,7 +481,7 @@ metadata(
         CK(msgAppendDictSAS(reply, "xesam:artist", pl.m_info.sfArtist.data()));
 
     {
-        long duration = app::g_pMixer->getTotalMS() * 1000;
+        long duration = app::mixer().getTotalMS() * 1000;
         CK(msgAppendDictSX(reply, "mpris:length", duration));
     }
 
@@ -716,7 +716,7 @@ seeked()
     LockGuard lock {&g_mtx};
 
     if (!s_pBus) return;
-    i64 pos = app::g_pMixer->getCurrentMS() * 1000;
+    i64 pos = app::mixer().getCurrentMS() * 1000;
     sd_bus_emit_signal(s_pBus, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", "Seeked", "x", pos);
 }
 

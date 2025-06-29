@@ -100,13 +100,13 @@ Player::focusSelected()
 }
 
 void
-Player::setDefaultIdxs(Vec<u16>* pIdxs)
+Player::setDefaultIdxs(Vec<u16>* pvIdxs)
 {
-    isize size = m_vSongs.size();
-    pIdxs->setSize(m_pAlloc, size);
+    const isize size = m_vSongs.size();
+    pvIdxs->setSize(m_pAlloc, size);
 
     for (isize i = 0; i < size; ++i)
-        (*pIdxs)[i] = i;
+        (*pvIdxs)[i] = i;
 }
 
 void
@@ -116,7 +116,7 @@ Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
         return;
 
     Array<wchar_t, 64> aUpperRight {};
-    isize maxLen = utils::min(spBuff.size(), aUpperRight.cap());
+    const isize maxLen = utils::min(spBuff.size(), aUpperRight.cap());
 
     for (isize i = 0; i < maxLen && spBuff[i]; ++i)
         aUpperRight.push(wchar_t(towupper(spBuff[i])));
@@ -125,7 +125,7 @@ Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
     aSongToUpper.setSize(pArena, m_longestString + 1);
 
     m_vSearchIdxs.setSize(m_pAlloc, 0);
-    for (u16 songIdx : m_vSongIdxs)
+    for (const u16 songIdx : m_vSongIdxs)
     {
         const StringView song = m_vShortSongs[songIdx];
 
@@ -168,14 +168,14 @@ Player::selectFocused()
     const StringView& sPath = m_vSongs[m_selected];
     LOG_GOOD("selected({}): {}\n", m_selected, sPath);
 
-    app::g_pMixer->play(sPath);
+    app::mixer().play(sPath);
     updateInfo();
 }
 
 void
 Player::togglePause()
 {
-    app::g_pMixer->togglePause();
+    app::mixer().togglePause();
 }
 
 void
@@ -202,7 +202,7 @@ Player::onSongEnd()
     m_selected = m_vSongIdxs[currIdx];
     m_bSelectionChanged = true;
 
-    app::g_pMixer->play(m_vSongs[m_selected]);
+    app::mixer().play(m_vSongs[m_selected]);
     updateInfo();
 }
 
@@ -272,18 +272,15 @@ Player::copySearchToSongIdxs()
 void
 Player::setImgSize(long height)
 {
-    if (height < defaults::MIN_IMAGE_HEIGHT) height = defaults::MIN_IMAGE_HEIGHT;
-    else if (height > defaults::MAX_IMAGE_HEIGHT) height = defaults::MAX_IMAGE_HEIGHT;
+    height = utils::clamp(height, long(defaults::MIN_IMAGE_HEIGHT), long(defaults::MAX_IMAGE_HEIGHT));
 
-    if (m_imgHeight == height)
-        return;
+    if (m_imgHeight == height) return;
 
     m_imgHeight = height;
     adjustImgWidth();
 
     m_bSelectionChanged = true;
-    if (app::g_pWin)
-        app::g_pWin->m_bClear = true;
+    if (app::g_pWin) app::g_pWin->m_bClear = true;
 }
 
 void

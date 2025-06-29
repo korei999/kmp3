@@ -24,9 +24,9 @@ mprisPollLoop(void*)
     while (app::g_bRunning)
     {
         mpris::proc();
-        if (app::g_pMixer->mprisHasToUpdate().load(atomic::ORDER::ACQUIRE))
+        if (app::mixer().mprisHasToUpdate().load(atomic::ORDER::ACQUIRE))
         {
-            app::g_pMixer->mprisSetToUpdate(false);
+            app::mixer().mprisSetToUpdate(false);
             mpris::destroy();
             mpris::init();
         }

@@ -14,7 +14,7 @@ InputBuff g_input {};
 StringView
 allocTimeString(Arena* pArena, int width)
 {
-    auto& mix = *app::g_pMixer;
+    auto& mix = app::mixer();
     char* pBuff = (char*)pArena->zalloc(1, width + 1);
 
     f64 sampleRateRatio = f64(mix.getSampleRate()) / f64(mix.getChangedSampleRate());
@@ -109,9 +109,9 @@ procSeekString(const Span<wchar_t> spBuff)
 
     if (bPercent)
     {
-        i64 maxMS = app::g_pMixer->getTotalMS();
+        i64 maxMS = app::mixer().getTotalMS();
 
-        app::g_pMixer->seekMS(maxMS * (f64(atoll(aMinutesBuff.data())) / 100.0));
+        app::mixer().seekMS(maxMS * (f64(atoll(aMinutesBuff.data())) / 100.0));
     }
     else
     {
@@ -119,7 +119,7 @@ procSeekString(const Span<wchar_t> spBuff)
         if (aSecondsBuff.size() == 0) sec = atoll(aMinutesBuff.data());
         else sec = atoll(aSecondsBuff.data()) + atoll(aMinutesBuff.data())*60;
 
-        app::g_pMixer->seekMS(sec * 1000);
+        app::mixer().seekMS(sec * 1000);
     }
 }
 
