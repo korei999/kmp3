@@ -349,13 +349,14 @@ Win::procMouse(MouseInput in)
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_UP)
     {
-        m_bUpdateFirstIdx = true;
-        pl.focus(pl.m_focused - defaults::MOUSE_STEP);
+        m_firstIdx -= defaults::MOUSE_STEP;
+        if (m_firstIdx < 0) m_firstIdx = 0;
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
     {
-        m_bUpdateFirstIdx = true;
-        pl.focus(pl.m_focused + defaults::MOUSE_STEP);
+        const i16 limit = (pl.m_vSearchIdxs.size() - m_listHeight) + 1;
+        m_firstIdx += defaults::MOUSE_STEP;
+        if (m_firstIdx >= limit) m_firstIdx = limit;
     }
 }
 
