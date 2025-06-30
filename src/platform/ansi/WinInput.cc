@@ -354,9 +354,11 @@ Win::procMouse(MouseInput in)
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
     {
-        const i16 limit = (pl.m_vSearchIdxs.size() - m_listHeight) + 1;
-        m_firstIdx += defaults::MOUSE_STEP;
-        if (m_firstIdx >= limit) m_firstIdx = limit;
+        m_firstIdx = utils::clamp(
+            i16(m_firstIdx + defaults::MOUSE_STEP),
+            i16(0),
+            i16((pl.m_vSearchIdxs.size() - m_listHeight) + 1)
+        );
     }
 }
 

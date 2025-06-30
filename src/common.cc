@@ -66,12 +66,9 @@ fixFirstIdx(u16 listHeight, i16* pFirstIdx)
     /* Case when we are at the last page but the list is not long enough. */
     if (focused >= pl.m_vSearchIdxs.size() - listHeight - 1)
     {
-        i16 maxListSizeDiff = (first + listHeight + 1) - pl.m_vSearchIdxs.size();
-        if (maxListSizeDiff > 0)
-        {
-            // LOG_WARN("LAST PAGE: {}, diff: {}\n", focused, maxListSizeDiff);
+        const i16 maxListSizeDiff = (first + listHeight + 1) - pl.m_vSearchIdxs.size();
+        if (maxListSizeDiff > 0 && first >= maxListSizeDiff)
             first -= maxListSizeDiff;
-        }
     }
 }
 
