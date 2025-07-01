@@ -54,17 +54,26 @@ template<typename T>
 inline constexpr void
 swap(T* l, T* r)
 {
-    T t = *r;
-    *r = *l;
-    *l = t;
+    T t = std::move(*r);
+    *r = std::move(*l);
+    *l = std::move(t);
 }
 
 template<typename T>
 [[nodiscard]] inline constexpr T
-exchange(T* pObj, const T& replaceObjWith)
+exchange(T* pObj, T& replaceObjWith)
 {
-    T ret = *pObj;
+    T ret = std::move(*pObj);
     *pObj = replaceObjWith;
+    return ret;
+}
+
+template<typename T>
+[[nodiscard]] inline constexpr T
+exchange(T* pObj, T&& replaceObjWith)
+{
+    T ret = std::move(*pObj);
+    *pObj = std::move(replaceObjWith);
     return ret;
 }
 
@@ -146,6 +155,9 @@ requires (!std::convertible_to<T, StringView>)
 [[nodiscard]] inline constexpr isize
 compare(const T& l, const T& r)
 {
+    if constexpr (std::is_integral_v<T>)
+        return l - r;
+
     if (l == r) return 0;
     else if (l > r) return 1;
     else return -1;
@@ -156,6 +168,9 @@ requires (!std::convertible_to<T, StringView>)
 [[nodiscard]] inline constexpr isize
 compareRev(const T& l, const T& r)
 {
+    if constexpr (std::is_integral_v<T>)
+        return r - l;
+
     if (l == r) return 0;
     else if (l < r) return 1;
     else return -1;

@@ -75,6 +75,19 @@ parseArgs(int argc, char** argv)
                 app::g_eUIFrontend = app::UI::ANSI;
                 LOG_NOTIFY("setting HANDMADE ui\n");
             }
+            else if (svArg.beginsWith("--volume"))
+            {
+                if (argc > i + 1)
+                {
+                    const StringView svNext = argv[i + 1];
+                    app::g_config.volume = svNext.toF64();
+                }
+                else
+                {
+                    print::out("missing arg after '--volume'\n");
+                    exit(0);
+                }
+            }
             else if (svArg == "--no-image")
             {
                 app::g_bNoImage = true;
@@ -86,6 +99,7 @@ parseArgs(int argc, char** argv)
                 app::g_eMixer = app::MIXER::SNDIO;
 #else
                 print::out("compiled without sndio\n");
+                exit(0);
 #endif
             }
             else if (svArg == "--pipewire")
@@ -94,11 +108,17 @@ parseArgs(int argc, char** argv)
                 app::g_eMixer = app::MIXER::PIPEWIRE;
 #else
                 print::out("compiled without pipewire\n");
+                exit(0);
 #endif
             }
             else if (svArg == "--coreaudio")
             {
+#ifdef OPT_COREAUDIO
                 app::g_eMixer = app::MIXER::COREAUDIO;
+#else
+                print::out("compiled without coreaudio\n");
+                exit(0);
+#endif
             }
         }
         else return;
@@ -124,10 +144,8 @@ startup(int argc, char** argv)
 
     setlocale(LC_ALL, "");
 #ifdef NDEBUG
-    {
-        /* hide mpg123 and other errors */
-        [[maybe_unused]] FILE* _ = freopen("/dev/null", "w", stderr);
-    }
+    /* hide mpg123 and other errors */
+    (void)freopen("/dev/null", "w", stderr);
 #endif
 
     VecManaged<String> aInput;
@@ -167,7 +185,7 @@ startup(int argc, char** argv)
     app::g_pPlayer = &player;
     defer( player.destroy() );
 
-    player.m_imgHeight = defaults::IMAGE_HEIGHT;
+    player.m_imgHeight = app::g_config.imageHeight;
     player.adjustImgWidth();
 
     player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
@@ -178,7 +196,7 @@ startup(int argc, char** argv)
 
     app::g_pMixer = app::allocMixer(&alloc);
     app::mixer().init();
-    app::mixer().setVolume(defaults::VOLUME);
+    app::mixer().setVolume(app::g_config.volume);
     defer( app::mixer().destroy() );
 
 #ifdef OPT_MPRIS

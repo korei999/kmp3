@@ -516,7 +516,7 @@ struct VecManaged : Vec<T>
     [[nodiscard]] VecManaged
     clone()
     {
-        VecManaged ret {&allocator(), Base::size()};
+        VecManaged ret {Base::size()};
         ret.setSize(ret.cap());
         utils::memCopy(ret.data(), Base::data(), Base::size());
 

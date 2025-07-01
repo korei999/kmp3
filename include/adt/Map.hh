@@ -21,9 +21,8 @@ enum class MAP_BUCKET_FLAGS : u8
 {
     NONE = 0,
     OCCUPIED = 1,
-    DELETED = 1 << 1,
+    DELETED = 2,
 };
-ADT_ENUM_BITWISE_OPERATORS(MAP_BUCKET_FLAGS);
 
 template<typename K, typename V>
 struct KeyVal
@@ -132,6 +131,9 @@ struct Map
     template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>)
     MapResult<K, V> emplace(IAllocator* p, const K& key, ARGS&&... args);
 
+    template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>)
+    MapResult<K, V> emplaceHashed(IAllocator* p, const K& key, const usize keyHash, ARGS&&... args);
+
     [[nodiscard]] MapResult<K, V> search(const K& key);
     [[nodiscard]] const MapResult<K, V> search(const K& key) const;
 
@@ -192,6 +194,11 @@ public:
 
     const It begin() const { return {this, firstI()}; }
     const It end() const { return {this, NPOS}; }
+
+protected:
+#if !defined NDEBUG && defined ADT_DBG_COLLISIONS
+    mutable i64 m_nCollisions = 0;
+#endif
 };
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
@@ -217,7 +224,7 @@ inline isize
 Map<K, V, FN_HASH>::firstI() const
 {
     isize i = 0;
-    while (i < m_vBuckets.cap() && !(m_vBuckets[i].eFlags & MAP_BUCKET_FLAGS::OCCUPIED))
+    while (i < m_vBuckets.cap() && m_vBuckets[i].eFlags != MAP_BUCKET_FLAGS::OCCUPIED)
         ++i;
 
     if (i >= m_vBuckets.cap()) i = NPOS;
@@ -230,7 +237,7 @@ inline isize
 Map<K, V, FN_HASH>::nextI(isize i) const
 {
     do ++i;
-    while (i < m_vBuckets.cap() && !(m_vBuckets[i].eFlags & MAP_BUCKET_FLAGS::OCCUPIED));
+    while (i < m_vBuckets.cap() && m_vBuckets[i].eFlags != MAP_BUCKET_FLAGS::OCCUPIED);
 
     if (i >= m_vBuckets.cap()) i = NPOS;
 
@@ -264,12 +271,19 @@ template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>)
 inline MapResult<K, V>
 Map<K, V, FN_HASH>::emplace(IAllocator* p, const K& key, ARGS&&... args)
 {
+    return emplaceHashed(p, key, FN_HASH(key), std::forward<ARGS>(args)...);
+}
+
+template<typename K, typename V, usize (*FN_HASH)(const K&)>
+template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>)
+inline MapResult<K, V>
+Map<K, V, FN_HASH>::emplaceHashed(IAllocator* p, const K& key, const usize keyHash, ARGS&&... args)
+{
     if (m_vBuckets.cap() <= 0)
         *this = {p};
     else if (loadFactor() >= m_maxLoadFactor)
         rehash(p, m_vBuckets.cap() * 2);
 
-    usize keyHash = FN_HASH(key);
     const isize idx = insertionIdx(keyHash, key);
     auto& bucket = m_vBuckets[idx];
 
@@ -369,29 +383,25 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline MapResult<K, V>
 Map<K, V, FN_HASH>::tryInsert(IAllocator* p, const K& key, const V& val)
 {
-    auto f = search(key);
-    if (f) return f;
-    else return emplace(p, key, val);
+    return tryEmplace(p, key, val);
 }
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline MapResult<K, V>
 Map<K, V, FN_HASH>::tryInsert(IAllocator* p, const K& key, V&& val)
 {
-    auto f = search(key);
-    if (f) return f;
-    else return emplace(p, key, std::move(val));
+    return tryEmplace(p, key, std::move(val));
 }
-
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
 template<typename ...ARGS>
 inline MapResult<K, V>
 Map<K, V, FN_HASH>::tryEmplace(IAllocator* p, const K& key, ARGS&&... args)
 {
-    auto f = search(key);
+    const usize keyHash = FN_HASH(key);
+    auto f = searchHashed(key, keyHash);
     if (f) return f;
-    else return emplace(p, key, std::forward<ARGS>(args)...);
+    else return emplaceHashed(p, key, keyHash, std::forward<ARGS>(args)...);
 }
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
@@ -449,12 +459,12 @@ Map<K, V, FN_HASH>::searchHashed(const K& key, usize keyHash) const
         return res;
     }
 
-    isize idx = isize(keyHash % usize(m_vBuckets.cap()));
+    isize idx = isize(keyHash & usize(m_vBuckets.cap() - 1));
     res.hash = keyHash;
 
-    while (int(m_vBuckets[idx].eFlags) > 0) /* deleted or occupied */
+    while (m_vBuckets[idx].eFlags != MAP_BUCKET_FLAGS::NONE) /* deleted or occupied */
     {
-        if (!(m_vBuckets[idx].eFlags & MAP_BUCKET_FLAGS::DELETED) &&
+        if (m_vBuckets[idx].eFlags != MAP_BUCKET_FLAGS::DELETED &&
             m_vBuckets[idx].key == key
         )
         {
@@ -481,12 +491,15 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline isize
 Map<K, V, FN_HASH>::insertionIdx(usize hash, const K& key) const
 {
-    isize idx = isize(hash % m_vBuckets.cap());
+    isize idx = isize(hash & usize(m_vBuckets.cap() - 1));
 
-    while (bool(m_vBuckets[idx].eFlags & MAP_BUCKET_FLAGS::OCCUPIED))
+    while (m_vBuckets[idx].eFlags == MAP_BUCKET_FLAGS::OCCUPIED)
     {
         if (m_vBuckets[idx].key == key) break;
 
+#if !defined NDEBUG && defined ADT_DBG_COLLISIONS
+        print::err("[Map::insertionIdx]: collision at: {} (keys: '{}' and '{}'), nCollisions: {}\n", idx, key, m_vBuckets[idx].key, m_nCollisions++);
+#endif
         idx = utils::cycleForwardPowerOf2(idx, m_vBuckets.size());
     }
 

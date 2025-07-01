@@ -63,6 +63,9 @@
 
 #include <wchar.h>
 
+namespace adt
+{
+
 struct interval
 {
     int first;
@@ -310,3 +313,5 @@ mk_wcswidth_cjk(const wchar_t* pwcs, size_t n)
 
     return width;
 }
+
+} /* namespace adt */

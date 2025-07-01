@@ -3,8 +3,6 @@
 #include "atomic.hh"
 #include "Opt.hh"
 
-#include <new> /* IWYU pragma: keep */
-
 namespace adt
 {
 

@@ -156,7 +156,7 @@ quick(auto a[], isize l, isize r, const CL_CMP clCmp)
 {
     if (l < r)
     {
-        if ((r - l + 1) <= 64)
+        if ((r - l + 1) <= 32)
         {
             insertion(a, l, r, clCmp);
             return;

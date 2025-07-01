@@ -236,6 +236,7 @@ if(OPT_MPRIS)
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    add_definitions("-DOPT_COREAUDIO")
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
         "-framework CoreAudio"
         "-framework AudioToolbox"

@@ -4,6 +4,7 @@
 #include "audio.hh"
 #include "IWindow.hh"
 #include "defaults.hh"
+#include "config.hh"
 
 #include "platform/ffmpeg/Decoder.hh"
 
@@ -37,6 +38,7 @@ extern bool g_bNoImage;
 extern bool g_bSixelOrKitty;
 extern bool g_bChafaSymbols;
 
+extern Config g_config;
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
 extern platform::ffmpeg::Decoder g_decoder;

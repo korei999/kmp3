@@ -37,6 +37,7 @@ struct PCG32
     u32
     nextInRange(u32 min, u32 max)
     {
+        max += 1;
         u32 range = max - min;
         u32 threshold = -range % range;
         while (true)
@@ -50,7 +51,7 @@ struct PCG32
     bool
     testLuck(const u32 chancePercent)
     {
-        return nextInRange(0, 101) >= (100 - chancePercent);
+        return nextInRange(0, 100) >= (100 - chancePercent);
     }
 };
 
