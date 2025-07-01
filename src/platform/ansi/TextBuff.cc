@@ -468,6 +468,10 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
     {
         if (x >= m_tWidth || max >= maxSvLen) break;
 
+        /* FIXME: regional symbols are broken with some terminals (tmux). */
+        if (StringGraphemeIt::isRegional(wc))
+            continue;
+
         if (fb(x, y) != TextBuffCell {wc, eStyle})
             m_bChanged = true;
 
@@ -492,6 +496,7 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
     }
 }
 
+/* FIXME: this is a waste of cpu cycles. */
 void
 TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
 {

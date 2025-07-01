@@ -159,7 +159,7 @@ struct StringGraphemeIt
 
     /* */
 
-    static bool
+    static constexpr bool
     isRegional(const wchar_t wc)
     {
         return u32(wc) >= 0x1F1E6 && u32(wc) <= 0x1F1FF;
