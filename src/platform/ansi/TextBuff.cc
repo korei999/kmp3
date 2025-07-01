@@ -1,6 +1,5 @@
 #include "TextBuff.hh"
 
-#include "adt/defer.hh"
 #include "adt/print.hh"
 
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
@@ -205,6 +204,50 @@ TextBuff::resizeBuffers(isize width, isize height)
     m_tHeight = height;
 
     resetBuffers();
+}
+
+template<typename STRING_T>
+inline void
+TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, int maxSvLen)
+{
+    if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
+        return;
+
+    Span2D bb = backBufferSpan();
+    Span2D fb = frontBufferSpan();
+
+    int max = 0;
+
+    for (const wchar_t& wc : s)
+    {
+        if (x >= m_tWidth || max >= maxSvLen) break;
+
+        /* FIXME: regional symbols are broken with some terminals (tmux). */
+        if (StringGraphemeIt::isRegional(wc))
+            continue;
+
+        if (fb(x, y) != TextBuffCell {wc, eStyle})
+            m_bChanged = true;
+
+        bb(x, y).wc = wc;
+        bb(x, y).eStyle = eStyle;
+
+        int colWidth = wcwidth(wc);
+        if (colWidth < 0) break;
+
+        for (int i = 1; i < colWidth; ++i)
+        {
+            if (x + i >= bb.width() || y >= bb.height())
+                return;
+
+            auto& back = bb(x + i, y);
+            back.wc = -1;
+            back.eStyle = eStyle;
+        }
+
+        x += colWidth;
+        max += colWidth;
+    }
 }
 
 void
@@ -457,62 +500,13 @@ TextBuff::backBufferSpan()
 void
 TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int maxSvLen)
 {
-    if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
-        return;
-
-    Span2D bb = backBufferSpan();
-    Span2D fb = frontBufferSpan();
-
-    int max = 0;
-    for (const auto& wc : StringWCharIt(str))
-    {
-        if (x >= m_tWidth || max >= maxSvLen) break;
-
-        /* FIXME: regional symbols are broken with some terminals (tmux). */
-        if (StringGraphemeIt::isRegional(wc))
-            continue;
-
-        if (fb(x, y) != TextBuffCell {wc, eStyle})
-            m_bChanged = true;
-
-        bb(x, y).wc = wc;
-        bb(x, y).eStyle = eStyle;
-
-        int colWidth = wcwidth(wc);
-        if (colWidth < 0) break;
-
-        for (int i = 1; i < colWidth; ++i)
-        {
-            if (x + i >= bb.width() || y >= bb.height())
-                return;
-
-            auto& back = bb(x + i, y);
-            back.wc = -1;
-            back.eStyle = eStyle;
-        }
-
-        x += colWidth;
-        max += colWidth;
-    }
+    stringHelper(x, y, eStyle, StringWCharIt(str), maxSvLen);
 }
 
-/* FIXME: this is a waste of cpu cycles. */
 void
 TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
 {
-    if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
-        return;
-
-    mbstate_t mbState {};
-    Span spBuff = m_scratch.nextMemZero<char>(sp.size() * 8);
-    defer( m_scratch.reset() );
-
-    if (spBuff.size() > 0)
-    {
-        const wchar_t* pSrc = sp.data();
-        const int len = wcsrtombs(spBuff.data(), &pSrc, spBuff.size(), &mbState);
-        string(x, y, eStyle, {spBuff.data(), len});
-    }
+    stringHelper(x, y, eStyle, sp);
 }
 
 StringView
