@@ -399,6 +399,7 @@ TextBuff::showImages()
     {
         m_vImages.destroy(&m_imgArena);
         m_imgArena.reset();
+        m_imgArena.shrinkToFirstBlock();
     }
 }
 #endif
