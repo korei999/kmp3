@@ -403,7 +403,7 @@ template<typename T>
 inline void
 Vec<T>::zeroOut() noexcept
 {
-    memset(m_pData, 0, m_size * sizeof(T));
+    utils::memSet(m_pData, 0, m_size);
 }
 
 template<typename T>

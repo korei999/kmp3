@@ -168,7 +168,7 @@ Mixer::destroy()
     LOG_BAD("MixerDestroy()\n");
 }
 
-void
+bool
 Mixer::play(StringView svPath)
 {
     const f64 prevSpeed = f64(m_changedSampleRate) / f64(m_sampleRate);
@@ -184,8 +184,7 @@ Mixer::play(StringView svPath)
             err != audio::ERROR::OK_
         )
         {
-            LOG_WARN("decoder::open(): '{}'\n", svPath);
-            return;
+            return false;
         }
 
         m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
@@ -197,6 +196,8 @@ Mixer::play(StringView svPath)
         changeSampleRate(f64(m_sampleRate) * prevSpeed, false);
 
     pause(false);
+
+    return true;
 }
 
 void

@@ -45,7 +45,7 @@ protected:
 public:
     virtual void init() override final;
     virtual void destroy() override final;
-    virtual void play(adt::StringView sPath) override final;
+    virtual bool play(adt::StringView sPath) override final;
     virtual void pause(bool bPause) override final;
     virtual void togglePause() override final;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override final;

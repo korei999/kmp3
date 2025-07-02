@@ -1,8 +1,10 @@
 #include "Mixer.hh"
 
+#include "adt/file.hh"
 #include "adt/logs.hh"
 #include "adt/math.hh"
 #include "adt/utils.hh"
+
 #include "app.hh"
 #include "defaults.hh"
 #include "mpris.hh"
@@ -157,7 +159,7 @@ Mixer::destroy()
     LOG_BAD("MixerDestroy()\n");
 }
 
-void
+bool
 Mixer::play(StringView svPath)
 {
     const f64 prevSpeed = f64(m_changedSampleRate) / f64(m_sampleRate);
@@ -173,8 +175,7 @@ Mixer::play(StringView svPath)
             err != audio::ERROR::OK_
         )
         {
-            LOG_WARN("decoder::open(): '{}'\n", svPath);
-            return;
+            return false;
         }
 
         m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
@@ -191,6 +192,8 @@ Mixer::play(StringView svPath)
 #ifdef OPT_MPRIS
     m_atom_bUpdateMpris.store(true, atomic::ORDER::RELEASE); /* mark to update in frame::run() */
 #endif
+
+    return true;
 }
 
 void

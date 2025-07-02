@@ -29,7 +29,6 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
     };
 
     int type = 0;
-
     for (; type < TYPE_MAX; type++)
     {
         isize size = strlen(aCmpMap[type]);

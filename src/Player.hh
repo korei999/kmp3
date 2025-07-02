@@ -25,12 +25,12 @@ struct Player
     struct Msg
     {
         enum class TYPE : adt::u8 { NOTIFY, WARNING, ERROR };
-        using String = adt::StringFixed<48>;
+        using String64 = adt::StringFixed<128>;
         static constexpr adt::f64 UNTIL_NEXT = std::numeric_limits<adt::f64>::max();
 
         /* */
 
-        String sfMsg {};
+        String64 sfMsg {};
         adt::f64 time {};
         TYPE eType {};
 
@@ -53,6 +53,8 @@ struct Player
     adt::u8 m_imgWidth {};
     adt::Vec<adt::StringView> m_vSongs {}; /* full path */
     adt::Vec<adt::StringView> m_vShortSongs {}; /* file name only */
+    adt::Vec<bool> m_vFailedToOpenSongs {};
+    adt::isize m_nFailed = 0;
     /* two index buffers for recursive filtering */
     adt::Vec<adt::u16> m_vSongIdxs {}; /* index buffer */
     adt::Vec<adt::u16> m_vSearchIdxs {}; /* search index buffer */
@@ -63,6 +65,8 @@ struct Player
     bool m_bSelectionChanged {};
     adt::Mutex m_mtxQ {};
     adt::QueueArray<Msg, 16> m_qErrorMsgs {};
+    Msg::String64 m_sfLastMessage {};
+    adt::f64 m_lastMessageTime {};
 
     /* */
 
@@ -105,5 +109,6 @@ struct Player
 
 private:
     void updateInfo();
+    void selectFinal(long selI);
     void setDefaultIdxs(adt::Vec<adt::u16>* pIdxs);
 };

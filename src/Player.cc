@@ -154,6 +154,45 @@ Player::updateInfo()
 }
 
 void
+Player::selectFinal(long selI)
+{
+    const StringView svFullPath = m_vSongs[m_selected];
+
+    if (!app::mixer().play(svFullPath))
+    {
+        if (!m_vFailedToOpenSongs[selI]) ++m_nFailed;
+        m_vFailedToOpenSongs[selI] = true;
+
+        if (m_nFailed >= m_vSearchIdxs.size())
+        {
+            app::quit();
+            return;
+        }
+
+        Msg msg {
+            .time = 5000.0,
+            .eType = Msg::TYPE::ERROR,
+        };
+        print::toSpan(msg.sfMsg.data(), "failed to open \"{}\", selecting next", file::getPathEnding(svFullPath));
+
+        /* Don't stack same messages. */
+        const f64 time = utils::timeNowMS();
+        if ((msg.sfMsg != m_sfLastMessage) || (time >= (m_lastMessageTime + msg.time)))
+        {
+            pushErrorMsg(msg);
+        }
+        else
+        {
+            LOG_BAD("skipping same message...\n\n");
+        }
+
+        onSongEnd();
+    }
+
+    updateInfo();
+}
+
+void
 Player::selectFocused()
 {
     if (m_vSongIdxs.size() <= m_focused)
@@ -165,11 +204,9 @@ Player::selectFocused()
     m_selected = m_vSongIdxs[m_focused];
     m_bSelectionChanged = true;
 
-    const StringView& sPath = m_vSongs[m_selected];
-    LOG_GOOD("selected({}): {}\n", m_selected, sPath);
+    LOG_GOOD("selected({}): {}\n", m_selected, m_vSongs[m_selected]);
 
-    app::mixer().play(sPath);
-    updateInfo();
+    selectFinal(m_selected);
 }
 
 void
@@ -181,16 +218,18 @@ Player::togglePause()
 void
 Player::onSongEnd()
 {
-    long currIdx = findSongIdxFromSelected() + 1;
+    const long currI = findSongIdxFromSelected();
+    long nextI = currI + 1;
+
     if (m_eReapetMethod == PLAYER_REPEAT_METHOD::TRACK)
     {
-        currIdx -= 1;
+        nextI = currI;
     }
-    else if (currIdx >= m_vSongIdxs.size())
+    else if (nextI >= m_vSongIdxs.size())
     {
         if (m_eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST)
         {
-            currIdx = 0;
+            nextI = 0;
         }
         else
         {
@@ -199,11 +238,10 @@ Player::onSongEnd()
         }
     }
 
-    m_selected = m_vSongIdxs[currIdx];
+    m_selected = m_vSongIdxs[nextI];
     m_bSelectionChanged = true;
 
-    app::mixer().play(m_vSongs[m_selected]);
-    updateInfo();
+    selectFinal(m_selected);
 }
 
 void
@@ -215,7 +253,7 @@ Player::nextSongIfPrevEnded()
             atomic::ORDER::RELAXED, atomic::ORDER::RELAXED)
     )
     {
-        app::player().onSongEnd();
+        onSongEnd();
     }
 }
 
@@ -241,25 +279,22 @@ Player::select(long i)
     if (m_vSongs.empty() || m_vSearchIdxs.empty())
         return;
 
-    long idx = utils::clamp(i, 0L, long(m_vSearchIdxs.lastI()));
+    const long idx = utils::clamp(i, 0L, long(m_vSearchIdxs.lastI()));
     m_selected = m_vSearchIdxs[idx];
 
-    app::mixer().play(m_vSongs[m_selected]);
-    updateInfo();
+    selectFinal(m_selected);
 }
 
 void
 Player::selectNext()
 {
-    long idx = (findSongIdxFromSelected() + 1) % m_vSearchIdxs.size();
-    select(idx);
+    select((findSongIdxFromSelected() + 1) % m_vSearchIdxs.size());
 }
 
 void
 Player::selectPrev()
 {
-    long idx = (findSongIdxFromSelected() + (m_vSearchIdxs.size()) - 1) % m_vSearchIdxs.size();
-    select(idx);
+    select((findSongIdxFromSelected() + (m_vSearchIdxs.size()) - 1) % m_vSearchIdxs.size());
 }
 
 void
@@ -294,6 +329,7 @@ Player::destroy()
 {
     m_vSongs.destroy(m_pAlloc);
     m_vShortSongs.destroy(m_pAlloc);
+    m_vFailedToOpenSongs.destroy(m_pAlloc);
     m_vSongIdxs.destroy(m_pAlloc);
     m_vSearchIdxs.destroy(m_pAlloc);
 }
@@ -303,6 +339,9 @@ Player::pushErrorMsg(Player::Msg msg)
 {
     LockGuard lock {&m_mtxQ};
     m_qErrorMsgs.pushBack(msg);
+
+    m_sfLastMessage = msg.sfMsg;
+    m_lastMessageTime = utils::timeNowMS();
 }
 
 Player::Msg
@@ -319,10 +358,13 @@ Player::Player(IAllocator* p, int nArgs, char** ppArgs)
     : m_pAlloc {p},
       m_vSongs {p, nArgs},
       m_vShortSongs {p, nArgs},
+      m_vFailedToOpenSongs {p, nArgs},
       m_vSongIdxs {p, nArgs},
       m_vSearchIdxs {p, nArgs},
       m_mtxQ {Mutex::TYPE::PLAIN}
 {
+    m_vFailedToOpenSongs.setSize(p, m_vFailedToOpenSongs.cap());
+
     for (int i = 0; i < nArgs; ++i)
     {
         if (acceptedFormat(ppArgs[i]))

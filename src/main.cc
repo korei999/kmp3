@@ -79,8 +79,9 @@ parseArgs(int argc, char** argv)
             {
                 if (argc > i + 1)
                 {
-                    const StringView svNext = argv[i + 1];
+                    const StringView svNext = argv[++i];
                     app::g_config.volume = svNext.toF64();
+                    continue;
                 }
                 else
                 {
@@ -144,8 +145,8 @@ startup(int argc, char** argv)
 
     setlocale(LC_ALL, "");
 #ifdef NDEBUG
-    /* hide mpg123 and other errors */
-    (void)freopen("/dev/null", "w", stderr);
+    /* Hide mpg123 and other errors. */
+    ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
 #endif
 
     VecManaged<String> aInput;
@@ -154,9 +155,10 @@ startup(int argc, char** argv)
         aInput.destroy()
     );
 
-    if (argc < 2) /* use stdin instead */
+    if (argc < 2) /* Use stdin instead. */
     {
-        int flags = fcntl(0, F_GETFL, 0);
+        const int flags = fcntl(0, F_GETFL, 0);
+        /* Don't block on empty input. */
         fcntl(0, F_SETFL, flags | O_NONBLOCK);
 
         char* pLine = nullptr;
@@ -165,14 +167,14 @@ startup(int argc, char** argv)
 
         while ((nread = getline(&pLine, &len, stdin)) != -1)
         {
-            String s = String(&alloc, pLine, nread);
+            auto s = String {&alloc, pLine, nread};
             s.removeNLEnd(true);
             aInput.push(s);
         }
 
         ::free(pLine);
 
-        /* make fake `argv` so core code works as usual */
+        /* Make a fake `argv` such that the core code works as usual. */
         argc = aInput.size() + 1;
         argv = alloc.zallocV<char*>(argc);
         bFreeArgv = true;
@@ -181,7 +183,7 @@ startup(int argc, char** argv)
             argv[i] = aInput[i - 1].data();
     }
 
-    Player player(&alloc, argc, argv);
+    Player player {&alloc, argc, argv};
     app::g_pPlayer = &player;
     defer( player.destroy() );
 

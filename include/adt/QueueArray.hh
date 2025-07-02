@@ -36,6 +36,12 @@ struct QueueArray
 
     bool empty() const noexcept;
 
+    T& back() { ADT_ASSERT(!empty(), ""); return m_aData[m_tailI]; }
+    const T& back() const { ADT_ASSERT(!empty(), ""); return m_aData[m_tailI]; }
+
+    T& front() { ADT_ASSERT(!empty(), ""); return m_aData[m_headI]; }
+    const T& front() const { ADT_ASSERT(!empty(), ""); return m_aData[m_headI]; }
+
     isize pushBack(const T& x) noexcept; /* Index of inserted element, -1 on failure. */
 
     isize pushFront(const T& x) noexcept;

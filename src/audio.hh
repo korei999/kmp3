@@ -32,7 +32,7 @@ struct IMixer
 
     virtual void init() = 0;
     virtual void destroy() = 0;
-    virtual void play(adt::StringView svPath) = 0;
+    virtual bool play(adt::StringView svPath) = 0;
     virtual void pause(bool bPause) = 0;
     virtual void togglePause() = 0;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) = 0;
@@ -72,7 +72,7 @@ struct DummyMixer : public IMixer
 {
     virtual void init() override final {}
     virtual void destroy() override final {}
-    virtual void play(adt::StringView) override final {}
+    virtual bool play(adt::StringView) override final { return true; }
     virtual void pause(bool) override final {}
     virtual void togglePause() override final {}
     virtual void changeSampleRate(adt::u64, bool) override final {}
