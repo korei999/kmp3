@@ -9,6 +9,7 @@
 
 #include <clocale>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 
 #ifdef OPT_CHAFA
     #include "platform/chafa/chafa.hh"
@@ -155,12 +156,9 @@ startup(int argc, char** argv)
         aInput.destroy()
     );
 
-    if (argc < 2) /* Use stdin instead. */
+    int nBytes = 0;
+    if (ioctl(STDIN_FILENO, FIONREAD, &nBytes) != -1 && nBytes > 0)
     {
-        const int flags = fcntl(0, F_GETFL, 0);
-        /* Don't block on empty input. */
-        fcntl(0, F_SETFL, flags | O_NONBLOCK);
-
         char* pLine = nullptr;
         size_t len = 0;
         ssize_t nread = 0;
