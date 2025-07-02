@@ -9,7 +9,7 @@
 
 ### Usage
 - Play each song in the directory: `kmp3 *`, or recursively: `kmp3 **/*`.
-- With no arguments, stdin with pipe can be used: `find /path -iname '*.mp3' | kmp3` or whatever the shell can do.
+- To shuffle, sort, or filter songs, you can use a pipe: `ls ./* | sort -R | kmp3`.
 - Navigate with vim-like keybinds.
 - `h` / `l` seek back/forward.
 - `n` / `p` next/prev song.
