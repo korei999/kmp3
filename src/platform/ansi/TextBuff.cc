@@ -505,9 +505,14 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
 }
 
 void
-TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, Span<wchar_t> sp)
+TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const Span<const wchar_t> sp)
 {
-    stringHelper(x, y, eStyle, sp);
+    stringHelper(x, y, eStyle,
+        Span {
+            sp.data(),
+            isize(wcsnlen(sp.data(), sp.size()))
+        }
+    );
 }
 
 StringView
@@ -516,7 +521,7 @@ TextBuff::styleToString(ScratchBuffer* pScratch, TEXT_BUFF_STYLE eStyle)
     Span<char> sp = pScratch->nextMemZero<char>(128);
     if (sp.size() <= 0) return {};
 
-    isize size = sp.size() - 1;
+    const isize size = sp.size() - 1;
     isize n = 0;
 
     n += print::toBuffer(sp.data() + n, size - n, "\x1b[0");
