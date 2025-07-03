@@ -19,19 +19,21 @@ Mixer::init()
 {
     LOG_NOTIFY("initializing alsa...\n");
 
-    ADT_ASSERT_ALWAYS(
-        snd_pcm_open(&m_pHandle, s_pDevice, SND_PCM_STREAM_PLAYBACK, 0) >= 0,
-        ""
+    int err = 0;
+
+    ADT_RUNTIME_EXCEPTION_FMT(
+        (err = snd_pcm_open(&m_pHandle, s_pDevice, SND_PCM_STREAM_PLAYBACK, 0)) >= 0,
+        "({}): {}", err, snd_strerror(err)
     );
 
-    ADT_ASSERT_ALWAYS(
-        snd_pcm_set_params(
+    ADT_RUNTIME_EXCEPTION_FMT(
+        (err = snd_pcm_set_params(
             m_pHandle,
             SND_PCM_FORMAT_FLOAT,
             SND_PCM_ACCESS_RW_INTERLEAVED,
             2, 48000, 1, 100000
-        ) >= 0,
-        ""
+        )) >= 0,
+        "({}): {}", err, snd_strerror(err)
     );
 
     m_atom_bRunning.store(true, atomic::ORDER::RELEASE);
@@ -120,15 +122,17 @@ Mixer::togglePause()
 void
 Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 {
+    int err = 0;
+
     pause(true);
-    ADT_ASSERT_ALWAYS(
-        snd_pcm_set_params(
+    ADT_RUNTIME_EXCEPTION_FMT(
+        (err = snd_pcm_set_params(
             m_pHandle,
             SND_PCM_FORMAT_FLOAT,
             SND_PCM_ACCESS_RW_INTERLEAVED,
             m_nChannels, sampleRate, 1, 250000
-        ) >= 0,
-        ""
+        )) >= 0,
+        "({}): {}", err, snd_strerror(err)
     );
     pause(false);
 
@@ -184,6 +188,7 @@ void
 Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
     LockGuard lock {&m_mtxLoop};
+    int err = 0;
 
     if (bSaveNewConfig)
     {
@@ -194,14 +199,14 @@ Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
     sampleRate = utils::clamp(sampleRate, defaults::MIN_SAMPLE_RATE, defaults::MAX_SAMPLE_RATE);
     nChannels = utils::clamp(nChannels, 1, 20);
 
-    ADT_ASSERT_ALWAYS(
-        snd_pcm_set_params(
+    ADT_RUNTIME_EXCEPTION_FMT(
+        (err = snd_pcm_set_params(
             m_pHandle,
             SND_PCM_FORMAT_FLOAT,
             SND_PCM_ACCESS_RW_INTERLEAVED,
-            nChannels, sampleRate, 1, 250000
-        ) >= 0,
-        ""
+            nChannels, sampleRate, 1, 100000
+        )) >= 0,
+        "({}): {}", err, snd_strerror(err)
     );
 }
 
@@ -211,13 +216,13 @@ Mixer::loop()
     [[maybe_unused]] int writeStatus {};
 
     StdAllocator stdAl;
-    f32* pDestBuff = stdAl.zallocV<f32>(utils::size(audio::g_aRenderBuffer));
-    defer( stdAl.free(pDestBuff) );
+    f32* pRenderBuff = stdAl.zallocV<f32>(utils::size(audio::g_aRenderBuffer));
+    defer( stdAl.free(pRenderBuff) );
 
     long s_nDecodedSamples = 0;
     long s_nWrites = 0;
 
-    constexpr isize NFRAMES = 1024;
+    constexpr isize NFRAMES = 2048;
 
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
@@ -236,7 +241,7 @@ Mixer::loop()
             }
 
             for (u32 chIdx = 0; chIdx < m_nChannels; ++chIdx)
-                pDestBuff[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
+                pRenderBuff[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
         }
 
         if (s_nDecodedSamples == 0)
@@ -259,11 +264,11 @@ Mixer::loop()
                     goto GOTO_done;
             }
 
-            auto nFrameWritten = snd_pcm_writei(m_pHandle, pDestBuff, NFRAMES);
+            auto nFrameWritten = snd_pcm_writei(m_pHandle, pRenderBuff, NFRAMES);
             if (nFrameWritten < 0) nFrameWritten = snd_pcm_recover(m_pHandle, nFrameWritten, 0);
             if (nFrameWritten < 0)
             {
-                LOG_BAD("snd_pcm_recover() failed\n");
+                LOG_BAD("snd_pcm_recover() failed: {}\n", snd_strerror(nFrameWritten));
                 app::quit();
                 goto GOTO_done;
             }
