@@ -2,8 +2,8 @@
 
 #include "adt/logs.hh"
 #include "adt/defer.hh"
-
 #include "adt/math.hh"
+
 #include "app.hh"
 #include "mpris.hh"
 
@@ -54,7 +54,7 @@ Mixer::destroy()
     m_mtxLoop.destroy();
     m_cndLoop.destroy();
 
-    // snd_pcm_drain(m_pHandle);
+    // snd_pcm_drain(m_pHandle); /* Too slow. */
     snd_pcm_close(m_pHandle);
 
     LOG_BAD("MixerDestroy()\n");
@@ -264,7 +264,9 @@ Mixer::loop()
             if (nFrameWritten < 0) nFrameWritten = snd_pcm_recover(m_pHandle, nFrameWritten, 0);
             if (nFrameWritten < 0)
             {
-                LOG_BAD("ITS OVER\n");
+                LOG_BAD("snd_pcm_recover() failed\n");
+                app::quit();
+                goto GOTO_done;
             }
         }
     }
