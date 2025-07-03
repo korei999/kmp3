@@ -41,7 +41,7 @@ struct RuntimeException : public IException
 
     /* */
 
-    RuntimeException() = default;
+    RuntimeException(std::source_location loc = std::source_location::current()) : m_sfMsg {}, m_loc {loc} {}
     RuntimeException(const StringView svMsg, std::source_location loc = std::source_location::current())
         : m_sfMsg(svMsg), m_loc {loc} {}
 
