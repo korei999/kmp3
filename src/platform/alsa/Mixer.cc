@@ -29,7 +29,7 @@ Mixer::init()
             m_pHandle,
             SND_PCM_FORMAT_FLOAT,
             SND_PCM_ACCESS_RW_INTERLEAVED,
-            2, 48000, 1, 250000
+            2, 48000, 1, 100000
         ) >= 0,
         ""
     );
