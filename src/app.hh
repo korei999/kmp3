@@ -21,6 +21,7 @@ enum class MIXER : adt::u8
 {
     DUMMY,
 
+    ALSA,
     PIPEWIRE,
     COREAUDIO,
     SNDIO,

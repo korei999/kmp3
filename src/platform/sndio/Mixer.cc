@@ -50,7 +50,7 @@ Mixer::loop()
 
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
-        const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3);
+        const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
         isize destI = 0;
         for (u32 frameIdx = 0; frameIdx < N_BUF_FRAMES; ++frameIdx)

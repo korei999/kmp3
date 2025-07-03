@@ -104,6 +104,15 @@ parseArgs(int argc, char** argv)
                 exit(0);
 #endif
             }
+            else if (svArg == "--alsa")
+            {
+#ifdef OPT_ALSA
+                app::g_eMixer = app::MIXER::ALSA;
+#else
+                print::out("compiled without alsa\n");
+                exit(0);
+#endif
+            }
             else if (svArg == "--pipewire")
             {
 #ifdef OPT_PIPEWIRE
@@ -136,6 +145,8 @@ startup(int argc, char** argv)
     app::g_eUIFrontend = app::UI::ANSI;
 #if OPT_PIPEWIRE
     app::g_eMixer = app::MIXER::PIPEWIRE;
+#elif defined OPT_ALSA
+    app::g_eMixer = app::MIXER::ALSA;
 #elif defined OPT_SNDIO
     app::g_eMixer = app::MIXER::SNDIO;
 #elif defined __APPLE__

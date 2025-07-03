@@ -6,6 +6,7 @@ message(STATUS "NAME: '${NAME}'")
 project(${NAME} VERSION 0.1 LANGUAGES CXX C)
 message(STATUS "CMAKE_PROJECT_VERSION: '${CMAKE_PROJECT_VERSION}'")
 
+option(OPT_ALSA "" ON)
 option(OPT_PIPEWIRE "" ON)
 option(OPT_SNDIO "" ON)
 option(OPT_CHAFA "" ON)
@@ -168,6 +169,20 @@ pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswresample
 include_directories(BEFORE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARIES})
+
+if (OPT_ALSA)
+    pkg_check_modules(ALSA alsa)
+    if (ALSA_FOUND)
+        add_definitions("-DOPT_ALSA")
+        include_directories(BEFORE ${ALSA_INCLUDE_DIRS})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${ALSA_LIBRARIES})
+
+        target_sources(
+            ${CMAKE_PROJECT_NAME} PRIVATE
+            "src/platform/alsa/Mixer.cc"
+        )
+    endif()
+endif()
 
 if (OPT_PIPEWIRE)
     pkg_check_modules(PIPEWIRE libpipewire-0.3)

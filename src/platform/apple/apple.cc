@@ -55,7 +55,7 @@ Mixer::writeCallBack(
     static long s_nDecodedSamples = 0;
     static long s_nWrites = 0;
 
-    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3);
+    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
     isize destI = 0;
     for (u32 i = 0; i < inNumberFrames; ++i)

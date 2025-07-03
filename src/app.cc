@@ -2,6 +2,10 @@
 
 #include "platform/ansi/Win.hh"
 
+#ifdef OPT_ALSA
+    #include "platform/alsa/Mixer.hh"
+#endif
+
 #ifdef OPT_PIPEWIRE
     #include "platform/pipewire/Mixer.hh"
 #endif
@@ -64,9 +68,15 @@ allocMixer(IAllocator* pAlloc)
         pMix = pAlloc->alloc<audio::DummyMixer>();
         break;
 
-#ifdef OPT_PIPEWIRE
+#ifdef OPT_ALSA
         case MIXER::PIPEWIRE:
         pMix = pAlloc->alloc<platform::pipewire::Mixer>();
+        break;
+#endif
+
+#ifdef OPT_PIPEWIRE
+        case MIXER::ALSA:
+        pMix = pAlloc->alloc<platform::alsa::Mixer>();
         break;
 #endif
 

@@ -1,6 +1,5 @@
 #include "Mixer.hh"
 
-#include "adt/file.hh"
 #include "adt/logs.hh"
 #include "adt/math.hh"
 #include "adt/utils.hh"
@@ -255,7 +254,7 @@ Mixer::onProcess()
     static long s_nDecodedSamples = 0;
     static long s_nWrites = 0;
 
-    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3);
+    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
     isize destI = 0;
     for (u32 frameIdx = 0; frameIdx < nFrames; ++frameIdx)
