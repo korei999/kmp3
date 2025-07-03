@@ -39,8 +39,9 @@ Mixer::loop()
 {
     [[maybe_unused]] int writeStatus {};
 
-    StdAllocator stdAl;
+    defer( m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE) );
 
+    StdAllocator stdAl;
     /* sndio doesn't support f32 pcm. */
     i16* pRenderBuffer = stdAl.zallocV<i16>(audio::CHUNK_SIZE);
     defer( stdAl.free(pRenderBuffer) );
@@ -97,7 +98,6 @@ Mixer::loop()
     }
 
 GOTO_done:
-    m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE);
     LOG_BAD("LOOP DONE\n");
 
     return THREAD_STATUS(0);

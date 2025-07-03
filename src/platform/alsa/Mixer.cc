@@ -213,7 +213,7 @@ Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
 THREAD_STATUS
 Mixer::loop()
 {
-    [[maybe_unused]] int writeStatus {};
+    defer( m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE) );
 
     StdAllocator stdAl;
     f32* pRenderBuff = stdAl.zallocV<f32>(utils::size(audio::g_aRenderBuffer));
@@ -276,7 +276,6 @@ Mixer::loop()
     }
 
 GOTO_done:
-    m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE);
     LOG_BAD("LOOP DONE\n");
 
     return THREAD_STATUS(0);

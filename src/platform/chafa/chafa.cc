@@ -286,7 +286,7 @@ allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int term
 
     f64 fontRatio = defaults::FONT_ASPECT_RATIO;
     int cellWidth = -1, cellHeight = -1; /* Size of each character cell, in pixels */
-    int widthCells {}, heightCells {};         /* Size of output image, in cells */
+    int widthCells {}, heightCells {}; /* Size of output image, in cells */
 
     if (termWidth > 0 && termHeight > 0 && termSize.widthPixels > 0 && termSize.heightPixels > 0)
     {
