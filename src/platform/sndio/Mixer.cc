@@ -90,7 +90,6 @@ Mixer::loop()
 
                 if (!m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
                     goto GOTO_done;
-
             }
 
             writeStatus = sio_write(m_pHdl, pRenderBuffer, N_BUF_FRAMES * m_par.pchan * sizeof(i16));

@@ -257,7 +257,6 @@ Mixer::loop()
 
                 if (!m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
                     goto GOTO_done;
-
             }
 
             auto nFrameWritten = snd_pcm_writei(m_pHandle, pDestBuff, NFRAMES);
