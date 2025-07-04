@@ -89,7 +89,7 @@ Mixer::writeCallBack(
     return noErr;
 }
 
-void
+Mixer&
 Mixer::init()
 {
     LOG_NOTIFY("initializing coreaudio...\n");
@@ -136,6 +136,8 @@ Mixer::init()
 
     AudioUnitInitialize(m_unit);
     AudioOutputUnitStart(m_unit);
+
+    return *this;
 }
 
 void

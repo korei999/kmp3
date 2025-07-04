@@ -30,7 +30,7 @@ struct IMixer
     adt::i64 m_currentTimeStamp {};
     adt::i64 m_nTotalSamples {};
 
-    virtual void init() = 0;
+    virtual IMixer& init() = 0;
     virtual void destroy() = 0;
     virtual bool play(adt::StringView svPath) = 0;
     virtual void pause(bool bPause) = 0;
@@ -70,7 +70,7 @@ struct IMixer
 
 struct DummyMixer : public IMixer
 {
-    virtual void init() override final {}
+    virtual DummyMixer& init() override final { return *this; }
     virtual void destroy() override final {}
     virtual bool play(adt::StringView) override final { return true; }
     virtual void pause(bool) override final {}
@@ -108,7 +108,7 @@ struct IDecoder
         adt::isize* pPcmPos
     ) = 0;
 
-    virtual void init() = 0;
+    virtual IDecoder& init() = 0;
     virtual void destroy() = 0;
     [[nodiscard]] virtual adt::u32 getSampleRate() = 0;
     virtual void seekMS(adt::f64 ms) = 0;

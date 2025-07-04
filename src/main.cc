@@ -205,8 +205,7 @@ startup(int argc, char** argv)
     app::decoder().init();
     defer( app::decoder().destroy() );
 
-    app::g_pMixer = app::allocMixer(&alloc);
-    app::mixer().init();
+    app::g_pMixer = &app::allocMixer(&alloc)->init();
     app::mixer().setVolume(app::g_config.volume);
     defer( app::mixer().destroy() );
 

@@ -56,10 +56,11 @@ Decoder::close()
     LOG_NOTIFY("close()\n");
 }
 
-void
+Decoder&
 Decoder::init()
 {
     new(&m_mtx) Mutex {Mutex::TYPE::PLAIN};
+    return *this;
 }
 
 void

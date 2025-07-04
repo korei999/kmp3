@@ -103,7 +103,7 @@ GOTO_done:
     return THREAD_STATUS(0);
 }
 
-void
+Mixer&
 Mixer::init()
 {
     LOG_NOTIFY("initializing sndio...\n");
@@ -148,6 +148,8 @@ Mixer::init()
         ThreadFn(methodPointerNonVirtual(&Mixer::loop)),
         this
     };
+
+    return *this;
 }
 
 void

@@ -102,12 +102,9 @@ Win::volume()
 
     auto clVolumeStringColor = [&](f32 x) -> STYLE
     {
-        if (x <= 0.33f)
-            return STYLE::GREEN;
-        else if (x > 0.33f && x <= 0.66f)
-            return STYLE::GREEN;
-        else if (x > 0.66f && x <= 1.01f)
-            return STYLE::YELLOW;
+        if (x <= 0.33f) return STYLE::GREEN;
+        else if (x > 0.33f && x <= 0.66f) return STYLE::GREEN;
+        else if (x > 0.66f && x <= 1.01f) return STYLE::YELLOW;
         else return STYLE::RED;
     };
 

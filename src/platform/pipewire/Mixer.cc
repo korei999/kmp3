@@ -79,7 +79,7 @@ formatByteSize(spa_audio_format eFormat)
     };
 }
 
-void
+Mixer&
 Mixer::init()
 {
     m_bRunning = true;
@@ -134,6 +134,8 @@ Mixer::init()
     );
 
     pw_thread_loop_start(m_pThrdLoop);
+
+    return *this;
 }
 
 void

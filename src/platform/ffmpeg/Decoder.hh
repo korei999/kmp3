@@ -28,7 +28,7 @@ struct Decoder : audio::IDecoder
         long* pSamplesWritten, adt::isize* pPcmPos
     ) override final;
 
-    virtual void init() override final;
+    virtual Decoder& init() override final;
     virtual void destroy() override final;
     [[nodiscard]] virtual adt::u32 getSampleRate() override final;
     virtual void seekMS(adt::f64 ms) override final;

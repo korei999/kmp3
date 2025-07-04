@@ -43,7 +43,7 @@ protected:
     /* */
 
 public:
-    virtual void init() override final;
+    virtual Mixer& init() override final;
     virtual void destroy() override final;
     virtual bool play(adt::StringView sPath) override final;
     virtual void pause(bool bPause) override final;

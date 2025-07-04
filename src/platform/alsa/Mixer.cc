@@ -14,7 +14,7 @@ namespace platform::alsa
 
 static const char* s_pDevice = "default";
 
-void
+Mixer&
 Mixer::init()
 {
     LOG_NOTIFY("initializing alsa...\n");
@@ -42,6 +42,8 @@ Mixer::init()
         ThreadFn(methodPointerNonVirtual(&Mixer::loop)),
         this
     };
+
+    return *this;
 }
 
 void
