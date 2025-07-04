@@ -1,7 +1,5 @@
 #pragma once
 
-#include "adt/Thread.hh"
-
 #include "audio.hh"
 
 #ifdef __clang__
