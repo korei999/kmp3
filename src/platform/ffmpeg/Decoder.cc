@@ -6,14 +6,14 @@
 #include "adt/types.hh"
 #include "adt/utils.hh"
 
-using namespace adt;
-
 extern "C"
 {
 
 #include <libavutil/imgutils.h>
 
 }
+
+using namespace adt;
 
 namespace platform::ffmpeg
 {
