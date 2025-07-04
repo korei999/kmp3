@@ -26,8 +26,6 @@
 namespace platform::pipewire
 {
 
-struct Device;
-
 class Mixer : public audio::IMixer
 {
 protected:
