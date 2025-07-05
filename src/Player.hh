@@ -99,7 +99,7 @@ struct Player
     void setImgSize(long height);
     void adjustImgWidth();
     void destroy();
-    void pushErrorMsg(Msg msg);
+    void pushErrorMsg(const Msg& msg);
     Msg popErrorMsg();
 
     /* */

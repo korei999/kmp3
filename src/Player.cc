@@ -317,7 +317,7 @@ Player::destroy()
 }
 
 void
-Player::pushErrorMsg(Player::Msg msg)
+Player::pushErrorMsg(const Player::Msg& msg)
 {
     LockGuard lock {&m_mtxQ};
     m_qErrorMsgs.pushBack(msg);
