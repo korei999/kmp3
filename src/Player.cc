@@ -68,35 +68,28 @@ Player::focusLast()
 }
 
 u16
-Player::findSongIdxFromSelected()
+Player::findSongIdx(long toFindI)
 {
-    if (m_vSongs.empty())
-        return 0;
+again:
 
-    u16 res = NPOS16;
+    if (m_vSongs.empty()) return 0;
 
-    for (const auto& idx : m_vSearchIdxs)
-    {
-        if (idx == m_selected)
-        {
-            res = m_vSearchIdxs.idx(&idx);
-            break;
-        }
-    }
+    const isize res = utils::search(m_vSearchIdxs, [&](u16 e) { return e == toFindI; });
 
-    if (res == NPOS16)
+    if (res <= NPOS)
     {
         setDefaultSearchIdxs();
         setDefaultSongIdxs();
-        return findSongIdxFromSelected();
+        goto again;
     }
-    else return res;
+
+    return res;
 }
 
 void
 Player::focusSelected()
 {
-    focus(findSongIdxFromSelected());
+    focus(findSongIdx(m_selected));
 }
 
 void
@@ -141,10 +134,12 @@ Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
 }
 
 long
-Player::nextSelectionI()
+Player::nextSelectionI(long selI)
 {
-    const long currI = findSongIdxFromSelected();
+    const long currI = findSongIdx(selI);
     long nextI = currI + 1;
+
+    defer( LOG_WARN("currI: {}, nextI: {}\n", currI, nextI) );
 
     if (m_eReapetMethod == PLAYER_REPEAT_METHOD::TRACK)
     {
@@ -159,7 +154,7 @@ Player::nextSelectionI()
         else
         {
             app::g_bRunning = false;
-            return currI;
+            return m_vSongIdxs[currI];
         }
     }
 
@@ -184,13 +179,15 @@ Player::selectFinal(long selI)
 {
     long nFailed = 0;
 
-GOTO_again:
-    const StringView svFullPath = m_vSongs[selI];
-
-    if (!app::mixer().play(svFullPath))
+    while (!app::mixer().play(m_vSongs[selI]))
     {
+        LOG_WARN("failed to open: '{}', selI: {}\n", m_vSongs[selI], selI);
+
+        if (!app::g_bRunning) return;
+
         if (++nFailed >= m_vSearchIdxs.size())
         {
+            LOG_BAD("QUIT (nFailed: {}, size: {})\n", nFailed, m_vSearchIdxs.size());
             app::quit();
             return;
         }
@@ -199,22 +196,12 @@ GOTO_again:
             .time = 5000.0,
             .eType = Msg::TYPE::ERROR,
         };
-        print::toSpan(msg.sfMsg.data(), "failed to open \"{}\"", file::getPathEnding(svFullPath));
+        print::toSpan(msg.sfMsg.data(), "failed to open \"{}\"", file::getPathEnding(m_vSongs[selI]));
 
-        /* Don't stack same messages. */
-        const f64 time = utils::timeNowMS();
-        if ((msg.sfMsg != m_sfLastMessage) || (time >= (m_lastMessageTime + msg.time)))
-        {
+        if ((msg.sfMsg != m_sfLastMessage) || (utils::timeNowMS() >= (m_lastPushedMessageTime + msg.time)))
             pushErrorMsg(msg);
-        }
-        else
-        {
-            LOG_BAD("skipping same message...\n\n");
-        }
 
-        selI = nextSelectionI();
-        if (!app::g_bRunning) return;
-        else goto GOTO_again;
+        selI = nextSelectionI(selI); /* Might set g_bRunning. */
     }
 
     m_bSelectionChanged = true;
@@ -251,7 +238,7 @@ Player::nextSongIfPrevEnded()
         )
     )
     {
-        selectFinal(nextSelectionI());
+        selectFinal(nextSelectionI(m_selected));
     }
 }
 
@@ -284,13 +271,13 @@ Player::select(long i)
 void
 Player::selectNext()
 {
-    select((findSongIdxFromSelected() + 1) % m_vSearchIdxs.size());
+    select((findSongIdx(m_selected) + 1) % m_vSearchIdxs.size());
 }
 
 void
 Player::selectPrev()
 {
-    select((findSongIdxFromSelected() + (m_vSearchIdxs.size()) - 1) % m_vSearchIdxs.size());
+    select((findSongIdx(m_selected) + (m_vSearchIdxs.size()) - 1) % m_vSearchIdxs.size());
 }
 
 void
@@ -336,7 +323,7 @@ Player::pushErrorMsg(Player::Msg msg)
     m_qErrorMsgs.pushBack(msg);
 
     m_sfLastMessage = msg.sfMsg;
-    m_lastMessageTime = utils::timeNowMS();
+    m_lastPushedMessageTime = utils::timeNowMS();
 }
 
 Player::Msg

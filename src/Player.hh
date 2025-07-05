@@ -64,7 +64,7 @@ struct Player
     adt::Mutex m_mtxQ {};
     adt::QueueArray<Msg, 16> m_qErrorMsgs {};
     Msg::String64 m_sfLastMessage {};
-    adt::f64 m_lastMessageTime {};
+    adt::f64 m_lastPushedMessageTime {};
 
     /* */
 
@@ -84,7 +84,7 @@ struct Player
     void setDefaultSongIdxs() { setDefaultIdxs(&m_vSongIdxs); }
     void setDefaultSearchIdxs() { setDefaultIdxs(&m_vSearchIdxs); }
     void focusLast();
-    adt::u16 findSongIdxFromSelected();
+    adt::u16 findSongIdx(long selI);
     void focusSelected();
     void subStringSearch(adt::Arena* pAlloc, adt::Span<wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
@@ -105,7 +105,7 @@ struct Player
     /* */
 
 private:
-    long nextSelectionI();
+    long nextSelectionI(long selI);
     void updateInfo();
     void selectFinal(long selI);
     void setDefaultIdxs(adt::Vec<adt::u16>* pIdxs);
