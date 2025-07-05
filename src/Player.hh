@@ -84,7 +84,7 @@ struct Player
     void setDefaultSongIdxs() { setDefaultIdxs(&m_vSongIdxs); }
     void setDefaultSearchIdxs() { setDefaultIdxs(&m_vSearchIdxs); }
     void focusLast();
-    adt::u16 findSongIdx(long selI);
+    long findSongI(long selI);
     void focusSelected();
     void subStringSearch(adt::Arena* pAlloc, adt::Span<wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */

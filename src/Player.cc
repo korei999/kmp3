@@ -27,11 +27,9 @@ constexpr StringView aAcceptedFileEndings[] {
 bool
 Player::acceptedFormat(const StringView s)
 {
-    for (const auto ending : aAcceptedFileEndings)
-        if (s.endsWith(ending))
-            return true;
-
-    return false;
+    return utils::searchI(aAcceptedFileEndings, [&](const StringView ending)
+        { return s.endsWith(ending); }
+    ) != NPOS;
 }
 
 void
@@ -48,8 +46,7 @@ Player::focusPrev()
     long prev = m_focused - 1;
     if (prev < 0)
     {
-        if (m_vSongIdxs.empty())
-            prev = 0;
+        if (m_vSongIdxs.empty()) prev = 0;
         else prev = m_vSongIdxs.size() - 1;
     }
     m_focused = prev;
@@ -67,13 +64,13 @@ Player::focusLast()
     focus(m_vSongIdxs.size() - 1);
 }
 
-u16
-Player::findSongIdx(long toFindI)
+long
+Player::findSongI(long toFindI)
 {
     if (m_vSongs.empty()) return 0;
 
 again:
-    const isize res = utils::search(m_vSearchIdxs, [&](u16 e) { return e == toFindI; });
+    const isize res = utils::searchI(m_vSearchIdxs, [&](u16 e) { return e == toFindI; });
 
     if (res <= NPOS)
     {
@@ -88,17 +85,14 @@ again:
 void
 Player::focusSelected()
 {
-    focus(findSongIdx(m_selected));
+    focus(findSongI(m_selected));
 }
 
 void
 Player::setDefaultIdxs(Vec<u16>* pvIdxs)
 {
-    const isize size = m_vSongs.size();
-    pvIdxs->setSize(m_pAlloc, size);
-
-    for (isize i = 0; i < size; ++i)
-        (*pvIdxs)[i] = i;
+    pvIdxs->setSize(m_pAlloc, m_vSongs.size());
+    for (auto& e : *pvIdxs) e = pvIdxs->idx(&e);
 }
 
 void
@@ -135,7 +129,7 @@ Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
 long
 Player::nextSelectionI(long selI)
 {
-    const long currI = findSongIdx(selI);
+    const long currI = findSongI(selI);
     long nextI = currI + 1;
 
     defer( LOG_WARN("currI: {}, nextI: {}\n", currI, nextI) );
@@ -270,13 +264,13 @@ Player::select(long i)
 void
 Player::selectNext()
 {
-    select((findSongIdx(m_selected) + 1) % m_vSearchIdxs.size());
+    select((findSongI(m_selected) + 1) % m_vSearchIdxs.size());
 }
 
 void
 Player::selectPrev()
 {
-    select((findSongIdx(m_selected) + (m_vSearchIdxs.size()) - 1) % m_vSearchIdxs.size());
+    select((findSongI(m_selected) + (m_vSearchIdxs.size()) - 1) % m_vSearchIdxs.size());
 }
 
 void

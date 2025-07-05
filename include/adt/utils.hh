@@ -296,8 +296,6 @@ clamp(const T& x, const T& _min, const T& _max)
 inline constexpr void
 reverse(auto* a, const isize size)
 {
-    ADT_ASSERT(size > 0, " ");
-
     const isize halfSize = size >> 1;
     for (isize i = 0; i < halfSize; ++i)
         swap(&a[i], &a[size - 1 - i]);
@@ -311,17 +309,21 @@ reverse(auto* a)
 
 template<typename LAMBDA>
 [[nodiscard]] inline isize
-search(const auto& a, LAMBDA cl)
+searchI(const auto& a, LAMBDA cl)
 {
+    isize i = 0;
     for (const auto& e : a)
-        if (cl(e)) return a.idx(&e);
+    {
+        if (cl(e)) return i;
+        ++i;
+    }
 
     return NPOS;
 }
 
 template<typename T, typename B>
 [[nodiscard]] inline isize
-binarySearch(const T& array, const B& x)
+binarySearchI(const T& array, const B& x)
 {
     static_assert(std::is_same_v<std::remove_cvref_t<decltype(array[0])>, std::remove_cvref_t<B>>);
 
