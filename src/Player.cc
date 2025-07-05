@@ -329,11 +329,12 @@ Player::pushErrorMsg(Player::Msg msg)
 Player::Msg
 Player::popErrorMsg()
 {
-    LockGuard lock {&m_mtxQ};
+    {
+        LockGuard lock {&m_mtxQ};
+        if (!m_qErrorMsgs.empty()) return m_qErrorMsgs.popFront();
+    }
 
-    if (!m_qErrorMsgs.empty())
-        return m_qErrorMsgs.popFront();
-    else return {};
+    return {};
 }
 
 Player::Player(IAllocator* p, int nArgs, char** ppArgs)
