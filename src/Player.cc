@@ -70,10 +70,9 @@ Player::focusLast()
 u16
 Player::findSongIdx(long toFindI)
 {
-again:
-
     if (m_vSongs.empty()) return 0;
 
+again:
     const isize res = utils::search(m_vSearchIdxs, [&](u16 e) { return e == toFindI; });
 
     if (res <= NPOS)
