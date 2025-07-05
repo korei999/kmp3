@@ -176,6 +176,7 @@ if (OPT_ALSA)
         add_definitions("-DOPT_ALSA")
         include_directories(BEFORE ${ALSA_INCLUDE_DIRS})
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${ALSA_LIBRARIES})
+        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${ALSA_LIBRARY_DIRS})
 
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
@@ -190,6 +191,7 @@ if (OPT_PIPEWIRE)
         add_definitions("-DOPT_PIPEWIRE")
         include_directories(BEFORE ${PIPEWIRE_INCLUDE_DIRS})
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARIES})
+        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARY_DIRS})
 
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
@@ -204,6 +206,7 @@ if (OPT_SNDIO OR CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
         add_definitions("-DOPT_SNDIO")
         include_directories(BEFORE ${SNDIO_INCLUDE_DIRS})
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SNDIO_LIBRARIES})
+        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${SNDIO_LIBRARY_DIRS})
 
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
@@ -224,6 +227,7 @@ if (OPT_CHAFA)
 
         include_directories(BEFORE ${CHAFA_INCLUDE_DIRS} ${SWSCALE_INCLUDE_DIRS})
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES} ${SWSCALE_LIBRARIES})
+        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARY_DIRS})
         add_definitions("-DOPT_CHAFA")
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
@@ -237,6 +241,7 @@ if(OPT_MPRIS)
     if (SYSTEMD_FOUND)
         include_directories(BEFORE ${SYSTEMD_INCLUDE_DIRS})
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
+        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARY_DIRS})
         target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
         add_definitions("-DOPT_MPRIS")
     else()
@@ -244,6 +249,7 @@ if(OPT_MPRIS)
         if (BASU_FOUND)
             include_directories(BEFORE ${BASU_INCLUDE_DIRS})
             target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARIES})
+            target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARY_DIRS})
             target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
             add_definitions("-DOPT_MPRIS -DOPT_BASU")
         endif()
