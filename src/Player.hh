@@ -53,8 +53,6 @@ struct Player
     adt::u8 m_imgWidth {};
     adt::Vec<adt::StringView> m_vSongs {}; /* full path */
     adt::Vec<adt::StringView> m_vShortSongs {}; /* file name only */
-    adt::Vec<bool> m_vFailedToOpenSongs {};
-    adt::isize m_nFailed = 0;
     /* two index buffers for recursive filtering */
     adt::Vec<adt::u16> m_vSongIdxs {}; /* index buffer */
     adt::Vec<adt::u16> m_vSearchIdxs {}; /* search index buffer */
@@ -92,7 +90,6 @@ struct Player
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
     void togglePause();
-    void onSongEnd();
     void nextSongIfPrevEnded();
     PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward);
     void select(long i);
@@ -108,6 +105,7 @@ struct Player
     /* */
 
 private:
+    long nextSelectionI();
     void updateInfo();
     void selectFinal(long selI);
     void setDefaultIdxs(adt::Vec<adt::u16>* pIdxs);

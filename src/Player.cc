@@ -140,83 +140,8 @@ Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
     }
 }
 
-void
-Player::updateInfo()
-{
-    m_info.sfTitle = app::decoder().getMetadata("title");
-    m_info.sfAlbum = app::decoder().getMetadata("album");
-    m_info.sfArtist = app::decoder().getMetadata("artist");
-
-    if (m_info.sfTitle.size() == 0)
-        m_info.sfTitle = m_vShortSongs[m_selected];
-
-    m_bSelectionChanged = true;
-}
-
-void
-Player::selectFinal(long selI)
-{
-    const StringView svFullPath = m_vSongs[m_selected];
-
-    if (!app::mixer().play(svFullPath))
-    {
-        if (!m_vFailedToOpenSongs[selI]) ++m_nFailed;
-        m_vFailedToOpenSongs[selI] = true;
-
-        if (m_nFailed >= m_vSearchIdxs.size())
-        {
-            app::quit();
-            return;
-        }
-
-        Msg msg {
-            .time = 5000.0,
-            .eType = Msg::TYPE::ERROR,
-        };
-        print::toSpan(msg.sfMsg.data(), "failed to open \"{}\", selecting next", file::getPathEnding(svFullPath));
-
-        /* Don't stack same messages. */
-        const f64 time = utils::timeNowMS();
-        if ((msg.sfMsg != m_sfLastMessage) || (time >= (m_lastMessageTime + msg.time)))
-        {
-            pushErrorMsg(msg);
-        }
-        else
-        {
-            LOG_BAD("skipping same message...\n\n");
-        }
-
-        onSongEnd();
-    }
-
-    updateInfo();
-}
-
-void
-Player::selectFocused()
-{
-    if (m_vSongIdxs.size() <= m_focused)
-    {
-        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", m_vSongIdxs.size());
-        return;
-    }
-
-    m_selected = m_vSongIdxs[m_focused];
-    m_bSelectionChanged = true;
-
-    LOG_GOOD("selected({}): {}\n", m_selected, m_vSongs[m_selected]);
-
-    selectFinal(m_selected);
-}
-
-void
-Player::togglePause()
-{
-    app::mixer().togglePause();
-}
-
-void
-Player::onSongEnd()
+long
+Player::nextSelectionI()
 {
     const long currI = findSongIdxFromSelected();
     long nextI = currI + 1;
@@ -234,14 +159,86 @@ Player::onSongEnd()
         else
         {
             app::g_bRunning = false;
-            return;
+            return currI;
         }
     }
 
-    m_selected = m_vSongIdxs[nextI];
-    m_bSelectionChanged = true;
+    return m_vSongIdxs[nextI];
+}
 
-    selectFinal(m_selected);
+void
+Player::updateInfo()
+{
+    m_info.sfTitle = app::decoder().getMetadata("title");
+    m_info.sfAlbum = app::decoder().getMetadata("album");
+    m_info.sfArtist = app::decoder().getMetadata("artist");
+
+    if (m_info.sfTitle.size() == 0)
+        m_info.sfTitle = m_vShortSongs[m_selected];
+
+    m_bSelectionChanged = true;
+}
+
+void
+Player::selectFinal(long selI)
+{
+    long nFailed = 0;
+
+GOTO_again:
+    const StringView svFullPath = m_vSongs[selI];
+
+    if (!app::mixer().play(svFullPath))
+    {
+        if (++nFailed >= m_vSearchIdxs.size())
+        {
+            app::quit();
+            return;
+        }
+
+        Msg msg {
+            .time = 5000.0,
+            .eType = Msg::TYPE::ERROR,
+        };
+        print::toSpan(msg.sfMsg.data(), "failed to open \"{}\"", file::getPathEnding(svFullPath));
+
+        /* Don't stack same messages. */
+        const f64 time = utils::timeNowMS();
+        if ((msg.sfMsg != m_sfLastMessage) || (time >= (m_lastMessageTime + msg.time)))
+        {
+            pushErrorMsg(msg);
+        }
+        else
+        {
+            LOG_BAD("skipping same message...\n\n");
+        }
+
+        selI = nextSelectionI();
+        if (!app::g_bRunning) return;
+        else goto GOTO_again;
+    }
+
+    m_bSelectionChanged = true;
+    m_selected = selI;
+    updateInfo();
+}
+
+void
+Player::selectFocused()
+{
+    if (m_vSongIdxs.size() <= m_focused)
+    {
+        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", m_vSongIdxs.size());
+        return;
+    }
+
+    LOG_GOOD("selected: {}\n", m_vSongs[m_vSongIdxs[m_focused]]);
+    selectFinal(m_vSongIdxs[m_focused]);
+}
+
+void
+Player::togglePause()
+{
+    app::mixer().togglePause();
 }
 
 void
@@ -250,10 +247,11 @@ Player::nextSongIfPrevEnded()
     int bEnd = true;
     if (app::mixer().m_atom_bSongEnd.compareExchange(
             &bEnd, false,
-            atomic::ORDER::RELAXED, atomic::ORDER::RELAXED)
+            atomic::ORDER::RELAXED, atomic::ORDER::RELAXED
+        )
     )
     {
-        onSongEnd();
+        selectFinal(nextSelectionI());
     }
 }
 
@@ -279,10 +277,8 @@ Player::select(long i)
     if (m_vSongs.empty() || m_vSearchIdxs.empty())
         return;
 
-    const long idx = utils::clamp(i, 0L, long(m_vSearchIdxs.lastI()));
-    m_selected = m_vSearchIdxs[idx];
-
-    selectFinal(m_selected);
+    const long idx = utils::clamp(i, 0L, long(m_vSearchIdxs.size() - 1));
+    selectFinal(m_vSearchIdxs[idx]);
 }
 
 void
@@ -329,7 +325,6 @@ Player::destroy()
 {
     m_vSongs.destroy(m_pAlloc);
     m_vShortSongs.destroy(m_pAlloc);
-    m_vFailedToOpenSongs.destroy(m_pAlloc);
     m_vSongIdxs.destroy(m_pAlloc);
     m_vSearchIdxs.destroy(m_pAlloc);
 }
@@ -358,13 +353,10 @@ Player::Player(IAllocator* p, int nArgs, char** ppArgs)
     : m_pAlloc {p},
       m_vSongs {p, nArgs},
       m_vShortSongs {p, nArgs},
-      m_vFailedToOpenSongs {p, nArgs},
       m_vSongIdxs {p, nArgs},
       m_vSearchIdxs {p, nArgs},
       m_mtxQ {Mutex::TYPE::PLAIN}
 {
-    m_vFailedToOpenSongs.setSize(p, m_vFailedToOpenSongs.cap());
-
     for (int i = 0; i < nArgs; ++i)
     {
         if (acceptedFormat(ppArgs[i]))
