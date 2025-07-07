@@ -29,8 +29,8 @@
 
 #include "IAllocator.hh"
 #include "String.hh"
-#include "utils.hh"
 #include "logs.hh"
+#include "utils.hh"
 
 #include <cstdio>
 
@@ -53,7 +53,7 @@ struct RBNode
 
     RBNode* m_left {};
     RBNode* m_right {};
-    RBNode* m_parentColor {}; /* NOTE: color is stored as the least significant bit */
+    RBNode* m_parentColor {}; /* NOTE: color is the least significant bit */
     ADT_NO_UNIQUE_ADDRESS T m_data {};
 
     /* */
@@ -80,30 +80,25 @@ template<typename T, typename ...ARGS>
 [[nodiscard]] inline RBNode<T>* RBNodeAlloc(IAllocator* pA, ARGS&&... args);
 
 template<typename T, typename LAMBDA>
-inline RBNode<T>*
-RBTraversePre(
-    RBNode<T>* p,
-    LAMBDA cl
-);
+inline RBNode<T>* RBTraversePre(RBNode<T>* p, LAMBDA cl);
 
 template<typename T, typename LAMBDA>
-inline RBNode<T>* RBTraverseIn(
-    RBNode<T>* p,
-    LAMBDA cl
-);
+inline void RBTraversePreNoReturn(RBNode<T>* p, LAMBDA cl);
 
 template<typename T, typename LAMBDA>
-inline RBNode<T>* RBTraversePost(
-    RBNode<T>* p,
-    LAMBDA cl
-);
+inline RBNode<T>* RBTraverseIn(RBNode<T>* p, LAMBDA cl);
 
 template<typename T, typename LAMBDA>
-inline RBNode<T>* RBTraverse(
-    RBNode<T>* p,
-    LAMBDA cl,
-    RB_ORDER order
-);
+inline void RBTraverseInNoReturn(RBNode<T>* p, LAMBDA cl);
+
+template<typename T, typename LAMBDA>
+inline RBNode<T>* RBTraversePost(RBNode<T>* p, LAMBDA cl);
+
+template<typename T, typename LAMBDA>
+inline void RBTraversePostNoReturn(RBNode<T>* p, LAMBDA cl);
+
+template<typename T, typename LAMBDA>
+inline RBNode<T>* RBTraverse(RBNode<T>* p, LAMBDA cl, RB_ORDER order);
 
 template<typename T>
 inline RBNode<T>* RBSearch(RBNode<T>* p, const T& data);
@@ -123,7 +118,11 @@ struct RBTree
 
     /* */
 
-    RBNode<T>* root();
+    RBNode<T>* root() noexcept { return m_pRoot; }
+    const RBNode<T>* root() const noexcept { return m_pRoot; }
+    const RBNode<T>* data() const noexcept { return m_pRoot; };
+    RBNode<T>* data() noexcept { return m_pRoot; };
+
     bool empty();
     RBNode<T>* remove(RBNode<T>* elm);
 
@@ -142,7 +141,51 @@ struct RBTree
 
     void destroy(IAllocator* pA) noexcept;
 
-    void destructNodes() noexcept;
+    void destructElements() noexcept;
+
+    RBNode<T>* leftMost() noexcept;
+    static RBNode<T>* leftMost(RBNode<T>* p) noexcept;
+    static RBNode<T>* successor(RBNode<T>* p) noexcept;
+
+    RBNode<T>* rightMost() noexcept { return rightMost(m_pRoot); }
+    static RBNode<T>* rightMost(RBNode<T>* p) noexcept;
+    static RBNode<T>* predecessor(RBNode<T>* p) noexcept;
+
+    struct It
+    {
+        RBNode<T>* m_pCurrent {};
+
+        It() = default;
+        It(const RBNode<T>* pHead) : m_pCurrent {const_cast<RBNode<T>*>(pHead)} {}
+
+        T& operator*() noexcept { return m_pCurrent->m_data; }
+        T* operator->() noexcept { return &m_pCurrent->m_data; }
+
+        It operator++() noexcept { return m_pCurrent = successor(m_pCurrent); }
+        It operator--() noexcept { return m_pCurrent = predecessor(m_pCurrent); }
+
+        It current() noexcept { return m_pCurrent; }
+        const It current() const noexcept { return m_pCurrent; }
+
+        It next() noexcept { return successor(m_pCurrent); }
+        const It next() const noexcept { return successor(m_pCurrent); }
+
+        friend constexpr bool operator==(const It& l, const It& r) noexcept { return l.m_pCurrent == r.m_pCurrent; }
+        friend constexpr bool operator!=(const It& l, const It& r) noexcept { return l.m_pCurrent != r.m_pCurrent; }
+    };
+
+    It begin() noexcept { return leftMost(m_pRoot); }
+    It end() noexcept { return nullptr; }
+    It rbegin() noexcept { return rightMost(m_pRoot); }
+    It rend() noexcept { return nullptr; }
+
+    const It begin() const noexcept { return leftMost(m_pRoot); }
+    const It end() const noexcept { return nullptr; }
+    const It rbegin() const noexcept { return rightMost(m_pRoot); }
+    const It rend() const noexcept { return nullptr; }
+
+protected:
+    static RBNode<T>* nextGreaterParent(RBNode<T>* p) noexcept;
 };
 
 template<typename T>
@@ -187,13 +230,6 @@ _RBSetBlackRed(RBNode<T>* black, RBNode<T>* red)
 {
     black->setColor(RB_COLOR::BLACK);
     red->setColor(RB_COLOR::RED);
-}
-
-template<typename T>
-inline RBNode<T>*
-RBTree<T>::root()
-{
-    return m_pRoot;
 }
 
 template<typename T>
@@ -550,62 +586,84 @@ RBNodeAlloc(IAllocator* pA, ARGS&& ...args)
 
 template<typename T, typename LAMBDA>
 inline RBNode<T>*
-RBTraversePre(
-    RBNode<T>* p,
-    LAMBDA cl
-)
+RBTraversePre(RBNode<T>* p, LAMBDA cl)
 {
-    if (p)
+    for (; p; p = p->right())
     {
         if (cl(p)) return {p};
-        RBTraversePre(p->left(), cl);
-        RBTraversePre(p->right(), cl);
+        if (auto* pFound = RBTraversePre(p->left(), cl)) return pFound;
     }
 
     return {};
 }
 
 template<typename T, typename LAMBDA>
+inline void
+RBTraversePreNoReturn(RBNode<T>* p, LAMBDA cl)
+{
+    for (; p; p = p->right())
+    {
+        cl(p);
+        RBTraversePreNoReturn(p->left(), cl);
+    }
+}
+
+template<typename T, typename LAMBDA>
 inline RBNode<T>*
-RBTraverseIn(
-    RBNode<T>* p,
-    LAMBDA cl
-)
+RBTraverseIn(RBNode<T>* p, LAMBDA cl)
 {
     if (p)
     {
-        RBTraverseIn(p->left(), cl);
+        if (auto* pFound = RBTraverseIn(p->left(), cl)) return pFound;
         if (cl(p)) return {p};
-        RBTraverseIn(p->right(), cl);
+        if (auto* pFound = RBTraverseIn(p->right(), cl)) return pFound;
     }
 
     return {};
 }
 
 template<typename T, typename LAMBDA>
-inline RBNode<T>*
-RBTraversePost(
-    RBNode<T>* p,
-    LAMBDA cl
-)
+inline void
+RBTraverseInNoReturn(RBNode<T>* p, LAMBDA cl)
 {
     if (p)
     {
-        RBTraversePost(p->left(), cl);
-        RBTraversePost(p->right(), cl);
+        RBTraverseInNoReturn(p->left(), cl);
+        cl(p);
+        RBTraverseInNoReturn(p->right(), cl);
+    }
+}
+
+template<typename T, typename LAMBDA>
+inline RBNode<T>*
+RBTraversePost(RBNode<T>* p, LAMBDA cl)
+{
+    if (p)
+    {
+        if (auto* pFound = RBTraversePost(p->left(), cl)) return pFound;
+        if (auto* pFound = RBTraversePost(p->right(), cl)) return pFound;
         if (cl(p)) return {p};
     }
 
     return {};
+}
+
+template<typename T, typename LAMBDA>
+inline void
+RBTraversePostNoReturn(RBNode<T>* p, LAMBDA cl)
+{
+    if (p)
+    {
+        RBTraversePostNoReturn(p->left(), cl);
+        RBTraversePostNoReturn(p->right(), cl);
+        cl(p);
+    }
 }
 
 /* early return if pfn returns true */
 template<typename T, typename LAMBDA>
-inline RBNode<T>* RBTraverse(
-    RBNode<T>* p,
-    LAMBDA cl,
-    RB_ORDER order
-)
+inline RBNode<T>*
+RBTraverse(RBNode<T>* p, LAMBDA cl, RB_ORDER order)
 {
     switch (order)
     {
@@ -691,7 +749,7 @@ RBTree<T>::destroy(IAllocator* pAlloc) noexcept
 
 template<typename T>
 inline void
-RBTree<T>::destructNodes() noexcept
+RBTree<T>::destructElements() noexcept
 {
     RBTraversePre(m_pRoot, [&](RBNode<T>* p)
         {
@@ -700,6 +758,88 @@ RBTree<T>::destructNodes() noexcept
             return false;
         }
     );
+}
+
+template<typename T>
+inline RBNode<T>*
+RBTree<T>::leftMost() noexcept
+{
+    return leftMost(m_pRoot);
+}
+
+template<typename T>
+inline RBNode<T>*
+RBTree<T>::leftMost(RBNode<T>* p) noexcept
+{
+    RBNode<T>* pPrev = nullptr;
+    while (p)
+    {
+        pPrev = p;
+        p = p->left();
+    }
+
+    return pPrev;
+}
+
+template<typename T>
+inline RBNode<T>*
+RBTree<T>::successor(RBNode<T>* p) noexcept
+{
+    if (!p) return nullptr;
+
+    if (auto* pRight = p->right())
+        return leftMost(pRight);
+
+    RBNode<T>* pParent;
+    while ((pParent = p->parent()) && p == pParent->right())
+        p = p->parent();
+
+    return p->parent();
+}
+
+template<typename T>
+inline RBNode<T>*
+RBTree<T>::rightMost(RBNode<T>* p) noexcept
+{
+    RBNode<T>* pPrev = nullptr;
+    while (p)
+    {
+        pPrev = p;
+        p = p->right();
+    }
+
+    return pPrev;
+}
+
+template<typename T>
+inline RBNode<T>*
+RBTree<T>::predecessor(RBNode<T>* p) noexcept
+{
+    if (!p) return nullptr;
+
+    if (auto* pRight = p->left())
+        return rightMost(pRight);
+
+    RBNode<T>* pParent;
+    while ((pParent = p->parent()) && p == pParent->left())
+        p = p->parent();
+
+    return p->parent();
+}
+
+template<typename T>
+inline RBNode<T>*
+RBTree<T>::nextGreaterParent(RBNode<T>* p) noexcept
+{
+    const RBNode<T>* pUs = p;
+    while (p)
+    {
+        auto* pPrev = p;
+        p = p->parent();
+        if (p && p->left() == pPrev) return p;
+    }
+
+    return nullptr;
 }
 
 namespace print

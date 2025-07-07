@@ -40,7 +40,7 @@ struct SList
     void remove(IAllocator* pAlloc, Node* pPrev, Node* pNode); /* O(1); free(pNode) */
 
     void destroy(IAllocator* pAlloc) noexcept;
-    void destructNodes() noexcept;
+    void destructElements() noexcept;
 
     SList release() noexcept;
 
@@ -72,7 +72,7 @@ struct SList
     It end() noexcept { return {}; }
 
     const It begin() const noexcept { return {m_pHead}; }
-    const It end() const  noexcept { return {}; }
+    const It end() const noexcept { return {}; }
 
     /* */
 protected:
@@ -196,7 +196,7 @@ SList<T>::destroy(IAllocator* pAlloc) noexcept
 
 template<typename T>
 inline void
-SList<T>::destructNodes() noexcept
+SList<T>::destructElements() noexcept
 {
     for (auto& e : *this)
         e.~T();

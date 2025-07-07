@@ -53,7 +53,7 @@ struct List
     [[nodiscard]] constexpr bool empty() const { return m_size <= 0; }
 
     constexpr void destroy(IAllocator* pA) noexcept;
-    constexpr void destructNodes() noexcept;
+    constexpr void destructElements() noexcept;
 
     constexpr List release() noexcept;
 
@@ -127,7 +127,7 @@ List<T>::destroy(IAllocator* pA) noexcept
 
 template<typename T>
 constexpr void
-List<T>::destructNodes() noexcept
+List<T>::destructElements() noexcept
 {
     for (auto& e : *this)
         e.~T();
