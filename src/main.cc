@@ -171,7 +171,7 @@ startup(int argc, char** argv)
     {
         pInput = alloc.zallocV<char>(nBytes + 1);
         int nRead = 0;
-        ADT_RUNTIME_EXCEPTION_FMT(nRead = read(STDIN_FILENO, pInput, nBytes) > 0, "nRead: {}", nRead);
+        ADT_RUNTIME_EXCEPTION_FMT((nRead = read(STDIN_FILENO, pInput, nBytes)) > 0, "nRead: {}", nRead);
         StringView svArgs {pInput, nBytes};
 
         aInput.emplace(argv[0]);
