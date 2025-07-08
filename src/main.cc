@@ -140,7 +140,6 @@ static void
 startup(int argc, char** argv)
 {
     StdAllocator alloc;
-    bool bFreeArgv = false;
 
     app::g_eUIFrontend = app::UI::ANSI;
 #if OPT_PIPEWIRE
@@ -161,35 +160,31 @@ startup(int argc, char** argv)
     ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
 #endif
 
-    VecManaged<String> aInput;
-    defer(
-        for (auto& s : aInput) s.destroy(&alloc);
-        aInput.destroy()
-    );
+    VecManaged<char*> aInput;
+    defer( aInput.destroy() );
 
-    int nBytes = 0;
+    i64 nBytes = 0;
+    char* pInput = nullptr;
+    defer( alloc.free(pInput) );
+
     if (ioctl(STDIN_FILENO, FIONREAD, &nBytes) != -1 && nBytes > 0)
     {
-        char* pLine = nullptr;
-        size_t len = 0;
-        ssize_t nread = 0;
+        pInput = alloc.zallocV<char>(nBytes + 1);
+        int nRead = 0;
+        ADT_RUNTIME_EXCEPTION_FMT(nRead = read(STDIN_FILENO, pInput, nBytes) > 0, "nRead: {}", nRead);
+        StringView svArgs {pInput, nBytes};
 
-        while ((nread = getline(&pLine, &len, stdin)) != -1)
+        aInput.emplace(argv[0]);
+
+        for (auto sv : StringWordIt {svArgs, "\n"})
         {
-            auto s = String {&alloc, pLine, nread};
-            s.removeNLEnd(true);
-            aInput.push(s);
+            ADT_ASSERT(sv.data()[sv.size()] == '\n', "");
+            sv.data()[sv.size()] = '\0'; /* These must be null terminated. */
+            aInput.emplace(sv.data());
         }
 
-        ::free(pLine);
-
-        /* Make a fake `argv` such that the core code works as usual. */
-        argc = aInput.size() + 1;
-        argv = alloc.zallocV<char*>(argc);
-        bFreeArgv = true;
-
-        for (int i = 1; i < argc; ++i)
-            argv[i] = aInput[i - 1].data();
+        argc = aInput.size();
+        argv = aInput.data();
     }
 
     Player player {&alloc, argc, argv};
@@ -233,8 +228,6 @@ startup(int argc, char** argv)
     {
         print::out("No accepted input provided\n");
     }
-
-    if (bFreeArgv) alloc.free(argv);
 }
 
 int

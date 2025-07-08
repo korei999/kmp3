@@ -340,6 +340,7 @@ Player::Player(IAllocator* p, int nArgs, char** ppArgs)
 {
     for (int i = 0; i < nArgs; ++i)
     {
+        LOG_BAD("'{}'\n", ppArgs[i]);
         if (acceptedFormat(ppArgs[i]))
         {
             m_vSongs.push(m_pAlloc, ppArgs[i]);
