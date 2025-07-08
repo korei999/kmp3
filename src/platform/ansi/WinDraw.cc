@@ -3,8 +3,9 @@
 #include "app.hh"
 #include "defaults.hh"
 
-#include "adt/logs.hh"
 #include "adt/ScratchBuffer.hh"
+#include "adt/defer.hh"
+#include "adt/logs.hh"
 
 using namespace adt;
 
@@ -281,7 +282,7 @@ Win::bottomLine()
         const StringView svReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
 
         m_textBuff.string(1, height - 1, {}, svReadMode);
-        m_textBuff.wideString(svReadMode.size() + 1, height - 1, {}, c::g_input.getSpan());
+        m_textBuff.wideString(svReadMode.size() + 1, height - 1, {}, c::g_input.span());
 
         if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE)
         {

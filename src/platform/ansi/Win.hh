@@ -3,7 +3,7 @@
 #include "IWindow.hh"
 #include "TextBuff.hh"
 #include "TermSize.hh"
-#include "common.hh"
+#include "common.inc"
 
 #include "adt/Thread.hh"
 

@@ -1,4 +1,4 @@
-#include "common.hh"
+#include "common.hh" /* IWYU pragma: keep */
 
 #include "adt/Array.hh"
 
@@ -10,6 +10,13 @@ namespace common
 {
 
 InputBuff g_input {};
+
+StringView
+readModeToString(WINDOW_READ_MODE e) noexcept
+{
+    constexpr adt::StringView map[] {"", "searching: ", "time: "};
+    return map[int(e)];
+}
 
 StringView
 allocTimeString(Arena* pArena, int width)

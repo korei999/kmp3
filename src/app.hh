@@ -1,8 +1,8 @@
 #pragma once
 
+#include "IWindow.hh"
 #include "Player.hh"
 #include "audio.hh"
-#include "IWindow.hh"
 #include "defaults.hh"
 #include "config.hh"
 
@@ -33,12 +33,12 @@ extern UI g_eUIFrontend;
 extern MIXER g_eMixer;
 extern adt::StringView g_svTerm;
 extern TERM g_eTerm;
-extern IWindow* g_pWin;
 extern bool g_bRunning;
 extern bool g_bNoImage;
 extern bool g_bSixelOrKitty;
 extern bool g_bChafaSymbols;
 
+extern IWindow* g_pWin;
 extern Config g_config;
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;

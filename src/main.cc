@@ -218,9 +218,7 @@ startup(int argc, char** argv)
     {
         app::g_bRunning = true;
 
-        /* reopen stdin if pipe was used */
-        if (!freopen("/dev/tty", "r", stdin))
-            LOG_FATAL("freopen(\"/dev/tty\", \"r\", stdin)\n");
+        ADT_RUNTIME_EXCEPTION_FMT(freopen("/dev/tty", "r", stdin), "{}", strerror(errno));
 
         frame::run();
     }
