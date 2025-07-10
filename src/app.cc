@@ -68,13 +68,13 @@ allocMixer(IAllocator* pAlloc)
         pMix = pAlloc->alloc<audio::DummyMixer>();
         break;
 
-#ifdef OPT_ALSA
+#ifdef OPT_PIPEWIRE
         case MIXER::PIPEWIRE:
         pMix = pAlloc->alloc<platform::pipewire::Mixer>();
         break;
 #endif
 
-#ifdef OPT_PIPEWIRE
+#ifdef OPT_ALSA
         case MIXER::ALSA:
         pMix = pAlloc->alloc<platform::alsa::Mixer>();
         break;
