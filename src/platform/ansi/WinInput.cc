@@ -453,7 +453,7 @@ Win::readWChar()
     Input in = readFromStdin(defaults::READ_TIMEOUT);
 
     int wc = in.key;
-    if (wc == keys::CTRL_C || wc == keys::ESC)
+    if (wc == 0 /* timeout */ || wc == keys::CTRL_C || wc == keys::ESC)
     {
         c::g_input.zeroOut();
         return c::READ_STATUS::DONE;
