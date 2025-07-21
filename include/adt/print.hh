@@ -460,30 +460,30 @@ namespace details
 
 template<typename T>
 inline constexpr void
-printArg(isize& nRead, isize& i, bool& bArg, Context* pCtx, const T& arg) noexcept
+printArg(isize& nRead, isize& i, bool& bArg, Context& ctx, const T& arg) noexcept
 {
-    for (; i < pCtx->fmt.size(); ++i, ++nRead)
+    for (; i < ctx.fmt.size(); ++i, ++nRead)
     {
-        if (pCtx->buffIdx >= pCtx->buffSize)
+        if (ctx.buffIdx >= ctx.buffSize)
             return;
 
         FormatArgs fmtArgs {};
 
-        if (pCtx->eFlags & CONTEXT_FLAGS::UPDATE_FMT_ARGS)
+        if (ctx.eFlags & CONTEXT_FLAGS::UPDATE_FMT_ARGS)
         {
-            pCtx->eFlags &= ~CONTEXT_FLAGS::UPDATE_FMT_ARGS;
+            ctx.eFlags &= ~CONTEXT_FLAGS::UPDATE_FMT_ARGS;
 
-            fmtArgs = pCtx->prevFmtArgs;
-            isize addBuff = formatToContext(*pCtx, fmtArgs, arg);
+            fmtArgs = ctx.prevFmtArgs;
+            isize addBuff = formatToContext(ctx, fmtArgs, arg);
 
-            pCtx->buffIdx += addBuff;
+            ctx.buffIdx += addBuff;
             nRead += addBuff;
 
             break;
         }
-        else if (pCtx->fmt[i] == '{')
+        else if (ctx.fmt[i] == '{')
         {
-            if (i + 1 < pCtx->fmt.size() && pCtx->fmt[i + 1] == '{')
+            if (i + 1 < ctx.fmt.size() && ctx.fmt[i + 1] == '{')
             {
                 i += 1, nRead += 1;
                 bArg = false;
@@ -494,7 +494,7 @@ printArg(isize& nRead, isize& i, bool& bArg, Context* pCtx, const T& arg) noexce
         if (bArg)
         {
             isize addBuff = 0;
-            isize add = parseFormatArg(&fmtArgs, pCtx->fmt, i);
+            isize add = parseFormatArg(&fmtArgs, ctx.fmt, i);
 
             if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
             {
@@ -504,22 +504,22 @@ printArg(isize& nRead, isize& i, bool& bArg, Context* pCtx, const T& arg) noexce
                         fmtArgs.maxFloatLen = arg;
                     else fmtArgs.maxLen = arg;
 
-                    pCtx->prevFmtArgs = fmtArgs;
-                    pCtx->eFlags |= CONTEXT_FLAGS::UPDATE_FMT_ARGS;
+                    ctx.prevFmtArgs = fmtArgs;
+                    ctx.eFlags |= CONTEXT_FLAGS::UPDATE_FMT_ARGS;
                 }
             }
             else
             {
-                addBuff = formatToContext(*pCtx, fmtArgs, arg);
+                addBuff = formatToContext(ctx, fmtArgs, arg);
             }
 
-            pCtx->buffIdx += addBuff;
+            ctx.buffIdx += addBuff;
             i += add;
             nRead += addBuff;
 
             break;
         }
-        else pCtx->pBuff[pCtx->buffIdx++] = pCtx->fmt[i];
+        else ctx.pBuff[ctx.buffIdx++] = ctx.fmt[i];
     }
 }
 
@@ -568,7 +568,7 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
     else if (ctx.fmtIdx >= ctx.fmt.size())
         return 0;
 
-    details::printArg(nRead, i, bArg, &ctx, tFirst);
+    details::printArg(nRead, i, bArg, ctx, tFirst);
 
     ctx.fmtIdx = i;
     nRead += printArgs(ctx, tArgs...);
