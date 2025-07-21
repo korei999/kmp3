@@ -242,13 +242,13 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
         bNegative = true;
         x = -x;
     }
- 
+
     while (x != 0)
     {
-        int rem = x % int(fmtArgs.eBase);
-        char c = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
-        PUSH_OR_RET(c);
-        x = x / int(fmtArgs.eBase);
+        const int rem = x % int(fmtArgs.eBase);
+        const char digit = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+        PUSH_OR_RET(digit);
+        x /= int(fmtArgs.eBase);
     }
  
     if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ALWAYS_SHOW_SIGN))
@@ -625,56 +625,6 @@ inline isize
 err(const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
     return toFILE(stderr, fmt, tArgs...);
-}
-
-inline isize
-FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcept
-{
-    isize i = 0;
-    auto clPush = [&](char c) -> bool
-    {
-        if (i < spFmt.size())
-        {
-            spFmt[i++] = c;
-
-            return true;
-        }
-
-        return false;
-    };
-
-    if (!clPush('{')) return i;
-
-    if (fmtArgs.maxLen != NPOS16 || fmtArgs.maxFloatLen != NPOS8)
-    {
-        if (!clPush(':')) return i;
-
-        if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::JUSTIFY_RIGHT))
-            if (!clPush('>')) return i;
-
-        if (fmtArgs.maxFloatLen != NPOS8)
-            if (!clPush('.')) return i;
-
-        if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ARG_IS_FMT))
-        {
-            if (!clPush('{')) return i;
-            if (!clPush('}')) return i;
-        }
-        else
-        {
-            char aBuff[64] {};
-            if (fmtArgs.maxFloatLen != NPOS8)
-                intToBuffer(fmtArgs.maxFloatLen, {aBuff}, {});
-            else intToBuffer(fmtArgs.maxLen, {aBuff}, {});
-
-            for (isize j = 0; j < utils::size(aBuff) && aBuff[j]; ++j)
-                if (!clPush(aBuff[j])) return i;
-        }
-    }
-
-    if (!clPush('}')) return i;
-
-    return i;
 }
 
 inline isize
