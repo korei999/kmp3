@@ -2,7 +2,6 @@
 
 #include "StdAllocator.hh"
 #include "utils.hh"
-#include "print.hh"
 
 #include <cstring>
 
@@ -60,6 +59,7 @@ struct Arena : public IArena
     void reset() noexcept;
 
     void shrinkToFirstBlock() noexcept;
+    isize nBytesOccupied() const noexcept;
 
     /* */
 
@@ -168,8 +168,6 @@ Arena::realloc(void* ptr, usize oldCount, usize mCount, usize mSize)
 {
     if (!ptr) return malloc(mCount, mSize);
 
-    if (mCount <= oldCount) return ptr;
-
     const usize requested = mSize * mCount;
     const usize realSize = alignUp8(requested);
 
@@ -191,6 +189,8 @@ Arena::realloc(void* ptr, usize oldCount, usize mCount, usize mSize)
     }
     else
     {
+        if (mCount <= oldCount) return ptr;
+
         auto* pRet = malloc(mCount, mSize);
         memcpy(pRet, ptr, oldCount * mSize);
 
@@ -249,6 +249,20 @@ Arena::shrinkToFirstBlock() noexcept
         it = next;
     }
     m_pBlocks = it;
+}
+
+inline isize
+Arena::nBytesOccupied() const noexcept
+{
+    isize total = 0;
+    auto* it = m_pBlocks;
+    while (it)
+    {
+        total += it->nBytesOccupied;
+        it = it->pNext;
+    }
+
+    return total;
 }
 
 } /* namespace adt */

@@ -67,8 +67,7 @@ struct Directory
 
             while ((p->m_pEntry = readdir(p->m_pDir)))
             {
-                if (strcmp(p->m_pEntry->d_name, ".") == 0 ||
-                    strcmp(p->m_pEntry->d_name, "..") == 0)
+                if (strcmp(p->m_pEntry->d_name, ".") == 0 || strcmp(p->m_pEntry->d_name, "..") == 0)
                     continue;
                 else break;
             }

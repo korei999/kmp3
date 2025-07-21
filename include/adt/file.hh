@@ -4,6 +4,8 @@
 #include "logs.hh"
 #include "defer.hh"
 
+#include <limits>
+
 #if __has_include(<unistd.h>)
 
     #define ADT_USE_LINUX_FILE
@@ -32,6 +34,7 @@ load(IAllocator* pAlloc, const char* ntsPath)
     FILE* pf = fopen(ntsPath, "rb");
     if (!pf)
     {
+fail:
         LOG_WARN("failed to open '{}' file\n", ntsPath);
         return {};
     }
@@ -40,10 +43,18 @@ load(IAllocator* pAlloc, const char* ntsPath)
     String ret {};
 
     fseek(pf, 0, SEEK_END);
-    isize size = ftell(pf) + 1;
+    const auto ftellSize = ftell(pf);
+    if (ftellSize <= 0 || ftellSize >= std::numeric_limits<decltype(ftellSize)>::max())
+    {
+        LOG_BAD("bad size: '{}'\n", ftellSize);
+        goto fail;
+    }
+
+    const isize size = ftellSize + 1LL;
+
     rewind(pf);
 
-    ret.m_pData = reinterpret_cast<char*>(pAlloc->malloc(size, sizeof(char)));
+    ret.m_pData = pAlloc->mallocV<char>(size);
     ret.m_size = size - 1;
     fread(ret.data(), 1, ret.size(), pf);
     ret.m_pData[ret.m_size] = '\0';
@@ -58,6 +69,7 @@ load(const char* ntsPath)
     FILE* pf = fopen(ntsPath, "rb");
     if (!pf)
     {
+fail:
         LOG_WARN("failed to open '{}' file\n", ntsPath);
         return {};
     }
@@ -66,9 +78,16 @@ load(const char* ntsPath)
     StringFixed<SIZE> ret {};
 
     fseek(pf, 0, SEEK_END);
-    const isize size = utils::min(isize(ftell(pf)), SIZE - 1);
-    rewind(pf);
+    const auto ftellSize = ftell(pf);
+    if (ftellSize <= 0 || ftellSize >= std::numeric_limits<decltype(ftellSize)>::max())
+    {
+        LOG_BAD("bad size: '{}'\n", ftellSize);
+        goto fail;
+    }
 
+    const isize size = utils::min(isize(ftellSize) + 1, SIZE - 1);
+
+    rewind(pf);
     fread(ret.data(), 1, size, pf);
 
     return ret;

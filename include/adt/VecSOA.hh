@@ -56,13 +56,12 @@ struct VecSOA
     BIND last() { return operator[](m_size - 1); }
     const BIND last() const { return operator[](m_size - 1); }
 
-    void destroy(IAllocator* pAlloc);
+    void destroy(IAllocator* pAlloc) noexcept;
     isize push(IAllocator* pAlloc, const STRUCT& x);
     void pop() { --m_size; }
     isize size() const { return m_size; }
     isize cap() const { return m_capacity; }
     void setSize(IAllocator* pAlloc, const isize newSize);
-    void setCap(IAllocator* pAlloc, const isize newCap);
     void zeroOut();
     isize totalByteCap() const;
 
@@ -104,7 +103,7 @@ public:
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline
 VecSOA<STRUCT, BIND, MEMBERS...>::VecSOA(IAllocator* pAlloc, isize prealloc)
-    : m_pData(pAlloc->zallocV<u8>(prealloc * sizeof(STRUCT))), m_capacity(prealloc) {}
+    : m_pData {pAlloc->zallocV<u8>(prealloc * sizeof(STRUCT))}, m_capacity(prealloc) {}
 
 template<typename STRUCT, typename BIND>
 inline void VecSOASetHelper(u8*, const isize, const isize) { /* empty case */ }
@@ -147,22 +146,6 @@ VecSOA<STRUCT, BIND, MEMBERS...>::setSize(IAllocator* pAlloc, const isize newSiz
 {
     if (m_capacity < newSize) grow(pAlloc, newSize);
     m_size = newSize;
-}
-
-template<typename STRUCT, typename BIND, auto ...MEMBERS>
-inline void
-VecSOA<STRUCT, BIND, MEMBERS...>::setCap(IAllocator* pAlloc, const isize newCap)
-{
-    if (newCap == 0)
-    {
-        destroy(pAlloc);
-        return;
-    }
-
-    m_pData = (u8*)pAlloc->realloc(m_pData, m_capacity, newCap, sizeof(STRUCT));
-    m_capacity = newCap;
-
-    if (m_size > newCap) m_size = newCap;
 }
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
@@ -226,7 +209,7 @@ VecSOA<STRUCT, BIND, MEMBERS...>::grow(IAllocator* p, isize newCapacity)
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline void
-VecSOA<STRUCT, BIND, MEMBERS...>::destroy(IAllocator* pAlloc)
+VecSOA<STRUCT, BIND, MEMBERS...>::destroy(IAllocator* pAlloc) noexcept
 {
     pAlloc->dealloc(m_pData, m_size);
     *this = {};
@@ -255,5 +238,32 @@ VecSOA<STRUCT, BIND, MEMBERS...>::bind(const isize i) const
         )...
     };
 }
+
+template<typename ALLOC_T, typename STRUCT, typename BIND, auto ...MEMBERS>
+struct VecSOAManaged : VecSOA<STRUCT, BIND, MEMBERS...>
+{
+    using Base = VecSOA<STRUCT, BIND, MEMBERS...>;
+
+    /* */
+
+    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc;
+
+    /* */
+
+    VecSOAManaged() = default;
+    VecSOAManaged(const isize prealloc) : Base {&allocator(), prealloc} {}
+
+    /* */
+
+    ALLOC_T& allocator() { return m_alloc; }
+    const ALLOC_T& allocator() const { return m_alloc; }
+
+    void destroy() noexcept { Base::destroy(&allocator()); }
+    isize push(const STRUCT& x) { return Base::push(&allocator(), x); }
+    void setSize(const isize newSize) { Base::setSize(&allocator(), newSize); }
+};
+
+template<typename STRUCT, typename BIND, auto ...MEMBERS>
+using VecSOAM = VecSOAManaged<StdAllocatorNV, STRUCT, BIND, MEMBERS...>;
 
 } /* namespace adt */

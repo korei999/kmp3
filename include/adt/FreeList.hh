@@ -44,7 +44,7 @@ struct FreeListData
 
 struct FreeList : public IArena
 {
-    using Node = RBNode<FreeListData>; /* node is the header + the memory chunk */
+    using Node = RBTree<FreeListData>::Node; /* node is the header + the memory chunk */
 
     /* */
 
@@ -70,7 +70,7 @@ struct FreeList : public IArena
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override;
     virtual void free(void* ptr) noexcept override;
     virtual void freeAll() noexcept override;
-    usize nBytesAllocated();
+    usize nBytesOccupied();
 
 #ifndef NDEBUG
     void verify();
@@ -100,7 +100,7 @@ _FreeListNodeFromBlock(FreeListBlock* pBlock)
 }
 
 inline usize
-FreeList::nBytesAllocated()
+FreeList::nBytesOccupied()
 {
     return m_totalAllocated;
 }
@@ -234,7 +234,7 @@ FreeList::verify()
             if (pListNode->m_pPrev)
             {
                 bool bPrevAdjecent = ((u8*)pListNode->m_pPrev + pListNode->m_pPrev->size()) == ((u8*)pListNode);
-                ADT_ASSERT(bPrevAdjecent, " ");
+                ADT_ASSERT(bPrevAdjecent, "");
             }
 
             pPrev = pListNode;
@@ -252,7 +252,7 @@ FreeList::splitNode(FreeList::Node* pNode, usize realSize)
 {
     isize splitSize = isize(pNode->m_data.size()) - isize(realSize);
 
-    ADT_ASSERT(splitSize >= 0, " ");
+    ADT_ASSERT(splitSize >= 0, "");
 
     ADT_ASSERT(pNode->m_data.isFree(), "splitting non free node (corruption)");
     m_tree.remove(pNode);
@@ -371,8 +371,7 @@ FreeList::free(void* ptr) noexcept
 inline void*
 FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
 {
-    if (!ptr)
-        return malloc(newCount, mSize);
+    if (!ptr) return malloc(newCount, mSize);
 
     const usize requested = alignUp8(newCount * mSize);
 
@@ -383,15 +382,15 @@ FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
     }
 
     auto* pNode = _FreeListNodeFromPtr(ptr);
-    isize nodeSize = (isize)pNode->m_data.size() - (isize)sizeof(FreeList::Node);
-    ADT_ASSERT(nodeSize > 0, "0 or negative size allocation (corruption), nodeSize: {}", nodeSize);
 
-    if ((isize)newCount*(isize)mSize <= nodeSize)
-        return ptr;
+#ifndef NDEBUG
+    const isize nodeSize = (isize)pNode->m_data.size() - (isize)sizeof(FreeList::Node);
+    ADT_ASSERT(nodeSize > 0, "0 or negative size allocation (corruption), nodeSize: {}", nodeSize);
+#endif
 
     ADT_ASSERT(!pNode->m_data.isFree(), "trying to realloc non free node");
 
-    /* try to bump if next is free and can fit */
+    /* try to bump if next is free and fits */
     {
         usize realSize = requested + sizeof(FreeList::Node);
         auto* pNext = pNode->m_data.m_pNext;
@@ -418,10 +417,12 @@ FreeList::realloc(void* ptr, usize oldCount, usize newCount, usize mSize)
 
             splitNode(pNode, realSize);
 
-            ADT_ASSERT(ptr == pNode->m_data.m_pMem, " ");
+            ADT_ASSERT(ptr == pNode->m_data.m_pMem, "");
             return ptr;
         }
     }
+
+    // if ((isize)newCount*(isize)mSize <= nodeSize) return ptr;
 
     auto* pRet = malloc(newCount, mSize);
     memcpy(pRet, ptr, utils::min(oldCount, newCount) * mSize);

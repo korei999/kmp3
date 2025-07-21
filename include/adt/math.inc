@@ -569,7 +569,7 @@ namespace adt::print
 inline isize
 formatToContext(Context ctx, FormatArgs, const math::V2& x)
 {
-    ctx.fmt = "{:.3}, {:.3}";
+    ctx.fmt = "[{:.3}, {:.3}]";
     ctx.fmtIdx = 0;
     return printArgs(ctx, x.x, x.y);
 }
@@ -577,7 +577,7 @@ formatToContext(Context ctx, FormatArgs, const math::V2& x)
 inline isize
 formatToContext(Context ctx, FormatArgs, const math::V3& x)
 {
-    ctx.fmt = "{:.3}, {:.3}, {:.3}";
+    ctx.fmt = "[{:.3}, {:.3}, {:.3}]";
     ctx.fmtIdx = 0;
     return printArgs(ctx, x.x, x.y, x.z);
 }
@@ -585,7 +585,7 @@ formatToContext(Context ctx, FormatArgs, const math::V3& x)
 inline isize
 formatToContext(Context ctx, FormatArgs, const math::V4& x)
 {
-    ctx.fmt = "{:.3}, {:.3}, {:.3}, {:.3}";
+    ctx.fmt = "[{:.3}, {:.3}, {:.3}, {:.3}]";
     ctx.fmtIdx = 0;
     return printArgs(ctx, x.x, x.y, x.z, x.w);
 }

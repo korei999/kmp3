@@ -5,10 +5,14 @@
 namespace adt::bin
 {
 
-inline constexpr u16
+inline u16
 swapBytes(u16 x)
 {
-#if __has_builtin(__builtin_bswap16)
+#ifdef _MSC_VER
+
+    return _byteswap_ushort(x);
+
+#elif __has_builtin(__builtin_bswap16)
 
     return  __builtin_bswap16(x);
 
@@ -20,10 +24,14 @@ swapBytes(u16 x)
 #endif
 }
 
-inline constexpr u32
+inline u32
 swapBytes(u32 x)
 {
-#if __has_builtin(__builtin_bswap32)
+#ifdef _MSC_VER
+
+    return _byteswap_ulong(x);
+
+#elif __has_builtin(__builtin_bswap32)
 
     return  __builtin_bswap32(x);
 
@@ -37,10 +45,14 @@ swapBytes(u32 x)
 #endif
 }
 
-inline constexpr u64
+inline u64
 swapBytes(u64 x)
 {
-#if __has_builtin(__builtin_bswap64)
+#ifdef _MSC_VER
+
+    return _byteswap_uint64(x);
+
+#elif __has_builtin(__builtin_bswap64)
 
     return  __builtin_bswap64(x);
 

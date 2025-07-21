@@ -86,6 +86,7 @@ struct MiHeap : IArena
 
     MiHeap() = default;
 
+    MiHeap(InitFlag) : m_pHeap(mi_heap_new()) {}
     MiHeap(usize) : m_pHeap(mi_heap_new()) {}
 
     /* */

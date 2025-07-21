@@ -43,7 +43,7 @@ inline constexpr bool oneOfChars(const char x, const StringView chars) noexcept;
 inline isize parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtIdx) noexcept;
 
 template<typename INT_T> requires std::is_integral_v<INT_T>
-inline constexpr void intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept;
+inline constexpr isize intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept;
 
 inline isize copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept;
 
@@ -76,7 +76,7 @@ inline isize formatToContext(Context ctx, FormatArgs fmtArgs, null) noexcept;
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, Empty) noexcept;
 
 template<typename A, typename B>
-inline u32 formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const Pair<A, B>& x);
+inline u32 formatToContext(Context ctx, FormatArgs fmtArgs, const Pair<A, B>& x);
 
 template<typename PTR_T> requires std::is_pointer_v<PTR_T>
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const PTR_T p) noexcept;
@@ -107,6 +107,9 @@ inline isize FormatArgsToFmt(const FormatArgs fmtArgs, Span<char> spFmt) noexcep
 inline isize formatToContextExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isize contSize) noexcept;
 
 inline isize formatToContextUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept;
+
+template<typename ...ARGS>
+inline isize formatToContextVariadic(Context ctx, FormatArgs fmtArgs, const ARGS&... args) noexcept;
 
 template<typename T>
 requires (HasSizeMethod<T> && !ConvertsToStringView<T>)

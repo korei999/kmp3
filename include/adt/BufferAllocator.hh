@@ -79,7 +79,7 @@ BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 
     ADT_ASSERT(p >= m_pMemBuffer && p < m_pMemBuffer + m_cap, "invalid pointer");
 
-    usize realSize = alignUp8(newCount * mSize);
+    const usize realSize = alignUp8(newCount * mSize);
 
     if ((m_size + realSize - m_lastAllocSize) > m_cap)
     {
@@ -97,6 +97,8 @@ BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
     }
     else
     {
+        if (newCount <= oldCount) return p;
+
         auto* ret = malloc(newCount, mSize);
         memcpy(ret, p, oldCount);
 

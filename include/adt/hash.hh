@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include "types.hh"
 #include "Span.inc"
+#include "assert.hh"
+#include "types.hh"
 
 #include <nmmintrin.h>
 
@@ -140,6 +141,11 @@ private:
 
 #ifdef ADT_SSE4_2
 
+#ifdef __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 ADT_NO_UB inline usize
 crc32(const u8* p, isize byteSize, usize seed = 0)
 {
@@ -151,7 +157,8 @@ crc32(const u8* p, isize byteSize, usize seed = 0)
 
     if (i < byteSize && byteSize >= 8)
     {
-        crc = _mm_crc32_u64(crc, *reinterpret_cast<const usize*>(&p[byteSize - 9]));
+        ADT_ASSERT(byteSize - 8 >= 0, "{}", byteSize - 8);
+        crc = _mm_crc32_u64(crc, *reinterpret_cast<const usize*>(&p[byteSize - 8]));
     }
     else
     {
@@ -163,6 +170,10 @@ crc32(const u8* p, isize byteSize, usize seed = 0)
 
     return ~crc;
 }
+
+#ifdef __GNUC__
+    #pragma GCC diagnostic pop
+#endif
 
 #endif
 
