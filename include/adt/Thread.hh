@@ -643,10 +643,11 @@ protected:
     T* pMtx {};
 };
 
-template<typename T>
+namespace details
+{
+
 struct Future
 {
-    ADT_NO_UNIQUE_ADDRESS T m_data {};
     Mutex m_mtx {};
     CndVar m_cnd {};
     bool m_bDone {};
@@ -662,30 +663,48 @@ struct Future
     void signal();
     void reset();
     void destroy();
+};
+
+} /* namespace details */
+
+template<typename T>
+struct Future : details::Future
+{
+    ADT_NO_UNIQUE_ADDRESS T m_data {};
+
+    /* */
+
+    Future() = default;
+    Future(InitFlag) : details::Future(INIT) {}
+
+    /* */
 
     T& data() noexcept { return m_data; }
     T& waitData() noexcept { wait(); return m_data; }
-    T& signalData(const T& data) noexcept { m_data = data; signal(); }
-    T& signalData(T&& data) noexcept { m_data = std::move(data); signal(); }
+    T& signalData(const T& data) noexcept { m_data = data; signal(); return m_data; }
+    T& signalData(T&& data) noexcept { m_data = std::move(data); signal(); return m_data; }
 };
 
-template<typename T>
+template<>
+struct Future<void> : details::Future
+{
+    using details::Future::Future;
+};
+
 inline
-Future<T>::Future(InitFlag)
+details::Future::Future(InitFlag)
     : m_mtx(Mutex::TYPE::PLAIN), m_cnd(INIT) {}
 
-template<typename T>
 inline void
-Future<T>::wait()
+details::Future::wait()
 {
     LockGuard lock {&m_mtx};
 
     while (!m_bDone) m_cnd.wait(&m_mtx);
 }
 
-template<typename T>
 inline void
-Future<T>::signal()
+details::Future::signal()
 {
     LockGuard lock {&m_mtx};
 
@@ -693,16 +712,14 @@ Future<T>::signal()
     m_cnd.signal();
 }
 
-template<typename T>
 inline void
-Future<T>::reset()
+details::Future::reset()
 {
     m_bDone = false;
 }
 
-template<typename T>
 inline void
-Future<T>::destroy()
+details::Future::destroy()
 {
     m_mtx.destroy();
     m_cnd.destroy();

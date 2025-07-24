@@ -1,6 +1,6 @@
 #pragma once
 
-#include "QueueArray.hh"
+#include "QueueMPMC.hh"
 #include "ScratchBuffer.hh"
 #include "Thread.hh"
 #include "Vec.hh"
@@ -20,6 +20,8 @@ struct IThreadPool
     };
 
     /* */
+
+    virtual const atomic::Int& nActiveTasks() = 0;
 
     virtual void wait() = 0;
 
@@ -87,13 +89,26 @@ struct IThreadPool
 
     bool addRetry(ThreadFn pfn, void* pArg, const int nRetries) { return addRetry({pfn, pArg}, nRetries); }
 
+    void
+    addRetryOrDo(ThreadFn pfn, void* pArg)
+    {
+        if (nActiveTasks().load(atomic::ORDER::ACQUIRE) >= nThreads()) pfn(pArg);
+        else addRetry(pfn, pArg);
+    }
+
+    template<typename LAMBDA>
+    void
+    addLambdaRetryOrDo(LAMBDA& cl)
+    {
+        if (nActiveTasks().load(atomic::ORDER::ACQUIRE) >= nThreads()) cl();
+        else addLambdaRetry(cl);
+    }
+
+    template<typename LAMBDA> requires(std::is_rvalue_reference_v<LAMBDA&&>)
+    [[deprecated("rvalue lambdas cause use after free")]] void addLambdaRetryOrDo(LAMBDA&& cl) = delete;
+
     template<typename LAMBDA> requires(std::is_rvalue_reference_v<LAMBDA&&>)
     [[deprecated("rvalue lambdas cause use after free")]] void addLambdaRetry(LAMBDA&& t) = delete;
-};
-
-struct IThreadPoolWithMemory : IThreadPool
-{
-    virtual ScratchBuffer& scratchBuffer() = 0;
 };
 
 template<isize QUEUE_SIZE>
@@ -110,8 +125,9 @@ struct ThreadPool : IThreadPool
     atomic::Int m_atomNActiveTasks {};
     atomic::Int m_atomBDone {};
     atomic::Int m_atomIdCounter {};
+    atomic::Int m_atomBPollMode {};
     bool m_bStarted {};
-    QueueArray<Task, QUEUE_SIZE> m_qTasks {};
+    QueueMPMC<Task, QUEUE_SIZE> m_qTasks {};
 
     /* */
 
@@ -134,6 +150,8 @@ struct ThreadPool : IThreadPool
 
     /* */
 
+    virtual const atomic::Int& nActiveTasks() override { return m_atomNActiveTasks; }
+
     virtual void wait() override;
 
     void destroy(IAllocator* pAlloc);
@@ -141,6 +159,11 @@ struct ThreadPool : IThreadPool
     virtual bool add(Task task) override;
 
     virtual int nThreads() const noexcept override { return m_spThreads.size(); }
+
+    /* */
+
+    void enablePollMode() noexcept;
+    void disablePollMode() noexcept;
 
 protected:
     void start();
@@ -154,7 +177,8 @@ ThreadPool<QUEUE_SIZE>::ThreadPool(IAllocator* pAlloc, int nThreads)
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
-      m_atomBDone(false)
+      m_atomBDone(false),
+      m_qTasks(INIT)
 {
     start();
 }
@@ -175,7 +199,8 @@ ThreadPool<QUEUE_SIZE>::ThreadPool(
       m_pLoopStartArg(pLoopStartArg),
       m_pfnLoopEnd(pfnOnLoopEnd),
       m_pLoopEndArg(pLoopEndArg),
-      m_atomBDone(false)
+      m_atomBDone(false),
+      m_qTasks(INIT)
 {
     start();
 }
@@ -196,19 +221,26 @@ ThreadPool<QUEUE_SIZE>::loop()
         {
             LockGuard qLock {&m_mtxQ};
 
-            while (m_qTasks.empty() && !m_atomBDone.load(atomic::ORDER::ACQUIRE))
+            while (m_atomBPollMode.load(atomic::ORDER::ACQUIRE) == false &&
+                m_qTasks.empty() &&
+                !m_atomBDone.load(atomic::ORDER::ACQUIRE)
+            )
+            {
                 m_cndQ.wait(&m_mtxQ);
+            }
 
             if (m_atomBDone.load(atomic::ORDER::ACQUIRE))
                 return 0;
 
-            task = m_qTasks.popFront();
-            m_atomNActiveTasks.fetchAdd(1, atomic::ORDER::SEQ_CST);
+            task = m_qTasks.pop().valueOr({});
+            if (task.pfn) m_atomNActiveTasks.fetchAdd(1, atomic::ORDER::SEQ_CST);
         }
 
-        ADT_ASSERT(task.pfn, "pfn: '{}'", task.pfn);
-        task.pfn(task.pArg);
-        m_atomNActiveTasks.fetchSub(1, atomic::ORDER::SEQ_CST);
+        if (task.pfn)
+        {
+            task.pfn(task.pArg);
+            m_atomNActiveTasks.fetchSub(1, atomic::ORDER::SEQ_CST);
+        }
 
         {
             LockGuard qLock {&m_mtxQ};
@@ -278,13 +310,7 @@ ThreadPool<QUEUE_SIZE>::add(Task task)
 {
     ADT_ASSERT(m_bStarted, "forgot to `start()` this ThreadPool: (m_bStarted: '{}')", m_bStarted);
 
-    isize i;
-    {
-        LockGuard lock {&m_mtxQ};
-        i = m_qTasks.pushBack(task);
-    }
-
-    if (i != -1)
+    if (m_qTasks.push(task))
     {
         m_cndQ.signal();
         return true;
@@ -293,12 +319,27 @@ ThreadPool<QUEUE_SIZE>::add(Task task)
     return false;
 }
 
+template<isize QUEUE_SIZE>
+inline void
+ThreadPool<QUEUE_SIZE>::enablePollMode() noexcept
+{
+    m_atomBPollMode.store(true, atomic::ORDER::RELEASE);
+}
+
+template<isize QUEUE_SIZE>
+inline void
+ThreadPool<QUEUE_SIZE>::disablePollMode() noexcept
+{
+    m_atomBPollMode.store(false, atomic::ORDER::RELEASE);
+}
+
 /* ThreadPool with ScratchBuffers created for each thread.
  * Any thread can access its own thread local buffer with `threadPool.scratch()`. */
 template<isize QUEUE_SIZE>
-struct ThreadPoolWithMemory : IThreadPoolWithMemory
+struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>
 {
-    ThreadPool<QUEUE_SIZE> m_base {};
+    using Base = ThreadPool<QUEUE_SIZE>;
+    using Task = Base::Task;
 
     /* */
 
@@ -310,7 +351,7 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
     ThreadPoolWithMemory() = default;
 
     ThreadPoolWithMemory(IAllocator* pAlloc, isize nBytesEachBuffer, int nThreads = utils::max(ADT_GET_NPROCS() - 1, 1))
-        : m_base(
+        : Base(
             pAlloc,
             +[](void* p) { allocScratchBufferForThisThread(reinterpret_cast<isize>(p)); },
             reinterpret_cast<void*>(nBytesEachBuffer),
@@ -325,15 +366,12 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
 
     /* */
 
-    virtual void wait() override { m_base.wait(); }
-    virtual bool add(Task task) override { return m_base.add(task); }
-    virtual ScratchBuffer& scratchBuffer() override { return gtl_scratchBuff; }
-    virtual int nThreads() const noexcept override { return m_base.nThreads(); }
+    ScratchBuffer& scratchBuffer() { return gtl_scratchBuff; }
 
     void
     destroy(IAllocator* pAlloc)
     {
-        m_base.destroy(pAlloc);
+        Base::destroy(pAlloc);
         destroyScratchBufferForThisThread();
     }
 
@@ -341,7 +379,7 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
     void
     destroyKeepScratchBuffer(IAllocator* pAlloc)
     {
-        m_base.destroy(pAlloc);
+        Base::destroy(pAlloc);
     }
 
     /* */

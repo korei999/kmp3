@@ -114,14 +114,13 @@ procSeekString(const Span<wchar_t> spBuff)
     if (bPercent)
     {
         i64 maxMS = app::mixer().getTotalMS();
-
-        app::mixer().seekMS(maxMS * (f64(atoll(aMinutesBuff.data())) / 100.0));
+        app::mixer().seekMS(maxMS * (f64(StringView(aMinutesBuff.data()).toI64()) / 100.0));
     }
     else
     {
         isize sec;
-        if (aSecondsBuff.size() == 0) sec = atoll(aMinutesBuff.data());
-        else sec = atoll(aSecondsBuff.data()) + atoll(aMinutesBuff.data())*60;
+        if (aSecondsBuff.size() == 0) sec = StringView(aMinutesBuff.data()).toI64();
+        else sec = atoll(aSecondsBuff.data()) + StringView(aMinutesBuff.data()).toI64()*60;
 
         app::mixer().seekMS(sec * 1000);
     }

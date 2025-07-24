@@ -47,8 +47,6 @@ struct i32x4
 
     explicit operator __m128i() const { return pack; }
 
-    explicit operator f32x4() const;
-
     /* */
 
     i32* data() { return reinterpret_cast<i32*>(&pack); }
@@ -73,6 +71,8 @@ struct f32x4
     f32x4(f32 x, f32 y, f32 z, f32 w) : pack(_mm_set_ps(w, z, y, x)) {}
 
     f32x4(const math::V4 v) : pack(_mm_set_ps(v.w, v.z, v.y, v.x)) {}
+
+    f32x4(i32x4 x) : pack {_mm_cvtepi32_ps(x.pack)} {}
 
     /* */
 
@@ -152,16 +152,16 @@ f32x4Reinterpret(const i32x4 x)
     return _mm_castsi128_ps(x.pack);
 }
 
-inline
-i32x4::operator f32x4() const
-{
-    return _mm_cvtepi32_ps(pack);
-}
-
 inline i32x4
 i32x4Load(const i32* const ptr)
 {
     return _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr));
+}
+
+inline i32x4
+i32x4LoadI32x2(const i64 _i32x2)
+{
+    return _mm_cvtsi64_si128(_i32x2);
 }
 
 inline i32x4
@@ -324,7 +324,7 @@ inline i32x4
 operator>>(i32x4 a, i32 b)
 {
     i32x4 res;
-    res.pack = _mm_srl_epi32(a.pack, _mm_set_epi32(0, 0, 0, b));
+    res.pack = _mm_srli_epi32(a.pack, b);
     return res;
 }
 
@@ -332,7 +332,7 @@ inline i32x4
 operator<<(i32x4 a, i32 b)
 {
     i32x4 res;
-    res.pack = _mm_sll_epi32(a.pack, _mm_set_epi32(0, 0, 0, b));
+    res.pack = _mm_slli_epi32(a.pack, b);
     return res;
 }
 
@@ -631,6 +631,8 @@ struct f32x8
 
     f32x8(const f32 x) : pack(_mm256_set1_ps(x)) {}
 
+    f32x8(i32x8 _pack) : pack {_mm256_cvtepi32_ps(_pack.pack)} {}
+
     /* */
 
     explicit operator __m256() const { return pack; }
@@ -879,7 +881,7 @@ inline i32x8
 operator<<(i32x8 a, i32 b)
 {
     i32x8 res;
-    res.pack = _mm256_sll_epi32(a.pack, _mm_set_epi32(0, 0, 0, b));
+    res.pack = _mm256_slli_epi32(a.pack, b);
     return res;
 }
 
@@ -887,7 +889,7 @@ inline i32x8
 operator>>(i32x8 a, i32 b)
 {
     i32x8 res;
-    res.pack = _mm256_srl_epi32(a.pack, _mm_set_epi32(0, 0, 0, b));
+    res.pack = _mm256_srli_epi32(a.pack, b);
     return res;
 }
 

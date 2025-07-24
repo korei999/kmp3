@@ -24,6 +24,7 @@ constexpr isize SIZE_1G = SIZE_1M * SIZE_1K;
 constexpr isize SIZE_8G = SIZE_1G * 8;
 
 #define ADT_WARN_LEAK [[deprecated("warning: memory leak")]]
+#define ADT_WARN_USE_AFTER_FREE [[deprecated("warning: use after free")]]
 
 template<typename BASE>
 struct AllocatorHelperCRTP

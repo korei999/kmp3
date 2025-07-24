@@ -1,7 +1,7 @@
 #pragma once
 
+#include "IAllocator.hh"
 #include "Thread.hh"
-#include "atomic.hh"
 #include "defer.hh"
 #include "utils.hh"
 
@@ -222,17 +222,14 @@ quickParallel(
             return 0;
         };
 
-        /* Prevent deadlocks. */
-        if (((j - l + 1) <= SIZE_8K) ||
-            pTPool->m_atomNActiveTasks.load(atomic::ORDER::ACQUIRE) >= pTPool->nThreads()
-        )
+        if ((j - l + 1) <= SIZE_8K)
         {
             quick(a, l, j, clCmp);
         }
         else
         {
-            if (!pTPool->addLambda(clDo)) quickParallel(pTPool, a, l, j, clCmp);
-            else bSpawned = true;
+            pTPool->addLambdaRetryOrDo(clDo);
+            bSpawned = true;
         }
 
         quickParallel(pTPool, a, i, r, clCmp);

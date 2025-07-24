@@ -47,6 +47,7 @@ extern platform::ffmpeg::Decoder g_decoder;
 inline Player& player() { return *g_pPlayer; }
 inline audio::IMixer& mixer() { return *g_pMixer; }
 inline platform::ffmpeg::Decoder& decoder() { return g_decoder; }
+inline IWindow& window() { return *g_pWin; }
 
 IWindow* allocWindow(adt::IAllocator* pArena);
 audio::IMixer* allocMixer(adt::IAllocator* pAlloc);

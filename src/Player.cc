@@ -14,7 +14,7 @@
 
 using namespace adt;
 
-constexpr StringView aAcceptedFileEndings[] {
+static constexpr StringView aSvAcceptedFileEndings[] {
     ".mp2", ".mp3", ".mp4", ".m4a", ".m4b",
     ".fla", ".flac",
     ".ogg", ".opus",
@@ -27,7 +27,7 @@ constexpr StringView aAcceptedFileEndings[] {
 bool
 Player::acceptedFormat(const StringView s)
 {
-    return utils::searchI(aAcceptedFileEndings, [&](const StringView ending)
+    return utils::searchI(aSvAcceptedFileEndings, [&](const StringView ending)
         { return s.endsWith(ending); }
     ) != NPOS;
 }
@@ -207,7 +207,7 @@ Player::selectFocused()
 {
     if (m_vSongIdxs.size() <= m_focused)
     {
-        LOG_WARN("PlayerSelectFocused(): out of range selection: (vec.size: {})\n", m_vSongIdxs.size());
+        LOG_WARN("out of range selection: (vec.size: {})\n", m_vSongIdxs.size());
         return;
     }
 
@@ -238,11 +238,9 @@ Player::nextSongIfPrevEnded()
 PLAYER_REPEAT_METHOD
 Player::cycleRepeatMethods(bool bForward)
 {
-    using enum PLAYER_REPEAT_METHOD;
-
     int rm;
-    if (bForward) rm = ((int(m_eReapetMethod) + 1) % int(ESIZE));
-    else rm = ((int(m_eReapetMethod) + (int(ESIZE) - 1)) % int(ESIZE));
+    if (bForward) rm = utils::cycleForward(isize(m_eReapetMethod), isize(PLAYER_REPEAT_METHOD::ESIZE));
+    else rm = utils::cycleBackward(isize(m_eReapetMethod), isize(PLAYER_REPEAT_METHOD::ESIZE));
 
     m_eReapetMethod = PLAYER_REPEAT_METHOD(rm);
 
@@ -264,13 +262,13 @@ Player::select(long i)
 void
 Player::selectNext()
 {
-    select((findSongI(m_selected) + 1) % m_vSearchIdxs.size());
+    select(utils::cycleForward(findSongI(m_selected), m_vSearchIdxs.size()));
 }
 
 void
 Player::selectPrev()
 {
-    select((findSongI(m_selected) + (m_vSearchIdxs.size()) - 1) % m_vSearchIdxs.size());
+    select(utils::cycleBackward(findSongI(m_selected), m_vSearchIdxs.size()));
 }
 
 void

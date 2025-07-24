@@ -41,8 +41,7 @@ mprisPollLoop(void*)
 void
 run()
 {
-    app::g_pWin = app::allocWindow(app::g_pPlayer->m_pAlloc);
-    if (app::g_pWin == nullptr)
+    if (!(app::g_pWin = app::allocWindow(app::player().m_pAlloc)))
     {
         CERR("app::allocWindow(): failed\n");
         return;
@@ -51,14 +50,14 @@ run()
     Arena arena(SIZE_1M * 2);
     defer( arena.freeAll() );
 
-    if (app::g_pWin->start(&arena) == false)
+    if (app::window().start(&arena) == false)
     {
         CERR("failed to start window\n");
         return;
     }
 
-    app::g_pPlayer->m_focused = 0;
-    app::g_pPlayer->selectFocused();
+    app::player().m_focused = 0;
+    app::player().selectFocused();
 
 #ifdef OPT_MPRIS
     mpris::init();
@@ -71,12 +70,12 @@ run()
     );
 #endif
 
-    defer( app::g_pWin->destroy() );
+    defer( app::window().destroy() );
 
     do
     {
-        app::g_pWin->draw();
-        app::g_pWin->procEvents();
+        app::window().draw();
+        app::window().procEvents();
 
         arena.shrinkToFirstBlock();
         arena.reset();

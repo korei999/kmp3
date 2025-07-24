@@ -48,25 +48,25 @@ struct VecSOA
 
     /* */
 
-    BIND operator[](const isize i) { return bind(i); }
-    const BIND operator[](const isize i) const { return bind(i); }
+    BIND operator[](const isize i) noexcept { return bind(i); }
+    const BIND operator[](const isize i) const noexcept { return bind(i); }
 
-    BIND first() { return operator[](0); }
-    const BIND first() const { return operator[](0); }
-    BIND last() { return operator[](m_size - 1); }
-    const BIND last() const { return operator[](m_size - 1); }
+    BIND first() noexcept { return operator[](0); }
+    const BIND first() const noexcept { return operator[](0); }
+    BIND last() noexcept { return operator[](m_size - 1); }
+    const BIND last() const noexcept { return operator[](m_size - 1); }
 
     void destroy(IAllocator* pAlloc) noexcept;
     isize push(IAllocator* pAlloc, const STRUCT& x);
-    void pop() { --m_size; }
-    isize size() const { return m_size; }
-    isize cap() const { return m_capacity; }
+    void pop() noexcept { --m_size; }
+    isize size() const noexcept { return m_size; }
+    isize cap() const noexcept { return m_capacity; }
     void setSize(IAllocator* pAlloc, const isize newSize);
-    void zeroOut();
-    isize totalByteCap() const;
+    void zeroOut() noexcept;
+    isize totalByteCap() const noexcept;
 
 protected:
-    BIND bind(const isize i) const;
+    BIND bind(const isize i) const noexcept;
     void set(isize i, const STRUCT& x);
     void growIfNeeded(IAllocator* pAlloc);
     void grow(IAllocator* p, isize newCapacity);
@@ -105,29 +105,34 @@ inline
 VecSOA<STRUCT, BIND, MEMBERS...>::VecSOA(IAllocator* pAlloc, isize prealloc)
     : m_pData {pAlloc->zallocV<u8>(prealloc * sizeof(STRUCT))}, m_capacity(prealloc) {}
 
+namespace details
+{
+
 template<typename STRUCT, typename BIND>
-inline void VecSOASetHelper(u8*, const isize, const isize) { /* empty case */ }
+inline void VecSOASetHelper(u8*, const isize, const isize) noexcept { /* empty case */ }
 
 template<typename STRUCT, typename BIND, typename HEAD, typename ...TAIL>
 inline void
-VecSOASetHelper(u8* pData, const isize cap, const isize i, HEAD&& head, TAIL&&... tail)
+VecSOASetHelper(u8* pData, const isize cap, const isize i, HEAD&& head, TAIL&&... tail) noexcept
 {
     using HeadType = std::remove_reference_t<HEAD>;
 
     auto* pPlacement = reinterpret_cast<HeadType*>(pData) + i;
     new( (void*)(pPlacement) ) HeadType(head);
 
-    VecSOASetHelper<STRUCT, BIND>(
+    details::VecSOASetHelper<STRUCT, BIND>(
         (u8*)((reinterpret_cast<HeadType*>(pData)) + cap), cap, i, std::forward<TAIL>(tail)...
     );
 }
+
+} /* namespace details */
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline void
 VecSOA<STRUCT, BIND, MEMBERS...>::set(isize i, const STRUCT& x)
 {
     ADT_ASSERT(i >= 0 && i < m_size, "out of range: i: {}, size: {}\n", i, m_size);
-    VecSOASetHelper<STRUCT, BIND>(m_pData, m_capacity, i, x.*MEMBERS...);
+    details::VecSOASetHelper<STRUCT, BIND>(m_pData, m_capacity, i, x.*MEMBERS...);
 }
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
@@ -150,14 +155,14 @@ VecSOA<STRUCT, BIND, MEMBERS...>::setSize(IAllocator* pAlloc, const isize newSiz
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline void
-VecSOA<STRUCT, BIND, MEMBERS...>::zeroOut()
+VecSOA<STRUCT, BIND, MEMBERS...>::zeroOut() noexcept
 {
     memset(m_pData, 0, totalByteCap());
 }
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline isize
-VecSOA<STRUCT, BIND, MEMBERS...>::totalByteCap() const
+VecSOA<STRUCT, BIND, MEMBERS...>::totalByteCap() const noexcept
 {
     return cap() * sizeof(STRUCT);
 }
@@ -217,7 +222,7 @@ VecSOA<STRUCT, BIND, MEMBERS...>::destroy(IAllocator* pAlloc) noexcept
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
 inline BIND
-VecSOA<STRUCT, BIND, MEMBERS...>::bind(const isize i) const
+VecSOA<STRUCT, BIND, MEMBERS...>::bind(const isize i) const noexcept
 {
     ADT_ASSERT(i >= 0 && i < m_size, "out of range: i: {}, size: {}\n", i, m_size);
 
