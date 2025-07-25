@@ -453,13 +453,13 @@ struct CndVar
 
 #elif defined ADT_USE_WIN32THREAD
 
-    CONDITION_VARIABLE m_cnd {};
+    CONDITION_VARIABLE m_cnd;
 
 #endif
 
     /* */
 
-    CndVar() = default;
+    CndVar();
     explicit CndVar(InitFlag);
 
     /* */
@@ -470,6 +470,16 @@ struct CndVar
     void signal();
     void broadcast();
 };
+
+inline
+CndVar::CndVar()
+#ifdef ADT_USE_PTHREAD
+    : m_cnd {}
+#elif defined ADT_USE_WIN32THREAD
+    : m_cnd {}
+#endif
+{
+}
 
 inline
 CndVar::CndVar(InitFlag)

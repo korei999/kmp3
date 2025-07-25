@@ -1,6 +1,6 @@
 #pragma once
 
-#include "QueueMPMC.hh"
+#include "QueueArray.hh"
 #include "ScratchBuffer.hh"
 #include "Thread.hh"
 #include "Vec.hh"
@@ -127,7 +127,7 @@ struct ThreadPool : IThreadPool
     atomic::Int m_atomIdCounter {};
     atomic::Int m_atomBPollMode {};
     bool m_bStarted {};
-    QueueMPMC<Task, QUEUE_SIZE> m_qTasks {};
+    QueueArray<Task, QUEUE_SIZE> m_qTasks {};
 
     /* */
 
@@ -176,9 +176,7 @@ ThreadPool<QUEUE_SIZE>::ThreadPool(IAllocator* pAlloc, int nThreads)
     : m_spThreads(pAlloc->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
-      m_cndWait(INIT),
-      m_atomBDone(false),
-      m_qTasks(INIT)
+      m_cndWait(INIT)
 {
     start();
 }
@@ -198,9 +196,7 @@ ThreadPool<QUEUE_SIZE>::ThreadPool(
       m_pfnLoopStart(pfnOnLoopStart),
       m_pLoopStartArg(pLoopStartArg),
       m_pfnLoopEnd(pfnOnLoopEnd),
-      m_pLoopEndArg(pLoopEndArg),
-      m_atomBDone(false),
-      m_qTasks(INIT)
+      m_pLoopEndArg(pLoopEndArg)
 {
     start();
 }
@@ -232,12 +228,12 @@ ThreadPool<QUEUE_SIZE>::loop()
             if (m_atomBDone.load(atomic::ORDER::ACQUIRE))
                 return 0;
 
-            task = m_qTasks.pop().valueOr({});
-            if (task.pfn) m_atomNActiveTasks.fetchAdd(1, atomic::ORDER::SEQ_CST);
+            task = m_qTasks.popFront();
         }
 
         if (task.pfn)
         {
+            m_atomNActiveTasks.fetchAdd(1, atomic::ORDER::SEQ_CST);
             task.pfn(task.pArg);
             m_atomNActiveTasks.fetchSub(1, atomic::ORDER::SEQ_CST);
         }
@@ -310,7 +306,13 @@ ThreadPool<QUEUE_SIZE>::add(Task task)
 {
     ADT_ASSERT(m_bStarted, "forgot to `start()` this ThreadPool: (m_bStarted: '{}')", m_bStarted);
 
-    if (m_qTasks.push(task))
+    isize i;
+    {
+        LockGuard lock {&m_mtxQ};
+        i = m_qTasks.pushBack(task);
+    }
+
+    if (i != -1)
     {
         m_cndQ.signal();
         return true;

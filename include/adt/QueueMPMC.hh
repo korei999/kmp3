@@ -55,7 +55,7 @@ struct QueueMPMC
 
     /* */
 
-    ADT_WARN_INIT QueueMPMC() = default;
+    QueueMPMC() = default;
 
     QueueMPMC(InitFlag);
 
@@ -80,7 +80,7 @@ inline bool
 QueueMPMC<T, CAP>::push(const T& x)
 {
     Cell* pCell;
-    int pos = m_enqueuePos.load(atomic::ORDER::RELAXED);
+    atomic::Int::Type pos = m_enqueuePos.load(atomic::ORDER::RELAXED);
 
     while (true)
     {
@@ -118,7 +118,7 @@ inline Opt<T>
 QueueMPMC<T, CAP>::pop()
 {
     Cell* pCell;
-    int pos = m_dequeuePos.load(atomic::ORDER::RELAXED);
+    atomic::Int::Type pos = m_dequeuePos.load(atomic::ORDER::RELAXED);
 
     while (true)
     {
