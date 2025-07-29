@@ -13,7 +13,9 @@ option(OPT_CHAFA "" ON)
 option(OPT_MPRIS "" ON)
 option(OPT_MIMALLOC "" OFF)
 option(OPT_SSE4_2 "" OFF)
+option(OPT_AVX2 "" OFF)
 option(OPT_MARCH_NATIVE "" OFF)
+option(OPT_PRECOMPILE_ADT "" OFF)
 
 if (OPT_SSE4_2)
     add_definitions("-DADT_SSE4_2")
@@ -22,6 +24,16 @@ if (OPT_SSE4_2)
         add_compile_options(/arch:SSE4.2)
     else()
         add_compile_options(-msse4.2)
+    endif()
+endif()
+
+if (OPT_AVX2)
+    add_definitions("-DADT_AVX2")
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        add_compile_options(/arch:AVX2)
+    else()
+        add_compile_options(-mavx2 -mfma)
     endif()
 endif()
 
@@ -158,6 +170,19 @@ add_executable(
     src/platform/ansi/WinInput.cc
     src/platform/ansi/TextBuff.cc
 )
+
+if (OPT_PRECOMPILE_ADT)
+    file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*.hh")
+
+    if (NOT OPT_MIMALLOC)
+        list(FILTER ADT_PRECOMPILED_HEADERS EXCLUDE REGEX ".*/adt/MiMalloc.hh")
+    endif()
+
+    target_precompile_headers(
+        ${CMAKE_PROJECT_NAME} PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:${ADT_PRECOMPILED_HEADERS}>"
+    )
+endif()
 
 if (OPT_MIMALLOC)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)

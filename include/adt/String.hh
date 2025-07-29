@@ -806,4 +806,29 @@ hash::func(const StringView& str)
     return hash::func(str.m_pData, str.m_size);
 }
 
+namespace utils
+{
+
+[[nodiscard]] inline isize
+compare(const StringView& l, const StringView& r)
+{
+    const isize minLen = l.m_size < r.m_size ? l.m_size : r.m_size;
+    const isize res = ::strncmp(l.m_pData, r.m_pData, minLen);
+
+    if (res == 0) return l.m_size > r.m_size;
+    else return res;
+}
+
+[[nodiscard]] inline isize
+compareRev(const StringView& l, const StringView& r)
+{
+    const isize minLen = l.m_size < r.m_size ? l.m_size : r.m_size;
+    const isize res = ::strncmp(r.m_pData, l.m_pData, minLen);
+
+    if (res == 0) return r.m_size > l.m_size;
+    else return res;
+}
+
+} /* namespace utils */
+
 } /* namespace adt */

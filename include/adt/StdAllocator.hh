@@ -1,6 +1,5 @@
 #pragma once
 
-#include "IAllocator.hh"
 #include "print.hh" /* IWYU pragma: keep */
 
 #include <cstdlib>

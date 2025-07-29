@@ -10,7 +10,6 @@ namespace adt
  * This template allows to create arbitrary vectors with SOA memory layout.
  * Creation example:
  * 
- * // SOA.hh can generate these
  * struct Entity
  * {
  *     // reference mirror
@@ -29,11 +28,28 @@ namespace adt
  * Must preserve the order.
  * VecSOA<Entity, Entity::Bind, &Entity::pos, &Entity::vel, &Entity::index> vec(StdAllocator::inst());
  *
+ * Using SOA.hh:
+ * #define ENTITY_PP_BIND_I(TYPE, NAME) , &Entity::NAME
+ * #define ENTITY_PP_BIND(TUPLE) ENTITY_PP_BIND_I TUPLE
+ * #define ENTITY_FIELDS \
+ *     (adt::StringFixed<128>, sfName),
+ *     (adt::math::V4, color),
+ *     (adt::math::V3, pos),
+ *     (adt::math::Qt, rot),
+ *     (adt::math::V3, scale),
+ *     (adt::math::V3, vel),
+ *     (adt::i16, assetI),
+ *     (adt::i16, modelI),
+ *     (bool, bNoDraw)
+ * ADT_SOA_GEN_STRUCT_ZERO(Entity, Bind, ENTITY_FIELDS);
+ * #define ENTITY_TEMPLATE_ARGS Entity, Entity::Bind ADT_PP_FOR_EACH(ENTITY_PP_BIND, ENTITY_FIELDS)
+ *
+ * VecSOA<ENTITY_TEMPLATE_ARGS> v0 {&alloc, SIZE};
+ *
  * Works with regular vector syntax:
  * for (auto bind : vec) bind.vel = {};
- * vec[3].index = 2;
- * 
- * Very ugly, but gets the job done. */
+ * vec[3].index = 2; */
+
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
 struct VecSOA
 {

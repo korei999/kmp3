@@ -1,35 +1,44 @@
 #pragma once
 
 #include "String.inc"
-#include "Pair.hh"
+#include "enum.hh"
 
 #include <cstdio>
 #include <type_traits>
 
+namespace adt
+{
+template<typename A, typename B> struct Pair;
+}
+
 namespace adt::print
 {
 
-enum class BASE : u8;
+enum class BASE : u8 { TWO = 2, EIGHT = 8, TEN = 10, SIXTEEN = 16 };
 
-enum class FMT_FLAGS : u8;
+enum class FMT_FLAGS : u8
+{
+    HASH = 1,
+    ALWAYS_SHOW_SIGN = 1 << 1,
+    ARG_IS_FMT = 1 << 2,
+    FLOAT_PRECISION_ARG = 1 << 3,
+    JUSTIFY_RIGHT = 1 << 4,
+    SQUARE_BRACKETS = 1 << 5,
+};
+ADT_ENUM_BITWISE_OPERATORS(FMT_FLAGS);
+
+enum class CONTEXT_FLAGS : u8
+{
+    NONE = 0,
+    UPDATE_FMT_ARGS = 1,
+};
+ADT_ENUM_BITWISE_OPERATORS(CONTEXT_FLAGS);
 
 struct FormatArgs;
 struct Context;
 
 template<typename T>
-constexpr const StringView
-typeName()
-{
-#ifdef __clang__
-    return __PRETTY_FUNCTION__;
-#elif defined(__GNUC__)
-    return __PRETTY_FUNCTION__;
-#elif defined(_MSC_VER)
-    return __FUNCSIG__;
-#else
-    return "unsupported compiler";
-#endif
-}
+constexpr const StringView typeName();
 
 template<typename ...ARGS_T> inline isize out(const StringView fmt, const ARGS_T&... tArgs) noexcept;
 template<typename ...ARGS_T> inline isize err(const StringView fmt, const ARGS_T&... tArgs) noexcept;

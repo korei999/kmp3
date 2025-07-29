@@ -8,48 +8,6 @@
 namespace adt
 {
 
-inline constexpr isize
-HeapParentI(const isize i)
-{
-    return ((i + 1) / 2) - 1;
-}
-
-inline constexpr isize
-HeapLeftI(const isize i)
-{
-    return ((i + 1) * 2) - 1;
-}
-
-inline constexpr isize
-HeapRightI(const isize i)
-{
-    return HeapLeftI(i) + 1;
-}
-
-inline void
-maxHeapify(auto* a, const isize size, isize i)
-{
-    isize largest, left, right;
-
-GOTO_again:
-    left = HeapLeftI(i);
-    right = HeapRightI(i);
-
-    if (left < size && a[left] > a[i])
-        largest = left;
-    else largest = i;
-
-    if (right < size && a[right] > a[largest])
-        largest = right;
-
-    if (largest != (isize)i)
-    {
-        utils::swap(&a[i], &a[largest]);
-        i = largest;
-        goto GOTO_again;
-    }
-}
-
 namespace sort
 {
 
@@ -111,22 +69,6 @@ insertion(T* pArray)
 {
     if (pArray->size() <= 1) return;
     insertion(pArray->data(), 0, pArray->size() - 1, utils::Comparator<decltype(pArray->operator[](0))> {});
-}
-
-inline constexpr void
-heapMax(auto* a, const isize size)
-{
-    isize heapSize = size;
-    for (isize p = HeapParentI(heapSize); p >= 0; --p)
-        maxHeapify(a, heapSize, p);
-
-    for (isize i = size - 1; i > 0; --i)
-    {
-        utils::swap(&a[i], &a[0]);
-
-        --heapSize;
-        maxHeapify(a, heapSize, 0);
-    }
 }
 
 template<typename T>
@@ -272,7 +214,7 @@ quick(T* pArray)
     );
 }
 
-template<typename ARRAY_T, typename T, ORDER ORDER>
+template<ORDER ORDER, typename ARRAY_T, typename T>
 inline isize
 push(ARRAY_T* p, const T& x)
 {
@@ -314,7 +256,7 @@ push(ARRAY_T* p, const T& x)
     return res;
 }
 
-template<typename ARRAY_T, typename T, ORDER ORDER>
+template<ORDER ORDER, typename ARRAY_T, typename T>
 inline isize
 push(IAllocator* pAlloc, ARRAY_T* p, const T& x)
 {
@@ -361,8 +303,8 @@ inline isize
 push(const ORDER eOrder, ARRAY_T* p, const T& x)
 {
     if (eOrder == ORDER::INC)
-        return push<ARRAY_T, T, ORDER::INC>(p, x);
-    else return push<ARRAY_T, T, ORDER::DEC>(p, x);
+        return push<ORDER::INC, ARRAY_T, T>(p, x);
+    else return push<ORDER::INC, ARRAY_T, T>(p, x);
 }
 
 template<typename ARRAY_T, typename T>
@@ -370,8 +312,8 @@ inline isize
 push(IAllocator* pAlloc, const ORDER eOrder, ARRAY_T* p, const T& x)
 {
     if (eOrder == ORDER::INC)
-        return push<ARRAY_T, T, ORDER::INC>(pAlloc, p, x);
-    else return push<ARRAY_T, T, ORDER::DEC>(pAlloc, p, x);
+        return push<ORDER::INC, ARRAY_T, T>(pAlloc, p, x);
+    else return push<ORDER::INC, ARRAY_T, T>(pAlloc, p, x);
 }
 
 } /* namespace sort */

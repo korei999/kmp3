@@ -1,7 +1,6 @@
 #pragma once
 
 #include "print.hh"
-#include "sort.hh"
 
 #include <initializer_list>
 #include <new> /* IWYU pragma: keep */
@@ -52,11 +51,6 @@ struct Array
 
     isize push(const T& x); /* placement new cannot be constexpr something... */
     isize push(T&& x);
-
-    isize pushSorted(sort::ORDER eOrder, const T& x);
-
-    template<sort::ORDER ORDER>
-    isize pushSorted(const T& x);
 
     void pushAt(isize i, const T& x);
     void pushAt(isize i, T&& x);
@@ -119,25 +113,6 @@ inline isize
 Array<T, CAP>::push(T&& x)
 {
     return emplace(std::move(x));
-}
-
-template<typename T, isize CAP>
-inline isize
-Array<T, CAP>::pushSorted(const sort::ORDER eOrder, const T& x)
-{
-    ADT_ASSERT(size() < CAP, "pushing over capacity");
-
-    return sort::push(eOrder, this, x);
-}
-
-template<typename T, isize CAP>
-template<sort::ORDER ORDER>
-inline isize
-Array<T, CAP>::pushSorted(const T& x)
-{
-    ADT_ASSERT(size() < CAP, "pushing over capacity");
-
-    return sort::push<Array<T, CAP>, T, ORDER>(this, x);
 }
 
 template<typename T, isize CAP>

@@ -1,10 +1,9 @@
 #pragma once
 
-#include "defer.hh"
 #include "print.inc"
 
 #include "String.hh" /* IWYU pragma: keep */
-#include "enum.hh"
+#include "defer.hh"
 
 #include <ctype.h> /* win32 */
 #include <cstdio>
@@ -24,19 +23,6 @@
 namespace adt::print
 {
 
-enum class BASE : u8 { TWO = 2, EIGHT = 8, TEN = 10, SIXTEEN = 16 };
-
-enum class FMT_FLAGS : u8
-{
-    HASH = 1,
-    ALWAYS_SHOW_SIGN = 1 << 1,
-    ARG_IS_FMT = 1 << 2,
-    FLOAT_PRECISION_ARG = 1 << 3,
-    JUSTIFY_RIGHT = 1 << 4,
-    SQUARE_BRACKETS = 1 << 5,
-};
-ADT_ENUM_BITWISE_OPERATORS(FMT_FLAGS);
-
 struct FormatArgs
 {
     u16 maxLen = NPOS16;
@@ -44,13 +30,6 @@ struct FormatArgs
     BASE eBase = BASE::TEN;
     FMT_FLAGS eFmtFlags {};
 };
-
-enum CONTEXT_FLAGS : u8
-{
-    NONE = 0,
-    UPDATE_FMT_ARGS = 1,
-};
-ADT_ENUM_BITWISE_OPERATORS(CONTEXT_FLAGS);
 
 struct Context
 {
@@ -77,8 +56,23 @@ struct Context
     }
 };
 
+template<typename T>
+constexpr const StringView
+typeName()
+{
+#ifdef __clang__
+    return __PRETTY_FUNCTION__;
+#elif defined(__GNUC__)
+    return __PRETTY_FUNCTION__;
+#elif defined(_MSC_VER)
+    return __FUNCSIG__;
+#else
+    return "unsupported compiler";
+#endif
+}
+
 inline const char*
-_currentWorkingDirectory()
+currentWorkingDirectory()
 {
     static char aBuff[300] {};
     return getcwd(aBuff, sizeof(aBuff) - 1);
@@ -87,7 +81,7 @@ _currentWorkingDirectory()
 inline const char*
 stripSourcePath(const char* ntsSourcePath)
 {
-    static const StringView svCwd = _currentWorkingDirectory();
+    static const StringView svCwd = currentWorkingDirectory();
     return ntsSourcePath + svCwd.size() + 1;
 }
 
@@ -233,23 +227,31 @@ intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
         return i;
     }
  
-    if (x < 0 && int(fmtArgs.eBase) != 10)
+    if (x < 0 && fmtArgs.eBase != BASE::TEN)
     {
         x = -x;
     }
-    else if (x < 0 && int(fmtArgs.eBase) == 10)
+    else if (x < 0 && fmtArgs.eBase == BASE::TEN)
     {
         bNegative = true;
         x = -x;
     }
 
-    while (x != 0)
-    {
-        const int rem = x % int(fmtArgs.eBase);
-        const char digit = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
-        PUSH_OR_RET(digit);
-        x /= int(fmtArgs.eBase);
-    }
+    const char* ntsCharSet = "0123456789abcdef";
+
+#define _ITOA_(BASE)                                                                                                   \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        PUSH_OR_RET(ntsCharSet[x % BASE]);                                                                             \
+    } while ((x /= BASE) > 0);
+
+    /* About 2.5x faster code than generic base. */
+    if (fmtArgs.eBase == BASE::TEN) { _ITOA_(10); }
+    else if (fmtArgs.eBase == BASE::EIGHT) { _ITOA_(8); }
+    else if (fmtArgs.eBase == BASE::SIXTEEN) { _ITOA_(16); }
+    else if (fmtArgs.eBase == BASE::TWO) { _ITOA_(2); }
+
+#undef _ITOA_
  
     if (bool(fmtArgs.eFmtFlags & FMT_FLAGS::ALWAYS_SHOW_SIGN))
     {
@@ -469,7 +471,7 @@ printArg(isize& nRead, isize& i, bool& bArg, Context& ctx, const T& arg) noexcep
 
         FormatArgs fmtArgs {};
 
-        if (ctx.eFlags & CONTEXT_FLAGS::UPDATE_FMT_ARGS)
+        if (bool(ctx.eFlags & CONTEXT_FLAGS::UPDATE_FMT_ARGS))
         {
             ctx.eFlags &= ~CONTEXT_FLAGS::UPDATE_FMT_ARGS;
 
@@ -563,7 +565,7 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
     isize i = ctx.fmtIdx;
 
     /* NOTE: Ugly edge case, when we need to fill with spaces but fmt is out of range. */
-    if (ctx.eFlags & CONTEXT_FLAGS::UPDATE_FMT_ARGS && ctx.fmtIdx >= ctx.fmt.size())
+    if (bool(ctx.eFlags & CONTEXT_FLAGS::UPDATE_FMT_ARGS) && ctx.fmtIdx >= ctx.fmt.size())
         return formatToContext(ctx, ctx.prevFmtArgs, tFirst);
     else if (ctx.fmtIdx >= ctx.fmt.size())
         return 0;

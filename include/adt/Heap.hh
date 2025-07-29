@@ -3,10 +3,27 @@
 #include "IAllocator.hh"
 #include "Vec.hh"
 #include "utils.hh"
-#include "sort.hh"
 
 namespace adt
 {
+
+inline constexpr isize
+HeapParentI(const isize i)
+{
+    return ((i + 1) / 2) - 1;
+}
+
+inline constexpr isize
+HeapLeftI(const isize i)
+{
+    return ((i + 1) * 2) - 1;
+}
+
+inline constexpr isize
+HeapRightI(const isize i)
+{
+    return HeapLeftI(i) + 1;
+}
 
 template<typename T>
 struct Heap

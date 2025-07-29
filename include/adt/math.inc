@@ -1,7 +1,6 @@
 #pragma once
 
-#include "types.hh"
-#include "print.hh"
+#include "assert.hh"
 
 #include <concepts>
 #include <limits>
@@ -566,87 +565,14 @@ inline M4 transformation(const V3& translation, const V3& scale);
 namespace adt::print
 {
 
-inline isize
-formatToContext(Context ctx, FormatArgs, const math::V2& x)
-{
-    ctx.fmt = "[{:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.x, x.y);
-}
-
-inline isize
-formatToContext(Context ctx, FormatArgs, const math::V3& x)
-{
-    ctx.fmt = "[{:.3}, {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.x, x.y, x.z);
-}
-
-inline isize
-formatToContext(Context ctx, FormatArgs, const math::V4& x)
-{
-    ctx.fmt = "[{:.3}, {:.3}, {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.x, x.y, x.z, x.w);
-}
-
-inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4& x)
-{
-    i32 aBuff[4] {x.x, x.y, x.z, x.w};
-    return formatToContext(ctx, fmtArgs, aBuff);
-}
-
-inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x)
-{
-    u16 aBuff[4] {x.x, x.y, x.z, x.w};
-    return formatToContext(ctx, fmtArgs, aBuff);
-}
-
-inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::Qt& x)
-{
-    return formatToContext(ctx, fmtArgs, x.base);
-}
-
-inline isize
-formatToContext(Context ctx, FormatArgs, const math::M2& x)
-{
-    ctx.fmt = "\n\t[{:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.d[0], x.d[1], x.d[2], x.d[3]);
-}
-
-inline isize
-formatToContext(Context ctx, FormatArgs, const math::M3& x)
-{
-    ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx,
-        x.d[0], x.d[1], x.d[2],
-        x.d[3], x.d[4], x.d[5],
-        x.d[6], x.d[7], x.d[8]
-    );
-}
-
-inline isize
-formatToContext(Context ctx, FormatArgs, const math::M4& x)
-{
-    ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx,
-        x.e[0][0], x.e[0][1], x.e[0][2], x.e[0][3],
-        x.e[1][0], x.e[1][1], x.e[1][2], x.e[1][3],
-        x.e[2][0], x.e[2][1], x.e[2][2], x.e[2][3],
-        x.e[3][0], x.e[3][1], x.e[3][2], x.e[3][3]
-    );
-}
+inline isize formatToContext(Context ctx, FormatArgs, const math::V2& x);
+inline isize formatToContext(Context ctx, FormatArgs, const math::V3& x);
+inline isize formatToContext(Context ctx, FormatArgs, const math::V4& x);
+inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4& x);
+inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x);
+inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const math::Qt& x);
+inline isize formatToContext(Context ctx, FormatArgs, const math::M2& x);
+inline isize formatToContext(Context ctx, FormatArgs, const math::M3& x);
+inline isize formatToContext(Context ctx, FormatArgs, const math::M4& x);
 
 } /* namespace adt::math */

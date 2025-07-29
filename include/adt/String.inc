@@ -3,6 +3,7 @@
 #include "Span.inc"
 
 #include <concepts>
+#include <cstring>
 
 namespace adt
 {
@@ -15,7 +16,13 @@ struct StringView;
 namespace hash
 {
 template<typename T> inline usize func(const T& x);
-}
+} /* namespace hash */
+
+namespace utils
+{
+[[nodiscard]] inline isize compare(const StringView& l, const StringView& r);
+[[nodiscard]] inline isize compareRev(const StringView& l, const StringView& r);
+} /* namespace utils */
 
 template<typename T>
 concept ConvertsToStringView =

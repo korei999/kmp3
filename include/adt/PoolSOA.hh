@@ -49,7 +49,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
     const BIND operator[](PoolSOAHandle<STRUCT> idx) const { return BIND {bindMember<MEMBERS>(idx)...}; }
 
     [[nodiscard]] PoolSOAHandle<STRUCT>
-    make(const STRUCT& x)
+    insert(const STRUCT& x)
     {
         if (!m_aFreeHandles.empty())
         {
@@ -63,7 +63,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
             if (m_size == CAP)
             {
 #if !defined NDEBUG
-                print::err("PoolSOA::make(): out of size, returning -1\n");
+                print::err("PoolSOA::insert(): out of size, returning -1\n");
 #endif
                 return {.i = -1};
             }
@@ -76,7 +76,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
     }
 
     void
-    giveBack(PoolSOAHandle<STRUCT> h)
+    remove(PoolSOAHandle<STRUCT> h)
     {
         m_aOccupiedIdxs[h.i] = false;
         m_aFreeHandles.push(h);
