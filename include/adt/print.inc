@@ -70,9 +70,8 @@ inline isize formatToContext(Context ctx, FormatArgs fmtArgs, bool b) noexcept;
 template<typename INT_T> requires std::is_integral_v<INT_T>
 inline constexpr isize formatToContext(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept;
 
-inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept;
-
-inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept;
+template<typename FLOAT_T> requires std::is_floating_point_v<FLOAT_T>
+inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const FLOAT_T x) noexcept;
 
 inline isize formatToContext(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept;
 

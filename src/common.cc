@@ -24,18 +24,18 @@ allocTimeString(Arena* pArena, int width)
     auto& mix = app::mixer();
     char* pBuff = (char*)pArena->zalloc(1, width + 1);
 
-    f64 sampleRateRatio = f64(mix.getSampleRate()) / f64(mix.getChangedSampleRate());
+    const f64 sampleRateRatio = f64(mix.getSampleRate()) / f64(mix.getChangedSampleRate());
 
-    u64 t = std::round(mix.getCurrentMS() / 1000.0 * sampleRateRatio);
-    u64 totalT = std::round(mix.getTotalMS() / 1000.0 * sampleRateRatio);
+    const u64 t = std::round(mix.getCurrentMS() / 1000.0 * sampleRateRatio);
+    const u64 totalT = std::round(mix.getTotalMS() / 1000.0 * sampleRateRatio);
 
-    u64 currMin = t / 60;
-    u64 currSec = t - (60 * currMin);
+    const u64 currMin = t / 60;
+    const u64 currSec = t - (60 * currMin);
 
-    u64 maxMin = totalT / 60;
-    u64 maxSec = totalT - (60 * maxMin);
+    const u64 maxMin = totalT / 60;
+    const u64 maxSec = totalT - (60 * maxMin);
 
-    int n = snprintf(pBuff, width, "time: %llu:%02llu / %llu:%02llu", currMin, currSec, maxMin, maxSec);
+    const isize n = print::toBuffer(pBuff, width, "time: {}:{:>02} / {}:{:>02}", currMin, currSec, maxMin, maxSec);
     if (mix.getSampleRate() != mix.getChangedSampleRate())
     {
         print::toBuffer(pBuff + n, width - n, " ({}% speed)",

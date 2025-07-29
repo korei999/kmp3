@@ -335,13 +335,17 @@ ThreadPool<QUEUE_SIZE>::disablePollMode() noexcept
     m_atomBPollMode.store(false, atomic::ORDER::RELEASE);
 }
 
+struct IThreadPoolWithMemory : IThreadPool
+{
+    virtual ScratchBuffer& scratchBuffer() = 0;
+};
+
 /* ThreadPool with ScratchBuffers created for each thread.
  * Any thread can access its own thread local buffer with `threadPool.scratch()`. */
 template<isize QUEUE_SIZE>
-struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>
+struct ThreadPoolWithMemory : IThreadPoolWithMemory
 {
-    using Base = ThreadPool<QUEUE_SIZE>;
-    using Task = Base::Task;
+    using Task = ThreadPool<QUEUE_SIZE>::Task;
 
     /* */
 
@@ -349,11 +353,14 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>
     static inline thread_local ScratchBuffer gtl_scratchBuff;
 
     /* */
+    ThreadPool<QUEUE_SIZE> m_base {};
+
+    /* */
 
     ThreadPoolWithMemory() = default;
 
     ThreadPoolWithMemory(IAllocator* pAlloc, isize nBytesEachBuffer, int nThreads = utils::max(ADT_GET_NPROCS() - 1, 1))
-        : Base(
+        : m_base(
             pAlloc,
             +[](void* p) { allocScratchBufferForThisThread(reinterpret_cast<isize>(p)); },
             reinterpret_cast<void*>(nBytesEachBuffer),
@@ -368,12 +375,18 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>
 
     /* */
 
-    ScratchBuffer& scratchBuffer() { return gtl_scratchBuff; }
+    virtual ScratchBuffer& scratchBuffer() override { return gtl_scratchBuff; }
+    virtual const atomic::Int& nActiveTasks() override { return m_base.nActiveTasks(); }
+    virtual void wait() override { m_base.wait(); }
+    virtual bool add(Task task) { return m_base.add(task); }
+    virtual int nThreads() const noexcept override { return m_base.nThreads(); }
+
+    /* */
 
     void
     destroy(IAllocator* pAlloc)
     {
-        Base::destroy(pAlloc);
+        m_base.destroy(pAlloc);
         destroyScratchBufferForThisThread();
     }
 
@@ -381,7 +394,7 @@ struct ThreadPoolWithMemory : ThreadPool<QUEUE_SIZE>
     void
     destroyKeepScratchBuffer(IAllocator* pAlloc)
     {
-        Base::destroy(pAlloc);
+        m_base.destroy(pAlloc);
     }
 
     /* */
