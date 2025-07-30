@@ -82,8 +82,10 @@ struct StringView
     constexpr isize firstOf(char c) const;
     StringView& trimEnd();
     StringView& removeNLEnd(); /* remove \r\n */
-    [[nodiscard]] bool contains(const StringView r) const;
-    [[nodiscard]] isize subStringAt(const StringView r) const noexcept;
+    [[nodiscard]] bool contains(const StringView r) const noexcept;
+    [[nodiscard]] bool contains(char c) const noexcept;
+    /* NPOS */ [[nodiscard]] isize subStringAt(const StringView r) const noexcept;
+    /* NPOS */ [[nodiscard]] isize charAt(char c) const noexcept;
     [[nodiscard]] char& first();
     [[nodiscard]] const char& first() const;
     [[nodiscard]] char& last();

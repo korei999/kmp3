@@ -378,7 +378,7 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
     virtual ScratchBuffer& scratchBuffer() override { return gtl_scratchBuff; }
     virtual const atomic::Int& nActiveTasks() override { return m_base.nActiveTasks(); }
     virtual void wait() override { m_base.wait(); }
-    virtual bool add(Task task) { return m_base.add(task); }
+    virtual bool add(Task task) override { return m_base.add(task); }
     virtual int nThreads() const noexcept override { return m_base.nThreads(); }
 
     /* */

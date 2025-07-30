@@ -47,8 +47,6 @@ inline const char* stripSourcePath(const char* ntsSourcePath);
 
 inline isize printArgs(Context ctx) noexcept;
 
-inline constexpr bool oneOfChars(const char x, const StringView chars) noexcept;
-
 inline isize parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtIdx) noexcept;
 
 template<typename INT_T> requires std::is_integral_v<INT_T>
@@ -94,6 +92,9 @@ inline constexpr isize printArgs(Context ctx, const T& tFirst, const ARGS_T&... 
 
 template<isize SIZE = 512, typename ...ARGS_T>
 inline isize toFILE(FILE* fp, const StringView fmt, const ARGS_T&... tArgs) noexcept;
+
+template<isize SIZE = 512, typename ...ARGS_T>
+inline isize toFILE(IAllocator* pAlloc, FILE* fp, const StringView fmt, const ARGS_T&... tArgs) noexcept;
 
 template<typename ...ARGS_T>
 inline constexpr isize toBuffer(char* pBuff, isize buffSize, const StringView fmt, const ARGS_T&... tArgs) noexcept;
