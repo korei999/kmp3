@@ -272,9 +272,9 @@ namespace print
 /* adapt to CON_T<T> template */
 template<typename T, isize CAP>
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const Array<T, CAP>& x)
+format(Context ctx, FormatArgs fmtArgs, const Array<T, CAP>& x)
 {
-    return print::formatToContext(ctx, fmtArgs, Span(x.data(), x.size()));
+    return print::format(ctx, fmtArgs, Span(x.data(), x.size()));
 }
 
 } /* namespace print */

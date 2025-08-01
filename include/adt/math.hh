@@ -1525,48 +1525,48 @@ namespace adt::print
 {
 
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::V2& x)
+format(Context ctx, FormatArgs fmtArgs, const math::V2& x)
 {
-    fmtArgs.eFmtFlags |= FMT_FLAGS::SQUARE_BRACKETS;
-    return formatToContextVariadic(ctx, fmtArgs, x.x, x.y);
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    return formatVariadic(ctx, fmtArgs, x.x, x.y);
 }
 
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::V3& x)
+format(Context ctx, FormatArgs fmtArgs, const math::V3& x)
 {
-    fmtArgs.eFmtFlags |= FMT_FLAGS::SQUARE_BRACKETS;
-    return formatToContextVariadic(ctx, fmtArgs, x.x, x.y, x.z);
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z);
 }
 
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::V4& x)
+format(Context ctx, FormatArgs fmtArgs, const math::V4& x)
 {
-    fmtArgs.eFmtFlags |= FMT_FLAGS::SQUARE_BRACKETS;
-    return formatToContextVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4& x)
+format(Context ctx, FormatArgs fmtArgs, const math::IV4& x)
 {
-    fmtArgs.eFmtFlags |= FMT_FLAGS::SQUARE_BRACKETS;
-    return formatToContextVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x)
+format(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x)
 {
-    fmtArgs.eFmtFlags |= FMT_FLAGS::SQUARE_BRACKETS;
-    return formatToContextVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const math::Qt& x)
+format(Context ctx, FormatArgs fmtArgs, const math::Qt& x)
 {
-    return formatToContext(ctx, fmtArgs, x.base);
+    return format(ctx, fmtArgs, x.base);
 }
 
 inline isize
-formatToContext(Context ctx, FormatArgs, const math::M2& x)
+format(Context ctx, FormatArgs, const math::M2& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}"
               "\n\t {:.3}, {:.3}]";
@@ -1575,7 +1575,7 @@ formatToContext(Context ctx, FormatArgs, const math::M2& x)
 }
 
 inline isize
-formatToContext(Context ctx, FormatArgs, const math::M3& x)
+format(Context ctx, FormatArgs, const math::M3& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}"
               "\n\t {:.3}, {:.3}, {:.3}"
@@ -1589,7 +1589,7 @@ formatToContext(Context ctx, FormatArgs, const math::M3& x)
 }
 
 inline isize
-formatToContext(Context ctx, FormatArgs, const math::M4& x)
+format(Context ctx, FormatArgs, const math::M4& x)
 {
     ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}, {:.3}"
               "\n\t {:.3}, {:.3}, {:.3}, {:.3}"

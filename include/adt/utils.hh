@@ -158,7 +158,7 @@ compareRev(const T& l, const T& r)
 template<typename T>
 struct Comparator
 {
-    constexpr isize
+    [[nodiscard]] constexpr isize
     operator()(const T& l, const T& r) const noexcept
     {
         return compare(l, r);
@@ -168,7 +168,7 @@ struct Comparator
 template<typename T>
 struct ComparatorRev
 {
-    constexpr isize
+    [[nodiscard]] constexpr isize
     operator()(const T& l, const T& r) const noexcept
     {
         return compareRev(l, r);

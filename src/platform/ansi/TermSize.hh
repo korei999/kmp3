@@ -75,11 +75,14 @@ namespace adt::print
 {
 
 inline u32
-formatToContext(Context ctx, [[maybe_unused]] FormatArgs fmtArgs, const platform::ansi::TermSize x)
+format(Context ctx, FormatArgs fmtArgs, const platform::ansi::TermSize x)
 {
-    ctx.fmt = "[width: {}, height: {}, pixWidth: {}, pixHeight: {}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.width, x.height, x.pixWidth, x.pixHeight);
+    char aBuff[128] {};
+    const isize n = toSpan(aBuff,
+        "[width: {}, height: {}, pixWidth: {}, pixHeight: {}]",
+        x.width, x.height, x.pixWidth, x.pixHeight
+    );
+    return copyBackToContext(ctx, fmtArgs, Span(aBuff, n));
 }
 
 } /* namespace adt::print */

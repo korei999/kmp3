@@ -785,14 +785,10 @@ inline String
 StringCat(IAllocator* p, const StringView& l, const StringView& r)
 {
     isize len = l.size() + r.size();
-    char* ret = p->zallocV<char>(len + 1);
+    char* ret = p->mallocV<char>(len + 1);
 
-    isize pos = 0;
-    for (isize i = 0; i < l.m_size; ++i, ++pos)
-        ret[pos] = l[i];
-    for (isize i = 0; i < r.m_size; ++i, ++pos)
-        ret[pos] = r[i];
-
+    strncpy(ret, l.m_pData, l.m_size);
+    strncpy(ret + l.m_size, r.m_pData, r.m_size);
     ret[len] = '\0';
 
     String sNew;

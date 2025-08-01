@@ -45,38 +45,41 @@ enum class RB_COLOR : u8 { BLACK, RED };
 enum class RB_ORDER : u8 { PRE, IN, POST };
 
 template<typename T>
+struct RBNode
+{
+    static constexpr usize COLOR_MASK = 1ULL;
+
+    /* */
+
+    RBNode* m_left {};
+    RBNode* m_right {};
+    RBNode* m_parentColor {}; /* NOTE: color is the least significant bit */
+    ADT_NO_UNIQUE_ADDRESS T m_data {};
+
+    /* */
+
+    T& data() { return m_data; }
+    const T& data() const { return m_data; }
+
+    RBNode*& left() { return m_left; }
+    RBNode* const& left() const { return m_left; }
+    RBNode*& right() { return m_right; }
+    RBNode* const& right() const { return m_right; }
+
+    RB_COLOR color() const { return (RB_COLOR)((usize)m_parentColor & COLOR_MASK); }
+    RB_COLOR setColor(const RB_COLOR eColor) { m_parentColor = (RBNode*)((usize)parent() | (usize)eColor); return eColor; }
+
+    RBNode* parent() const { return (RBNode*)((usize)m_parentColor & ~COLOR_MASK); }
+    void setParent(RBNode* par) { m_parentColor = (RBNode*)(((usize)par & ~COLOR_MASK) | (usize)color()); }
+
+    RBNode*& parentAndColor() { return m_parentColor; }
+    RBNode* const& parentAndColor() const { return m_parentColor; }
+};
+
+template<typename T>
 struct RBTree
 {
-    struct Node
-    {
-        static constexpr usize COLOR_MASK = 1ULL;
-
-        /* */
-
-        Node* m_left {};
-        Node* m_right {};
-        Node* m_parentColor {}; /* NOTE: color is the least significant bit */
-        ADT_NO_UNIQUE_ADDRESS T m_data {};
-
-        /* */
-
-        T& data() { return m_data; }
-        const T& data() const { return m_data; }
-
-        Node*& left() { return m_left; }
-        Node* const& left() const { return m_left; }
-        Node*& right() { return m_right; }
-        Node* const& right() const { return m_right; }
-
-        RB_COLOR color() const { return (RB_COLOR)((usize)m_parentColor & COLOR_MASK); }
-        RB_COLOR setColor(const RB_COLOR eColor) { m_parentColor = (Node*)((usize)parent() | (usize)eColor); return eColor; }
-
-        Node* parent() const { return (Node*)((usize)m_parentColor & ~COLOR_MASK); }
-        void setParent(Node* par) { m_parentColor = (Node*)(((usize)par & ~COLOR_MASK) | (usize)color()); }
-
-        Node*& parentAndColor() { return m_parentColor; }
-        Node* const& parentAndColor() const { return m_parentColor; }
-    };
+    using Node = RBNode<T>;
 
     /* */
 
@@ -715,21 +718,20 @@ RBTree<T>::printNodes(
     IAllocator* pA,
     const Node* pNode,
     FILE* pF,
-    const StringView sPrefix,
+    const StringView svPrefix,
     bool bLeft
 )
 {
     if (pNode)
     {
         const StringView sCol = pNode->color() == RB_COLOR::BLACK ? ADT_LOGS_COL_BLUE : ADT_LOGS_COL_RED;
-        print::toFILE(pF, "{}{} {}{}" ADT_LOGS_COL_NORM "\n", sPrefix, bLeft ? "|__" : "\\__", sCol, pNode->m_data);
+        print::toFILE(pA, pF, "{}{} {}{}" ADT_LOGS_COL_NORM "\n", svPrefix, bLeft ? "|__" : "\\__", sCol, pNode->m_data);
 
-        String sCat = StringCat(pA, sPrefix, bLeft ? "|   " : "    ");
+        String sCat = StringCat(pA, svPrefix, bLeft ? "|   " : "    ");
+        ADT_DEFER( pA->free(sCat.m_pData) );
 
         printNodes(pA, pNode->left(), pF, sCat, true);
         printNodes(pA, pNode->right(), pF, sCat, false);
-
-        pA->free(sCat.m_pData);
     }
 }
 

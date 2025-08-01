@@ -1,6 +1,6 @@
 #pragma once
 
-#include <type_traits>
+#include <type_traits> /* IWYU pragma: keep */
 
 /* https://voithos.io/articles/enum-class-bitmasks/ */
 /* Define bitwise operators for an enum class, allowing usage as bitmasks. */

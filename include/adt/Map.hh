@@ -560,7 +560,7 @@ namespace print
 {
 
 inline isize
-formatToContext(Context ctx, FormatArgs, const MAP_RESULT_STATUS eStatus)
+format(Context ctx, FormatArgs, const MAP_RESULT_STATUS eStatus)
 {
     ctx.fmt = "{}";
     ctx.fmtIdx = 0;
@@ -575,7 +575,7 @@ formatToContext(Context ctx, FormatArgs, const MAP_RESULT_STATUS eStatus)
 
 template<typename K, typename V>
 inline isize
-formatToContext(Context ctx, FormatArgs, const MapBucket<K, V>& x)
+format(Context ctx, FormatArgs, const MapBucket<K, V>& x)
 {
     ctx.fmt = "[{}, {}]";
     ctx.fmtIdx = 0;
@@ -584,7 +584,7 @@ formatToContext(Context ctx, FormatArgs, const MapBucket<K, V>& x)
 
 template<typename K, typename V>
 inline isize
-formatToContext(Context ctx, FormatArgs, const KeyVal<K, V>& x)
+format(Context ctx, FormatArgs, const KeyVal<K, V>& x)
 {
     ctx.fmt = "[{}, {}]";
     ctx.fmtIdx = 0;
@@ -593,7 +593,7 @@ formatToContext(Context ctx, FormatArgs, const KeyVal<K, V>& x)
 
 template<typename K, typename V>
 inline isize
-formatToContext(Context ctx, FormatArgs, const MapResult<K, V>& x)
+format(Context ctx, FormatArgs, const MapResult<K, V>& x)
 {
     ctx.fmt = "{}, {}, {}";
     ctx.fmtIdx = 0;

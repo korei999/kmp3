@@ -206,9 +206,9 @@ namespace adt::print
 {
 
 inline isize
-formatToContext(Context ctx, FormatArgs fmtArgs, const atomic::Int& x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const atomic::Int& x) noexcept
 {
-    return formatToContext(ctx, fmtArgs, x.load(atomic::ORDER::RELAXED));
+    return format(ctx, fmtArgs, x.load(atomic::ORDER::RELAXED));
 }
 
 } /* namespace adt::print */
