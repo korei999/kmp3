@@ -243,7 +243,7 @@ getString(
          *     ChafaSymbolTags safe_symbol_tags;
          * }; */
 
-        /* BUG: stupid fix for the chafa leak: https://github.com/hpjansson/chafa/commit/05e76092c459421131cca8d512df693d3fd98b99 */
+        /* BUG: fix for the chafa leak: https://github.com/hpjansson/chafa/commit/05e76092c459421131cca8d512df693d3fd98b99 */
         /* first 4 bytes is the ref count */
         int refs = *reinterpret_cast<int*>(pTermInfo);
         chafa_term_info_unref(pTermInfo);
