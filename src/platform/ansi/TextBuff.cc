@@ -313,7 +313,7 @@ TextBuff::pushDiff()
     bool bChangeStyle = false;
 
     /* won't hurt */
-    push(TEXT_BUFF_NORM);
+    ADT_DEFER( push(TEXT_BUFF_NORM) );
 
     for (row = 0; row < m_tHeight; ++row)
     {
