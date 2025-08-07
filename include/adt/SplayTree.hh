@@ -35,12 +35,9 @@ namespace adt
 {
 
 template<typename T>
-struct SplayTree;
-
-template<typename T>
-struct SplayTreeNode
+struct SplayNode
 {
-    using Node = SplayTreeNode<T>;
+    using Node = SplayNode<T>;
 
     /* */
 
@@ -71,8 +68,8 @@ struct SplayTreeNode
 template<typename T>
 struct SplayTree
 {
-    using Node = SplayTreeNode<T>;
-    static_assert(std::is_same_v<Node, typename SplayTreeNode<T>::Node>);
+    using Node = SplayNode<T>;
+    static_assert(std::is_same_v<Node, typename SplayNode<T>::Node>);
 
     /* */
 
@@ -123,7 +120,7 @@ protected:
 
 template<typename T>
 inline void
-SplayTreeNode<T>::print(IAllocator* pAlloc, FILE* pF, const StringView svPrefix)
+SplayNode<T>::print(IAllocator* pAlloc, FILE* pF, const StringView svPrefix)
 {
     SplayTree<T>::print(pAlloc, pF, this, svPrefix);
 }
@@ -322,7 +319,7 @@ namespace print
 
 template<typename T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const SplayTreeNode<T>* const x)
+format(Context ctx, FormatArgs fmtArgs, const SplayNode<T>* const x)
 {
     if (x) return format(ctx, fmtArgs, x->m_data);
     else return format(ctx, fmtArgs, nullptr);

@@ -394,7 +394,7 @@ format(Context ctx, FormatArgs fmtArgs, const FLOAT_T x) noexcept
     std::to_chars_result res {};
     if (fmtArgs.maxFloatLen == NPOS8)
         res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x);
-    else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x, std::chars_format::general, fmtArgs.maxFloatLen);
+    else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x, std::chars_format::fixed, fmtArgs.maxFloatLen);
 
     if (res.ptr) return copyBackToContext(ctx, fmtArgs, {aBuff, res.ptr - aBuff});
     else return copyBackToContext(ctx, fmtArgs, {aBuff});
@@ -438,14 +438,6 @@ inline isize
 format(Context ctx, FormatArgs fmtArgs, Empty) noexcept
 {
     return format(ctx, fmtArgs, StringView("Empty"));
-}
-
-template<typename A, typename B>
-inline u32
-format(Context ctx, FormatArgs fmtArgs, const Pair<A, B>& x)
-{
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
-    return formatVariadic(ctx, fmtArgs, x.first, x.second);
 }
 
 template<typename T>
@@ -618,13 +610,6 @@ toBuffer(char* pBuff, isize buffSize, const StringView fmt, const ARGS_T&... tAr
 
 template<typename ...ARGS_T>
 inline constexpr isize
-toString(StringView* pDest, const StringView fmt, const ARGS_T&... tArgs) noexcept
-{
-    return toBuffer(pDest->data(), pDest->size(), fmt, tArgs...);
-}
-
-template<typename ...ARGS_T>
-inline constexpr isize
 toSpan(Span<char> sp, const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
     /* leave 1 byte for '\0' */
@@ -746,14 +731,16 @@ formatVariadic(Context ctx, FormatArgs fmtArgs, const ARGS&... args) noexcept
 
 template<typename T>
 requires (HasSizeMethod<T> && !ConvertsToStringView<T>)
-inline isize format(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
+inline isize
+format(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
 {
     return formatExpSize(ctx, fmtArgs, x, x.size());
 }
 
 template<typename T>
 requires HasNextIt<T>
-inline isize format(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
+inline isize
+format(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
 {
     return print::formatUntilEnd(ctx, fmtArgs, x);
 }

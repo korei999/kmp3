@@ -42,43 +42,47 @@ ListNodeAlloc(IAllocator* pA, ARGS&&... args)
 template<typename T>
 struct List
 {
-    ListNode<T>* m_pFirst {};
-    ListNode<T>* m_pLast {};
-    isize m_size {};
+    using Node = ListNode<T>;
 
     /* */
 
-    [[nodiscard]] constexpr isize size() const { return m_size; }
+    Node* m_pFirst {};
+    Node* m_pLast {};
 
-    [[nodiscard]] constexpr bool empty() const { return m_size <= 0; }
+    /* */
+
+    constexpr Node* data() noexcept { return m_pFirst; }
+    constexpr const Node* data() const noexcept { return m_pFirst; }
+
+    constexpr bool empty() const { return m_pFirst == nullptr || m_pLast == nullptr; }
 
     constexpr void destroy(IAllocator* pA) noexcept;
     constexpr void destructElements() noexcept;
 
     constexpr List release() noexcept;
 
-    constexpr ListNode<T>* pushFront(ListNode<T>* pNew);
-    constexpr ListNode<T>* pushBack(ListNode<T>* pNew);
+    constexpr Node* pushFront(Node* pNew);
+    constexpr Node* pushBack(Node* pNew);
 
-    constexpr ListNode<T>* pushFront(IAllocator* pA, const T& x);
-    constexpr ListNode<T>* pushBack(IAllocator* pA, const T& x);
+    constexpr Node* pushFront(IAllocator* pA, const T& x);
+    constexpr Node* pushBack(IAllocator* pA, const T& x);
 
-    constexpr ListNode<T>* pushFront(IAllocator* pA, T&& x);
-    constexpr ListNode<T>* pushBack(IAllocator* pA, T&& x);
-
-    template<typename ...ARGS>
-    constexpr ListNode<T>* emplaceFront(IAllocator* p, ARGS&&... args);
+    constexpr Node* pushFront(IAllocator* pA, T&& x);
+    constexpr Node* pushBack(IAllocator* pA, T&& x);
 
     template<typename ...ARGS>
-    constexpr ListNode<T>* emplaceBack(IAllocator* p, ARGS&&... args);
+    constexpr Node* emplaceFront(IAllocator* p, ARGS&&... args);
 
-    constexpr void remove(ListNode<T>* p);
+    template<typename ...ARGS>
+    constexpr Node* emplaceBack(IAllocator* p, ARGS&&... args);
+
+    constexpr void remove(Node* p);
 
     void remove(T* p);
     void remove(IAllocator* pAlloc, T* p);
 
-    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p);
-    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p);
+    constexpr void insertAfter(Node* pAfter, Node* p);
+    constexpr void insertBefore(Node* pBefore, Node* p);
 
     template<auto FN_CMP = utils::compare<T>>
     constexpr void sort();
@@ -87,9 +91,10 @@ struct List
 
     struct It
     {
-        ListNode<T>* s = nullptr;
+        Node* s = nullptr;
 
-        It(ListNode<T>* p) : s {p} {}
+        It() = default;
+        It(Node* p) : s {p} {}
 
         T& operator*() { return s->data; }
         T* operator->() { return &s->data; }
@@ -99,6 +104,12 @@ struct List
 
         It operator--() { return s = s->pPrev; }
         It operator--(int) { T* tmp = s--; return tmp; }
+
+        It current() noexcept { return s; }
+        const It current() const noexcept { return s; }
+
+        It next() noexcept { return s->pNext; }
+        const It next() const noexcept { return s->pNext; }
 
         friend constexpr bool operator==(const It l, const It r) { return l.s == r.s; }
         friend constexpr bool operator!=(const It l, const It r) { return l.s != r.s; }
@@ -157,7 +168,6 @@ List<T>::pushFront(ListNode<T>* pNew)
         m_pFirst = pNew;
     }
 
-    ++m_size;
     return pNew;
 }
 
@@ -178,7 +188,6 @@ List<T>::pushBack(ListNode<T>* pNew)
         m_pLast = pNew;
     }
 
-    ++m_size;
     return pNew;
 }
 
@@ -234,7 +243,7 @@ template<typename T>
 constexpr void
 List<T>::remove(ListNode<T>* p)
 {
-    ADT_ASSERT(p && m_size > 0, "");
+    ADT_ASSERT(p != nullptr, "");
 
     if (p == m_pFirst && p == m_pLast)
     {
@@ -255,8 +264,6 @@ List<T>::remove(ListNode<T>* p)
         p->pPrev->pNext = p->pNext;
         p->pNext->pPrev = p->pPrev;
     }
-
-    --m_size;
 }
 
 template<typename T>
@@ -288,8 +295,6 @@ List<T>::insertAfter(ListNode<T>* pAfter, ListNode<T>* p)
     pAfter->pNext = p;
 
     if (pAfter == m_pLast) m_pLast = p;
-
-    ++m_size;
 }
 
 template<typename T>
@@ -304,8 +309,6 @@ List<T>::insertBefore(ListNode<T>* pBefore, ListNode<T>* p)
     pBefore->pPrev = p;
 
     if (pBefore == m_pFirst) m_pFirst = p;
-
-    ++m_size;
 }
 
 /* https://www.chiark.greenend.org.uk/~sgtatham/algorithms/listsort.c */
@@ -401,6 +404,7 @@ template<typename T, typename ALLOC_T = StdAllocatorNV>
 struct ListManaged : protected ALLOC_T, public List<T>
 {
     using Base = List<T>;
+    using Node = Base::Node;
 
     /* */
 
@@ -411,23 +415,21 @@ struct ListManaged : protected ALLOC_T, public List<T>
     ALLOC_T& allocator() { return static_cast<ALLOC_T&>(*this); }
     const ALLOC_T& allocator() const { return static_cast<ALLOC_T&>(*this); }
 
-    [[nodiscard]] constexpr isize size() const { return Base::size(); }
-
     [[nodiscard]] constexpr bool empty() const { return Base::empty(); }
 
-    constexpr ListNode<T>* pushFront(const T& x) { return Base::pushFront(&allocator(), x); }
+    constexpr Node* pushFront(const T& x) { return Base::pushFront(&allocator(), x); }
 
-    constexpr ListNode<T>* pushBack(const T& x) { return Base::pushBack(&allocator(), x); }
+    constexpr Node* pushBack(const T& x) { return Base::pushBack(&allocator(), x); }
 
-    constexpr void remove(ListNode<T>* p) { Base::remove(p); allocator().free(p); }
+    constexpr void remove(Node* p) { Base::remove(p); allocator().free(p); }
 
     constexpr void destroy() { Base::destroy(&allocator()); }
 
     constexpr ListManaged release() noexcept { return utils::exchange(this, {}); }
 
-    constexpr void insertAfter(ListNode<T>* pAfter, ListNode<T>* p) { Base::insertAfter(pAfter, p); }
+    constexpr void insertAfter(Node* pAfter, Node* p) { Base::insertAfter(pAfter, p); }
 
-    constexpr void insertBefore(ListNode<T>* pBefore, ListNode<T>* p) { Base::insertBefore(pBefore, p); }
+    constexpr void insertBefore(Node* pBefore, Node* p) { Base::insertBefore(pBefore, p); }
 
     template<auto FN_CMP = utils::compare<T>>
     constexpr void sort() { Base::template sort<FN_CMP>(); }

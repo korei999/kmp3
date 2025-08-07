@@ -16,6 +16,7 @@ option(OPT_SSE4_2 "" OFF)
 option(OPT_AVX2 "" OFF)
 option(OPT_MARCH_NATIVE "" OFF)
 option(OPT_PRECOMPILE_ADT "" OFF)
+option(OPT_FTIME_TRACE "" OFF)
 
 if (OPT_SSE4_2)
     add_definitions("-DADT_SSE4_2")
@@ -61,7 +62,9 @@ if (OPT_MIMALLOC)
     add_definitions("-DADT_USE_MIMALLOC")
 endif()
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
+if (OPT_FTIME_TRACE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
+endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)

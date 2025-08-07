@@ -6,11 +6,6 @@
 #include <cstdio>
 #include <type_traits>
 
-namespace adt
-{
-template<typename A, typename B> struct Pair;
-}
-
 namespace adt::print
 {
 
@@ -119,9 +114,6 @@ inline isize format(Context ctx, FormatArgs fmtArgs, null) noexcept;
 
 inline isize format(Context ctx, FormatArgs fmtArgs, Empty) noexcept;
 
-template<typename A, typename B>
-inline u32 format(Context ctx, FormatArgs fmtArgs, const Pair<A, B>& x);
-
 template<typename T>
 inline isize format(Context ctx, FormatArgs fmtArgs, const T* const p) noexcept;
 
@@ -136,9 +128,6 @@ inline isize toFILE(IAllocator* pAlloc, FILE* fp, const StringView fmt, const AR
 
 template<typename ...ARGS_T>
 inline constexpr isize toBuffer(char* pBuff, isize buffSize, const StringView fmt, const ARGS_T&... tArgs) noexcept;
-
-template<typename ...ARGS_T>
-inline constexpr isize toString(StringView* pDest, const StringView fmt, const ARGS_T&... tArgs) noexcept;
 
 template<typename ...ARGS_T>
 inline constexpr isize toSpan(Span<char> sp, const StringView fmt, const ARGS_T&... tArgs) noexcept;

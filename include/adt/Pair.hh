@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.hh"
+#include "print.inc"
 
 namespace adt
 {
@@ -53,5 +53,18 @@ operator>=(const Pair<A, B>& l, const Pair<A, B>& r)
 {
     return l.first >= r.first && l.second >= r.second;
 }
+
+namespace print
+{
+
+template<typename A, typename B>
+inline u32
+format(Context ctx, FormatArgs fmtArgs, const Pair<A, B>& x)
+{
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    return formatVariadic(ctx, fmtArgs, x.first, x.second);
+}
+
+} /* namespace print */
 
 } /* namespace adt */

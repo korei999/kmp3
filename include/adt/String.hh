@@ -595,6 +595,16 @@ StringView::toF64() const noexcept
     return strtod(m_pData, &pEnd);
 }
 
+inline StringView
+StringView::subString(isize start, isize size) const noexcept
+{
+    ADT_ASSERT(start + size <= m_size,
+        "out of range: ends at: {}, requested: {}",
+        m_size, start + size
+    );
+    return StringView((char*)&operator[](start), size);
+}
+
 template<typename T>
 ADT_NO_UB inline T
 StringView::reinterpret(isize at) const

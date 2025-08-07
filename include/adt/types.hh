@@ -72,6 +72,9 @@ using null = decltype(nullptr);
 struct InitFlag {};
 constexpr InitFlag INIT {};
 
+struct UninitFlag {};
+constexpr UninitFlag UNINIT {};
+
 #define ADT_WARN_INIT [[deprecated("warning: should be initialized with (INIT)")]]
 #define ADT_WARN_DONT_USE [[deprecated("warning: don't use!")]]
 #define ADT_WARN_IMPOSSIBLE_OPERATION [[deprecated("warning: imposibble operation")]]
