@@ -212,10 +212,8 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtIdx) noexcept
     return nWritten;
 }
 
-template<typename INT_T>
-requires std::is_integral_v<INT_T>
-inline constexpr isize
-intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
+inline isize
+intToBuffer(isize x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 {
     isize i = 0;
     bool bNegative = false;
@@ -385,10 +383,21 @@ format(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
     return copyBackToContext(ctx, fmtArgs, {aBuff, n});
 }
 
-template<typename FLOAT_T>
-requires std::is_floating_point_v<FLOAT_T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const FLOAT_T x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
+{
+    char aBuff[64] {};
+    std::to_chars_result res {};
+    if (fmtArgs.maxFloatLen == NPOS8)
+        res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x);
+    else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x, std::chars_format::fixed, fmtArgs.maxFloatLen);
+
+    if (res.ptr) return copyBackToContext(ctx, fmtArgs, {aBuff, res.ptr - aBuff});
+    else return copyBackToContext(ctx, fmtArgs, {aBuff});
+}
+
+inline isize
+format(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
 {
     char aBuff[64] {};
     std::to_chars_result res {};

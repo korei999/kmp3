@@ -82,8 +82,7 @@ inline isize printArgs(Context ctx) noexcept;
 
 inline isize parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtIdx) noexcept;
 
-template<typename INT_T> requires std::is_integral_v<INT_T>
-inline constexpr isize intToBuffer(INT_T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept;
+inline isize intToBuffer(isize x, Span<char> spBuff, FormatArgs fmtArgs) noexcept;
 
 inline isize copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept;
 
@@ -101,8 +100,9 @@ inline isize format(Context ctx, FormatArgs fmtArgs, bool b) noexcept;
 template<typename INT_T> requires std::is_integral_v<INT_T>
 inline constexpr isize format(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept;
 
-template<typename FLOAT_T> requires std::is_floating_point_v<FLOAT_T>
-inline isize format(Context ctx, FormatArgs fmtArgs, const FLOAT_T x) noexcept;
+inline isize format(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept;
+
+inline isize format(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept;
 
 inline isize format(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept;
 
