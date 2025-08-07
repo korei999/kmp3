@@ -2,7 +2,6 @@
 
 #include "mpris.hh"
 
-#include "adt/logs.hh"
 #include "app.hh"
 #include "defaults.hh"
 

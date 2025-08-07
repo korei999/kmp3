@@ -2,8 +2,6 @@
 
 #include "app.hh"
 
-#include "adt/Thread.hh"
-
 using namespace adt;
 
 namespace audio

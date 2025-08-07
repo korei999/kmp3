@@ -4,8 +4,6 @@
 
 #include "app.hh"
 
-#include "adt/defer.hh"
-
 namespace common
 {
 

@@ -2,9 +2,6 @@
 
 #include "Image.hh"
 
-#include "adt/String.hh"
-#include "adt/atomic.hh"
-
 namespace audio
 {
 

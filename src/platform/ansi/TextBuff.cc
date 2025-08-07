@@ -1,7 +1,5 @@
 #include "TextBuff.hh"
 
-#include "adt/print.hh"
-
 #define TEXT_BUFF_MOUSE_ENABLE "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
 #define TEXT_BUFF_MOUSE_DISABLE "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
 #define TEXT_BUFF_KEYPAD_ENABLE "\x1b[?1h\033="

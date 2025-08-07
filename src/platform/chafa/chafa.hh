@@ -1,8 +1,6 @@
 #pragma once
 
-#include "adt/String.hh"
 #include "Image.hh"
-#include "adt/Vec.hh"
 
 #include <chafa.h>
 

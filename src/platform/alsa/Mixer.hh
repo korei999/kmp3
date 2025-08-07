@@ -2,8 +2,6 @@
 
 #include "audio.hh"
 
-#include "adt/Thread.hh"
-
 #include <alsa/asoundlib.h>
 
 namespace platform::alsa

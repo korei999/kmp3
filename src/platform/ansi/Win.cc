@@ -3,8 +3,6 @@
 #include "app.hh"
 #include "common.hh"
 
-#include "adt/logs.hh"
-
 #include <csignal>
 #include <unistd.h>
 #include <sys/ioctl.h>

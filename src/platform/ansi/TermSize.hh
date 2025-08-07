@@ -1,7 +1,5 @@
 #pragma once
 
-#include "adt/print.hh"
-
 #include <sys/ioctl.h>
 
 namespace platform::ansi

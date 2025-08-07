@@ -5,8 +5,6 @@
 #include "TermSize.hh"
 #include "common.inc"
 
-#include "adt/Thread.hh"
-
 #include <termios.h>
 
 namespace platform::ansi

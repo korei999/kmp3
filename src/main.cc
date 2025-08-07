@@ -15,10 +15,6 @@
     #include "platform/chafa/chafa.hh"
 #endif
 
-#include "adt/Vec.hh"
-#include "adt/defer.hh"
-#include "adt/logs.hh"
-
 using namespace adt;
 
 static void

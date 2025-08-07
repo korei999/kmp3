@@ -3,8 +3,6 @@
 #include "audio.hh"
 #include "Image.hh"
 
-#include "adt/Thread.hh"
-
 extern "C"
 {
 

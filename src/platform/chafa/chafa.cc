@@ -1,7 +1,5 @@
 #include "chafa.hh"
 
-#include "adt/defer.hh"
-#include "adt/logs.hh"
 #include "defaults.hh"
 
 #include <cmath>

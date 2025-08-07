@@ -1,7 +1,5 @@
 #pragma once
 
-#include "adt/Thread.hh"
-
 namespace mpris
 {
 

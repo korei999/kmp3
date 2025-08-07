@@ -4,10 +4,6 @@
 #include "defaults.hh"
 #include "mpris.hh"
 
-#include "adt/Array.hh"
-#include "adt/logs.hh"
-#include "adt/file.hh"
-
 #include <cstdlib>
 #include <cwchar>
 #include <cwctype>

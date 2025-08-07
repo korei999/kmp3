@@ -1,9 +1,5 @@
 #include "Mixer.hh"
 
-#include "adt/logs.hh"
-#include "adt/defer.hh"
-#include "adt/math.hh"
-
 #include "app.hh"
 #include "mpris.hh"
 

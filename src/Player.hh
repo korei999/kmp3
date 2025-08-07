@@ -1,12 +1,5 @@
 #pragma once
 
-#include "adt/Arena.hh"
-#include "adt/types.hh"
-#include "adt/Vec.hh"
-#include "adt/enum.hh"
-#include "adt/QueueArray.hh"
-#include "adt/Thread.hh"
-
 #include <limits>
 
 enum class PLAYER_REPEAT_METHOD: adt::u8 { NONE, TRACK, PLAYLIST, ESIZE };

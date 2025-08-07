@@ -2,8 +2,6 @@
 
 #include "audio.hh"
 
-#include "adt/Thread.hh"
-
 #include <sndio.h>
 
 namespace platform::sndio

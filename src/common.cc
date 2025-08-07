@@ -1,7 +1,5 @@
 #include "common.hh" /* IWYU pragma: keep */
 
-#include "adt/Array.hh"
-
 #include <cwctype>
 
 using namespace adt;

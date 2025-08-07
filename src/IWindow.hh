@@ -1,7 +1,5 @@
 #pragma once
 
-#include "adt/Arena.hh"
-
 enum class WINDOW_READ_MODE : adt::u8 { NONE, SEARCH, SEEK };
 
 struct IWindow

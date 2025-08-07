@@ -1,7 +1,5 @@
 #pragma once
 
-#include "adt/types.hh"
-
 enum class IMAGE_PIXEL_FORMAT : int
 {
     NONE = -1,

@@ -3,10 +3,6 @@
 #include "app.hh"
 #include "defaults.hh"
 
-#include "adt/ScratchBuffer.hh"
-#include "adt/defer.hh"
-#include "adt/logs.hh"
-
 using namespace adt;
 
 namespace platform::ansi
