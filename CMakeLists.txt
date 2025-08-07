@@ -183,6 +183,8 @@ if (OPT_PRECOMPILE_ADT)
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Vec.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/atomic.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/QueueArray.hh
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/print.inc
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/print.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/logs.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Span2D.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Span.inc
