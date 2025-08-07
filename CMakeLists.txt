@@ -178,6 +178,8 @@ if (OPT_PRECOMPILE_ADT)
     # file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
 
     set(ADT_PRECOMPILED_HEADERS
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/String.inc
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/String.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Thread.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Arena.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Vec.hh
