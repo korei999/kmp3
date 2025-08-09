@@ -329,7 +329,7 @@ Win::procMouse(MouseInput in)
             if (s_bPressed) return;
             else s_bPressed = true;
 
-            f64 time = utils::timeNowMS();
+            f64 time = time::nowMS();
 
             {
                 pl.focus(target);

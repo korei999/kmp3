@@ -24,7 +24,6 @@
 #include "Pair.hh"
 #include "assert.hh"
 
-#include <ctime>
 #include <cstring>
 #include <utility>
 
@@ -40,6 +39,14 @@ moveDestruct(T* pVal, ARGS&&... args)
 
     if constexpr (!std::is_trivially_destructible_v<T>)
         tmp.~T();
+}
+
+template<typename T>
+inline void
+destruct(T* p)
+{
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        p->~T();
 }
 
 /* bit number starts from 0 */
@@ -175,69 +182,24 @@ struct ComparatorRev
     }
 };
 
-[[nodiscard]] inline isize
-timeNowUS()
-{
-#if __has_include(<unistd.h>)
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    time_t micros = ts.tv_sec * 1'000'000;
-    micros += ts.tv_nsec / 1'000;
-
-    return micros;
-
-#elif _WIN32
-    LARGE_INTEGER count, freq;
-    QueryPerformanceFrequency(&freq);
-    QueryPerformanceCounter(&count);
-
-    return (count.QuadPart * 1'000'000) / freq.QuadPart;
-#endif
-}
-
-[[nodiscard]] inline f64
-timeNowMS()
-{
-    return static_cast<f64>(timeNowUS()) / 1000.0;
-}
-
-[[nodiscard]] inline f64
-timeNowS()
-{
-    return static_cast<f64>(timeNowMS()) / 1000.0;
-}
-
 inline void
-sleepMS(f64 ms)
+sleepMS(u64 ms)
 {
 #if __has_include(<unistd.h>)
-    usleep(ms * 1000.0);
+    usleep(ms * 1000);
 #elif _WIN32
     Sleep(ms);
 #endif
 }
 
 inline void
-sleepS(f64 s)
+sleepS(u64 s)
 {
 #if __has_include(<unistd.h>)
-    usleep(s * 1'000'000.0);
+    usleep(s * 1'000'000);
 #elif _WIN32
-    Sleep(s * 1000.0);
+    Sleep(s * 1000);
 #endif
-}
-
-inline constexpr void
-addNSToTimespec(timespec* const pTs, const isize nsec)
-{
-    constexpr isize nsecMax = 1000000000;
-    /* overflow check */
-    if (pTs->tv_nsec + nsec >= nsecMax)
-    {
-        pTs->tv_sec += 1;
-        pTs->tv_nsec = (pTs->tv_nsec + nsec) - nsecMax;
-    }
-    else pTs->tv_nsec += nsec;
 }
 
 template<typename T>
@@ -248,7 +210,6 @@ memCopy(T* pDest, const T* const pSrc, isize size)
     memcpy(pDest, pSrc, size * sizeof(T));
 }
 
-/* typed memmove (don't mistake for std::move) */
 template<typename T>
 inline void
 memMove(T* pDest, const T* const pSrc, isize size)

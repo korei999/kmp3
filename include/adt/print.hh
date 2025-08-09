@@ -384,32 +384,6 @@ format(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
-{
-    char aBuff[64] {};
-    std::to_chars_result res {};
-    if (fmtArgs.maxFloatLen == NPOS8)
-        res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x);
-    else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x, std::chars_format::fixed, fmtArgs.maxFloatLen);
-
-    if (res.ptr) return copyBackToContext(ctx, fmtArgs, {aBuff, res.ptr - aBuff});
-    else return copyBackToContext(ctx, fmtArgs, {aBuff});
-}
-
-inline isize
-format(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
-{
-    char aBuff[64] {};
-    std::to_chars_result res {};
-    if (fmtArgs.maxFloatLen == NPOS8)
-        res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x);
-    else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x, std::chars_format::fixed, fmtArgs.maxFloatLen);
-
-    if (res.ptr) return copyBackToContext(ctx, fmtArgs, {aBuff, res.ptr - aBuff});
-    else return copyBackToContext(ctx, fmtArgs, {aBuff});
-}
-
-inline isize
 format(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept
 {
     char aBuff[8] {};
@@ -557,7 +531,33 @@ formatVariadic(Context ctx, FormatArgs fmtArgs, const T& first, const ARGS&... a
     return n + details::formatVariadic(ctx, fmtArgs, args...);
 }
 
+template<typename T>
+inline isize
+formatFloat(Context ctx, FormatArgs fmtArgs, const T x) noexcept
+{
+    char aBuff[64] {};
+    std::to_chars_result res {};
+    if (fmtArgs.maxFloatLen == NPOS8)
+        res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x);
+    else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x, std::chars_format::fixed, fmtArgs.maxFloatLen);
+
+    if (res.ptr) return copyBackToContext(ctx, fmtArgs, {aBuff, res.ptr - aBuff});
+    else return copyBackToContext(ctx, fmtArgs, {aBuff});
+}
+
 } /* namespace details */
+
+inline isize
+format(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
+{
+    return details::formatFloat<f32>(ctx, fmtArgs, x);
+}
+
+inline isize
+format(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
+{
+    return details::formatFloat<f64>(ctx, fmtArgs, x);
+}
 
 template<typename T, typename ...ARGS_T>
 inline constexpr isize

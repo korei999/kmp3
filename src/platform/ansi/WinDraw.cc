@@ -351,7 +351,7 @@ Win::update()
     const int width = m_termSize.width;
     const int height = m_termSize.height;
 
-    m_time = utils::timeNowMS();
+    m_time = time::nowMS();
 
     if (width <= 40 || height <= 15)
     {

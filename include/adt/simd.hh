@@ -65,6 +65,7 @@ struct f32x4
     f32x4() = default;
 
     f32x4(const __m128 _pack) : pack(_pack) {}
+    f32x4(const __m128i _pack) : pack(_mm_cvtepi32_ps(_pack)) {}
 
     f32x4(const f32 x) : pack(_mm_set1_ps(x)) {}
 
@@ -72,7 +73,7 @@ struct f32x4
 
     f32x4(const math::V4 v) : pack(_mm_set_ps(v.w, v.z, v.y, v.x)) {}
 
-    f32x4(i32x4 x) : pack {_mm_cvtepi32_ps(x.pack)} {}
+    explicit f32x4(i32x4 x) : pack {_mm_cvtepi32_ps(x.pack)} {}
 
     /* */
 
@@ -83,6 +84,12 @@ struct f32x4
     explicit operator math::Qt() const { return reinterpret_cast<const math::Qt&>(*this); }
 
     explicit operator i32x4() const { return _mm_cvtps_epi32(pack); }
+
+    f32* data() { return reinterpret_cast<f32*>(&pack); }
+    const f32* data() const { return (f32*)(&pack); }
+
+    f32& operator[](int i)             { ADT_ASSERT(i >= 0 && i < 4, "out of range, should be (>= 0 && < 4)"); return data()[i]; }
+    const f32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 4, "out of range, should be (>= 0 && < 4)"); return data()[i]; }
 };
 
 struct IV2x4;
@@ -628,6 +635,7 @@ struct f32x8
     f32x8() = default;
 
     f32x8(const __m256 _pack) : pack(_pack) {}
+    f32x8(const __m256i _pack) : pack(_mm256_cvtepi32_ps(_pack)) {}
 
     f32x8(const f32 x) : pack(_mm256_set1_ps(x)) {}
 

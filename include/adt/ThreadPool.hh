@@ -21,19 +21,19 @@ struct IThreadPool
 
     /* */
 
-    virtual const atomic::Int& nActiveTasks() = 0;
+    virtual const atomic::Int& nActiveTasks() const noexcept = 0;
 
-    virtual void wait() = 0;
+    virtual void wait() noexcept = 0;
 
-    virtual bool add(Task task) = 0;
+    virtual bool add(Task task) noexcept = 0;
 
     virtual int nThreads() const noexcept = 0;
 
-    bool add(ThreadFn pfn, void* pArg) { return add({pfn, pArg}); }
+    bool add(ThreadFn pfn, void* pArg) noexcept { return add({pfn, pArg}); }
 
     template<typename LAMBDA>
     bool
-    addLambda(LAMBDA& t)
+    addLambda(LAMBDA& t) noexcept
     {
         return add(+[](void* pArg) -> THREAD_STATUS
             {
@@ -46,7 +46,7 @@ struct IThreadPool
 
     template<typename LAMBDA>
     void
-    addLambdaRetry(LAMBDA& t)
+    addLambdaRetry(LAMBDA& t) noexcept
     {
         addRetry(+[](void* pArg) -> THREAD_STATUS
             {
@@ -59,7 +59,7 @@ struct IThreadPool
 
     template<typename LAMBDA>
     bool
-    addLambdaRetry(LAMBDA& t, int nRetries)
+    addLambdaRetry(LAMBDA& t, int nRetries) noexcept
     {
         return addRetry(+[](void* pArg) -> THREAD_STATUS
             {
@@ -74,10 +74,10 @@ struct IThreadPool
     template<typename LAMBDA> requires(std::is_rvalue_reference_v<LAMBDA&&>)
     [[deprecated("rvalue lambdas cause use after free")]] bool addLambda(LAMBDA&& t) = delete;
 
-    void addRetry(Task task) { while (!add(task)); }
+    void addRetry(Task task) noexcept { while (!add(task)); }
 
     bool
-    addRetry(Task task, const int nRetries)
+    addRetry(Task task, const int nRetries) noexcept
     {
         int nTried = 0;
         while (++nTried <= nRetries)
@@ -85,12 +85,12 @@ struct IThreadPool
         return false;
     }
 
-    void addRetry(ThreadFn pfn, void* pArg) { while (!add(pfn, pArg)); }
+    void addRetry(ThreadFn pfn, void* pArg) noexcept { while (!add(pfn, pArg)); }
 
-    bool addRetry(ThreadFn pfn, void* pArg, const int nRetries) { return addRetry({pfn, pArg}, nRetries); }
+    bool addRetry(ThreadFn pfn, void* pArg, const int nRetries) noexcept { return addRetry({pfn, pArg}, nRetries); }
 
     void
-    addRetryOrDo(ThreadFn pfn, void* pArg)
+    addRetryOrDo(ThreadFn pfn, void* pArg) noexcept
     {
         if (nActiveTasks().load(atomic::ORDER::ACQUIRE) >= nThreads()) pfn(pArg);
         else addRetry(pfn, pArg);
@@ -98,7 +98,7 @@ struct IThreadPool
 
     template<typename LAMBDA>
     void
-    addLambdaRetryOrDo(LAMBDA& cl)
+    addLambdaRetryOrDo(LAMBDA& cl) noexcept
     {
         if (nActiveTasks().load(atomic::ORDER::ACQUIRE) >= nThreads()) cl();
         else addLambdaRetry(cl);
@@ -150,13 +150,13 @@ struct ThreadPool : IThreadPool
 
     /* */
 
-    virtual const atomic::Int& nActiveTasks() override { return m_atomNActiveTasks; }
+    virtual const atomic::Int& nActiveTasks() const noexcept override { return m_atomNActiveTasks; }
 
-    virtual void wait() override;
+    virtual void wait() noexcept override;
 
-    void destroy(IAllocator* pAlloc);
+    void destroy(IAllocator* pAlloc) noexcept;
 
-    virtual bool add(Task task) override;
+    virtual bool add(Task task) noexcept override;
 
     virtual int nThreads() const noexcept override { return m_spThreads.size(); }
 
@@ -270,7 +270,7 @@ ThreadPool<QUEUE_SIZE>::start()
 
 template<isize QUEUE_SIZE>
 inline void
-ThreadPool<QUEUE_SIZE>::wait()
+ThreadPool<QUEUE_SIZE>::wait() noexcept
 {
     LockGuard qLock {&m_mtxQ};
 
@@ -280,7 +280,7 @@ ThreadPool<QUEUE_SIZE>::wait()
 
 template<isize QUEUE_SIZE>
 inline void
-ThreadPool<QUEUE_SIZE>::destroy(IAllocator* pAlloc)
+ThreadPool<QUEUE_SIZE>::destroy(IAllocator* pAlloc) noexcept
 {
     wait();
 
@@ -302,7 +302,7 @@ ThreadPool<QUEUE_SIZE>::destroy(IAllocator* pAlloc)
 
 template<isize QUEUE_SIZE>
 inline bool
-ThreadPool<QUEUE_SIZE>::add(Task task)
+ThreadPool<QUEUE_SIZE>::add(Task task) noexcept
 {
     ADT_ASSERT(m_bStarted, "forgot to `start()` this ThreadPool: (m_bStarted: '{}')", m_bStarted);
 
@@ -376,15 +376,15 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
     /* */
 
     virtual ScratchBuffer& scratchBuffer() override { return gtl_scratchBuff; }
-    virtual const atomic::Int& nActiveTasks() override { return m_base.nActiveTasks(); }
-    virtual void wait() override { m_base.wait(); }
-    virtual bool add(Task task) override { return m_base.add(task); }
+    virtual const atomic::Int& nActiveTasks() const noexcept override { return m_base.nActiveTasks(); }
+    virtual void wait() noexcept override { m_base.wait(); }
+    virtual bool add(Task task) noexcept override { return m_base.add(task); }
     virtual int nThreads() const noexcept override { return m_base.nThreads(); }
 
     /* */
 
     void
-    destroy(IAllocator* pAlloc)
+    destroy(IAllocator* pAlloc) noexcept
     {
         m_base.destroy(pAlloc);
         destroyScratchBufferForThisThread();
@@ -392,7 +392,7 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
 
     /* `destroyScratchBufferForThisThread()` later. */
     void
-    destroyKeepScratchBuffer(IAllocator* pAlloc)
+    destroyKeepScratchBuffer(IAllocator* pAlloc) noexcept
     {
         m_base.destroy(pAlloc);
     }
@@ -409,7 +409,7 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
     }
 
     static void
-    destroyScratchBufferForThisThread()
+    destroyScratchBufferForThisThread() noexcept
     {
         StdAllocator::inst()->free(gtl_pScratchMem);
         gtl_pScratchMem = {};

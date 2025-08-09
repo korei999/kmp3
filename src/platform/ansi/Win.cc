@@ -146,7 +146,7 @@ Win::resizeHandler()
     m_bRedraw = true;
 
     m_bClear = true;
-    m_lastResizeTime = utils::timeNowMS();
+    m_lastResizeTime = time::nowMS();
 
     adjustListHeight();
     common::fixFirstIdx(m_listHeight - 2, &m_firstIdx);

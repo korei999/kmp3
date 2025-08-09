@@ -175,28 +175,7 @@ add_executable(
 )
 
 if (OPT_PRECOMPILE_ADT)
-    # file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
-
-    set(ADT_PRECOMPILED_HEADERS
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/String.inc
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/String.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Thread.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Arena.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Vec.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/atomic.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/QueueArray.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/print.inc
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/print.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/logs.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Span2D.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Span.inc
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Span.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/ScratchBuffer.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/math.inc
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/math.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/Array.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/adt/file.hh
-    )
+    file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
 
     if (NOT OPT_MIMALLOC)
         list(REMOVE_ITEM
