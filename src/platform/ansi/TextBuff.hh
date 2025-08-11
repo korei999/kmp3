@@ -172,7 +172,7 @@ struct TextBuff
 #endif
     /* */
 
-private:
+protected:
     adt::Span2D<TextBuffCell> frontBufferSpan();
     adt::Span2D<TextBuffCell> backBufferSpan();
     void grow(adt::isize newCap);

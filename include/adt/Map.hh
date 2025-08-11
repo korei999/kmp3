@@ -408,7 +408,12 @@ template<typename K, typename V, usize (*FN_HASH)(const K&)>
 inline void
 Map<K, V, FN_HASH>::destroy(IAllocator* p) noexcept
 {
-    m_vBuckets.destroy(p);
+    if constexpr (!std::is_trivially_destructible_v<KeyVal<K, V>>)
+        for (auto& e : *this)
+            e.~KeyVal<K, V>();
+
+    p->free(m_vBuckets.m_pData);
+    *this = {};
 }
 
 template<typename K, typename V, usize (*FN_HASH)(const K&)>
@@ -441,7 +446,7 @@ Map<K, V, FN_HASH>::rehash(IAllocator* p, isize size)
     for (const auto& [key, val] : *this)
         mNew.emplace(p, key, val);
 
-    destroy(p);
+    m_vBuckets.destroy(p);
     *this = mNew;
 }
 

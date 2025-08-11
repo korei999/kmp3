@@ -26,41 +26,32 @@ namespace adt::print
 
 inline isize
 Buffer::push(char c)
+
 {
-    try
+    if (m_size >= m_cap)
     {
-        if (m_size >= m_cap)
+        if (!m_pAlloc) return -1;
+
+        const int newCap = m_cap*2 + 1;
+        char* pNewData {};
+
+        if (!m_bDataAllocated)
         {
-            if (!m_pAlloc) return -1;
-
-            const int newCap = m_cap*2 + 1;
-            char* pNewData {};
-
-            if (!m_bDataAllocated)
-            {
-                pNewData = m_pAlloc->zallocV<char>(newCap);
-                m_bDataAllocated = true;
-                memcpy(pNewData, m_pData, m_size);
-            }
-            else
-            {
-                pNewData = m_pAlloc->relocate(m_pData, m_size, newCap);
-            }
-
-            m_cap = newCap;
-            m_pData = pNewData;
+            pNewData = m_pAlloc->zallocV<char>(newCap);
+            m_bDataAllocated = true;
+            memcpy(pNewData, m_pData, m_size);
+        }
+        else
+        {
+            pNewData = m_pAlloc->relocate(m_pData, m_size, newCap);
         }
 
-        m_pData[m_size++] = c;
-        return m_size - 1;
+        m_cap = newCap;
+        m_pData = pNewData;
     }
-    catch (const AllocException& ex)
-    {
-#ifdef ADT_DBG_MEMORY
-        ex.printErrorMsg(stderr);
-#endif
-        return -1;
-    }
+
+    m_pData[m_size++] = c;
+    return m_size - 1;
 }
 
 template<typename T>
@@ -93,7 +84,7 @@ stripSourcePath(const char* ntsSourcePath)
 }
 
 inline isize
-printArgs(Context ctx) noexcept
+printArgs(Context ctx)
 {
     isize nWritten = 0;
     for (isize i = ctx.fmtIdx; i < ctx.fmt.size(); ++i, ++nWritten)
@@ -297,7 +288,7 @@ intToBuffer(isize x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 }
 
 inline isize
-copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexcept
+copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc)
 {
     isize i = 0;
     const char filler = fmtArgs.filler ? fmtArgs.filler : ' ';
@@ -340,32 +331,32 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc) noexc
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const StringView str) noexcept
+format(Context ctx, FormatArgs fmtArgs, const StringView str)
 {
     return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
 }
 
 template<typename STRING_T>
 requires ConvertsToStringView<STRING_T>
-inline isize format(Context ctx, FormatArgs fmtArgs, const STRING_T& str) noexcept
+inline isize format(Context ctx, FormatArgs fmtArgs, const STRING_T& str)
 {
     return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), isize(str.size())});
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const char* str) noexcept
+format(Context ctx, FormatArgs fmtArgs, const char* str)
 {
     return format(ctx, fmtArgs, StringView(str));
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, char* const& pNullTerm) noexcept
+format(Context ctx, FormatArgs fmtArgs, char* const& pNullTerm)
 {
     return format(ctx, fmtArgs, StringView(pNullTerm));
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, bool b) noexcept
+format(Context ctx, FormatArgs fmtArgs, bool b)
 {
     return format(ctx, fmtArgs, b ? "true" : "false");
 }
@@ -373,7 +364,7 @@ format(Context ctx, FormatArgs fmtArgs, bool b) noexcept
 template<typename INT_T>
 requires std::is_integral_v<INT_T>
 inline constexpr isize
-format(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const INT_T& x)
 {
     char aBuff[64] {};
     const isize n = intToBuffer(x, {aBuff}, fmtArgs);
@@ -384,7 +375,7 @@ format(Context ctx, FormatArgs fmtArgs, const INT_T& x) noexcept
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const wchar_t x)
 {
     char aBuff[8] {};
 #ifdef _WIN32
@@ -397,13 +388,13 @@ format(Context ctx, FormatArgs fmtArgs, const wchar_t x) noexcept
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const char32_t x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const char32_t x)
 {
     return format(ctx, fmtArgs, (wchar_t)x);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const char x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const char x)
 {
     char aBuff[4] {};
     snprintf(aBuff, utils::size(aBuff), "%c", x);
@@ -412,20 +403,20 @@ format(Context ctx, FormatArgs fmtArgs, const char x) noexcept
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, null) noexcept
+format(Context ctx, FormatArgs fmtArgs, null)
 {
     return format(ctx, fmtArgs, StringView("nullptr"));
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, Empty) noexcept
+format(Context ctx, FormatArgs fmtArgs, Empty)
 {
     return format(ctx, fmtArgs, StringView("Empty"));
 }
 
 template<typename T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T* const p) noexcept
+format(Context ctx, FormatArgs fmtArgs, const T* const p)
 {
     if (p == nullptr) return format(ctx, fmtArgs, nullptr);
 
@@ -439,7 +430,7 @@ namespace details
 
 template<typename T>
 inline constexpr void
-printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg) noexcept
+printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg)
 {
     for (; rI < rCtx.fmt.size(); ++rI, ++rNWritten)
     {
@@ -511,14 +502,14 @@ formatVariadic(Context, FormatArgs) noexcept
 
 template<typename T>
 inline isize
-formatVariadic(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
+formatVariadic(Context ctx, FormatArgs fmtArgs, const T& x)
 {
     return format(ctx, fmtArgs, x);
 }
 
 template<typename T, typename ...ARGS>
 inline isize
-formatVariadic(Context ctx, FormatArgs fmtArgs, const T& first, const ARGS&... args) noexcept
+formatVariadic(Context ctx, FormatArgs fmtArgs, const T& first, const ARGS&... args)
 {
     isize n = format(ctx, fmtArgs, first);
     if (n < 0) return n;
@@ -533,7 +524,7 @@ formatVariadic(Context ctx, FormatArgs fmtArgs, const T& first, const ARGS&... a
 
 template<typename T>
 inline isize
-formatFloat(Context ctx, FormatArgs fmtArgs, const T x) noexcept
+formatFloat(Context ctx, FormatArgs fmtArgs, const T x)
 {
     char aBuff[64] {};
     std::to_chars_result res {};
@@ -548,20 +539,20 @@ formatFloat(Context ctx, FormatArgs fmtArgs, const T x) noexcept
 } /* namespace details */
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const f32 x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const f32 x)
 {
     return details::formatFloat<f32>(ctx, fmtArgs, x);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const f64 x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const f64 x)
 {
     return details::formatFloat<f64>(ctx, fmtArgs, x);
 }
 
 template<typename T, typename ...ARGS_T>
 inline constexpr isize
-printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
+printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs)
 {
     isize nWritten = 0;
     bool bArg = false;
@@ -583,38 +574,48 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs) noexcept
 
 template<isize SIZE, typename ...ARGS_T>
 inline isize
-toFILE(FILE* fp, const StringView fmt, const ARGS_T&... tArgs) noexcept
+toFILE(FILE* fp, const StringView fmt, const ARGS_T&... tArgs)
 {
     return toFILE<SIZE>(nullptr, fp, fmt, tArgs...);
 }
 
 template<isize SIZE, typename ...ARGS_T>
 inline isize
-toFILE(IAllocator* pAlloc, FILE* fp, const StringView fmt, const ARGS_T&... tArgs) noexcept
+toFILE(IAllocator* pAlloc, FILE* fp, const StringView fmt, const ARGS_T&... tArgs)
 {
     char aPreallocated[SIZE] {};
     Buffer buff {pAlloc, aPreallocated, sizeof(aPreallocated) - 1};
 
-    Context ctx {.fmt = fmt, .pBuffer = &buff};
-    const isize r = printArgs(ctx, tArgs...);
-    fwrite(ctx.pBuffer->m_pData, r, 1, fp);
+    try
+    {
+        Context ctx {.fmt = fmt, .pBuffer = &buff};
+        const isize r = printArgs(ctx, tArgs...);
+        fwrite(ctx.pBuffer->m_pData, r, 1, fp);
+    }
+    catch (const AllocException& ex)
+    {
+#ifdef ADT_DBG_MEMORY
+        ex.printErrorMsg(stderr);
+#endif
+    }
 
     if (pAlloc && buff.m_pData != aPreallocated) pAlloc->free(buff.m_pData);
 
-    return r;
+    return buff.m_size;
 }
 
 template<typename ...ARGS_T>
 inline constexpr isize
 toBuffer(char* pBuff, isize buffSize, const StringView fmt, const ARGS_T&... tArgs) noexcept
 {
-    if (!pBuff || buffSize <= 0)
-        return 0;
+    if (!pBuff || buffSize <= 0) return 0;
 
     Buffer buff {pBuff, buffSize};
 
     Context ctx {.fmt = fmt, .pBuffer = &buff};
-    return printArgs(ctx, tArgs...);
+    printArgs(ctx, tArgs...);
+
+    return buff.m_size;
 }
 
 template<typename ...ARGS_T>
@@ -626,21 +627,58 @@ toSpan(Span<char> sp, const StringView fmt, const ARGS_T&... tArgs) noexcept
 }
 
 template<typename ...ARGS_T>
+inline String
+toString(IAllocator* pAlloc, const StringView fmt, const ARGS_T&... tArgs) noexcept
+{
+    Buffer buff {pAlloc};
+
+    Context ctx {.fmt = fmt, .pBuffer = &buff};
+
+    try
+    {
+        printArgs(ctx, tArgs...);
+        buff.push('\0');
+        buff.m_size -= 1;
+    }
+    catch (const AllocException& ex)
+    {
+#ifdef ADT_DBG_MEMORY
+        ex.printErrorMsg(stderr);
+#endif
+        if (buff.m_size > 0)
+        {
+            buff.m_pData[buff.m_size] = '\0';
+            buff.m_size -= 1;
+        }
+        else
+        {
+            return {};
+        }
+    }
+
+    String ret;
+    ret.m_pData = buff.m_pData;
+    ret.m_size = buff.m_size;
+
+    return ret;
+}
+
+template<typename ...ARGS_T>
 inline isize
-out(const StringView fmt, const ARGS_T&... tArgs) noexcept
+out(const StringView fmt, const ARGS_T&... tArgs)
 {
     return toFILE(stdout, fmt, tArgs...);
 }
 
 template<typename ...ARGS_T>
 inline isize
-err(const StringView fmt, const ARGS_T&... tArgs) noexcept
+err(const StringView fmt, const ARGS_T&... tArgs)
 {
     return toFILE(stderr, fmt, tArgs...);
 }
 
 inline isize
-formatExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isize contSize) noexcept
+formatExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isize contSize)
 {
     if (contSize <= 0)
     {
@@ -678,7 +716,7 @@ formatExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isize contSi
 }
 
 inline isize
-formatUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept
+formatUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x)
 {
     if (!x.data())
     {
@@ -713,7 +751,7 @@ formatUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x) noexcept
 
 template<typename ...ARGS>
 inline isize
-formatVariadic(Context ctx, FormatArgs fmtArgs, const ARGS&... args) noexcept
+formatVariadic(Context ctx, FormatArgs fmtArgs, const ARGS&... args)
 {
     const bool bSquareBrackets = bool(fmtArgs.eFmtFlags & FormatArgs::FLAGS::SQUARE_BRACKETS);
     isize n = 0;
@@ -741,7 +779,7 @@ formatVariadic(Context ctx, FormatArgs fmtArgs, const ARGS&... args) noexcept
 template<typename T>
 requires (HasSizeMethod<T> && !ConvertsToStringView<T>)
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const T& x)
 {
     return formatExpSize(ctx, fmtArgs, x, x.size());
 }
@@ -749,14 +787,14 @@ format(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
 template<typename T>
 requires HasNextIt<T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T& x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const T& x)
 {
     return print::formatUntilEnd(ctx, fmtArgs, x);
 }
 
 template<typename T, isize N>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T (&a)[N]) noexcept
+format(Context ctx, FormatArgs fmtArgs, const T (&a)[N])
 {
     return formatExpSize(ctx, fmtArgs, a, N);
 }
@@ -764,7 +802,7 @@ format(Context ctx, FormatArgs fmtArgs, const T (&a)[N]) noexcept
 template<typename T>
 requires (!Printable<T>)
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T&) noexcept
+format(Context ctx, FormatArgs fmtArgs, const T&)
 {
     const StringView sv = typeName<T>();
 

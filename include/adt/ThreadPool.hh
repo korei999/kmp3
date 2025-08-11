@@ -21,6 +21,15 @@ struct IThreadPool
 
     /* */
 
+    static int
+    optimalThreadCount() noexcept
+    {
+        static const int s_count = utils::max(ADT_GET_NPROCS() - 1, 1);
+        return s_count;
+    }
+
+    /* */
+
     virtual const atomic::Int& nActiveTasks() const noexcept = 0;
 
     virtual void wait() noexcept = 0;
@@ -137,7 +146,7 @@ struct ThreadPool : IThreadPool
 
     ThreadPool() = default;
 
-    ThreadPool(IAllocator* pAlloc, int nThreads = utils::max(ADT_GET_NPROCS() - 1, 1));
+    ThreadPool(IAllocator* pAlloc, int nThreads = optimalThreadCount());
 
     ThreadPool(
         IAllocator* pAlloc,
@@ -145,7 +154,7 @@ struct ThreadPool : IThreadPool
         void* pLoopStartArg,
         void (*pfnOnLoopEnd)(void*),
         void* pLoopEndArg,
-        int nThreads = ADT_GET_NPROCS()
+        int nThreads = optimalThreadCount()
     );
 
     /* */
@@ -359,7 +368,7 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
 
     ThreadPoolWithMemory() = default;
 
-    ThreadPoolWithMemory(IAllocator* pAlloc, isize nBytesEachBuffer, int nThreads = utils::max(ADT_GET_NPROCS() - 1, 1))
+    ThreadPoolWithMemory(IAllocator* pAlloc, isize nBytesEachBuffer, int nThreads = optimalThreadCount())
         : m_base(
             pAlloc,
             +[](void* p) { allocScratchBufferForThisThread(reinterpret_cast<isize>(p)); },
