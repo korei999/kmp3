@@ -13,7 +13,9 @@ namespace adt
 {
 
 inline constexpr usize alignUp(usize x, usize to) { return ((x) + to - 1) & (~(to - 1)); }
+inline constexpr usize alignDown(usize x, usize to) { return x & ~usize(to - 1); }
 inline constexpr usize alignUp8(usize x) { return alignUp(x, 8); }
+inline constexpr usize alignDown8(usize x) { return x & ~usize(7); }
 
 constexpr isize SIZE_MIN = 2;
 constexpr isize SIZE_1K = 1024;

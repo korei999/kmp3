@@ -24,15 +24,22 @@
 namespace adt::print
 {
 
+inline
+Buffer::Buffer(IAllocator* pAlloc, isize prealloc)
+    : m_pAlloc {pAlloc}
+{
+    m_pData = pAlloc->mallocV<char>(prealloc);
+    m_cap = prealloc;
+}
+
 inline isize
 Buffer::push(char c)
-
 {
     if (m_size >= m_cap)
     {
         if (!m_pAlloc) return -1;
 
-        const int newCap = m_cap*2 + 1;
+        const int newCap = utils::max(isize(8), m_cap * 2);
         char* pNewData {};
 
         if (!m_bDataAllocated)
@@ -636,6 +643,43 @@ toString(IAllocator* pAlloc, const StringView fmt, const ARGS_T&... tArgs) noexc
 
     try
     {
+        printArgs(ctx, tArgs...);
+        buff.push('\0');
+        buff.m_size -= 1;
+    }
+    catch (const AllocException& ex)
+    {
+#ifdef ADT_DBG_MEMORY
+        ex.printErrorMsg(stderr);
+#endif
+        if (buff.m_size > 0)
+        {
+            buff.m_pData[buff.m_size] = '\0';
+            buff.m_size -= 1;
+        }
+        else
+        {
+            return {};
+        }
+    }
+
+    String ret;
+    ret.m_pData = buff.m_pData;
+    ret.m_size = buff.m_size;
+
+    return ret;
+}
+
+template<typename ...ARGS_T>
+[[nodiscard]] inline String
+toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&... tArgs) noexcept
+{
+    Buffer buff;
+
+    try
+    {
+        new(&buff) Buffer {pAlloc, prealloc};
+        Context ctx {.fmt = fmt, .pBuffer = &buff};
         printArgs(ctx, tArgs...);
         buff.push('\0');
         buff.m_size -= 1;

@@ -37,15 +37,16 @@ struct BufferAllocator : public IArena
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    [[deprecated("noop")]] constexpr virtual void free(void* ptr) noexcept override final; /* noop */
+    [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual constexpr void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
+    [[deprecated("noop")]] constexpr virtual void free(void*) noexcept override final { /* noop */ }
     constexpr virtual void freeAll() noexcept override final; /* same as reset */
     constexpr void reset() noexcept;
+    constexpr isize realCap() const noexcept;
 };
 
-inline void*
+inline constexpr void*
 BufferAllocator::malloc(usize mCount, usize mSize)
 {
     usize realSize = alignUp8(mCount * mSize);
@@ -64,7 +65,7 @@ BufferAllocator::malloc(usize mCount, usize mSize)
     return ret;
 }
 
-inline void*
+inline constexpr void*
 BufferAllocator::zalloc(usize mCount, usize mSize)
 {
     auto* p = malloc(mCount, mSize);
@@ -72,7 +73,7 @@ BufferAllocator::zalloc(usize mCount, usize mSize)
     return p;
 }
 
-inline void*
+inline constexpr void*
 BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 {
     if (!p) return malloc(newCount, mSize);
@@ -106,23 +107,23 @@ BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
     }
 }
 
-constexpr void
-BufferAllocator::free(void*) noexcept
-{
-    //
-}
-
-constexpr void
+inline constexpr void
 BufferAllocator::freeAll() noexcept
 {
     reset();
 }
 
-constexpr void
+inline constexpr void
 BufferAllocator::reset() noexcept
 {
     m_size = 0;
     m_pLastAlloc = nullptr;
+}
+
+inline constexpr isize
+BufferAllocator::realCap() const noexcept
+{
+    return alignDown8(m_cap);
 }
 
 } /* namespace adt */
