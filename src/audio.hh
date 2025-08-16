@@ -100,7 +100,7 @@ struct IDecoder
     [[nodiscard]] virtual ERROR writeToBuffer(
         adt::Span<adt::f32> spBuff,
         const int nFrames,
-        const int nChannles,
+        const int nChannels,
         long* pSamplesWritten,
         adt::isize* pPcmPos
     ) = 0;

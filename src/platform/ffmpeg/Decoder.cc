@@ -258,7 +258,7 @@ audio::ERROR
 Decoder::writeToBuffer(
     Span<f32> spBuff,
     const int nFrames,
-    [[maybe_unused]] const int nChannles,
+    [[maybe_unused]] const int nChannels,
     long* pSamplesWritten,
     i64* pPcmPos
 )
@@ -312,14 +312,14 @@ Decoder::writeToBuffer(
             int maxSamples = res.nb_samples * res.ch_layout.nb_channels;
             if (maxSamples >= spBuff.size()) maxSamples = spBuff.size() - 1;
 
-            const auto& nFrameChannles = res.ch_layout.nb_channels;
-            ADT_ASSERT(nFrameChannles > 0, " ");
+            const auto& nFrameChannels = res.ch_layout.nb_channels;
+            ADT_ASSERT(nFrameChannels > 0, "{}", nFrameChannels);
 
             utils::memCopy(spBuff.data() + nWrites, reinterpret_cast<f32*>(res.data[0]), maxSamples);
             nWrites += maxSamples;
 
             /* return when its filled enough */
-            if (nWrites >= maxSamples && nWrites >= nFrames * nFrameChannles) /* mul by nChannels */
+            if (nWrites >= maxSamples && nWrites >= nFrames * nFrameChannels) /* mul by nChannels */
             {
                 *pSamplesWritten += nWrites;
                 return audio::ERROR::OK_;

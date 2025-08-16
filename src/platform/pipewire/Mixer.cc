@@ -175,7 +175,7 @@ Mixer::play(StringView svPath)
         m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
     }
 
-    setNChannles(app::decoder().getChannelsCount());
+    setNChannels(app::decoder().getChannelsCount());
     changeSampleRate(app::decoder().getSampleRate(), true);
 
     if (!math::eq(prevSpeed, 1.0))
@@ -191,16 +191,16 @@ Mixer::play(StringView svPath)
 }
 
 void
-Mixer::setNChannles(u32 nChannles)
+Mixer::setNChannels(u32 nChannels)
 {
-    m_nChannels = nChannles;
+    m_nChannels = nChannels;
 
     u8 aSetupBuff[512] {};
     spa_audio_info_raw rawInfo {
         .format = m_eformat,
         .flags {},
         .rate = m_sampleRate,
-        .channels = nChannles,
+        .channels = nChannels,
         .position {}
     };
 

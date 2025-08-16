@@ -58,7 +58,7 @@ public:
     /* */
 
 private:
-    void setNChannles(adt::u32 nChannles);
+    void setNChannels(adt::u32 nChannels);
     void onProcess();
 };
 
