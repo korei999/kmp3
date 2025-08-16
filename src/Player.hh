@@ -52,7 +52,7 @@ struct Player
     long m_focused {};
     long m_selected {};
     adt::isize m_longestString {};
-    PLAYER_REPEAT_METHOD m_eReapetMethod {};
+    PLAYER_REPEAT_METHOD m_eRepeatMethod {};
     bool m_bSelectionChanged {};
     adt::Mutex m_mtxQ {};
     adt::QueueArray<Msg, 16> m_qErrorMsgs {};

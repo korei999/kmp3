@@ -190,7 +190,7 @@ startup(int argc, char** argv)
     player.m_imgHeight = app::g_config.imageHeight;
     player.adjustImgWidth();
 
-    player.m_eReapetMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
+    player.m_eRepeatMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
     app::decoder().init();

@@ -318,7 +318,7 @@ getLoopStatus(
 {
     return sd_bus_message_append_basic(
         reply, 's',
-        repeatMethodToString(app::g_pPlayer->m_eReapetMethod).data()
+        repeatMethodToString(app::g_pPlayer->m_eRepeatMethod).data()
     );
 }
 
@@ -337,12 +337,12 @@ setLoopStatus(
     CK(sd_bus_message_read_basic(value, 's', &t));
     LOG("mpris::setLoopStatus(): {}\n", t);
 
-    auto eMethod = app::g_pPlayer->m_eReapetMethod;
+    auto eMethod = app::g_pPlayer->m_eRepeatMethod;
     for (isize i = 0; i < utils::size(mapPlayerRepeatMethodStrings); ++i)
         if (t == mapPlayerRepeatMethodStrings[i])
             eMethod = PLAYER_REPEAT_METHOD(i);
 
-    app::g_pPlayer->m_eReapetMethod = eMethod;
+    app::g_pPlayer->m_eRepeatMethod = eMethod;
     app::g_pWin->m_bRedraw = true;
     return sd_bus_reply_method_return(value, "");
 }

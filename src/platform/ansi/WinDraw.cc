@@ -258,11 +258,11 @@ Win::bottomLine()
         defer( s_scratch.reset() );
 
         isize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);
-        if (pl.m_eReapetMethod != PLAYER_REPEAT_METHOD::NONE)
+        if (pl.m_eRepeatMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
-            if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
-            else if (pl.m_eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
+            if (pl.m_eRepeatMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
+            else if (pl.m_eRepeatMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
 
             n += print::toSpan({sp.data() + n, sp.size() - 1 - n}, " (repeat {})", sArg);
         }

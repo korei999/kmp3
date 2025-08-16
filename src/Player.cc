@@ -130,13 +130,13 @@ Player::nextSelectionI(long selI)
 
     defer( LOG_WARN("currI: {}, nextI: {}\n", currI, nextI) );
 
-    if (m_eReapetMethod == PLAYER_REPEAT_METHOD::TRACK)
+    if (m_eRepeatMethod == PLAYER_REPEAT_METHOD::TRACK)
     {
         nextI = currI;
     }
     else if (nextI >= m_vSongIdxs.size())
     {
-        if (m_eReapetMethod == PLAYER_REPEAT_METHOD::PLAYLIST)
+        if (m_eRepeatMethod == PLAYER_REPEAT_METHOD::PLAYLIST)
         {
             nextI = 0;
         }
@@ -220,9 +220,9 @@ Player::togglePause()
 void
 Player::nextSongIfPrevEnded()
 {
-    int bEnd = true;
+    int bExpected = true;
     if (app::mixer().m_atom_bSongEnd.compareExchange(
-            &bEnd, false,
+            &bExpected, false,
             atomic::ORDER::RELAXED, atomic::ORDER::RELAXED
         )
     )
@@ -235,10 +235,10 @@ PLAYER_REPEAT_METHOD
 Player::cycleRepeatMethods(bool bForward)
 {
     int rm;
-    if (bForward) rm = utils::cycleForward(isize(m_eReapetMethod), isize(PLAYER_REPEAT_METHOD::ESIZE));
-    else rm = utils::cycleBackward(isize(m_eReapetMethod), isize(PLAYER_REPEAT_METHOD::ESIZE));
+    if (bForward) rm = utils::cycleForward(isize(m_eRepeatMethod), isize(PLAYER_REPEAT_METHOD::ESIZE));
+    else rm = utils::cycleBackward(isize(m_eRepeatMethod), isize(PLAYER_REPEAT_METHOD::ESIZE));
 
-    m_eReapetMethod = PLAYER_REPEAT_METHOD(rm);
+    m_eRepeatMethod = PLAYER_REPEAT_METHOD(rm);
 
     mpris::loopStatusChanged();
 
