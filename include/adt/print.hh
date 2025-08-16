@@ -210,8 +210,9 @@ parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtIdx) noexcept
     return nWritten;
 }
 
+template<typename T>
 inline isize
-intToBuffer(isize x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
+intToBuffer(T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 {
     isize i = 0;
     bool bNegative = false;
@@ -366,19 +367,6 @@ inline isize
 format(Context ctx, FormatArgs fmtArgs, bool b)
 {
     return format(ctx, fmtArgs, b ? "true" : "false");
-}
-
-template<typename INT_T>
-requires std::is_integral_v<INT_T>
-inline constexpr isize
-format(Context ctx, FormatArgs fmtArgs, const INT_T& x)
-{
-    char aBuff[64] {};
-    const isize n = intToBuffer(x, {aBuff}, fmtArgs);
-    if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen < utils::size(aBuff) - 1)
-        aBuff[fmtArgs.maxLen] = '\0';
-
-    return copyBackToContext(ctx, fmtArgs, {aBuff, n});
 }
 
 inline isize
@@ -544,6 +532,18 @@ formatFloat(Context ctx, FormatArgs fmtArgs, const T x)
 }
 
 } /* namespace details */
+
+template<typename T> requires (std::is_integral_v<T>)
+inline constexpr isize
+format(Context ctx, FormatArgs fmtArgs, const T x)
+{
+    char aBuff[64] {};
+    const isize n = intToBuffer(x, {aBuff}, fmtArgs);
+    if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen < utils::size(aBuff) - 1)
+        aBuff[fmtArgs.maxLen] = '\0';
+
+    return copyBackToContext(ctx, fmtArgs, {aBuff, n});
+}
 
 inline isize
 format(Context ctx, FormatArgs fmtArgs, const f32 x)

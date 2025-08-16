@@ -20,7 +20,7 @@ struct Queue
     /* */
 
     Queue() : m_pData {}, m_size {}, m_cap {}, m_headI {}, m_tailI {} {}
-    Queue(IAllocator* pAlloc, isize prealloc = SIZE_MIN);
+    Queue(IAllocator* pAlloc, isize prealloc = 8);
 
     /* */
 

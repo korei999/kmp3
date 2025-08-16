@@ -3,8 +3,8 @@
 #include "String.inc"
 #include "enum.hh"
 
-#include <cstdio>
 #include <type_traits>
+#include <cstdio>
 
 namespace adt::print
 {
@@ -81,7 +81,8 @@ inline isize printArgs(Context ctx);
 
 inline isize parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtIdx) noexcept;
 
-inline isize intToBuffer(isize x, Span<char> spBuff, FormatArgs fmtArgs) noexcept;
+template<typename T>
+inline isize intToBuffer(T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept;
 
 inline isize copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc);
 
@@ -96,8 +97,8 @@ inline isize format(Context ctx, FormatArgs fmtArgs, char* const& pNullTerm);
 
 inline isize format(Context ctx, FormatArgs fmtArgs, bool b);
 
-template<typename INT_T> requires std::is_integral_v<INT_T>
-inline constexpr isize format(Context ctx, FormatArgs fmtArgs, const INT_T& x);
+template<typename T> requires (std::is_integral_v<T>)
+inline constexpr isize format(Context ctx, FormatArgs fmtArgs, const T x);
 
 inline isize format(Context ctx, FormatArgs fmtArgs, const f32 x);
 

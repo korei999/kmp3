@@ -110,8 +110,8 @@ struct Map
 
     /* */
 
-    auto& data() { return m_vBuckets.data(); }
-    const auto& data() const { return m_vBuckets.data(); }
+    auto* data() { return m_vBuckets.data(); }
+    const auto* data() const { return m_vBuckets.data(); }
 
     [[nodiscard]] bool empty() const { return m_nOccupied <= 0; }
 
@@ -168,32 +168,34 @@ struct Map
     /* */
 
 public:
+
+    template<typename P_MAP>
     struct It
     {
-        Map* s {};
+        P_MAP s {};
         isize i = 0;
 
-        It(Map* _s, isize _i) : s(_s), i(_i) {}
+        It(P_MAP self, isize _i) : s(self), i(_i) {}
 
         KeyVal<K, V>& operator*() { return *(KeyVal<K, V>*)&s->m_vBuckets[i]; }
         KeyVal<K, V>* operator->() { return (KeyVal<K, V>*)&s->m_vBuckets[i]; }
 
-        It operator++()
+        It
+        operator++()
         {
             i = s->nextI(i);
             return {s, i};
         }
-        It operator++(int) { auto* tmp = s++; return tmp; }
 
         friend bool operator==(const It& l, const It& r) { return l.i == r.i; }
         friend bool operator!=(const It& l, const It& r) { return l.i != r.i; }
     };
 
-    It begin() { return {this, firstI()}; }
-    It end() { return {this, NPOS}; }
+    It<Map*> begin() { return {this, firstI()}; }
+    It<Map*> end() { return {this, NPOS}; }
 
-    const It begin() const { return {this, firstI()}; }
-    const It end() const { return {this, NPOS}; }
+    const It<const Map*> begin() const { return {this, firstI()}; }
+    const It<const Map*> end() const { return {this, NPOS}; }
 
 protected:
 #if !defined NDEBUG && defined ADT_DBG_COLLISIONS

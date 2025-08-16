@@ -1,8 +1,6 @@
 #pragma once
 
-#include "types.hh"
-
-#include <type_traits>
+#include "assert.hh"
 
 namespace adt
 {
@@ -14,12 +12,13 @@ struct FuncBuffer
 
     /* */
 
-    R (*m_pfn)(void* p) {};
-    u8 m_aArgBuff[SIZE] {};
+    R (*m_pfn)(void* p);
+    u8 m_aArgBuff[SIZE];
 
     /* */
 
-    FuncBuffer() noexcept = default;
+    FuncBuffer() noexcept : m_pfn {}, m_aArgBuff {} {}
+    FuncBuffer(UninitFlag) noexcept {}
 
     template<typename CL> requires (sizeof(CL) <= SIZE)
     FuncBuffer(const CL& cl) noexcept;
@@ -27,16 +26,20 @@ struct FuncBuffer
     template<typename T> requires (sizeof(T) <= SIZE)
     FuncBuffer(R (*pfn)(void*), T arg) noexcept;
 
+    FuncBuffer(R (*pfn)(void*), void* pArg, isize argSize) noexcept;
+
     /* */
 
-    [[nodiscard]] R operator()();
+    explicit operator bool() const noexcept { return bool(m_pfn); }
+
+    [[nodiscard]] R operator()() const;
 };
 
 template<typename R, int SIZE>
 inline R
-FuncBuffer<R, SIZE>::operator()()
+FuncBuffer<R, SIZE>::operator()() const
 {
-    return m_pfn(reinterpret_cast<void*>(m_aArgBuff));
+    return m_pfn((void*)(m_aArgBuff));
 }
 
 template<typename R, int SIZE>
@@ -44,12 +47,13 @@ template<typename CL>
 requires (sizeof(CL) <= SIZE)
 inline
 FuncBuffer<R, SIZE>::FuncBuffer(const CL& cl) noexcept
-    : m_pfn
-    {
-        [](void* p) -> R {
+    : m_pfn {
+        [](void* p) -> R
+        {
             return static_cast<CL*>(p)->operator()();
         }
-    }
+    },
+      m_aArgBuff {}
 {
     static_assert(std::is_same_v<decltype(cl()), R>, "fix lambda's return value");
 
@@ -61,9 +65,22 @@ template<typename T>
 requires (sizeof(T) <= SIZE)
 inline
 FuncBuffer<R, SIZE>::FuncBuffer(R (*pfn)(void*), T arg) noexcept
-    : m_pfn {pfn}
+    : m_pfn {pfn}, m_aArgBuff {}
 {
+    ADT_ASSERT(pfn != nullptr, "");
+
     new(m_aArgBuff) T {arg};
+}
+
+template<typename R, int SIZE>
+inline
+FuncBuffer<R, SIZE>::FuncBuffer(R (*pfn)(void*), void* pArg, isize argSize) noexcept
+    : m_pfn {pfn}, m_aArgBuff {}
+{
+    ADT_ASSERT(pfn != nullptr, "");
+    ADT_ASSERT(argSize <= SIZE, "can't fit, argSize: {}, SIZE; {}\n", argSize, SIZE);
+
+    ::memcpy(m_aArgBuff, pArg, argSize);
 }
 
 } /* namespace adt */

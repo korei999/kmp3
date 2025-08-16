@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IAllocator.hh"
-#include "Thread.hh"
+#include "ThreadPool.hh"
 #include "defer.hh"
 #include "utils.hh"
 
@@ -125,13 +125,7 @@ quick(auto a[], isize l, isize r, const CL_CMP clCmp)
 
 template<typename THREAD_POOL_T, typename CL_CMP>
 inline void
-quickParallel(
-    THREAD_POOL_T* pTPool,
-    auto a[],
-    isize l,
-    isize r,
-    CL_CMP clCmp
-)
+quickParallel(THREAD_POOL_T* pTPool, auto a[], isize l, isize r, CL_CMP clCmp)
 {
     if (l < r)
     {
@@ -152,16 +146,13 @@ quickParallel(
             if (i <= j) utils::swap(&a[i++], &a[j--]);
         }
 
-        Future<Empty> fut {INIT};
+        IThreadPool::Future<void> fut {pTPool};
         ADT_DEFER( fut.destroy() );
         bool bSpawned = false;
 
         auto clDo = [&]
         {
             quickParallel(pTPool, a, l, j, clCmp);
-            fut.signal();
-
-            return 0;
         };
 
         if ((j - l + 1) <= SIZE_8K)
@@ -170,8 +161,8 @@ quickParallel(
         }
         else
         {
-            pTPool->addLambdaRetryOrDo(clDo);
-            bSpawned = true;
+            if (pTPool->add(&fut, clDo)) bSpawned = true;
+            else clDo();
         }
 
         quickParallel(pTPool, a, i, r, clCmp);

@@ -38,7 +38,7 @@ namespace adt
 inline void
 assertionFailed(const char* cnd, const char* msg, const char* file, int line, const char* func)
 {
-    char aBuff[256] {};
+    char aBuff[512] {};
     [[maybe_unused]] const isize n = print::toBuffer(aBuff, sizeof(aBuff) - 1,
         "[{}, {}: {}()] assertion( {} ) failed.\n(msg) \"{}\"\n",
         file, line, func, cnd, msg

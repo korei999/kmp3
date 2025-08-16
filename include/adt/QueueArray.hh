@@ -43,8 +43,10 @@ struct QueueArray
     const T& front() const { ADT_ASSERT(!empty(), ""); return m_aData[m_headI]; }
 
     isize pushBack(const T& x) noexcept; /* Index of inserted element, -1 on failure. */
+    isize pushBack(T&& x) noexcept;
 
     isize pushFront(const T& x) noexcept;
+    isize pushFront(T&& x) noexcept;
 
     template<typename ...ARGS>
     isize emplaceBack(ARGS&&... args) noexcept;
@@ -141,12 +143,26 @@ QueueArray<T, CAP>::pushBack(const T& x) noexcept
 
 template<typename T, isize CAP>
 inline isize
+QueueArray<T, CAP>::pushBack(T&& x) noexcept
+{
+    return emplaceBack(std::move(x));
+}
+
+template<typename T, isize CAP>
+inline isize
 QueueArray<T, CAP>::pushFront(const T& x) noexcept
 {
     isize i = fakePush<PUSH_WAY::HEAD>();
     if (i >= 0) new(m_aData + i) T(x);
 
     return i;
+}
+
+template<typename T, isize CAP>
+inline isize
+QueueArray<T, CAP>::pushFront(T&& x) noexcept
+{
+    return emplaceFront(std::move(x));
 }
 
 template<typename T, isize CAP>

@@ -34,7 +34,6 @@ struct QueueMPMC
     static_assert(CAP >= 0 && isPowerOf2(CAP));
 
     static constexpr isize CACHELINE_SIZE = 64;
-    static constexpr isize BUFFER_MASK = CAP - 1;
     using CacheLinePad = char[CACHELINE_SIZE];
 
     struct Cell
@@ -52,6 +51,9 @@ struct QueueMPMC
     CacheLinePad m_pad2 {};
     atomic::Int m_dequeuePos {};
     CacheLinePad m_pad3 {};
+#ifndef NDEBUG
+    bool m_bInitialized {};
+#endif
 
     /* */
 
@@ -61,7 +63,11 @@ struct QueueMPMC
 
     /* */
 
-    bool push(const T& x);
+    template<typename ...ARGS> bool emplace(ARGS&&... x);
+
+    bool push(const T& x) { return emplace(x); }
+    bool push(T&& x) { return emplace(std::move(x)); }
+
     [[nodiscard]] Opt<T> pop();
     int cap() const noexcept { return CAP; }
     bool empty() const noexcept;
@@ -73,25 +79,32 @@ QueueMPMC<T, CAP>::QueueMPMC(InitFlag)
 {
     for (int i = 0; i < CAP; ++i)
         m_aBuff[i].sequence = atomic::Int(i);
+
+#ifndef NDEBUG
+    m_bInitialized = true;
+#endif
 }
 
 template<typename T, int CAP>
+template<typename ...ARGS>
 inline bool
-QueueMPMC<T, CAP>::push(const T& x)
+QueueMPMC<T, CAP>::emplace(ARGS&&... args)
 {
+    ADT_ASSERT(m_bInitialized != false, "forgot to {INIT}");
+
     Cell* pCell;
     atomic::Int::Type pos = m_enqueuePos.load(atomic::ORDER::RELAXED);
 
     while (true)
     {
-        pCell = &m_aBuff[pos & BUFFER_MASK];
+        pCell = &m_aBuff[pos & (CAP - 1)];
         int seq = pCell->sequence.load(atomic::ORDER::ACQUIRE);
         int diff = seq - pos;
         if (diff == 0)
         {
             if (m_enqueuePos.compareExchangeWeak(&pos, pos + 1,
                     atomic::ORDER::RELAXED, atomic::ORDER::RELAXED
-            )
+                )
             )
             {
                 break;
@@ -107,7 +120,7 @@ QueueMPMC<T, CAP>::push(const T& x)
         }
     }
 
-    new(&pCell->data) T(x);
+    new(&pCell->data) T(std::forward<ARGS>(args)...);
     pCell->sequence.store(pos + 1, atomic::ORDER::RELEASE);
 
     return true;
@@ -122,7 +135,7 @@ QueueMPMC<T, CAP>::pop()
 
     while (true)
     {
-        pCell = &m_aBuff[pos & BUFFER_MASK];
+        pCell = &m_aBuff[pos & (CAP - 1)];
         int seq = pCell->sequence.load(atomic::ORDER::ACQUIRE);
         int diff = seq - (pos + 1);
         if (diff == 0)
@@ -148,7 +161,7 @@ QueueMPMC<T, CAP>::pop()
     Opt<T> ret = std::move(pCell->data);
     if constexpr (!std::is_trivially_destructible_v<T>)
         pCell->data.~T();
-    pCell->sequence.store(pos + BUFFER_MASK + 1, atomic::ORDER::RELEASE);
+    pCell->sequence.store(pos + (CAP - 1) + 1, atomic::ORDER::RELEASE);
 
     return ret;
 }
