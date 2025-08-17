@@ -401,7 +401,7 @@ List<T>::sort()
 }
 
 template<typename T, typename ALLOC_T = StdAllocatorNV>
-struct ListManaged : protected ALLOC_T, public List<T>
+struct ListManaged : public List<T>
 {
     using Base = List<T>;
     using Node = Base::Node;
@@ -412,18 +412,17 @@ struct ListManaged : protected ALLOC_T, public List<T>
 
     /* */
 
-    ALLOC_T& allocator() { return static_cast<ALLOC_T&>(*this); }
-    const ALLOC_T& allocator() const { return static_cast<ALLOC_T&>(*this); }
+    auto* allocator() const { return ALLOC_T::inst(); }
 
     [[nodiscard]] constexpr bool empty() const { return Base::empty(); }
 
-    constexpr Node* pushFront(const T& x) { return Base::pushFront(&allocator(), x); }
+    constexpr Node* pushFront(const T& x) { return Base::pushFront(allocator(), x); }
 
-    constexpr Node* pushBack(const T& x) { return Base::pushBack(&allocator(), x); }
+    constexpr Node* pushBack(const T& x) { return Base::pushBack(allocator(), x); }
 
     constexpr void remove(Node* p) { Base::remove(p); allocator().free(p); }
 
-    constexpr void destroy() { Base::destroy(&allocator()); }
+    constexpr void destroy() { Base::destroy(allocator()); }
 
     constexpr ListManaged release() noexcept { return utils::exchange(this, {}); }
 

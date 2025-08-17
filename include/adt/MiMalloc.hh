@@ -21,8 +21,7 @@ struct MiMalloc : IAllocator
 
 struct MiMallocNV : AllocatorHelperCRTP<MiMallocNV>
 {
-    /* WARNING: Dirty fix for Managed classes, doesn't return the real address. */
-    MiMalloc* operator&() const { return MiMalloc::inst(); }
+    [[nodiscard]] static MiMalloc* inst() noexcept { return MiMalloc::inst(); }
 
     [[nodiscard]] static void* malloc(usize mCount, usize mSize) noexcept(false)
     { return MiMalloc::inst()->malloc(mCount, mSize); }

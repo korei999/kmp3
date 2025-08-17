@@ -3,7 +3,6 @@
 #include "Span.inc"
 
 #include <concepts>
-#include <cstring>
 
 namespace adt
 {
@@ -150,23 +149,18 @@ struct String : public StringView
 template<typename ALLOC_T = StdAllocatorNV>
 struct StringManaged : public String
 {
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc;
-
-    /* */
-
     StringManaged() = default;
-    StringManaged(const char* pChars, isize size) : String {&allocator(), pChars, size} {}
-    StringManaged(const char* nts) : String {&allocator(), nts} {}
-    StringManaged(Span<char> spChars) : String {&allocator(), spChars} {}
-    StringManaged(const StringView sv) : String {&allocator(), sv} {}
+    StringManaged(const char* pChars, isize size) : String {allocator(), pChars, size} {}
+    StringManaged(const char* nts) : String {allocator(), nts} {}
+    StringManaged(Span<char> spChars) : String {allocator(), spChars} {}
+    StringManaged(const StringView sv) : String {allocator(), sv} {}
 
     /* */
 
-    ALLOC_T& allocator() { return m_alloc; }
-    const ALLOC_T& allocator() const { return m_alloc; }
+    auto* allocator() const { return ALLOC_T::inst(); }
 
-    void destroy() noexcept { String::destroy(&allocator()); }
-    void reallocWith(const StringView svWith) { String::reallocWith(&allocator(), svWith); }
+    void destroy() noexcept { String::destroy(allocator()); }
+    void reallocWith(const StringView svWith) { String::reallocWith(allocator(), svWith); }
     [[nodiscard]] String release() noexcept { String r = *this; *this = {}; return r; }
 };
 

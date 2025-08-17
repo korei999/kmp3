@@ -217,8 +217,8 @@ Mixer::loop()
     f32* pRenderBuff = stdAl.zallocV<f32>(utils::size(audio::g_aRenderBuffer));
     defer( stdAl.free(pRenderBuff) );
 
-    long s_nDecodedSamples = 0;
-    long s_nWrites = 0;
+    long nDecodedSamples = 0;
+    long nWrites = 0;
 
     constexpr isize NFRAMES = 2048;
 
@@ -230,19 +230,19 @@ Mixer::loop()
         for (isize frameIdx = 0; frameIdx < NFRAMES; ++frameIdx)
         {
             /* fill the buffer when it's empty */
-            if (s_nWrites >= s_nDecodedSamples)
+            if (nWrites >= nDecodedSamples)
             {
-                writeFramesLocked(audio::g_aRenderBuffer, NFRAMES, &s_nDecodedSamples, &m_currentTimeStamp);
+                writeFramesLocked(audio::g_aRenderBuffer, NFRAMES, &nDecodedSamples, &m_currentTimeStamp);
 
                 m_currMs = app::decoder().getCurrentMS();
-                s_nWrites = 0;
+                nWrites = 0;
             }
 
             for (u32 chIdx = 0; chIdx < m_nChannels; ++chIdx)
-                pRenderBuff[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
+                pRenderBuff[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
         }
 
-        if (s_nDecodedSamples == 0)
+        if (nDecodedSamples == 0)
         {
             m_currentTimeStamp = 0;
             m_nTotalSamples = 0;

@@ -267,21 +267,17 @@ struct VecSOAManaged : VecSOA<STRUCT, BIND, MEMBERS...>
 
     /* */
 
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc;
-
-    /* */
 
     VecSOAManaged() = default;
-    VecSOAManaged(const isize prealloc) : Base {&allocator(), prealloc} {}
+    VecSOAManaged(const isize prealloc) : Base {allocator(), prealloc} {}
 
     /* */
 
-    ALLOC_T& allocator() { return m_alloc; }
-    const ALLOC_T& allocator() const { return m_alloc; }
+    auto* allocator() const { return ALLOC_T::inst(); }
 
-    void destroy() noexcept { Base::destroy(&allocator()); }
-    isize push(const STRUCT& x) { return Base::push(&allocator(), x); }
-    void setSize(const isize newSize) { Base::setSize(&allocator(), newSize); }
+    void destroy() noexcept { Base::destroy(allocator()); }
+    isize push(const STRUCT& x) { return Base::push(allocator(), x); }
+    void setSize(const isize newSize) { Base::setSize(allocator(), newSize); }
 };
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>

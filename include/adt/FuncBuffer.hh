@@ -2,6 +2,8 @@
 
 #include "assert.hh"
 
+#include <cstring>
+
 namespace adt
 {
 

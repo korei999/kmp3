@@ -30,6 +30,24 @@ Buffer::Buffer(IAllocator* pAlloc, isize prealloc)
 {
     m_pData = pAlloc->mallocV<char>(prealloc);
     m_cap = prealloc;
+    m_bDataAllocated = true;
+}
+
+inline
+Buffer::operator StringView() noexcept
+{
+    return {m_pData, m_size};
+}
+
+inline
+Buffer::operator String() noexcept
+{
+    ADT_ASSERT(m_bDataAllocated && m_pAlloc, "{}, {}", m_bDataAllocated, m_pAlloc);
+
+    String r;
+    r.m_pData = m_pData;
+    r.m_size = m_size;
+    return r;
 }
 
 inline isize
@@ -663,11 +681,7 @@ toString(IAllocator* pAlloc, const StringView fmt, const ARGS_T&... tArgs) noexc
         }
     }
 
-    String ret;
-    ret.m_pData = buff.m_pData;
-    ret.m_size = buff.m_size;
-
-    return ret;
+    return String(buff);
 }
 
 template<typename ...ARGS_T>
@@ -700,11 +714,7 @@ toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&
         }
     }
 
-    String ret;
-    ret.m_pData = buff.m_pData;
-    ret.m_size = buff.m_size;
-
-    return ret;
+    return String(buff);
 }
 
 template<typename ...ARGS_T>

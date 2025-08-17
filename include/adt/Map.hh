@@ -530,32 +530,28 @@ struct MapManaged : public Map<K, V, FN_HASH>
 
     /* */
 
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc;
-    /* */
-
     MapManaged() = default;
     MapManaged(isize prealloc, f32 loadFactor = MAP_DEFAULT_LOAD_FACTOR)
         : Base::Map(&allocator(), prealloc, loadFactor) {}
 
     /* */
 
-    ALLOC_T& allocator() { return m_alloc; }
-    const ALLOC_T& allocator() const { return m_alloc; }
+    auto* allocator() const { return ALLOC_T::inst(); }
 
-    MapResult<K, V> insert(const K& key, const V& val) { return Base::insert(&allocator(), key, val); }
-    MapResult<K, V> insert(const K& key, V&& val) { return Base::insert(&allocator(), key, std::move(val)); }
+    MapResult<K, V> insert(const K& key, const V& val) { return Base::insert(allocator(), key, val); }
+    MapResult<K, V> insert(const K& key, V&& val) { return Base::insert(allocator(), key, std::move(val)); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<V, ARGS...>) MapResult<K, V> emplace(const K& key, ARGS&&... args)
-    { return Base::emplace(&allocator(), key, std::forward<ARGS>(args)...); }
+    { return Base::emplace(allocator(), key, std::forward<ARGS>(args)...); }
 
-    MapResult<K, V> tryInsert(const K& key, const V& val) { return Base::tryInsert(&allocator(), key, val); }
-    MapResult<K, V> tryInsert(const K& key, V&& val) { return Base::tryInsert(&allocator(), key, std::move(val)); }
+    MapResult<K, V> tryInsert(const K& key, const V& val) { return Base::tryInsert(allocator(), key, val); }
+    MapResult<K, V> tryInsert(const K& key, V&& val) { return Base::tryInsert(allocator(), key, std::move(val)); }
 
     template<typename ...ARGS>
     MapResult<K, V> tryEmplace(const K& key, ARGS&&... args)
-    { return Base::tryEmplace(&allocator(), key, std::forward<ARGS>(args)...); }
+    { return Base::tryEmplace(allocator(), key, std::forward<ARGS>(args)...); }
 
-    void destroy() noexcept { Base::destroy(&allocator()); }
+    void destroy() noexcept { Base::destroy(allocator()); }
 
     MapManaged release() noexcept { return utils::exchange(this, {}); }
 };

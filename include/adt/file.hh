@@ -35,7 +35,7 @@ load(IAllocator* pAlloc, const char* ntsPath)
     if (!pf)
     {
 fail:
-        LOG_WARN("failed to open '{}' file\n", ntsPath);
+        ADT_LOG_WARN("failed to open '{}' file\n", ntsPath);
         return {};
     }
     ADT_DEFER( fclose(pf) );
@@ -46,7 +46,7 @@ fail:
     const auto ftellSize = ftell(pf);
     if (ftellSize <= 0 || ftellSize >= std::numeric_limits<decltype(ftellSize)>::max())
     {
-        LOG_BAD("bad size: '{}'\n", ftellSize);
+        ADT_LOG_BAD("bad size: '{}'\n", ftellSize);
         goto fail;
     }
 
@@ -70,7 +70,7 @@ load(const char* ntsPath)
     if (!pf)
     {
 fail:
-        LOG_WARN("failed to open '{}' file\n", ntsPath);
+        ADT_LOG_WARN("failed to open '{}' file\n", ntsPath);
         return {};
     }
     ADT_DEFER( fclose(pf) );
@@ -81,7 +81,7 @@ fail:
     const auto ftellSize = ftell(pf);
     if (ftellSize <= 0 || ftellSize >= std::numeric_limits<decltype(ftellSize)>::max())
     {
-        LOG_BAD("bad size: '{}'\n", ftellSize);
+        ADT_LOG_BAD("bad size: '{}'\n", ftellSize);
         goto fail;
     }
 
@@ -204,7 +204,7 @@ map(const char* ntsPath)
     int fd = open(ntsPath, O_RDONLY);
     if (fd == -1)
     {
-        LOG_BAD("failed to open() '{}'\n", ntsPath);
+        ADT_LOG_BAD("failed to open() '{}'\n", ntsPath);
         return {};
     }
 
@@ -213,7 +213,7 @@ map(const char* ntsPath)
     struct stat sb {};
     if (fstat(fd, &sb) == -1)
     {
-        LOG_ERR("fstat() failed\n");
+        ADT_LOG_ERR("fstat() failed\n");
         return {};
     }
 
@@ -222,7 +222,7 @@ map(const char* ntsPath)
     void* pData = mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (pData == MAP_FAILED)
     {
-        LOG_ERR("mmap() failed\n");
+        ADT_LOG_ERR("mmap() failed\n");
         return {};
     }
 

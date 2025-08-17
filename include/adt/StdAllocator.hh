@@ -28,8 +28,7 @@ struct StdAllocator : IAllocator
 /* non virtual */
 struct StdAllocatorNV : AllocatorHelperCRTP<StdAllocatorNV>
 {
-    /* WARNING: Dirty fix for Managed classes, doesn't return the real address. */
-    [[nodiscard]] StdAllocator* operator&() const { return StdAllocator::inst(); }
+    [[nodiscard]] static StdAllocator* inst() noexcept { return StdAllocator::inst(); }
 
     [[nodiscard]] static void* malloc(usize mCount, usize mSize) noexcept(false)
     { return StdAllocator::inst()->malloc(mCount, mSize); }

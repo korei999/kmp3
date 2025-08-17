@@ -454,42 +454,37 @@ struct VecManaged : Vec<T>
 
     /* */
 
-    ADT_NO_UNIQUE_ADDRESS ALLOC_T m_alloc;
-
-    /* */
-
     VecManaged() = default;
-    VecManaged(const isize prealloc) : Base {&allocator(), prealloc} {}
-    VecManaged(const isize prealloc, const T& fillWith) : Base {&allocator(), prealloc, fillWith} {}
+    VecManaged(const isize prealloc) : Base {allocator(), prealloc} {}
+    VecManaged(const isize prealloc, const T& fillWith) : Base {allocator(), prealloc, fillWith} {}
 
     /* */
 
-    ALLOC_T& allocator() { return m_alloc; }
-    const ALLOC_T& allocator() const { return m_alloc; }
+    auto* allocator() const { return ALLOC_T::inst(); }
 
-    isize fakePush() { return Base::fakePush(&allocator()); }
+    isize fakePush() { return Base::fakePush(allocator()); }
 
-    isize push(const T& data) { return Base::push(&allocator(), data); }
-    isize push(T&& data) { return Base::push(&allocator(), std::move(data)); }
+    isize push(const T& data) { return Base::push(allocator(), data); }
+    isize push(T&& data) { return Base::push(allocator(), std::move(data)); }
 
-    void pushAt(const isize atI, const T& data) { Base::pushAt(&allocator(), atI, data); }
-    void pushAt(const isize atI, T&& data) { Base::pushAt(&allocator(), atI, std::move(data)); }
+    void pushAt(const isize atI, const T& data) { Base::pushAt(allocator(), atI, data); }
+    void pushAt(const isize atI, T&& data) { Base::pushAt(allocator(), atI, std::move(data)); }
 
-    isize pushSpan(const Span<const T> sp) { return Base::pushSpan(&allocator(), sp); }
+    isize pushSpan(const Span<const T> sp) { return Base::pushSpan(allocator(), sp); }
 
-    void pushSpanAt(const isize atI, const Span<const T> sp) { Base::pushSpanAt(&allocator(), atI, sp); }
-
-    template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-    isize emplace(ARGS&&... args) { return Base::emplace(&allocator(), std::forward<ARGS>(args)...); }
+    void pushSpanAt(const isize atI, const Span<const T> sp) { Base::pushSpanAt(allocator(), atI, sp); }
 
     template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
-    void emplaceAt(const isize atI, ARGS&&... args) { Base::emplaceAt(&allocator(), atI, std::forward<ARGS>(args)...); }
+    isize emplace(ARGS&&... args) { return Base::emplace(allocator(), std::forward<ARGS>(args)...); }
 
-    void setSize(isize size) { Base::setSize(&allocator(), size); }
+    template<typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
+    void emplaceAt(const isize atI, ARGS&&... args) { Base::emplaceAt(allocator(), atI, std::forward<ARGS>(args)...); }
 
-    void setCap(isize cap) { Base::setCap(&allocator(), cap); }
+    void setSize(isize size) { Base::setSize(allocator(), size); }
 
-    void destroy() noexcept { Base::destroy(&allocator()); }
+    void setCap(isize cap) { Base::setCap(allocator(), cap); }
+
+    void destroy() noexcept { Base::destroy(allocator()); }
 
     [[nodiscard]] VecManaged release() noexcept { return utils::exchange(this, {}); }
 

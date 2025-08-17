@@ -135,7 +135,7 @@ Pipeline::stageLoop(void* pStage)
     auto& pipeline = *stage.pThisPipeline;
     auto& atomBDone = pipeline.m_atomBDone;
 
-    defer( print::err("[Pipeline]: stage({}) done\n", stage.stageId) );
+    ADT_DEFER( print::err("[Pipeline]: stage({}) done\n", stage.stageId) );
 
     while (true)
     {

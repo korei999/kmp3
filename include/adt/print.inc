@@ -51,6 +51,11 @@ struct Buffer
 
     /* */
 
+    explicit operator StringView() noexcept;
+    explicit operator String() noexcept;
+
+    /* */
+
     isize push(char c) noexcept(false); /* AllocException */
 };
 
