@@ -124,7 +124,7 @@ protected:
 [[nodiscard]] inline bool operator>=(const StringView& l, const StringView& r);
 [[nodiscard]] inline i64 operator-(const StringView& l, const StringView& r);
 
-inline String StringCat(IAllocator* p, const StringView& l, const StringView& r);
+[[nodiscard]] inline String StringCat(IAllocator* p, const StringView& l, const StringView& r);
 
 template<>
 inline usize hash::func(const StringView& str);

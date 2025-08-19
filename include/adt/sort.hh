@@ -150,19 +150,15 @@ quickParallel(THREAD_POOL_T* pTPool, auto a[], isize l, isize r, CL_CMP clCmp)
         ADT_DEFER( fut.destroy() );
         bool bSpawned = false;
 
-        auto clDo = [&]
-        {
-            quickParallel(pTPool, a, l, j, clCmp);
-        };
-
         if ((j - l + 1) <= SIZE_8K)
         {
             quick(a, l, j, clCmp);
         }
         else
         {
-            if (pTPool->add(&fut, clDo)) bSpawned = true;
-            else clDo();
+            if (pTPool->add(&fut, [=] { quickParallel(pTPool, a, l, j, clCmp); }))
+                bSpawned = true;
+            else quickParallel(pTPool, a, l, j, clCmp);
         }
 
         quickParallel(pTPool, a, i, r, clCmp);

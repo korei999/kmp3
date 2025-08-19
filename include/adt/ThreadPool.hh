@@ -14,6 +14,7 @@ namespace adt
 
 struct IThreadPool
 {
+    /* TODO: buffer size can be moved to implementation */
     using Task = FuncBuffer<void, 56>;
     static_assert(sizeof(Task) == 64);
 
@@ -34,7 +35,7 @@ struct IThreadPool
         /* */
 
         void wait() noexcept;
-        decltype(auto) waitData() noexcept; /* decltype(auto) for <void> case. */
+        decltype(auto) waitData() noexcept; /* decltype(auto) for the <void> case. */
     };
 
     /* */
@@ -60,7 +61,7 @@ struct IThreadPool
 
     template<typename CL>
     bool
-    add(CL& cl) noexcept
+    add(const CL& cl) noexcept
     {
         return addTask([](void* p) {
             static_cast<CL*>(p)->operator()();
@@ -69,7 +70,7 @@ struct IThreadPool
 
     template<typename T, typename CL>
     bool
-    add(Future<T>* pFut, CL& cl) noexcept
+    add(Future<T>* pFut, const CL& cl) noexcept
     {
         auto cl2 = [pFut, cl]
         {
@@ -94,23 +95,71 @@ struct IThreadPool
     template<typename CL>
     void addRetry(const CL& cl) noexcept { while (!add(cl)); }
 
+    template<typename CL>
+    bool
+    addRetry(const CL& cl, int n) noexcept
+    {
+        for (int i = 0; i < n; ++i)
+            if (add(cl)) return true;
+        return false;
+    }
+
     template<typename T, typename CL>
     void addRetry(Future<T>* pFut, const CL& cl) noexcept { while (!add(pFut, cl)); }
 
+    template<typename T, typename CL>
+    bool
+    addRetry(Future<T>* pFut, const CL& cl, int n) noexcept
+    {
+        for (int i = 0; i < n; ++i)
+            if (add(pFut, cl)) return true;
+        return false;
+    }
+
     template<typename CL>
     void
-    addRetryOrDo(CL& cl) noexcept
+    addRetryOrDo(const CL& cl) noexcept
     {
         if (nActiveTasks().load(atomic::ORDER::ACQUIRE) >= nThreads()) cl();
         else addRetry(cl);
     }
 
+    template<typename CL>
+    bool
+    addRetryOrDo(const CL& cl, int n) noexcept
+    {
+        if (nActiveTasks().load(atomic::ORDER::ACQUIRE) >= nThreads())
+        {
+            cl();
+            return true;
+        }
+        else
+        {
+            return addRetry(cl, n);
+        }
+    }
+
     template<typename T, typename CL>
     void
-    addRetryOrDo(Future<T>* pFut, CL& cl) noexcept
+    addRetryOrDo(Future<T>* pFut, const CL& cl) noexcept
     {
         if (nActiveTasks().load(atomic::ORDER::ACQUIRE) >= nThreads()) cl();
         else addRetry(pFut, cl);
+    }
+
+    template<typename T, typename CL>
+    bool
+    addRetryOrDo(Future<T>* pFut, const CL& cl, int n) noexcept
+    {
+        if (nActiveTasks().load(atomic::ORDER::ACQUIRE) >= nThreads())
+        {
+            cl();
+            return true;
+        }
+        else
+        {
+            return addRetry(pFut, cl, n);
+        }
     }
 };
 
