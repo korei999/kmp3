@@ -156,11 +156,11 @@ stripSourcePath(const char* ntsSourcePath)
 inline isize
 printArgs(Context ctx)
 {
-    isize nWritten = 0;
-    for (isize i = ctx.fmtIdx; i < ctx.fmt.size(); ++i, ++nWritten)
-        if (ctx.pBuffer->push(ctx.fmt[i]) < 0) break;
+    const StringView svFmtSlice = ctx.fmt.subString(ctx.fmtIdx, ctx.fmt.size() - ctx.fmtIdx);
+    if (ctx.pBuffer->push(svFmtSlice) != -1)
+        return svFmtSlice.size();
 
-    return nWritten;
+    return 0;
 }
 
 inline isize
@@ -515,19 +515,14 @@ printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg)
         rI += svFmtUntilOpenBrace.size();
         rNWritten += svFmtUntilOpenBrace.size();
 
+        /* No '{' case. */
         if (rI >= rCtx.fmt.size()) break;
 
-        if (rCtx.fmt[rI] == '{')
+        rbArg = true;
+        if (rI + 1 < rCtx.fmt.size() && rCtx.fmt[rI + 1] == '{')
         {
-            if (rI + 1 < rCtx.fmt.size() && rCtx.fmt[rI + 1] == '{')
-            {
-                rI += 1, rNWritten += 1;
-                rbArg = false;
-            }
-            else
-            {
-                rbArg = true;
-            }
+            rI += 1, rNWritten += 1;
+            rbArg = false;
         }
 
         if (rbArg)
@@ -584,10 +579,8 @@ formatVariadic(Context ctx, FormatArgs fmtArgs, const T& first, const ARGS&... a
     isize n = format(ctx, fmtArgs, first);
     if (n < 0) return n;
 
-    if (ctx.pBuffer->push(',') < 0) return n;
-    ++n;
-    if (ctx.pBuffer->push(' ') < 0) return n;
-    ++n;
+    if (ctx.pBuffer->push(StringView{", "}) == -1) return n;
+    n += 2;
 
     return n + details::formatVariadic(ctx, fmtArgs, args...);
 }

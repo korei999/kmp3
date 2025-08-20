@@ -532,7 +532,7 @@ struct MapManaged : public Map<K, V, FN_HASH>
 
     MapManaged() = default;
     MapManaged(isize prealloc, f32 loadFactor = MAP_DEFAULT_LOAD_FACTOR)
-        : Base::Map(&allocator(), prealloc, loadFactor) {}
+        : Base::Map(allocator(), prealloc, loadFactor) {}
 
     /* */
 
