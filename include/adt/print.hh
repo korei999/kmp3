@@ -57,26 +57,65 @@ Buffer::push(char c)
     {
         if (!m_pAlloc) return -1;
 
-        const int newCap = utils::max(isize(8), m_cap * 2);
-        char* pNewData {};
-
-        if (!m_bDataAllocated)
-        {
-            pNewData = m_pAlloc->zallocV<char>(newCap);
-            m_bDataAllocated = true;
-            memcpy(pNewData, m_pData, m_size);
-        }
-        else
-        {
-            pNewData = m_pAlloc->relocate(m_pData, m_size, newCap);
-        }
-
-        m_cap = newCap;
-        m_pData = pNewData;
+        grow(utils::max(isize(8), m_cap * 2));
     }
 
     m_pData[m_size++] = c;
     return m_size - 1;
+}
+
+inline isize
+Buffer::push(const Span<const char> sp)
+{
+    if (sp.empty()) return m_size;
+
+    if (m_size + sp.size() > m_cap)
+    {
+        if (!m_pAlloc) return -1;
+
+        grow(utils::max(isize(8), nextPowerOf2(m_cap + sp.size())));
+    }
+
+    ::memcpy(m_pData + m_size, sp.data(), sp.size());
+    m_size += sp.size();
+    return m_size - sp.size();
+}
+
+inline isize
+Buffer::pushN(const char c, const isize nTimes)
+{
+    if (nTimes <= 0) return m_size;
+
+    if (m_size + nTimes > m_cap)
+    {
+        if (!m_pAlloc) return -1;
+
+        grow(utils::max(isize(8), nextPowerOf2(m_cap + nTimes)));
+    }
+
+    ::memset(m_pData + m_size, c, nTimes);
+    m_size += nTimes;
+    return m_size - nTimes;
+}
+
+inline void
+Buffer::grow(isize newCap)
+{
+    char* pNewData {};
+
+    if (!m_bDataAllocated)
+    {
+        pNewData = m_pAlloc->zallocV<char>(newCap);
+        m_bDataAllocated = true;
+        memcpy(pNewData, m_pData, m_size);
+    }
+    else
+    {
+        pNewData = m_pAlloc->relocate(m_pData, m_size, newCap);
+    }
+
+    m_cap = newCap;
+    m_pData = pNewData;
 }
 
 template<typename T>
@@ -314,28 +353,28 @@ intToBuffer(T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 }
 
 inline isize
-copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc)
+copyBackToContext(Context ctx, FormatArgs fmtArgs, const StringView sv)
 {
     isize i = 0;
     const char filler = fmtArgs.filler ? fmtArgs.filler : ' ';
 
     auto clCopySpan = [&]
     {
-        const isize mLen = utils::min(spSrc.size(), isize(fmtArgs.maxLen));
-        for (; i < mLen && spSrc[i]; ++i)
-            if (ctx.pBuffer->push(spSrc[i]) < 0) break;
+        const isize mLen = utils::min(sv.size(), isize(fmtArgs.maxLen));
+        if (ctx.pBuffer->push(Span{sv.data(), mLen}) != -1)
+            i += mLen;
     };
 
     if (bool(fmtArgs.eFmtFlags & FormatArgs::FLAGS::JUSTIFY_RIGHT))
     {
         /* leave space for the string */
-        const isize nSpaces = fmtArgs.maxLen - strnlen(spSrc.data(), spSrc.size());
+        const isize nSpaces = fmtArgs.maxLen - sv.size();
         isize j = 0;
 
         if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i && nSpaces > 0)
         {
-            for (j = 0; j < nSpaces; ++j)
-                if (ctx.pBuffer->push(filler) < 0) break;
+            if (ctx.pBuffer->pushN(filler, nSpaces) != -1)
+                j += nSpaces;
         }
 
         clCopySpan();
@@ -357,16 +396,17 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc)
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const StringView str)
+format(Context ctx, FormatArgs fmtArgs, const StringView sv)
 {
-    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), str.size()});
+    return copyBackToContext(ctx, fmtArgs, sv);
 }
 
 template<typename STRING_T>
 requires ConvertsToStringView<STRING_T>
 inline isize format(Context ctx, FormatArgs fmtArgs, const STRING_T& str)
 {
-    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), isize(str.size())});
+    const isize realLen = strnlen(str.data(), str.size());
+    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), realLen});
 }
 
 inline isize
@@ -392,12 +432,12 @@ format(Context ctx, FormatArgs fmtArgs, const wchar_t x)
 {
     char aBuff[8] {};
 #ifdef _WIN32
-    snprintf(aBuff, utils::size(aBuff) - 1, "%lc", (wint_t)x);
+    const isize n = snprintf(aBuff, utils::size(aBuff) - 1, "%lc", (wint_t)x);
 #else
-    snprintf(aBuff, utils::size(aBuff) - 1, "%lc", x);
+    const isize n = snprintf(aBuff, utils::size(aBuff) - 1, "%lc", x);
 #endif
 
-    return copyBackToContext(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, fmtArgs, {aBuff, n});
 }
 
 inline isize
@@ -410,9 +450,9 @@ inline isize
 format(Context ctx, FormatArgs fmtArgs, const char x)
 {
     char aBuff[4] {};
-    snprintf(aBuff, utils::size(aBuff), "%c", x);
+    const isize n = snprintf(aBuff, utils::size(aBuff), "%c", x);
 
-    return copyBackToContext(ctx, fmtArgs, {aBuff});
+    return copyBackToContext(ctx, fmtArgs, {aBuff, n});
 }
 
 inline isize

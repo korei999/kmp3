@@ -57,6 +57,11 @@ struct Buffer
     /* */
 
     isize push(char c) noexcept(false); /* AllocException */
+    isize push(const Span<const char> sp) noexcept(false); /* AllocException */
+    isize pushN(const char c, const isize nTimes) noexcept(false); /* AllocException */
+
+protected:
+    void grow(isize newCap) noexcept(false); /* AllocException */
 };
 
 struct Context
@@ -89,7 +94,7 @@ inline isize parseFormatArg(FormatArgs* pArgs, const StringView fmt, isize fmtId
 template<typename T>
 inline isize intToBuffer(T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept;
 
-inline isize copyBackToContext(Context ctx, FormatArgs fmtArgs, const Span<char> spSrc);
+inline isize copyBackToContext(Context ctx, FormatArgs fmtArgs, const StringView sv);
 
 inline isize format(Context ctx, FormatArgs fmtArgs, const StringView str);
 
