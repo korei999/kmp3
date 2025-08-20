@@ -515,6 +515,8 @@ printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg)
         rI += svFmtUntilOpenBrace.size();
         rNWritten += svFmtUntilOpenBrace.size();
 
+        if (rI >= rCtx.fmt.size()) break;
+
         if (rCtx.fmt[rI] == '{')
         {
             if (rI + 1 < rCtx.fmt.size() && rCtx.fmt[rI + 1] == '{')
