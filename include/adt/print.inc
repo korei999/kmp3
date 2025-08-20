@@ -58,6 +58,7 @@ struct Buffer
 
     isize push(char c) noexcept(false); /* AllocException */
     isize push(const Span<const char> sp) noexcept(false); /* AllocException */
+    isize push(const StringView sv) noexcept(false); /* AllocException */
     isize pushN(const char c, const isize nTimes) noexcept(false); /* AllocException */
 
 protected:

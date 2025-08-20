@@ -82,6 +82,12 @@ Buffer::push(const Span<const char> sp)
 }
 
 inline isize
+Buffer::push(const StringView sv)
+{
+    return push(Span{sv.data(), sv.size()});
+}
+
+inline isize
 Buffer::pushN(const char c, const isize nTimes)
 {
     if (nTimes <= 0) return m_size;
@@ -387,8 +393,8 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const StringView sv)
 
         if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i)
         {
-            for (; i < fmtArgs.maxLen; ++i)
-                if (ctx.pBuffer->push(filler) < 0) break;
+            if (ctx.pBuffer->pushN(filler, fmtArgs.maxLen - i) != -1)
+                i += fmtArgs.maxLen;
         }
     }
 
@@ -500,7 +506,16 @@ printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg)
 
             break;
         }
-        else if (rCtx.fmt[rI] == '{')
+
+        const StringView svFmtSlice = rCtx.fmt.subString(rI, rCtx.fmt.size() - rI);
+        const isize openBraceI = svFmtSlice.charAt('{');
+        const StringView svFmtUntilOpenBrace = svFmtSlice.subString(0, openBraceI == -1 ? svFmtSlice.size() : openBraceI);
+
+        rCtx.pBuffer->push(svFmtUntilOpenBrace);
+        rI += svFmtUntilOpenBrace.size();
+        rNWritten += svFmtUntilOpenBrace.size();
+
+        if (rCtx.fmt[rI] == '{')
         {
             if (rI + 1 < rCtx.fmt.size() && rCtx.fmt[rI + 1] == '{')
             {
