@@ -296,7 +296,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     )
     target_sources(
         ${CMAKE_PROJECT_NAME} PRIVATE
-        "src/platform/apple/apple.cc"
+        "src/platform/apple/Mixer.cc"
     )
 endif()
 

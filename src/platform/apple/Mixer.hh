@@ -37,6 +37,10 @@ struct Mixer : public audio::IMixer
         adt::u32 inNumberFrames,
         AudioBufferList* pIOData
     );
+
+protected:
+    /* Apparently locking mutex in the callback is a bad idea, tho it seems to be working just fine. https://lists.apple.com/archives/coreaudio-api/2009/May/msg00031.html?utm_source=chatgpt.com */
+    void writeFramesNonLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
 };
 
 } /* namespace platform::apple */

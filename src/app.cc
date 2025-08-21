@@ -11,7 +11,7 @@
 #endif
 
 #ifdef __APPLE__
-    #include "platform/apple/apple.hh"
+    #include "platform/apple/Mixer.hh"
 #endif
 
 #ifdef OPT_SNDIO
