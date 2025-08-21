@@ -22,6 +22,8 @@ struct StdAllocator : IAllocator
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     void virtual free(void* ptr) noexcept override final;
+    [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
+    [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
     /* virtual end */
 };
 
@@ -41,6 +43,8 @@ struct StdAllocatorNV : AllocatorHelperCRTP<StdAllocatorNV>
 
     static void free(void* ptr) noexcept
     { StdAllocator::inst()->free(ptr); }
+
+    [[nodiscard]] static constexpr bool doesIndividualFree() noexcept { return true; }
 };
 
 inline StdAllocator*
@@ -59,7 +63,7 @@ StdAllocator::malloc(usize mCount, usize mSize)
     auto* r = ::malloc(mCount * mSize);
 #endif
 
-    if (!r) throw AllocException("StdAllocator::malloc()");
+    if (!r) [[unlikely]] throw AllocException("StdAllocator::malloc()");
 
     return r;
 }
@@ -73,7 +77,7 @@ StdAllocator::zalloc(usize mCount, usize mSize)
     auto* r = ::calloc(mCount, mSize);
 #endif
 
-    if (!r) throw AllocException("StdAllocator::zalloc()");
+    if (!r) [[unlikely]] throw AllocException("StdAllocator::zalloc()");
 
     return r;
 }
@@ -87,7 +91,7 @@ StdAllocator::realloc(void* p, usize, usize newCount, usize mSize)
     auto* r = ::realloc(p, newCount * mSize);
 #endif
 
-    if (!r) throw AllocException("StdAllocator::realloc()");
+    if (!r) [[unlikely]] throw AllocException("StdAllocator::realloc()");
 
     return r;
 }

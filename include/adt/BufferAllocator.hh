@@ -42,6 +42,11 @@ struct BufferAllocator : public IArena
     [[nodiscard]] virtual constexpr void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     [[deprecated("noop")]] constexpr virtual void free(void*) noexcept override final { /* noop */ }
     constexpr virtual void freeAll() noexcept override final; /* same as reset */
+    [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return false; }
+    [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
+
+    /* */
+
     constexpr void reset() noexcept;
     constexpr isize realCap() const noexcept;
 };

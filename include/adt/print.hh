@@ -633,11 +633,13 @@ printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs)
     bool bArg = false;
     isize i = ctx.fmtIdx;
 
-    /* NOTE: Edge case, when we need to fill but fmt is out of range. */
-    if (bool(ctx.eFlags & Context::FLAGS::UPDATE_FMT_ARGS) && ctx.fmtIdx >= ctx.fmt.size())
-        return format(ctx, ctx.prevFmtArgs, tFirst);
-    else if (ctx.fmtIdx >= ctx.fmt.size())
-        return 0;
+    if (ctx.fmtIdx >= ctx.fmt.size())
+    {
+        /* NOTE: Edge case, when we need to fill but fmt is out of range. */
+        if (bool(ctx.eFlags & Context::FLAGS::UPDATE_FMT_ARGS))
+            return format(ctx, ctx.prevFmtArgs, tFirst);
+        else return 0;
+    }
 
     details::printArg(nWritten, i, bArg, ctx, tFirst);
 

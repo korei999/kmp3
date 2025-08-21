@@ -65,20 +65,20 @@ swap(T* l, T* r)
     *l = std::move(t);
 }
 
-template<typename T>
-[[nodiscard]] inline constexpr T
-exchange(T* pObj, T& replaceObjWith)
+template<typename A, typename B = A>
+[[nodiscard]] inline constexpr A
+exchange(A* pObj, const B& replaceObjWith)
 {
-    T ret = std::move(*pObj);
+    auto ret = std::move(*pObj);
     *pObj = replaceObjWith;
     return ret;
 }
 
-template<typename T>
-[[nodiscard]] inline constexpr T
-exchange(T* pObj, T&& replaceObjWith)
+template<typename A, typename B = A>
+[[nodiscard]] inline constexpr A
+exchange(A* pObj, B&& replaceObjWith)
 {
-    T ret = std::move(*pObj);
+    auto ret = std::move(*pObj);
     *pObj = std::move(replaceObjWith);
     return ret;
 }
@@ -207,7 +207,16 @@ inline void
 memCopy(T* pDest, const T* const pSrc, isize size)
 {
     ADT_ASSERT(pDest != nullptr && pSrc != nullptr, " ");
-    memcpy(pDest, pSrc, size * sizeof(T));
+
+    if constexpr (std::is_trivially_destructible_v<T>)
+    {
+        ::memcpy(pDest, pSrc, size * sizeof(T));
+    }
+    else
+    {
+        for (isize i = 0; i < size; ++i)
+            new(pDest + i) T {pSrc[i]};
+    }
 }
 
 template<typename T>
@@ -215,7 +224,7 @@ inline void
 memMove(T* pDest, const T* const pSrc, isize size)
 {
     ADT_ASSERT(pDest != nullptr && pSrc != nullptr, " ");
-    memmove(pDest, pSrc, size * sizeof(T));
+    ::memmove(pDest, pSrc, size * sizeof(T));
 }
 
 template<typename T>
@@ -223,7 +232,7 @@ inline void
 memSet(T* pDest, int byte, isize size)
 {
     ADT_ASSERT(pDest != nullptr, " ");
-    memset(pDest, byte, size * sizeof(T));
+    ::memset(pDest, byte, size * sizeof(T));
 }
 
 template<typename T>

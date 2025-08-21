@@ -56,8 +56,12 @@ struct Arena : public IArena
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
     virtual void free(void* ptr) noexcept override final;
     virtual void freeAll() noexcept override final;
-    void reset() noexcept;
+    [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return false; }
+    [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
 
+    /* */
+
+    void reset() noexcept;
     void shrinkToFirstBlock() noexcept;
     isize nBytesOccupied() const noexcept;
 
@@ -143,7 +147,7 @@ Arena::malloc(usize mCount, usize mSize)
         );
 #endif
 
-    if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, usize(realSize*1.3)));
+    if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, usize(realSize*1.33)));
 
     auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
     ADT_ASSERT(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize, " ");

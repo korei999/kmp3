@@ -602,7 +602,10 @@ StringView::subString(isize start, isize size) const noexcept
         "out of range: ends at: {}, requested: {}",
         m_size, start + size
     );
-    return StringView((char*)&operator[](start), size);
+
+    ADT_ASSERT((start >= 0 && start < m_size) || size == 0, "start: {}, size: {}", start, size);
+
+    return StringView((char*)m_pData + start, size);
 }
 
 template<typename T>

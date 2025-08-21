@@ -395,9 +395,9 @@ template<typename T>
 inline Vec<T>
 Vec<T>::clone(IAllocator* pAlloc) const
 {
-    auto nVec = Vec<T>(pAlloc, cap());
-    memcpy(nVec.data(), data(), size() * sizeof(T));
-    nVec.m_size = size();
+    auto nVec = Vec<T>(pAlloc, m_capacity);
+    utils::memCopy(nVec.data(), m_pData, m_size);
+    nVec.m_size = m_size;
 
     return nVec;
 }
@@ -441,7 +441,7 @@ Vec<T>::growOnSpanPush(IAllocator* p, const isize spanSize)
 
     if (m_size + spanSize > m_capacity)
     {
-        const isize newSize = utils::max(static_cast<isize>((spanSize + m_size)*1.33), m_size*2);
+        const isize newSize = utils::max(isize(8), nextPowerOf2(m_size + spanSize));
         ADT_ASSERT(newSize > m_size, "overflow");
         grow(p, newSize);
     }
