@@ -77,9 +77,9 @@ Decoder::getCurrentMS()
 i64
 Decoder::getTotalMS()
 {
-    auto totalCount = getTotalSamplesCount();
-    auto sr = getSampleRate();
-    auto nChannels = getChannelsCount();
+    i64 totalCount = getTotalSamplesCount();
+    u32 sr = getSampleRate();
+    int nChannels = getChannelsCount();
 
     if (sr == 0 || nChannels == 0) return 0;
     else return (totalCount / sr / nChannels) * 1000;

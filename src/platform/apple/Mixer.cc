@@ -60,7 +60,7 @@ Mixer::writeCallBack(
         /* fill the buffer when it's empty */
         if (s_nWrites >= s_nDecodedSamples)
         {
-            writeFramesNonLocked({audio::g_aRenderBuffer}, inNumberFrames, &s_nDecodedSamples, &m_currentTimeStamp);
+            writeFramesLocked({audio::g_aRenderBuffer}, inNumberFrames, &s_nDecodedSamples, &m_currentTimeStamp);
 
             m_currMs = app::decoder().getCurrentMS();
             s_nWrites = 0;
@@ -84,31 +84,6 @@ Mixer::writeCallBack(
     }
 
     return noErr;
-}
-
-void
-Mixer::writeFramesNonLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos)
-{
-    audio::ERROR err {};
-    {
-        if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
-
-        err = app::decoder().writeToBuffer(
-            spBuff,
-            nFrames, m_nChannels,
-            pSamplesWritten, pPcmPos
-        );
-
-        if (err == audio::ERROR::END_OF_FILE)
-        {
-            pause(true);
-            app::decoder().close();
-            m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
-        }
-    }
-
-    if (err == audio::ERROR::END_OF_FILE)
-        m_atom_bSongEnd.store(true, atomic::ORDER::RELEASE);
 }
 
 Mixer&
@@ -184,7 +159,6 @@ Mixer::play(StringView svPath)
             err != audio::ERROR::OK_
         )
         {
-            pause(false);
             return false;
         }
 
@@ -233,18 +207,12 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 void
 Mixer::seekMS(f64 ms)
 {
-    pause(true);
+    LockGuard lockDec {&app::decoder().m_mtx};
 
-    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE))
-    {
-        pause(false);
-        return;
-    }
+    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
     ms = utils::clamp(ms, 0.0, f64(app::decoder().getTotalMS()));
     app::decoder().seekMS(ms);
-
-    pause(false);
 
     m_currMs = ms;
     m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
