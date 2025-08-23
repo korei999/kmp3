@@ -8,7 +8,6 @@
 #include "Span.hh" /* IWYU pragma: keep */
 #include "print.hh" /* IWYU pragma: keep */
 #include "wcwidth.hh"
-#include "hash.hh"
 
 #include <cwchar>
 
@@ -808,13 +807,6 @@ StringCat(IAllocator* p, const StringView& l, const StringView& r)
     sNew.m_pData = ret;
     sNew.m_size = len;
     return sNew;
-}
-
-template<>
-inline usize
-hash::func(const StringView& str)
-{
-    return hash::func(str.m_pData, str.m_size);
 }
 
 namespace utils

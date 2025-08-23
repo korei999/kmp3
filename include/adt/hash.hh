@@ -168,6 +168,18 @@ crc32(const u8* p, isize byteSize, usize seed = 0)
 
 #endif
 
+template<typename STRING_T>
+requires ConvertsToStringView<STRING_T>
+ADT_NO_UB inline usize
+func(const STRING_T& x)
+{
+#ifdef ADT_SSE4_2
+    return crc32(reinterpret_cast<const u8*>(x.data()), x.size(), 0);
+#else
+    return xxh64(reinterpret_cast<const u8*>(x.data()), x.size(), 0);
+#endif
+}
+
 template<typename T>
 requires (sizeof(T) == 8)
 ADT_NO_UB inline usize

@@ -12,11 +12,6 @@ struct IAllocator;
 struct String;
 struct StringView;
 
-namespace hash
-{
-template<typename T> inline usize func(const T& x);
-} /* namespace hash */
-
 namespace utils
 {
 [[nodiscard]] inline isize compare(const StringView& l, const StringView& r);
@@ -125,9 +120,6 @@ protected:
 [[nodiscard]] inline i64 operator-(const StringView& l, const StringView& r);
 
 [[nodiscard]] inline String StringCat(IAllocator* p, const StringView& l, const StringView& r);
-
-template<>
-inline usize hash::func(const StringView& str);
 
 struct String : public StringView
 {
