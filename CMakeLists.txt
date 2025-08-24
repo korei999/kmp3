@@ -194,21 +194,38 @@ if (OPT_MIMALLOC)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)
 endif()
 
+function(allPackageFlags)
+    set(oneValueArgs TARGET NAME)
+    cmake_parse_arguments(AOB "${options}" "${oneValueArgs}" "" ${ARGN})
+
+    if (DEFINED ${AOB_NAME}_INCLUDE_DIRS)
+        target_include_directories(${AOB_TARGET} PRIVATE ${${AOB_NAME}_INCLUDE_DIRS})
+    endif()
+
+    if (DEFINED ${AOB_NAME}_LIBRARY_DIRS)
+        target_link_directories(${AOB_TARGET} PRIVATE ${${AOB_NAME}_LIBRARY_DIRS})
+    endif()
+
+    if (DEFINED ${AOB_NAME}_LIBRARIES)
+        target_link_libraries(${AOB_TARGET} PRIVATE ${${AOB_NAME}_LIBRARIES})
+    endif()
+
+    if (DEFINED ${AOB_NAME}_CFLAGS)
+        target_compile_options(${AOB_TARGET} PRIVATE ${${AOB_NAME}_CFLAGS})
+    endif()
+endfunction()
+
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswresample)
-include_directories(${FFMPEG_INCLUDE_DIRS})
-target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARIES})
+allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME FFMPEG)
 
 if (OPT_ALSA)
     pkg_check_modules(ALSA alsa)
     if (ALSA_FOUND)
-        add_definitions("-DOPT_ALSA")
-        include_directories(${ALSA_INCLUDE_DIRS})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${ALSA_LIBRARIES})
-        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${ALSA_LIBRARY_DIRS})
+        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME ALSA)
 
+        add_definitions("-DOPT_ALSA")
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
             "src/platform/alsa/Mixer.cc"
@@ -219,11 +236,9 @@ endif()
 if (OPT_PIPEWIRE)
     pkg_check_modules(PIPEWIRE libpipewire-0.3)
     if (PIPEWIRE_FOUND)
-        add_definitions("-DOPT_PIPEWIRE")
-        include_directories(${PIPEWIRE_INCLUDE_DIRS})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARIES})
-        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARY_DIRS})
+        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME PIPEWIRE)
 
+        add_definitions("-DOPT_PIPEWIRE")
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
             "src/platform/pipewire/Mixer.cc"
@@ -234,11 +249,9 @@ endif()
 if (OPT_SNDIO OR CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
     pkg_check_modules(SNDIO sndio)
     if (SNDIO_FOUND)
-        add_definitions("-DOPT_SNDIO")
-        include_directories(${SNDIO_INCLUDE_DIRS})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SNDIO_LIBRARIES})
-        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${SNDIO_LIBRARY_DIRS})
+        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME SNDIO)
 
+        add_definitions("-DOPT_SNDIO")
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
             "src/platform/sndio/Mixer.cc"
@@ -256,9 +269,9 @@ if (OPT_CHAFA)
             add_definitions("-DOPT_CHAFA_SYMBOLS")
         endif()
 
-        include_directories(${CHAFA_INCLUDE_DIRS} ${SWSCALE_INCLUDE_DIRS})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARIES} ${SWSCALE_LIBRARIES})
-        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CHAFA_LIBRARY_DIRS})
+        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME CHAFA)
+        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME SWSCALE)
+
         add_definitions("-DOPT_CHAFA")
         target_sources(
             ${CMAKE_PROJECT_NAME} PRIVATE
@@ -270,19 +283,15 @@ endif()
 if(OPT_MPRIS)
     pkg_check_modules(SYSTEMD libsystemd)
     if (SYSTEMD_FOUND)
-        include_directories(${SYSTEMD_INCLUDE_DIRS})
-        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARIES})
-        target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${SYSTEMD_LIBRARY_DIRS})
-        target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
+        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME SYSTEMD)
         add_definitions("-DOPT_MPRIS")
+        target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
     else()
         pkg_check_modules(BASU basu)
         if (BASU_FOUND)
-            include_directories(${BASU_INCLUDE_DIRS})
-            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARIES})
-            target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${BASU_LIBRARY_DIRS})
-            target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
+            allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME BASU)
             add_definitions("-DOPT_MPRIS -DOPT_BASU")
+            target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
         endif()
     endif()
 endif()
