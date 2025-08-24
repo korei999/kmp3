@@ -34,7 +34,7 @@ namespace adt::hash
 struct xxh64
 {
     static constexpr u64
-    hash(const char* p, u64 len, u64 seed)
+    hash(const u8* p, u64 len, u64 seed)
     {
         return finalize((len >= 32 ? h32bytes(p, len, seed) : seed + PRIME5) + len, p + (len & ~0x1F), len & 0x1F);
     }
@@ -71,51 +71,51 @@ private:
     }
 #ifdef XXH64_BIG_ENDIAN
     static constexpr u32
-    endian32(const char* v)
+    endian32(const u8* v)
     {
         return u32(u8(v[3])) | (u32(u8(v[2])) << 8) | (u32(u8(v[1])) << 16) | (u32(u8(v[0])) << 24);
     }
 
     static constexpr u64
-    endian64(const char* v)
+    endian64(const u8* v)
     {
         return u64(u8(v[7])) | (u64(u8(v[6])) << 8) | (u64(u8(v[5])) << 16) | (u64(u8(v[4])) << 24) |
             (u64(u8(v[3])) << 32) | (u64(u8(v[2])) << 40) | (u64(u8(v[1])) << 48) | (u64(u8(v[0])) << 56);
     }
 #else
     static constexpr u32
-    endian32(const char* v)
+    endian32(const u8* v)
     {
         return u32(u8(v[0])) | (u32(u8(v[1])) << 8) | (u32(u8(v[2])) << 16) | (u32(u8(v[3])) << 24);
     }
 
     static constexpr u64
-    endian64(const char* v)
+    endian64(const u8* v)
     {
         return u64(u8(v[0])) | (u64(u8(v[1])) << 8) | (u64(u8(v[2])) << 16) | (u64(u8(v[3])) << 24) |
             (u64(u8(v[4])) << 32) | (u64(u8(v[5])) << 40) | (u64(u8(v[6])) << 48) | (u64(u8(v[7])) << 56);
     }
 #endif
     static constexpr u64
-    fetch64(const char* p, const u64 v = 0)
+    fetch64(const u8* p, const u64 v = 0)
     {
         return mix2(endian64(p), v);
     }
 
     static constexpr u64
-    fetch32(const char* p)
+    fetch32(const u8* p)
     {
         return u64(endian32(p)) * PRIME1;
     }
 
     static constexpr u64
-    fetch8(const char* p)
+    fetch8(const u8* p)
     {
         return u8(*p) * PRIME5;
     }
 
     static constexpr u64
-    finalize(const u64 h, const char* p, u64 len)
+    finalize(const u64 h, const u8* p, u64 len)
     {
         return (len >= 8) ? (finalize(rotl(h ^ fetch64(p), 27) * PRIME1 + PRIME4, p + 8, len - 8))
             : ((len >= 4) ? (finalize(rotl(h ^ fetch32(p), 23) * PRIME2 + PRIME3, p + 4, len - 4))
@@ -123,7 +123,7 @@ private:
                     : (mix1(mix1(mix1(h, PRIME2, 33), PRIME3, 29), 1, 32))));
     }
     static constexpr u64
-    h32bytes(const char* p, u64 len, const u64 v1, const u64 v2, const u64 v3, const u64 v4)
+    h32bytes(const u8* p, u64 len, const u64 v1, const u64 v2, const u64 v3, const u64 v4)
     {
         return (len >= 32)
             ? h32bytes(
@@ -133,7 +133,7 @@ private:
     }
 
     static constexpr u64
-    h32bytes(const char* p, u64 len, const u64 seed)
+    h32bytes(const u8* p, u64 len, const u64 seed)
     {
         return h32bytes(p, len, seed + PRIME1 + PRIME2, seed + PRIME2, seed, seed - PRIME1);
     }
@@ -188,7 +188,7 @@ func(const T& x)
 #ifdef ADT_SSE4_2
     return _mm_crc32_u64(0, x);
 #else
-    return xxh64::hash(reinterpret_cast<const char*>(&x), sizeof(T), 0);
+    return xxh64::hash(reinterpret_cast<const u8*>(&x), sizeof(T), 0);
 #endif
 }
 
@@ -200,7 +200,7 @@ func(const T& x)
 #ifdef ADT_SSE4_2
     return usize(_mm_crc32_u32(0, x));
 #else
-    return xxh64::hash(reinterpret_cast<const char*>(&x), sizeof(T), 0);
+    return xxh64::hash(reinterpret_cast<const u8*>(&x), sizeof(T), 0);
 #endif
 }
 
@@ -211,7 +211,7 @@ func(const T* pBuff, isize byteSize, usize seed = 0)
 #ifdef ADT_SSE4_2
     return crc32(reinterpret_cast<const u8*>(pBuff), byteSize, seed);
 #else
-    return xxh64::hash(reinterpret_cast<const char*>(pBuff), byteSize, seed);
+    return xxh64::hash(reinterpret_cast<const u8*>(pBuff), byteSize, seed);
 #endif
 }
 
