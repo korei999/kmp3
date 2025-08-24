@@ -15,6 +15,7 @@ option(OPT_MIMALLOC "" OFF)
 option(OPT_SSE4_2 "" OFF)
 option(OPT_AVX2 "" OFF)
 option(OPT_MARCH_NATIVE "" OFF)
+option(OPT_ANALYZE "" ON)
 option(OPT_PRECOMPILE_ADT "" ON)
 option(OPT_FTIME_TRACE "" OFF)
 
