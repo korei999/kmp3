@@ -201,22 +201,22 @@ endif()
 
 function(allPackageFlags)
     set(oneValueArgs TARGET NAME)
-    cmake_parse_arguments(AOB "${options}" "${oneValueArgs}" "" ${ARGN})
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "" ${ARGN})
 
-    if (DEFINED ${AOB_NAME}_INCLUDE_DIRS)
-        target_include_directories(${AOB_TARGET} PRIVATE ${${AOB_NAME}_INCLUDE_DIRS})
+    if (DEFINED ${ARG_NAME}_INCLUDE_DIRS)
+        target_include_directories(${ARG_TARGET} PRIVATE ${${ARG_NAME}_INCLUDE_DIRS})
     endif()
 
-    if (DEFINED ${AOB_NAME}_LIBRARY_DIRS)
-        target_link_directories(${AOB_TARGET} PRIVATE ${${AOB_NAME}_LIBRARY_DIRS})
+    if (DEFINED ${ARG_NAME}_LIBRARY_DIRS)
+        target_link_directories(${ARG_TARGET} PRIVATE ${${ARG_NAME}_LIBRARY_DIRS})
     endif()
 
-    if (DEFINED ${AOB_NAME}_LIBRARIES)
-        target_link_libraries(${AOB_TARGET} PRIVATE ${${AOB_NAME}_LIBRARIES})
+    if (DEFINED ${ARG_NAME}_LIBRARIES)
+        target_link_libraries(${ARG_TARGET} PRIVATE ${${ARG_NAME}_LIBRARIES})
     endif()
 
-    if (DEFINED ${AOB_NAME}_CFLAGS)
-        target_compile_options(${AOB_TARGET} PRIVATE ${${AOB_NAME}_CFLAGS})
+    if (DEFINED ${ARG_NAME}_CFLAGS)
+        target_compile_options(${ARG_TARGET} PRIVATE ${${ARG_NAME}_CFLAGS})
     endif()
 endfunction()
 
