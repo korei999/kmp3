@@ -92,6 +92,7 @@ ILogger::inst() noexcept
 template<isize SIZE = 512, typename ...ARGS>
 struct Log
 {    
+#ifndef ADT_LOGGER_DISABLE
     Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_location& loc = std::source_location::current())
     {
         ADT_ASSERT(eLevel >= ILogger::LEVEL::NONE && eLevel <= ILogger::LEVEL::DEBUG,
@@ -107,6 +108,10 @@ struct Log
         while (!pLogger->add(eLevel, loc, StringView{msg.data(), n}))
             ;
     }
+#else
+    Log(ILogger::LEVEL, ARGS&&..., [[maybe_unused]] const std::source_location& loc = std::source_location::current())
+    {}
+#endif
 };
 
 template<isize SIZE = 512, typename ...ARGS>

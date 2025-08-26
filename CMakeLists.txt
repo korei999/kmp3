@@ -18,6 +18,7 @@ option(OPT_MARCH_NATIVE "" OFF)
 option(OPT_ANALYZE "" OFF)
 option(OPT_PRECOMPILE_ADT "" ON)
 option(OPT_FTIME_TRACE "" OFF)
+option(OPT_ADT_LOGGER_DISABLE "" OFF)
 
 if (OPT_SSE4_2)
     add_definitions("-DADT_SSE4_2")
@@ -65,6 +66,10 @@ endif()
 
 if (OPT_FTIME_TRACE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
+endif()
+
+if (OPT_ADT_LOGGER_DISABLE)
+    add_definitions("-DADT_LOGGER_DISABLE")
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
