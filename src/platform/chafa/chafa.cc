@@ -2,8 +2,6 @@
 
 #include "defaults.hh"
 
-#include <cmath>
-
 #include <sys/ioctl.h>
 
 using namespace adt;
@@ -175,7 +173,7 @@ detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode, ChafaPixelMod
     *pMode = mode;
     *pPixelMode = pixelMode;
 
-    LOG("pixelMode: {}\n", (int)pixelMode);
+    LogDebug("pixelMode: {}\n", (int)pixelMode);
 }
 
 static StringLines
@@ -302,7 +300,7 @@ allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int term
         fontRatio, true, false
     );
 
-    LOG_GOOD("formatSize: {}\n", getFormatChannelNumber(img.eFormat));
+    LogDebug("formatSize: {}\n", getFormatChannelNumber(img.eFormat));
 
     if (eLayout == IMAGE_LAYOUT::RAW)
     {

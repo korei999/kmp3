@@ -94,7 +94,7 @@ Mixer::loop()
     }
 
 GOTO_done:
-    LOG_BAD("LOOP DONE\n");
+    LogDebug("LOOP DONE\n");
 
     return THREAD_STATUS(0);
 }
@@ -102,7 +102,7 @@ GOTO_done:
 Mixer&
 Mixer::init()
 {
-    LOG_NOTIFY("initializing sndio...\n");
+    LogDebug("initializing sndio...\n");
 
     m_bRunning = true;
     m_bMuted = false;
@@ -162,7 +162,7 @@ Mixer::destroy()
 
     sio_close(m_pHdl);
 
-    LOG_BAD("MixerDestroy()\n");
+    LogDebug("MixerDestroy()\n");
 }
 
 bool

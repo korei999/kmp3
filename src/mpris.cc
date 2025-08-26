@@ -130,7 +130,7 @@ togglePause(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    LOG("mpris::togglePause\n");
+    LogDebug("mpris::togglePause\n");
     app::togglePause();
     return sd_bus_reply_method_return(m, "");
 }
@@ -164,7 +164,7 @@ pause(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    LOG("mpris::pause\n");
+    LogDebug("mpris::pause\n");
     app::mixer().pause(true);
     return sd_bus_reply_method_return(m, "");
 }
@@ -187,7 +187,7 @@ resume(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    LOG("mpris::resume\n");
+    LogDebug("mpris::resume\n");
     app::mixer().pause(false);
     return sd_bus_reply_method_return(m, "");
 }
@@ -335,7 +335,7 @@ setLoopStatus(
 {
     const char* t = nullptr;
     CK(sd_bus_message_read_basic(value, 's', &t));
-    LOG("mpris::setLoopStatus(): {}\n", t);
+    LogDebug("mpris::setLoopStatus(): {}\n", t);
 
     auto eMethod = app::g_pPlayer->m_eRepeatMethod;
     for (isize i = 0; i < utils::size(mapPlayerRepeatMethodStrings); ++i)
@@ -638,7 +638,7 @@ out:
         s_fdMpris = -1;
         g_bReady = false;
 
-        LOG_WARN("{}: {}\n", strerror(-res), "init error");
+        LogDebug("{}: {}\n", strerror(-res), "init error");
     }
     else g_bReady = true;
 }

@@ -68,13 +68,10 @@ fence(const ORDER eOrder)
 #endif
 }
 
-struct Int
+template<typename T = i32>
+struct Num
 {
-#ifdef ADT_USE_WIN32_ATOMICS
-    using Type = LONG;
-#else
-    using Type = i32;
-#endif
+    using Type = T;
 
     /* */
 
@@ -82,8 +79,8 @@ struct Int
 
     /* */
 
-    Int() : m_volInt(0) {}
-    explicit Int(const int val) : m_volInt(val) {}
+    Num() : m_volInt(0) {}
+    explicit Num(const int val) : m_volInt(val) {}
 
     /* */
 
@@ -200,13 +197,16 @@ struct Int
     };
 };
 
+using Int = Num<i32>;
+
 } /* namespace adt::atomic */
 
 namespace adt::print
 {
 
+template<typename T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const atomic::Int& x) noexcept
+format(Context ctx, FormatArgs fmtArgs, const atomic::Num<T>& x) noexcept
 {
     return format(ctx, fmtArgs, x.load(atomic::ORDER::RELAXED));
 }

@@ -38,7 +38,7 @@ run()
 {
     if (!(app::g_pWin = app::allocWindow(app::player().m_pAlloc)))
     {
-        CERR("app::allocWindow(): failed\n");
+        print::out("app::allocWindow(): failed\n");
         return;
     }
 
@@ -47,7 +47,7 @@ run()
 
     if (app::window().start(&arena) == false)
     {
-        CERR("failed to start window\n");
+        print::out("failed to start window\n");
         return;
     }
 

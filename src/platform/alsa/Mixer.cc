@@ -13,7 +13,7 @@ static const char* s_pDevice = "default";
 Mixer&
 Mixer::init()
 {
-    LOG_NOTIFY("initializing alsa...\n");
+    LogInfo("initializing alsa...\n");
 
     int err = 0;
 
@@ -57,7 +57,7 @@ Mixer::destroy()
     // snd_pcm_drain(m_pHandle); /* Too slow. */
     snd_pcm_close(m_pHandle);
 
-    LOG_BAD("MixerDestroy()\n");
+    LogDebug("MixerDestroy()\n");
 }
 
 bool
@@ -105,6 +105,7 @@ Mixer::pause(bool bPause)
     bool bCurr = m_atom_bPaused.load(atomic::ORDER::ACQUIRE);
     if (bCurr == bPause) return;
 
+    LogInfo("bPause: {}\n", bPause);
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
     if (bPause) snd_pcm_pause(m_pHandle, true);
@@ -266,7 +267,7 @@ Mixer::loop()
             if (nFrameWritten < 0) nFrameWritten = snd_pcm_recover(m_pHandle, nFrameWritten, 0);
             if (nFrameWritten < 0)
             {
-                LOG_BAD("snd_pcm_recover() failed: {}\n", snd_strerror(nFrameWritten));
+                LogDebug("snd_pcm_recover() failed: {}\n", snd_strerror(nFrameWritten));
                 app::quit();
                 goto GOTO_done;
             }
@@ -274,7 +275,7 @@ Mixer::loop()
     }
 
 GOTO_done:
-    LOG_BAD("LOOP DONE\n");
+    LogDebug("LOOP DONE\n");
 
     return THREAD_STATUS(0);
 }

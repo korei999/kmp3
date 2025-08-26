@@ -114,7 +114,7 @@ Arena::allocBlock(usize size)
 
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
     print::err("[Arena: {}, {}, {}]: new block of size: {}\n",
-        print::stripSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), size
+        print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), size
     );
 #endif
 
@@ -143,7 +143,7 @@ Arena::malloc(usize mCount, usize mSize)
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
     if (m_defaultCapacity <= realSize)
         print::err("[Arena: {}, {}, {}]: allocating more than defaultCapacity ({}, {})\n",
-            print::stripSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_defaultCapacity, realSize
+            print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_defaultCapacity, realSize
         );
 #endif
 
@@ -245,7 +245,7 @@ Arena::shrinkToFirstBlock() noexcept
     {
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
         print::err("[Arena: {}, {}, {}]: shrinking {} sized block\n",
-            print::stripSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), it->size
+            print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), it->size
         );
 #endif
         auto* next = it->pNext;

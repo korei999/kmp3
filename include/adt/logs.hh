@@ -43,7 +43,7 @@ static constexpr adt::StringView _ADT_LOG_SEV_STR[] = {
     "",
     ADT_LOGS_COL_GREEN "GOOD: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_CYAN "NOTIFY: " ADT_LOGS_COL_NORM,
-    ADT_LOGS_COL_YELLOW "WARNING: " ADT_LOGS_COL_NORM,
+    ADT_LOGS_COL_YELLOW "WARN: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_RED "BAD: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_MAGENTA "ERR: " ADT_LOGS_COL_NORM,
     ADT_LOGS_COL_BLUE "EXIT: " ADT_LOGS_COL_NORM,
@@ -57,7 +57,7 @@ static constexpr adt::StringView _ADT_LOG_SEV_STR[] = {
         {                                                                                                              \
             ADT_ASSERT(SEV >= 0 && SEV < _ADT_LOG_SEV_ENUM_SIZE, "wrong _ADT_LOG_SEV*");                               \
             ADT_CERR(                                                                                                  \
-                "({}{}, {}, {}):\n", _ADT_LOG_SEV_STR[SEV], adt::print::stripSourcePath(__FILE__), __func__, __LINE__  \
+                "({}{}, {}): ", _ADT_LOG_SEV_STR[SEV], adt::print::shorterSourcePath(__FILE__), __LINE__               \
             );                                                                                                         \
             ADT_CERR(__VA_ARGS__);                                                                                     \
             switch (SEV)                                                                                               \

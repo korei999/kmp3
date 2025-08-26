@@ -24,8 +24,8 @@ struct Span2D
     constexpr explicit operator bool() const { return m_pData != nullptr; }
     constexpr operator const Span2D<const T>() const { return {m_pData, m_width, m_height, m_stride}; }
 
-    constexpr T& operator()(i32 x, i32 y) { return at(x, y); }
-    constexpr const T& operator()(i32 x, i32 y) const { return at(x, y); }
+    constexpr T& operator[](i32 x, i32 y) { return at(x, y); }
+    constexpr const T& operator[](i32 x, i32 y) const { return at(x, y); }
 
     constexpr T* data() { return m_pData; }
     constexpr const T* data() const { return m_pData; }

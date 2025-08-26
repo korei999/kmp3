@@ -1,7 +1,6 @@
 #pragma once
 
 #include "String.hh"
-#include "logs.hh"
 #include "defer.hh"
 
 #include <limits>
@@ -35,7 +34,9 @@ load(IAllocator* pAlloc, const char* ntsPath)
     if (!pf)
     {
 fail:
-        ADT_LOG_WARN("failed to open '{}' file\n", ntsPath);
+#ifndef NDEBUG
+        print::err("[file::load]: failed to open '{}' file\n", ntsPath);
+#endif
         return {};
     }
     ADT_DEFER( fclose(pf) );
@@ -46,7 +47,9 @@ fail:
     const auto ftellSize = ftell(pf);
     if (ftellSize <= 0 || ftellSize >= std::numeric_limits<decltype(ftellSize)>::max())
     {
-        ADT_LOG_BAD("bad size: '{}'\n", ftellSize);
+#ifndef NDEBUG
+        print::err("[file::load]: bad size: '{}'\n", ftellSize);
+#endif
         goto fail;
     }
 
@@ -70,7 +73,9 @@ load(const char* ntsPath)
     if (!pf)
     {
 fail:
-        ADT_LOG_WARN("failed to open '{}' file\n", ntsPath);
+#ifndef NDEBUG
+        print::err("[file::load]: failed to open '{}' file\n", ntsPath);
+#endif
         return {};
     }
     ADT_DEFER( fclose(pf) );
@@ -81,7 +86,9 @@ fail:
     const auto ftellSize = ftell(pf);
     if (ftellSize <= 0 || ftellSize >= std::numeric_limits<decltype(ftellSize)>::max())
     {
-        ADT_LOG_BAD("bad size: '{}'\n", ftellSize);
+#ifndef NDEBUG
+        print::err("[file::load]: bad size: '{}'\n", ftellSize);
+#endif
         goto fail;
     }
 
@@ -204,7 +211,9 @@ map(const char* ntsPath)
     int fd = open(ntsPath, O_RDONLY);
     if (fd == -1)
     {
-        ADT_LOG_BAD("failed to open() '{}'\n", ntsPath);
+#ifndef NDEBUG
+        print::err("[file::map]: failed to open() '{}'\n", ntsPath);
+#endif
         return {};
     }
 
@@ -213,7 +222,9 @@ map(const char* ntsPath)
     struct stat sb {};
     if (fstat(fd, &sb) == -1)
     {
-        ADT_LOG_ERR("fstat() failed\n");
+#ifndef NDEBUG
+        print::err("[file::map]: fstat() failed\n");
+#endif
         return {};
     }
 
@@ -222,7 +233,9 @@ map(const char* ntsPath)
     void* pData = mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (pData == MAP_FAILED)
     {
-        ADT_LOG_ERR("mmap() failed\n");
+#ifndef NDEBUG
+        print::err("[file::map]: mmap() failed\n");
+#endif
         return {};
     }
 

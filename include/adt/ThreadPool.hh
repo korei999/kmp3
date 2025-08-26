@@ -208,7 +208,7 @@ struct ThreadPool : IThreadPool
     atomic::Int m_atomBDone {};
     atomic::Int m_atomIdCounter {};
     bool m_bStarted {};
-    Queue<Task> m_qTasks {};
+    QueueM<Task> m_qTasks {};
 
     /* */
 
@@ -218,10 +218,9 @@ struct ThreadPool : IThreadPool
 
     ThreadPool() = default;
 
-    ThreadPool(IAllocator* pAlloc, isize qSize, int nThreads = optimalThreadCount());
+    ThreadPool(isize qSize, int nThreads = optimalThreadCount());
 
     ThreadPool(
-        IAllocator* pAlloc,
         void (*pfnOnLoopStart)(void*),
         void* pLoopStartArg,
         void (*pfnOnLoopEnd)(void*),
@@ -244,7 +243,7 @@ struct ThreadPool : IThreadPool
 
     /* */
 
-    void destroy(IAllocator* pAlloc) noexcept;
+    void destroy() noexcept;
 
 protected:
     void start();
@@ -252,25 +251,24 @@ protected:
 };
 
 inline
-ThreadPool::ThreadPool(IAllocator* pAlloc, isize qSize, int nThreads)
-    : m_spThreads(pAlloc->zallocV<Thread>(nThreads), nThreads),
+ThreadPool::ThreadPool(isize qSize, int nThreads)
+    : m_spThreads(StdAllocator::inst()->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
-      m_qTasks(pAlloc, qSize)
+      m_qTasks(qSize)
 {
     start();
 }
 
 inline
 ThreadPool::ThreadPool(
-    IAllocator* pAlloc,
     void (*pfnOnLoopStart)(void*), void* pLoopStartArg,
     void (*pfnOnLoopEnd)(void*), void* pLoopEndArg,
     isize qSize,
     int nThreads
 )
-    : m_spThreads(pAlloc->zallocV<Thread>(nThreads), nThreads),
+    : m_spThreads(StdAllocator::inst()->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
@@ -278,7 +276,7 @@ ThreadPool::ThreadPool(
       m_pLoopStartArg(pLoopStartArg),
       m_pfnLoopEnd(pfnOnLoopEnd),
       m_pLoopEndArg(pLoopEndArg),
-      m_qTasks(pAlloc, qSize)
+      m_qTasks(qSize)
 {
     start();
 }
@@ -367,7 +365,7 @@ again:
 }
 
 inline void
-ThreadPool::destroy(IAllocator* pAlloc) noexcept
+ThreadPool::destroy() noexcept
 {
     wait(true);
 
@@ -383,8 +381,8 @@ ThreadPool::destroy(IAllocator* pAlloc) noexcept
 
     ADT_ASSERT(m_atomNActiveTasks.load(atomic::ORDER::ACQUIRE) == 0, "{}", m_atomNActiveTasks.load(atomic::ORDER::RELAXED));
 
-    pAlloc->free(m_spThreads.data());
-    m_qTasks.destroy(pAlloc);
+    StdAllocator::inst()->free(m_spThreads.data());
+    m_qTasks.destroy();
     m_mtxQ.destroy();
     m_cndQ.destroy();
     m_cndWait.destroy();
@@ -447,9 +445,8 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
 
     ThreadPoolWithMemory() = default;
 
-    ThreadPoolWithMemory(IAllocator* pAlloc, isize qSize, isize nBytesEachBuffer, int nThreads = optimalThreadCount())
+    ThreadPoolWithMemory(isize qSize, isize nBytesEachBuffer, int nThreads = optimalThreadCount())
         : m_base(
-            pAlloc,
             +[](void* p) { allocScratchBufferForThisThread(reinterpret_cast<isize>(p)); },
             reinterpret_cast<void*>(nBytesEachBuffer),
             +[](void*) { destroyScratchBufferForThisThread(); },
@@ -474,17 +471,17 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
     /* */
 
     void
-    destroy(IAllocator* pAlloc) noexcept
+    destroy() noexcept
     {
-        m_base.destroy(pAlloc);
+        m_base.destroy();
         destroyScratchBufferForThisThread();
     }
 
     /* `destroyScratchBufferForThisThread()` later. */
     void
-    destroyKeepScratchBuffer(IAllocator* pAlloc) noexcept
+    destroyKeepScratchBuffer() noexcept
     {
-        m_base.destroy(pAlloc);
+        m_base.destroy();
     }
 
     /* */

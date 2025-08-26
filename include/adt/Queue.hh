@@ -360,4 +360,7 @@ struct QueueManaged : public Queue<T>
     [[nodiscard]] QueueManaged release() noexcept { return utils::exchange(this, {}); }
 };
 
+template<typename T>
+using QueueM = QueueManaged<T, StdAllocatorNV>;
+
 } /* namespace adt */

@@ -20,9 +20,9 @@ struct BufferAllocator : public IArena
     
     /* */
 
-    constexpr BufferAllocator() = default;
+    BufferAllocator() = default;
 
-    constexpr BufferAllocator(u8* pMemory, usize capacity) noexcept
+    BufferAllocator(u8* pMemory, usize capacity) noexcept
         : m_pMemBuffer {pMemory},
           m_cap {capacity} {}
 
@@ -32,26 +32,26 @@ struct BufferAllocator : public IArena
           m_cap {N * sizeof(T)} {}
 
     template<typename T>
-    constexpr BufferAllocator(Span<T> sp) noexcept
+    BufferAllocator(Span<T> sp) noexcept
         : BufferAllocator {reinterpret_cast<u8*>(sp.data()), sp.size() * sizeof(T)} {}
 
     /* */
 
-    [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual constexpr void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    [[deprecated("noop")]] constexpr virtual void free(void*) noexcept override final { /* noop */ }
-    constexpr virtual void freeAll() noexcept override final; /* same as reset */
-    [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return false; }
-    [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
+    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
+    [[deprecated("noop")]] virtual void free(void*) noexcept override final { /* noop */ }
+    virtual void freeAll() noexcept override final; /* same as reset */
+    [[nodiscard]] virtual bool doesFree() const noexcept override final { return false; }
+    [[nodiscard]] virtual bool doesRealloc() const noexcept override final { return true; }
 
     /* */
 
-    constexpr void reset() noexcept;
-    constexpr isize realCap() const noexcept;
+    void reset() noexcept;
+    isize realCap() const noexcept;
 };
 
-inline constexpr void*
+inline void*
 BufferAllocator::malloc(usize mCount, usize mSize)
 {
     usize realSize = alignUp8(mCount * mSize);
@@ -70,7 +70,7 @@ BufferAllocator::malloc(usize mCount, usize mSize)
     return ret;
 }
 
-inline constexpr void*
+inline void*
 BufferAllocator::zalloc(usize mCount, usize mSize)
 {
     auto* p = malloc(mCount, mSize);
@@ -78,7 +78,7 @@ BufferAllocator::zalloc(usize mCount, usize mSize)
     return p;
 }
 
-inline constexpr void*
+inline void*
 BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 {
     if (!p) return malloc(newCount, mSize);
@@ -112,20 +112,20 @@ BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
     }
 }
 
-inline constexpr void
+inline void
 BufferAllocator::freeAll() noexcept
 {
     reset();
 }
 
-inline constexpr void
+inline void
 BufferAllocator::reset() noexcept
 {
     m_size = 0;
     m_pLastAlloc = nullptr;
 }
 
-inline constexpr isize
+inline isize
 BufferAllocator::realCap() const noexcept
 {
     return alignDown8(m_cap);

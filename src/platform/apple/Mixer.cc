@@ -89,7 +89,7 @@ Mixer::writeCallBack(
 Mixer&
 Mixer::init()
 {
-    LOG_NOTIFY("initializing coreaudio...\n");
+    LogDebug("initializing coreaudio...\n");
 
     AudioComponentDescription desc {};
     desc.componentType = kAudioUnitType_Output;

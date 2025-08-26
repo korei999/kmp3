@@ -140,7 +140,7 @@ Mixer::destroy()
     }
 
     pw_thread_loop_stop(m_pThrdLoop);
-    LOG_NOTIFY("pw_thread_loop_stop()\n");
+    LogDebug("pw_thread_loop_stop()\n");
 
     m_bRunning = false;
 
@@ -150,7 +150,7 @@ Mixer::destroy()
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
     pw_deinit();
 
-    LOG_BAD("MixerDestroy()\n");
+    LogDebug("MixerDestroy()\n");
 }
 
 bool
@@ -236,7 +236,7 @@ Mixer::onProcess()
 
     if (!pDest)
     {
-        LOG_WARN("pDest == nullptr\n");
+        LogDebug("pDest == nullptr\n");
         return;
     }
 
@@ -294,7 +294,7 @@ Mixer::pause(bool bPause)
     pw_stream_set_active(m_pStream, !bPause);
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
-    LOG_NOTIFY("bPaused: {}\n", m_atom_bPaused);
+    LogInfo("bPaused: {}\n", m_atom_bPaused);
     mpris::playbackStatusChanged();
 }
 

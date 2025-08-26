@@ -93,7 +93,7 @@ ScratchBuffer::nextMem(
 {
 #ifndef NDEBUG
     ADT_ASSERT(m_bTaken != true, "must reset() between nextMem() calls. Prev call: [{}, {}]",
-        print::stripSourcePath(m_loc.file_name()), m_loc.line()
+        print::shorterSourcePath(m_loc.file_name()), m_loc.line()
     );
     m_bTaken = true;
     m_loc = loc;

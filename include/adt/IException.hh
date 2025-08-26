@@ -53,7 +53,7 @@ struct RuntimeException : public IException
     printErrorMsg(FILE* fp) const override
     {
         char aBuff[256] {};
-        print::toSpan(aBuff, "RuntimeException: ({}, {}): {}\n", print::stripSourcePath(m_loc.file_name()), m_loc.line(), m_sfMsg);
+        print::toSpan(aBuff, "RuntimeException: ({}, {}): {}\n", print::shorterSourcePath(m_loc.file_name()), m_loc.line(), m_sfMsg);
         fputs(aBuff, fp);
     };
 

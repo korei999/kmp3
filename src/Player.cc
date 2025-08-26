@@ -128,7 +128,7 @@ Player::nextSelectionI(long selI)
     const long currI = findSongI(selI);
     long nextI = currI + 1;
 
-    defer( LOG_WARN("currI: {}, nextI: {}\n", currI, nextI) );
+    defer( LogDebug("currI: {}, nextI: {}\n", currI, nextI) );
 
     if (m_eRepeatMethod == PLAYER_REPEAT_METHOD::TRACK)
     {
@@ -170,13 +170,13 @@ Player::selectFinal(long selI)
 
     while (!app::mixer().play(m_vSongs[selI]))
     {
-        LOG_WARN("failed to open: '{}', selI: {}\n", m_vSongs[selI], selI);
+        LogWarn("failed to open: '{}', selI: {}\n", m_vSongs[selI], selI);
 
         if (!app::g_bRunning) return;
 
         if (++nFailed >= m_vSearchIdxs.size())
         {
-            LOG_BAD("QUIT (nFailed: {}, size: {})\n", nFailed, m_vSearchIdxs.size());
+            LogInfo("QUIT (nFailed: {}, size: {})\n", nFailed, m_vSearchIdxs.size());
             app::quit();
             return;
         }
@@ -203,11 +203,11 @@ Player::selectFocused()
 {
     if (m_vSongIdxs.size() <= m_focused)
     {
-        LOG_WARN("out of range selection: (vec.size: {})\n", m_vSongIdxs.size());
+        LogWarn("out of range selection: (vec.size: {})\n", m_vSongIdxs.size());
         return;
     }
 
-    LOG_GOOD("selected: {}\n", m_vSongs[m_vSongIdxs[m_focused]]);
+    LogDebug("selected: {}\n", m_vSongs[m_vSongIdxs[m_focused]]);
     selectFinal(m_vSongIdxs[m_focused]);
 }
 

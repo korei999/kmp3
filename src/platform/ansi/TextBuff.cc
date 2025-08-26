@@ -224,11 +224,11 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
         if (StringGraphemeIt::isRegional(wc))
             continue;
 
-        if (fb(x, y) != TextBuffCell {wc, eStyle})
+        if (fb[x, y] != TextBuffCell {wc, eStyle})
             m_bChanged = true;
 
-        bb(x, y).wc = wc;
-        bb(x, y).eStyle = eStyle;
+        bb[x, y].wc = wc;
+        bb[x, y].eStyle = eStyle;
 
         int colWidth = wcwidth(wc);
         if (colWidth < 0) break;
@@ -238,7 +238,7 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
             if (x + i >= bb.width() || y >= bb.height())
                 return;
 
-            auto& back = bb(x + i, y);
+            auto& back = bb[x + i, y];
             back.wc = -1;
             back.eStyle = eStyle;
         }
@@ -329,8 +329,8 @@ TextBuff::pushDiff()
 
         for (col = 0; col < m_tWidth; ++col)
         {
-            const auto& front = frontBufferSpan()(col, row);
-            const auto& back = backBufferSpan()(col, row);
+            const auto& front = frontBufferSpan()[col, row];
+            const auto& back = backBufferSpan()[col, row];
 
             if (back.eStyle != eLastStyle) bChangeStyle = true;
 
@@ -604,8 +604,8 @@ TextBuff::forceClean(int x, int y, int width, int height)
     {
         for (isize col = x; col < width; ++col)
         {
-            auto& front = spFront(col, row);
-            auto& back = spBack(col, row);
+            auto& front = spFront[col, row];
+            auto& back = spBack[col, row];
 
             /* trigger diff */
             front.wc = 666;

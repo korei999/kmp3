@@ -147,7 +147,7 @@ currentWorkingDirectory()
 }
 
 inline const char*
-stripSourcePath(const char* ntsSourcePath)
+shorterSourcePath(const char* ntsSourcePath)
 {
     static const StringView svCwd = currentWorkingDirectory();
     return ntsSourcePath + svCwd.size() + 1;

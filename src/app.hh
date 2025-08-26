@@ -29,6 +29,10 @@ enum class MIXER : adt::u8
 
 enum class TERM : adt::u8 { ELSE, XTERM, XTERM_256COLOR, KITTY, FOOT, GHOSTTY, ALACRITTY };
 
+
+extern adt::ILogger::LEVEL g_eLogLevel;
+extern bool g_bForceLoggerColors;
+
 extern UI g_eUIFrontend;
 extern MIXER g_eMixer;
 extern adt::StringView g_svTerm;

@@ -17,6 +17,8 @@
 
 using namespace adt;
 
+static Logger s_logger;
+
 static void
 setTermEnv()
 {
@@ -70,7 +72,6 @@ parseArgs(int argc, char** argv)
             if (svArg == "--ansi")
             {
                 app::g_eUIFrontend = app::UI::ANSI;
-                LOG_NOTIFY("setting HANDMADE ui\n");
             }
             else if (svArg.beginsWith("--volume"))
             {
@@ -89,7 +90,6 @@ parseArgs(int argc, char** argv)
             else if (svArg == "--no-image")
             {
                 app::g_bNoImage = true;
-                LOG_BAD("--no-image: {}\n", app::g_bNoImage);
             }
             else if (svArg == "--sndio")
             {
@@ -127,6 +127,31 @@ parseArgs(int argc, char** argv)
                 exit(0);
 #endif
             }
+            else if (svArg == "--logs")
+            {
+                if (argc > i + 1)
+                {
+                    const StringView svNext = argv[++i];
+                    ILogger::LEVEL eLevel = static_cast<ILogger::LEVEL>(svNext.toI64());
+                    if (eLevel < ILogger::LEVEL::NONE || eLevel > ILogger::LEVEL::DEBUG)
+                    {
+                        print::out("bad log level ({}), allowed levels: [-1, 0, 1, 2, 3] (none, errors, warnings, info, debug)\n", (int)eLevel);
+                        exit(0);
+                    }
+
+                    app::g_eLogLevel = eLevel;
+                    continue;
+                }
+                else
+                {
+                    print::out("missing arg after '--logs'\n");
+                    exit(0);
+                }
+            }
+            else if (svArg == "--forceLoggerColors")
+            {
+                app::g_bForceLoggerColors = true;
+            }
         }
         else return;
     }
@@ -150,11 +175,19 @@ startup(int argc, char** argv)
 
     parseArgs(argc, argv);
 
-    setlocale(LC_ALL, "");
-#ifdef NDEBUG
-    /* Hide mpg123 and other errors. */
-    ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
+#ifndef NDEBUG
+    app::g_eLogLevel = ILogger::LEVEL::DEBUG;
 #endif
+
+    new(&s_logger) Logger{stderr, app::g_eLogLevel, 512, app::g_bForceLoggerColors};
+    ILogger::setGlobal(&s_logger);
+    defer( s_logger.destroy() );
+
+    setlocale(LC_ALL, "");
+
+    /* Hide mpg123 and other errors. */
+    if (s_logger.m_eLevel == ILogger::LEVEL::NONE)
+        ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
 
     VecManaged<char*> aInput;
     defer( aInput.destroy() );

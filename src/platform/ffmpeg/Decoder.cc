@@ -47,7 +47,7 @@ Decoder::close()
 
     /* WARN: don't zero out m_mtx! */
 
-    LOG_NOTIFY("close()\n");
+    LogDebug("close()\n");
 }
 
 Decoder&
@@ -60,12 +60,12 @@ Decoder::init()
 void
 Decoder::destroy()
 {
-    LOG_GOOD("Decoder::destroy() ATTEMPT\n");
+    LogDebug("Decoder::destroy() ATTEMPT\n");
 
     close();
     m_mtx.destroy();
 
-    LOG_BAD("Decoder::destroy()\n");
+    LogDebug("Decoder::destroy()\n");
 }
 
 i64
@@ -121,7 +121,7 @@ Decoder::getAttachedPicture()
         auto* itStream = m_pFormatCtx->streams[i];
         if (itStream->disposition & AV_DISPOSITION_ATTACHED_PIC)
         {
-            LOG_GOOD("Found 'attached_pic'\n");
+            LogDebug("Found 'attached_pic'\n");
             pStream = itStream;
             break;
         }
@@ -140,11 +140,11 @@ Decoder::getAttachedPicture()
     err = avcodec_open2(pCodecCtx, pCodec, {});
     if (err < 0)
     {
-        LOG("avcodec_open2()\n");
+        LogDebug("avcodec_open2()\n");
         return;
     }
 
-    LOG_NOTIFY("codec name: '{}'\n", pCodec->long_name);
+    LogDebug("codec name: '{}'\n", pCodec->long_name);
 
     m_pImgPacket = av_packet_alloc();
     err = av_read_frame(m_pFormatCtx, m_pImgPacket);
@@ -157,7 +157,7 @@ Decoder::getAttachedPicture()
     err = avcodec_receive_frame(pCodecCtx, m_pImgFrame);
     if (err == AVERROR(EINVAL))
     {
-        LOG_BAD("err: {}, AVERROR(EINVAL)\n", err);
+        LogDebug("err: {}, AVERROR(EINVAL)\n", err);
         return;
     }
 
@@ -175,12 +175,12 @@ Decoder::getAttachedPicture()
     m_pConverted->width = m_pImgFrame->width;
     m_pConverted->height = m_pImgFrame->height;
 
-    LOG_NOTIFY("format: {}, converted format: {}\n", m_pImgFrame->format, m_pConverted->format);
+    LogDebug("format: {}, converted format: {}\n", m_pImgFrame->format, m_pConverted->format);
 
     err = av_frame_get_buffer(m_pConverted, 0);
     if (err != 0)
     {
-        LOG_BAD("av_frame_get_buffer()\n");
+        LogDebug("av_frame_get_buffer()\n");
         return;
     }
 
@@ -235,7 +235,7 @@ Decoder::open(StringView svPath)
     err = avcodec_open2(m_pCodecCtx, pCodec, {});
     if (err < 0)
     {
-        LOG("avcodec_open2\n");
+        LogDebug("avcodec_open2\n");
         return audio::ERROR::FAIL;
     }
 
@@ -245,7 +245,7 @@ Decoder::open(StringView svPath)
         0, {}
     );
 
-    LOG_NOTIFY("codec name: '{}', ch_layout: {}, bit_rate: {}, sample_rate: {}\n",
+    LogDebug("codec name: '{}', ch_layout: {}, bit_rate: {}, sample_rate: {}\n",
         pCodec->long_name, m_pStream->codecpar->ch_layout.nb_channels, m_pStream->codecpar->bit_rate, m_pStream->codecpar->sample_rate
     );
 
@@ -278,7 +278,7 @@ Decoder::writeToBuffer(
         if (packet.stream_index != m_pStream->index) continue;
         err = avcodec_send_packet(m_pCodecCtx, &packet);
         if (err != 0 && err != AVERROR(EAGAIN))
-            LOG_WARN("!EAGAIN\n");
+            LogDebug("!EAGAIN\n");
 
         AVFrame frame {};
         while ((err = avcodec_receive_frame(m_pCodecCtx, &frame)) == 0)
@@ -305,7 +305,7 @@ Decoder::writeToBuffer(
             {
                 char buff[32] {};
                 av_strerror(err, buff, utils::size(buff) - 1);
-                LOG_WARN("swr_convert_frame(): {}\n", buff);
+                LogDebug("swr_convert_frame(): {}\n", buff);
                 continue;
             }
 

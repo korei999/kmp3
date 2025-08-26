@@ -86,7 +86,7 @@ ADT_ENUM_BITWISE_OPERATORS(Context::FLAGS);
 template<typename T>
 constexpr const StringView typeName();
 
-inline const char* stripSourcePath(const char* ntsSourcePath);
+inline const char* shorterSourcePath(const char* ntsSourcePath);
 
 inline isize printArgs(Context ctx);
 

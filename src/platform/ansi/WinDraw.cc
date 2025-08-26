@@ -305,7 +305,7 @@ Win::errorMsg()
         {
             s_time = m_time;
             s_msg = newMsg;
-            LOG_GOOD("got msg: '{}' size: {}\n", s_msg.sfMsg, s_msg.sfMsg.size());
+            LogInfo("got msg: '{}' size: {}\n", s_msg.sfMsg, s_msg.sfMsg.size());
         }
     }
 
@@ -313,7 +313,7 @@ Win::errorMsg()
     {
         if (s_time + s_msg.time < m_time)
         {
-            LOG_NOTIFY("killing: '{}'\n", s_msg.sfMsg);
+            LogDebug("killing: '{}'\n", s_msg.sfMsg);
             s_msg.sfMsg.destroy();
             return;
         }

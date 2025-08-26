@@ -64,7 +64,7 @@ Win::start(Arena* pArena)
 
     signal(SIGWINCH, sigwinchHandler);
 
-    LOG_GOOD("start()\n");
+    LogDebug("start()\n");
 
     return true;
 }
@@ -77,7 +77,7 @@ Win::destroy()
 
     m_textBuff.destroy();
 
-    LOG_GOOD("ansi::WinDestroy()\n");
+    LogDebug("ansi::WinDestroy()\n");
 }
 
 void
@@ -138,7 +138,7 @@ Win::resizeHandler()
     Player& pl = app::player();
 
     m_termSize = getTermSize();
-    LOG_GOOD("term: {}\n", m_termSize);
+    LogDebug("term: {}\n", m_termSize);
 
     m_textBuff.resize(m_termSize.width, m_termSize.height);
 

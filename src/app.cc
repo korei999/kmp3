@@ -23,6 +23,9 @@ using namespace adt;
 namespace app
 {
 
+ILogger::LEVEL g_eLogLevel = ILogger::LEVEL::NONE;
+bool g_bForceLoggerColors = false;
+
 UI g_eUIFrontend {};
 MIXER g_eMixer = MIXER::DUMMY;
 StringView g_svTerm {};
