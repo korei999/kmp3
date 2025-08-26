@@ -188,7 +188,7 @@ startup(int argc, char** argv)
     setlocale(LC_ALL, "");
 
     /* Hide mpg123 and other errors. */
-    if (s_logger.m_eLevel == ILogger::LEVEL::NONE)
+    if (app::g_eLogLevel == ILogger::LEVEL::NONE)
         ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
 
     VecManaged<char*> aInput;
