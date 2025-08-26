@@ -1,6 +1,7 @@
 #pragma once
 
-#include "print.hh"
+#include "print-inl.hh"
+#include "String.hh" /* IWYU pragma: keep */
 
 #define ADT_LOGGER_COL_NORM  "\x1b[0m"
 #define ADT_LOGGER_COL_RED  "\x1b[31m"
@@ -56,7 +57,7 @@ namespace print
 {
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
+format(Context* ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
 {
     constexpr StringView mapStrings[] {"", "ERROR", "WARN", "INFO", "DEBUG"};
     ADT_ASSERT((int)x + 1 >= 0 && (int)x + 1 < utils::size(mapStrings), "{}", (int)x);

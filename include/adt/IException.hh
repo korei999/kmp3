@@ -1,6 +1,6 @@
 #pragma once
 
-#include "print.inc"
+#include "print-inl.hh"
 
 #include <source_location>
 

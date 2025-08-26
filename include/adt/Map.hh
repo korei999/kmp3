@@ -563,46 +563,41 @@ namespace print
 {
 
 inline isize
-format(Context ctx, FormatArgs, const MAP_RESULT_STATUS eStatus)
+format(Context* ctx, FormatArgs fmtArgs, const MAP_RESULT_STATUS eStatus)
 {
-    ctx.fmt = "{}";
-    ctx.fmtIdx = 0;
     constexpr StringView map[] {
         "NOT_FOUND", "FOUND", "INSERTED"
     };
-
     auto statusIdx = std::underlying_type_t<MAP_RESULT_STATUS>(eStatus);
     ADT_ASSERT(statusIdx >= 0 && statusIdx < utils::size(map), "out of range enum");
-    return printArgs(ctx, map[statusIdx]);
+
+    return format(ctx, fmtArgs, map[statusIdx]);
 }
 
 template<typename K, typename V>
 inline isize
-format(Context ctx, FormatArgs, const MapBucket<K, V>& x)
+format(Context* ctx, FormatArgs fmtArgs, const MapBucket<K, V>& x)
 {
-    ctx.fmt = "[{}, {}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.key, x.val);
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
+    return formatVariadic(ctx, fmtArgs, x.key, x.val);
 }
 
 template<typename K, typename V>
 inline isize
-format(Context ctx, FormatArgs, const KeyVal<K, V>& x)
+format(Context* ctx, FormatArgs fmtArgs, const KeyVal<K, V>& x)
 {
-    ctx.fmt = "[{}, {}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.key, x.val);
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
+    return formatVariadic(ctx, fmtArgs, x.key, x.val);
 }
 
 template<typename K, typename V>
 inline isize
-format(Context ctx, FormatArgs, const MapResult<K, V>& x)
+format(Context* ctx, FormatArgs fmtArgs, const MapResult<K, V>& x)
 {
-    ctx.fmt = "{}, {}, {}";
-    ctx.fmtIdx = 0;
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
 
-    if (x.pData) return printArgs(ctx, x.data(), x.hash, x.eStatus);
-    return printArgs(ctx, x.pData, x.hash, x.eStatus);
+    if (x.pData) return formatVariadic(ctx, fmtArgs, x.data(), x.hash, x.eStatus);
+    else return formatVariadic(ctx, fmtArgs, x.pData, x.hash, x.eStatus);
 }
 
 } /* namespace print */

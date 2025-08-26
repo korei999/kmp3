@@ -1,6 +1,6 @@
 #pragma once
 
-#include "print.inc"
+#include "print-inl.hh"
 
 #include "String.hh" /* IWYU pragma: keep */
 #include "defer.hh"
@@ -154,10 +154,10 @@ shorterSourcePath(const char* ntsSourcePath)
 }
 
 inline isize
-printArgs(Context ctx)
+printArgs(Context* pCtx)
 {
-    const StringView svFmtSlice = ctx.fmt.subString(ctx.fmtIdx, ctx.fmt.size() - ctx.fmtIdx);
-    if (ctx.pBuffer->push(svFmtSlice) != -1)
+    const StringView svFmtSlice = pCtx->fmt.subString(pCtx->fmtIdx, pCtx->fmt.size() - pCtx->fmtIdx);
+    if (pCtx->pBuffer->push(svFmtSlice) != -1)
         return svFmtSlice.size();
 
     return 0;
@@ -359,7 +359,7 @@ intToBuffer(T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 }
 
 inline isize
-copyBackToContext(Context ctx, FormatArgs fmtArgs, const StringView sv)
+copyBackToContext(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
 {
     isize i = 0;
     const char filler = fmtArgs.filler ? fmtArgs.filler : ' ';
@@ -367,7 +367,7 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const StringView sv)
     auto clCopySpan = [&]
     {
         const isize mLen = utils::min(sv.size(), isize(fmtArgs.maxLen));
-        if (ctx.pBuffer->push(Span{sv.data(), mLen}) != -1)
+        if (pCtx->pBuffer->push(Span{sv.data(), mLen}) != -1)
             i += mLen;
     };
 
@@ -379,7 +379,7 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const StringView sv)
 
         if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i && nSpaces > 0)
         {
-            if (ctx.pBuffer->pushN(filler, nSpaces) != -1)
+            if (pCtx->pBuffer->pushN(filler, nSpaces) != -1)
                 j += nSpaces;
         }
 
@@ -393,7 +393,7 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const StringView sv)
 
         if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i)
         {
-            if (ctx.pBuffer->pushN(filler, fmtArgs.maxLen - i) != -1)
+            if (pCtx->pBuffer->pushN(filler, fmtArgs.maxLen - i) != -1)
                 i += fmtArgs.maxLen;
         }
     }
@@ -402,39 +402,40 @@ copyBackToContext(Context ctx, FormatArgs fmtArgs, const StringView sv)
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const StringView sv)
+format(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
 {
-    return copyBackToContext(ctx, fmtArgs, sv);
+    return copyBackToContext(pCtx, fmtArgs, sv);
 }
 
 template<typename STRING_T>
 requires ConvertsToStringView<STRING_T>
-inline isize format(Context ctx, FormatArgs fmtArgs, const STRING_T& str)
+inline isize
+format(Context* pCtx, FormatArgs fmtArgs, const STRING_T& str)
 {
     const isize realLen = strnlen(str.data(), str.size());
-    return copyBackToContext(ctx, fmtArgs, {const_cast<char*>(str.data()), realLen});
+    return copyBackToContext(pCtx, fmtArgs, {const_cast<char*>(str.data()), realLen});
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const char* str)
+format(Context* pCtx, FormatArgs fmtArgs, const char* str)
 {
-    return format(ctx, fmtArgs, StringView(str));
+    return format(pCtx, fmtArgs, StringView(str));
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, char* const& pNullTerm)
+format(Context* pCtx, FormatArgs fmtArgs, char* const& pNullTerm)
 {
-    return format(ctx, fmtArgs, StringView(pNullTerm));
+    return format(pCtx, fmtArgs, StringView(pNullTerm));
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, bool b)
+format(Context* pCtx, FormatArgs fmtArgs, bool b)
 {
-    return format(ctx, fmtArgs, b ? "true" : "false");
+    return format(pCtx, fmtArgs, b ? "true" : "false");
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const wchar_t x)
+format(Context* pCtx, FormatArgs fmtArgs, const wchar_t x)
 {
     char aBuff[8] {};
 #ifdef _WIN32
@@ -443,45 +444,45 @@ format(Context ctx, FormatArgs fmtArgs, const wchar_t x)
     const isize n = snprintf(aBuff, utils::size(aBuff) - 1, "%lc", x);
 #endif
 
-    return copyBackToContext(ctx, fmtArgs, {aBuff, n});
+    return copyBackToContext(pCtx, fmtArgs, {aBuff, n});
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const char32_t x)
+format(Context* pCtx, FormatArgs fmtArgs, const char32_t x)
 {
-    return format(ctx, fmtArgs, (wchar_t)x);
+    return format(pCtx, fmtArgs, (wchar_t)x);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const char x)
+format(Context* pCtx, FormatArgs fmtArgs, const char x)
 {
     char aBuff[4] {};
     const isize n = snprintf(aBuff, utils::size(aBuff), "%c", x);
 
-    return copyBackToContext(ctx, fmtArgs, {aBuff, n});
+    return copyBackToContext(pCtx, fmtArgs, {aBuff, n});
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, null)
+format(Context* pCtx, FormatArgs fmtArgs, null)
 {
-    return format(ctx, fmtArgs, StringView("nullptr"));
+    return format(pCtx, fmtArgs, StringView("nullptr"));
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, Empty)
+format(Context* pCtx, FormatArgs fmtArgs, Empty)
 {
-    return format(ctx, fmtArgs, StringView("Empty"));
+    return format(pCtx, fmtArgs, StringView("Empty"));
 }
 
 template<typename T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T* const p)
+format(Context* pCtx, FormatArgs fmtArgs, const T* const p)
 {
-    if (p == nullptr) return format(ctx, fmtArgs, nullptr);
+    if (p == nullptr) return format(pCtx, fmtArgs, nullptr);
 
     fmtArgs.eFmtFlags |= FormatArgs::FLAGS::HASH;
     fmtArgs.eBase = BASE::SIXTEEN;
-    return format(ctx, fmtArgs, usize(p));
+    return format(pCtx, fmtArgs, usize(p));
 }
 
 namespace details
@@ -489,37 +490,37 @@ namespace details
 
 template<typename T>
 inline constexpr void
-printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg)
+printArg(isize& rNWritten, isize& rI, bool& rbArg, Context* pCtx, const T& rArg)
 {
-    for (; rI < rCtx.fmt.size(); ++rI, ++rNWritten)
+    for (; rI < pCtx->fmt.size(); ++rI, ++rNWritten)
     {
         FormatArgs fmtArgs {};
 
-        if (bool(rCtx.eFlags & Context::FLAGS::UPDATE_FMT_ARGS))
+        if (bool(pCtx->eFlags & Context::FLAGS::UPDATE_FMT_ARGS))
         {
-            rCtx.eFlags &= ~Context::FLAGS::UPDATE_FMT_ARGS;
+            pCtx->eFlags &= ~Context::FLAGS::UPDATE_FMT_ARGS;
 
-            fmtArgs = rCtx.prevFmtArgs;
-            isize addBuff = format(rCtx, fmtArgs, rArg);
+            fmtArgs = pCtx->prevFmtArgs;
+            isize addBuff = format(pCtx, fmtArgs, rArg);
 
             rNWritten += addBuff;
 
             break;
         }
 
-        const StringView svFmtSlice = rCtx.fmt.subString(rI, rCtx.fmt.size() - rI);
+        const StringView svFmtSlice = pCtx->fmt.subString(rI, pCtx->fmt.size() - rI);
         const isize openBraceI = svFmtSlice.charAt('{');
         const StringView svFmtUntilOpenBrace = svFmtSlice.subString(0, openBraceI == -1 ? svFmtSlice.size() : openBraceI);
 
-        rCtx.pBuffer->push(svFmtUntilOpenBrace);
+        pCtx->pBuffer->push(svFmtUntilOpenBrace);
         rI += svFmtUntilOpenBrace.size();
         rNWritten += svFmtUntilOpenBrace.size();
 
         /* No '{' case. */
-        if (rI >= rCtx.fmt.size()) break;
+        if (rI >= pCtx->fmt.size()) break;
 
         rbArg = true;
-        if (rI + 1 < rCtx.fmt.size() && rCtx.fmt[rI + 1] == '{')
+        if (rI + 1 < pCtx->fmt.size() && pCtx->fmt[rI + 1] == '{')
         {
             rI += 1, rNWritten += 1;
             rbArg = false;
@@ -528,7 +529,7 @@ printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg)
         if (rbArg)
         {
             isize addBuff = 0;
-            const isize add = parseFormatArg(&fmtArgs, rCtx.fmt, rI);
+            const isize add = parseFormatArg(&fmtArgs, pCtx->fmt, rI);
 
             if (bool(fmtArgs.eFmtFlags & FormatArgs::FLAGS::ARG_IS_FMT))
             {
@@ -538,13 +539,13 @@ printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg)
                         fmtArgs.maxFloatLen = rArg;
                     else fmtArgs.maxLen = rArg;
 
-                    rCtx.prevFmtArgs = fmtArgs;
-                    rCtx.eFlags |= Context::FLAGS::UPDATE_FMT_ARGS;
+                    pCtx->prevFmtArgs = fmtArgs;
+                    pCtx->eFlags |= Context::FLAGS::UPDATE_FMT_ARGS;
                 }
             }
             else
             {
-                addBuff = format(rCtx, fmtArgs, rArg);
+                addBuff = format(pCtx, fmtArgs, rArg);
             }
 
             rI += add;
@@ -554,40 +555,63 @@ printArg(isize& rNWritten, isize& rI, bool& rbArg, Context& rCtx, const T& rArg)
         }
         else
         {
-            rCtx.pBuffer->push(rCtx.fmt[rI]);
+            pCtx->pBuffer->push(pCtx->fmt[rI]);
         }
     }
 }
 
 inline isize
-formatVariadic(Context, FormatArgs) noexcept
+formatVariadic(Context*, FormatArgs) noexcept
 {
     return 0;
 }
 
 template<typename T>
 inline isize
-formatVariadic(Context ctx, FormatArgs fmtArgs, const T& x)
+formatVariadic(Context* pCtx, FormatArgs fmtArgs, const T& x)
 {
-    return format(ctx, fmtArgs, x);
+    return format(pCtx, fmtArgs, x);
 }
 
 template<typename T, typename ...ARGS>
 inline isize
-formatVariadic(Context ctx, FormatArgs fmtArgs, const T& first, const ARGS&... args)
+formatVariadic(Context* pCtx, FormatArgs fmtArgs, const T& first, const ARGS&... args)
 {
-    isize n = format(ctx, fmtArgs, first);
+    isize n = format(pCtx, fmtArgs, first);
     if (n < 0) return n;
 
-    if (ctx.pBuffer->push(StringView{", "}) == -1) return n;
+    if (pCtx->pBuffer->push(StringView{", "}) == -1) return n;
     n += 2;
 
-    return n + details::formatVariadic(ctx, fmtArgs, args...);
+    return n + details::formatVariadic(pCtx, fmtArgs, args...);
+}
+
+inline isize
+formatVariadicStacked(Context*, FormatArgs) noexcept
+{
+    return 0;
 }
 
 template<typename T>
 inline isize
-formatFloat(Context ctx, FormatArgs fmtArgs, const T x)
+formatVariadicStacked(Context* pCtx, FormatArgs fmtArgs, const T& x)
+{
+    return format(pCtx, fmtArgs, x);
+}
+
+template<typename T, typename ...ARGS>
+inline isize
+formatVariadicStacked(Context* pCtx, FormatArgs fmtArgs, const T& first, const ARGS&... args)
+{
+    isize n = format(pCtx, fmtArgs, first);
+    if (n < 0) return n;
+
+    return n + details::formatVariadicStacked(pCtx, fmtArgs, args...);
+}
+
+template<typename T>
+inline isize
+formatFloat(Context* pCtx, FormatArgs fmtArgs, const T x)
 {
     char aBuff[64] {};
     std::to_chars_result res {};
@@ -595,56 +619,85 @@ formatFloat(Context ctx, FormatArgs fmtArgs, const T x)
         res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x);
     else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x, std::chars_format::fixed, fmtArgs.maxFloatLen);
 
-    if (res.ptr) return copyBackToContext(ctx, fmtArgs, {aBuff, res.ptr - aBuff});
-    else return copyBackToContext(ctx, fmtArgs, {aBuff});
+    if (res.ptr) return copyBackToContext(pCtx, fmtArgs, {aBuff, res.ptr - aBuff});
+    else return copyBackToContext(pCtx, fmtArgs, {aBuff});
 }
+
+template<bool B_OPEN>
+inline isize
+pushOpenCloseFlag(Context* pCtx, const FormatArgs::FLAGS e)
+{
+    using F = FormatArgs::FLAGS;
+    char aBuff[8] {};
+    isize n = 0;
+
+    if constexpr (B_OPEN)
+    {
+        if (bool(e & F::SQUARE_BRACKETS))
+            n = print::toBuffer(aBuff + n, sizeof(aBuff) - n, "[");
+        else if (bool(e & F::PARENTHESES))
+            n = print::toBuffer(aBuff + n, sizeof(aBuff) - n, "(");
+    }
+    else
+    {
+        if (bool(e & F::SQUARE_BRACKETS))
+            n = print::toBuffer(aBuff + n, sizeof(aBuff) - n, "]");
+        else if (bool(e & F::PARENTHESES))
+            n = print::toBuffer(aBuff + n, sizeof(aBuff) - n, ")");
+    }
+
+    if (pCtx->pBuffer->push(StringView{aBuff, n}) != -1)
+        return n;
+
+    return 0;
+};
 
 } /* namespace details */
 
 template<typename T> requires (std::is_integral_v<T>)
 inline constexpr isize
-format(Context ctx, FormatArgs fmtArgs, const T x)
+format(Context* pCtx, FormatArgs fmtArgs, const T x)
 {
     char aBuff[64] {};
     const isize n = intToBuffer(x, {aBuff}, fmtArgs);
     if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen < utils::size(aBuff) - 1)
         aBuff[fmtArgs.maxLen] = '\0';
 
-    return copyBackToContext(ctx, fmtArgs, {aBuff, n});
+    return copyBackToContext(pCtx, fmtArgs, {aBuff, n});
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const f32 x)
+format(Context* pCtx, FormatArgs fmtArgs, const f32 x)
 {
-    return details::formatFloat<f32>(ctx, fmtArgs, x);
+    return details::formatFloat<f32>(pCtx, fmtArgs, x);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const f64 x)
+format(Context* pCtx, FormatArgs fmtArgs, const f64 x)
 {
-    return details::formatFloat<f64>(ctx, fmtArgs, x);
+    return details::formatFloat<f64>(pCtx, fmtArgs, x);
 }
 
 template<typename T, typename ...ARGS_T>
 inline constexpr isize
-printArgs(Context ctx, const T& tFirst, const ARGS_T&... tArgs)
+printArgs(Context* pCtx, const T& tFirst, const ARGS_T&... tArgs)
 {
     isize nWritten = 0;
     bool bArg = false;
-    isize i = ctx.fmtIdx;
+    isize i = pCtx->fmtIdx;
 
-    if (ctx.fmtIdx >= ctx.fmt.size())
+    if (pCtx->fmtIdx >= pCtx->fmt.size())
     {
         /* NOTE: Edge case, when we need to fill but fmt is out of range. */
-        if (bool(ctx.eFlags & Context::FLAGS::UPDATE_FMT_ARGS))
-            return format(ctx, ctx.prevFmtArgs, tFirst);
+        if (bool(pCtx->eFlags & Context::FLAGS::UPDATE_FMT_ARGS))
+            return format(pCtx, pCtx->prevFmtArgs, tFirst);
         else return 0;
     }
 
-    details::printArg(nWritten, i, bArg, ctx, tFirst);
+    details::printArg(nWritten, i, bArg, pCtx, tFirst);
 
-    ctx.fmtIdx = i;
-    nWritten += printArgs(ctx, tArgs...);
+    pCtx->fmtIdx = i;
+    nWritten += printArgs(pCtx, tArgs...);
 
     return nWritten;
 }
@@ -665,9 +718,9 @@ toFILE(IAllocator* pAlloc, FILE* fp, const StringView fmt, const ARGS_T&... tArg
 
     try
     {
-        Context ctx {.fmt = fmt, .pBuffer = &buff};
-        const isize r = printArgs(ctx, tArgs...);
-        fwrite(ctx.pBuffer->m_pData, r, 1, fp);
+        Context pCtx {.fmt = fmt, .pBuffer = &buff};
+        const isize r = printArgs(&pCtx, tArgs...);
+        fwrite(pCtx.pBuffer->m_pData, r, 1, fp);
     }
     catch (const AllocException& ex)
     {
@@ -689,8 +742,8 @@ toBuffer(char* pBuff, isize buffSize, const StringView fmt, const ARGS_T&... tAr
 
     Buffer buff {pBuff, buffSize};
 
-    Context ctx {.fmt = fmt, .pBuffer = &buff};
-    printArgs(ctx, tArgs...);
+    Context pCtx {.fmt = fmt, .pBuffer = &buff};
+    printArgs(&pCtx, tArgs...);
 
     return buff.m_size;
 }
@@ -709,11 +762,11 @@ toString(IAllocator* pAlloc, const StringView fmt, const ARGS_T&... tArgs) noexc
 {
     Buffer buff {pAlloc};
 
-    Context ctx {.fmt = fmt, .pBuffer = &buff};
+    Context pCtx {.fmt = fmt, .pBuffer = &buff};
 
     try
     {
-        printArgs(ctx, tArgs...);
+        printArgs(&pCtx, tArgs...);
         buff.push('\0');
         buff.m_size -= 1;
     }
@@ -745,8 +798,8 @@ toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&
     try
     {
         new(&buff) Buffer {pAlloc, prealloc};
-        Context ctx {.fmt = fmt, .pBuffer = &buff};
-        printArgs(ctx, tArgs...);
+        Context pCtx {.fmt = fmt, .pBuffer = &buff};
+        printArgs(&pCtx, tArgs...);
         buff.push('\0');
         buff.m_size -= 1;
     }
@@ -784,100 +837,88 @@ err(const StringView fmt, const ARGS_T&... tArgs)
 }
 
 inline isize
-formatExpSize(Context ctx, FormatArgs fmtArgs, const auto& x, const isize contSize)
+formatExpSize(Context* pCtx, FormatArgs fmtArgs, const auto& x, const isize contSize)
 {
-    if (contSize <= 0)
-    {
-        ctx.fmt = "{}";
-        ctx.fmtIdx = 0;
-        return printArgs(ctx, "[]");
-    }
-
-    if (ctx.pBuffer->push('[') < 0) return 0;
+    if (pCtx->pBuffer->push('[') < 0) return 0;
 
     isize nWritten = 1;
     isize i = 0;
 
     for (const auto& e : x)
     {
-        const isize n = format(ctx, fmtArgs, e);
+        const isize n = format(pCtx, fmtArgs, e);
         if (n < 0) break;
 
         nWritten += n;
 
         if (i < contSize - 1)
         {
-            char ntsMore[] = ", ";
-            const isize n2 = copyBackToContext(ctx, {}, ntsMore);
-
-            nWritten += n2;
+            const StringView svMore = ", ";
+            if (pCtx->pBuffer->push(svMore) != -1) nWritten += svMore.size();
         }
 
         ++i;
     }
 
-    if (ctx.pBuffer->push(']') >= 0) ++nWritten;
+    if (pCtx->pBuffer->push(']') >= 0) ++nWritten;
 
     return nWritten;
 }
 
 inline isize
-formatUntilEnd(Context ctx, FormatArgs fmtArgs, const auto& x)
+formatUntilEnd(Context* pCtx, FormatArgs fmtArgs, const auto& x)
 {
-    if (!x.data())
-    {
-        ctx.fmt = "{}";
-        ctx.fmtIdx = 0;
-        return printArgs(ctx, "[]");
-    }
+    if (!x.data()) return copyBackToContext(pCtx, fmtArgs, "[]");
 
-    if (ctx.pBuffer->push('[') < 0) return 0;
+    if (pCtx->pBuffer->push('[') < 0) return 0;
     isize nWritten = 1;
 
     for (auto it = x.begin(); it != x.end(); ++it)
     {
-        const isize n = format(ctx, fmtArgs, *it);
+        const isize n = format(pCtx, fmtArgs, *it);
         if (n < 0) break;
 
         nWritten += n;
 
         if (it.next() != x.end())
         {
-            char ntsMore[] = ", ";
-            const isize n2 = copyBackToContext(ctx, {}, ntsMore);
-
-            nWritten += n2;
+            const StringView svMore = ", ";
+            if (pCtx->pBuffer->push(svMore) != -1) nWritten += svMore.size();
         }
     }
 
-    if (ctx.pBuffer->push(']') >= 0) ++nWritten;
+    if (pCtx->pBuffer->push(']') >= 0) ++nWritten;
 
     return nWritten;
 }
 
 template<typename ...ARGS>
 inline isize
-formatVariadic(Context ctx, FormatArgs fmtArgs, const ARGS&... args)
+formatVariadic(Context* pCtx, FormatArgs fmtArgs, const ARGS&... args)
 {
-    const bool bSquareBrackets = bool(fmtArgs.eFmtFlags & FormatArgs::FLAGS::SQUARE_BRACKETS);
     isize n = 0;
 
-    if (bSquareBrackets)
-    {
-        if (ctx.pBuffer->push('[') < 0) return n;
-        ++n;
-    }
+    n += details::pushOpenCloseFlag<true>(pCtx, fmtArgs.eFmtFlags);
 
-    const isize nFormatted = details::formatVariadic(ctx, fmtArgs, args...);
+    const isize nFormatted = details::formatVariadic(pCtx, fmtArgs, args...);
     if (nFormatted < 0) return n;
 
     n += nFormatted;
+    n += details::pushOpenCloseFlag<false>(pCtx, fmtArgs.eFmtFlags);
 
-    if (bSquareBrackets)
-    {
-        if (ctx.pBuffer->push(']') < 0) return n;
-        ++n;
-    }
+    return n;
+}
+
+template<typename ...ARGS>
+inline isize
+formatVariadicStacked(Context* pCtx, FormatArgs fmtArgs, const ARGS&... args)
+{
+    isize n = 0;
+
+    const isize nFormatted = details::formatVariadicStacked(pCtx, fmtArgs, args...);
+    if (nFormatted < 0) return n;
+
+    n += nFormatted;
 
     return n;
 }
@@ -885,30 +926,30 @@ formatVariadic(Context ctx, FormatArgs fmtArgs, const ARGS&... args)
 template<typename T>
 requires (HasSizeMethod<T> && !ConvertsToStringView<T>)
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T& x)
+format(Context* pCtx, FormatArgs fmtArgs, const T& x)
 {
-    return formatExpSize(ctx, fmtArgs, x, x.size());
+    return formatExpSize(pCtx, fmtArgs, x, x.size());
 }
 
 template<typename T>
 requires HasNextIt<T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T& x)
+format(Context* pCtx, FormatArgs fmtArgs, const T& x)
 {
-    return print::formatUntilEnd(ctx, fmtArgs, x);
+    return print::formatUntilEnd(pCtx, fmtArgs, x);
 }
 
 template<typename T, isize N>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T (&a)[N])
+format(Context* pCtx, FormatArgs fmtArgs, const T (&a)[N])
 {
-    return formatExpSize(ctx, fmtArgs, a, N);
+    return formatExpSize(pCtx, fmtArgs, a, N);
 }
 
 template<typename T>
 requires (!Printable<T>)
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const T&)
+format(Context* pCtx, FormatArgs fmtArgs, const T&)
 {
     const StringView sv = typeName<T>();
 
@@ -956,7 +997,7 @@ format(Context ctx, FormatArgs fmtArgs, const T&)
 
 #endif
 
-    return format(ctx, fmtArgs, svDemangled);
+    return format(pCtx, fmtArgs, svDemangled);
 }
 
 } /* namespace adt::print */

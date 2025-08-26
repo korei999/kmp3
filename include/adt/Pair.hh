@@ -1,6 +1,6 @@
 #pragma once
 
-#include "print.inc"
+#include "print-inl.hh"
 
 namespace adt
 {
@@ -59,10 +59,10 @@ namespace print
 
 template<typename A, typename B>
 inline u32
-format(Context ctx, FormatArgs fmtArgs, const Pair<A, B>& x)
+format(Context* pCtx, FormatArgs fmtArgs, const Pair<A, B>& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
-    return formatVariadic(ctx, fmtArgs, x.first, x.second);
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
+    return formatVariadic(pCtx, fmtArgs, x.first, x.second);
 }
 
 } /* namespace print */

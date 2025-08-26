@@ -1,6 +1,6 @@
 #pragma once
 
-#include "math.inc"
+#include "math-inl.hh"
 
 #include "simd.hh"
 #include "utils.hh"
@@ -1525,82 +1525,73 @@ namespace adt::print
 {
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const math::V2& x)
+format(Context* ctx, FormatArgs fmtArgs, const math::V2& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
     return formatVariadic(ctx, fmtArgs, x.x, x.y);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const math::V3& x)
+format(Context* ctx, FormatArgs fmtArgs, const math::V3& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
     return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const math::V4& x)
+format(Context* ctx, FormatArgs fmtArgs, const math::V4& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
     return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const math::IV4& x)
+format(Context* ctx, FormatArgs fmtArgs, const math::IV4& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
     return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x)
+format(Context* ctx, FormatArgs fmtArgs, const math::IV4u16& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::SQUARE_BRACKETS;
+    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
     return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const math::Qt& x)
+format(Context* ctx, FormatArgs fmtArgs, const math::Qt& x)
 {
     return format(ctx, fmtArgs, x.base);
 }
 
 inline isize
-format(Context ctx, FormatArgs, const math::M2& x)
+format(Context* ctx, FormatArgs fmtArgs, const math::M2& x)
 {
-    ctx.fmt = "\n\t[{:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx, x.d[0], x.d[1], x.d[2], x.d[3]);
-}
-
-inline isize
-format(Context ctx, FormatArgs, const math::M3& x)
-{
-    ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx,
-        x.d[0], x.d[1], x.d[2],
-        x.d[3], x.d[4], x.d[5],
-        x.d[6], x.d[7], x.d[8]
+    return formatVariadicStacked(ctx, fmtArgs,
+        "\n\t(", x.d[0], ", ", x.d[1],
+        "\n\t ", x.d[2], ", ", x.d[3], ")"
     );
 }
 
 inline isize
-format(Context ctx, FormatArgs, const math::M4& x)
+format(Context* ctx, FormatArgs fmtArgs, const math::M3& x)
 {
-    ctx.fmt = "\n\t[{:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}"
-              "\n\t {:.3}, {:.3}, {:.3}, {:.3}]";
-    ctx.fmtIdx = 0;
-    return printArgs(ctx,
-        x.e[0][0], x.e[0][1], x.e[0][2], x.e[0][3],
-        x.e[1][0], x.e[1][1], x.e[1][2], x.e[1][3],
-        x.e[2][0], x.e[2][1], x.e[2][2], x.e[2][3],
-        x.e[3][0], x.e[3][1], x.e[3][2], x.e[3][3]
+    return formatVariadicStacked(ctx, fmtArgs,
+        "\n\t(", x.d[0], ", ", x.d[1], ", ", x.d[2],
+        "\n\t ", x.d[3], ", ", x.d[4], ", ", x.d[5],
+        "\n\t ", x.d[6], ", ", x.d[7], ", ", x.d[8], ")"
+    );
+}
+
+inline isize
+format(Context* ctx, FormatArgs fmtArgs, const math::M4& x)
+{
+    return formatVariadicStacked(ctx, fmtArgs,
+        "\n\t(", x.d[0], ", ", x.d[1], ", ", x.d[2], ", ", x.d[3],
+        "\n\t ", x.d[4], ", ", x.d[5], ", ", x.d[6], ", ", x.d[7],
+        "\n\t ", x.d[8], ", ", x.d[9], ", ", x.d[10], ", ", x.d[11],
+        "\n\t ", x.d[12], ", ", x.d[13], ", ", x.d[14], ", ", x.d[15], ")"
     );
 }
 

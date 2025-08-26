@@ -206,9 +206,9 @@ namespace adt::print
 
 template<typename T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const atomic::Num<T>& x) noexcept
+format(Context* pCtx, FormatArgs fmtArgs, const atomic::Num<T>& x) noexcept
 {
-    return format(ctx, fmtArgs, x.load(atomic::ORDER::RELAXED));
+    return format(pCtx, fmtArgs, x.load(atomic::ORDER::RELAXED));
 }
 
 } /* namespace adt::print */

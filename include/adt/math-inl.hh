@@ -565,14 +565,14 @@ inline M4 transformation(const V3& translation, const V3& scale);
 namespace adt::print
 {
 
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::V2& x);
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::V3& x);
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::V4& x);
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::IV4& x);
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::IV4u16& x);
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::Qt& x);
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::M2& x);
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::M3& x);
-inline isize format(Context ctx, FormatArgs fmtArgs, const math::M4& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::V2& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::V3& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::V4& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::IV4& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::IV4u16& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::Qt& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::M2& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::M3& x);
+inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::M4& x);
 
 } /* namespace adt::math */

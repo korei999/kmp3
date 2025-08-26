@@ -73,14 +73,14 @@ namespace adt::print
 {
 
 inline u32
-format(Context ctx, FormatArgs fmtArgs, const platform::ansi::TermSize x)
+format(Context* pCtx, FormatArgs fmtArgs, const platform::ansi::TermSize x)
 {
-    char aBuff[128] {};
-    const isize n = toSpan(aBuff,
-        "[width: {}, height: {}, pixWidth: {}, pixHeight: {}]",
-        x.width, x.height, x.pixWidth, x.pixHeight
+    return formatVariadicStacked(pCtx, fmtArgs,
+        "(width: ", x.width,
+        ", height: ", x.height,
+        ", pixWidth: ", x.pixWidth,
+        ", pixHeight: ", x.pixHeight, ")"
     );
-    return copyBackToContext(ctx, fmtArgs, Span(aBuff, n));
 }
 
 } /* namespace adt::print */

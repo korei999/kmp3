@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "Span.inc"
+#include "Span-inl.hh"
 #include "assert.hh"
 #include "types.hh"
 

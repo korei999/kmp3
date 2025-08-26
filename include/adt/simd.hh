@@ -14,7 +14,7 @@
 #pragma once
 
 #include "Span.hh" /* IWYU pragma: keep */
-#include "math.inc"
+#include "math-inl.hh"
 
 #include <nmmintrin.h>
 

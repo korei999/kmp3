@@ -29,7 +29,7 @@
 
 #include "IAllocator.hh"
 #include "defer.hh"
-#include "print.inc"
+#include "print-inl.hh"
 
 namespace adt
 {
@@ -319,10 +319,10 @@ namespace print
 
 template<typename T>
 inline isize
-format(Context ctx, FormatArgs fmtArgs, const SplayNode<T>* const x)
+format(Context* pCtx, FormatArgs fmtArgs, const SplayNode<T>* const x)
 {
-    if (x) return format(ctx, fmtArgs, x->m_data);
-    else return format(ctx, fmtArgs, nullptr);
+    if (x) return format(pCtx, fmtArgs, x->m_data);
+    else return format(pCtx, fmtArgs, nullptr);
 }
 
 } /* namespace format */
