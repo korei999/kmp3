@@ -179,9 +179,11 @@ startup(int argc, char** argv)
     app::g_eLogLevel = ILogger::LEVEL::DEBUG;
 #endif
 
+#ifndef ADT_LOGGER_DISABLE
     new(&s_logger) Logger{stderr, app::g_eLogLevel, 512, app::g_bForceLoggerColors};
     ILogger::setGlobal(&s_logger);
     defer( s_logger.destroy() );
+#endif
 
     setlocale(LC_ALL, "");
 
