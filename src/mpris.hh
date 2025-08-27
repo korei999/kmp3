@@ -11,7 +11,9 @@ extern adt::CndVar g_cnd;
 
 void init();
 void proc();
+void wakeUp() noexcept; /* Wake up from sd_bus_wait() */
 void destroy();
+adt::THREAD_STATUS pollLoop(void*) noexcept;
 
 inline void initLocks() { g_mtx = adt::Mutex {adt::Mutex::TYPE::RECURSIVE}; g_cnd = adt::CndVar {adt::INIT}; }
 inline void destroyLocks() { g_mtx.destroy(); g_cnd.destroy(); }

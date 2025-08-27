@@ -5,6 +5,9 @@
 #include "app.hh"
 #include "defaults.hh"
 
+#include <sys/eventfd.h>
+#include <sys/poll.h>
+
 #ifdef OPT_BASU
     #include <basu/sd-bus.h>
 #else
@@ -37,6 +40,7 @@ CndVar g_cnd;
 
 static sd_bus* s_pBus {};
 static int s_fdMpris = -1;
+static int s_fdWake = -1;
 
 static int
 msgAppendDictSAS(sd_bus_message* m, const char* a, const char* b)
@@ -575,6 +579,8 @@ init()
 
     LockGuard lock {&g_mtx};
 
+    s_fdWake = eventfd(0, EFD_NONBLOCK);
+
     g_bReady = false;
     int res = 0;
     const isize nTries = 50;
@@ -638,7 +644,7 @@ out:
         s_fdMpris = -1;
         g_bReady = false;
 
-        LogDebug("{}: {}\n", strerror(-res), "init error");
+        LogError("{}: {}\n", strerror(-res), "init error");
     }
     else g_bReady = true;
 }
@@ -646,12 +652,46 @@ out:
 void
 proc()
 {
-    LockGuard lock {&g_mtx};
+    g_mtx.lock();
+
+    static pollfd s_aPfds[2] {
+        {.fd = s_fdMpris, .events = POLLIN, .revents = {}},
+        {.fd = s_fdWake, .events = POLLIN, .revents = {}}
+    };
 
     if (s_pBus && g_bReady)
     {
-        while (sd_bus_process(s_pBus, nullptr) > 0 && app::g_bRunning)
-            ;
+        g_mtx.unlock();
+
+        int r = poll(s_aPfds, utils::size(s_aPfds), -1);
+        if (r < 0) return;
+
+        LockGuard lock {&g_mtx};
+
+        if (s_aPfds[0].revents & POLLIN)
+        {
+            while (sd_bus_process(s_pBus, nullptr) > 0 && app::g_bRunning)
+                ;
+        }
+
+        if (s_aPfds[1].revents & POLLIN)
+        {
+            u64 d = 0;
+            read(s_fdWake, &d, sizeof(d));
+            LogDebug("READ: {}\n", d);
+        }
+    }
+}
+
+void
+wakeUp() noexcept
+{
+    LockGuard lock {&g_mtx};
+
+    if (s_fdMpris > 0)
+    {
+        eventfd_write(s_fdWake, 1);
+        LogDebug("({}) Waking Up\n", s_fdMpris);
     }
 }
 
@@ -662,10 +702,32 @@ destroy()
 
     if (!s_pBus) return;
 
+    if (s_fdWake > 0) close(s_fdWake);
     sd_bus_unref(s_pBus);
     s_pBus = nullptr;
     s_fdMpris = -1;
     g_bReady = false;
+}
+
+THREAD_STATUS
+pollLoop(void*) noexcept
+{
+    while (app::g_bRunning)
+    {
+        mpris::proc();
+
+        /* TODO: probably needs to be removed.
+         * Used to top kmp3 in the playerctl list,
+         * however it causes other problems like media flickering in media control programs. */
+        // if (app::mixer().mprisHasToUpdate().load(atomic::ORDER::ACQUIRE))
+        // {
+        //     app::mixer().mprisSetToUpdate(false);
+        //     mpris::destroy();
+        //     mpris::init();
+        // }
+    }
+
+    return THREAD_STATUS(0);
 }
 
 static void

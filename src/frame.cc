@@ -1,7 +1,6 @@
 #include "frame.hh"
 
 #include "app.hh"
-#include "defaults.hh"
 
 #ifdef OPT_MPRIS
     #include "mpris.hh"
@@ -11,27 +10,6 @@ using namespace adt;
 
 namespace frame
 {
-
-#ifdef OPT_MPRIS
-static THREAD_STATUS
-mprisPollLoop(void*)
-{
-    while (app::g_bRunning)
-    {
-        mpris::proc();
-        if (app::mixer().mprisHasToUpdate().load(atomic::ORDER::ACQUIRE))
-        {
-            app::mixer().mprisSetToUpdate(false);
-            mpris::destroy();
-            mpris::init();
-        }
-
-        utils::sleepMS(defaults::MPRIS_UPDATE_RATE);
-    }
-
-    return THREAD_STATUS(0);
-}
-#endif
 
 void
 run()
@@ -57,10 +35,11 @@ run()
 #ifdef OPT_MPRIS
     mpris::init();
 
-    Thread thMPris {mprisPollLoop, {}};
+    Thread thMPris {mpris::pollLoop, nullptr};
     defer(
         /* NOTE: prevent deadlock if something throws */
         app::g_bRunning = false;
+        mpris::wakeUp();
         thMPris.join()
     );
 #endif
