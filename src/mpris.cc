@@ -677,8 +677,8 @@ proc()
         if (s_aPfds[1].revents & POLLIN)
         {
             u64 d = 0;
-            read(s_fdWake, &d, sizeof(d));
-            LogDebug("READ: {}\n", d);
+            isize nRead = read(s_fdWake, &d, sizeof(d));
+            LogDebug("READ({}): {}\n", nRead, d);
         }
     }
 }
@@ -718,7 +718,7 @@ pollLoop(void*) noexcept
 
         /* TODO: probably needs to be removed.
          * Used to top kmp3 in the playerctl list,
-         * however it causes other problems like media flickering in media control programs. */
+         * however it causes other problems like flickering in media control programs. */
         // if (app::mixer().mprisHasToUpdate().load(atomic::ORDER::ACQUIRE))
         // {
         //     app::mixer().mprisSetToUpdate(false);
