@@ -676,9 +676,9 @@ proc()
 
         if (s_aPfds[1].revents & POLLIN)
         {
-            u64 d = 0;
-            isize nRead = read(s_fdWake, &d, sizeof(d));
-            LogDebug("READ({}): {}\n", nRead, d);
+            eventfd_t d = 0;
+            int r = eventfd_read(s_fdWake, &d);
+            LogDebug("eventfd_read({}): {}\n", r, d);
         }
     }
 }
