@@ -20,7 +20,7 @@ run()
         return;
     }
 
-    Arena arena(SIZE_1M * 2);
+    FlatArena arena {SIZE_1G};
     defer( arena.freeAll() );
 
     if (app::window().start(&arena) == false)
@@ -51,8 +51,7 @@ run()
         app::window().draw();
         app::window().procEvents();
 
-        arena.shrinkToFirstBlock();
-        arena.reset();
+        arena.resetToFirstPage();
     }
     while (app::g_bRunning);
 }

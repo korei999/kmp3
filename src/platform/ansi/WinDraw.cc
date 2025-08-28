@@ -8,9 +8,6 @@ using namespace adt;
 namespace platform::ansi
 {
 
-static u8 s_aMemBuff[SIZE_8K] {};
-static ScratchBuffer s_scratch {s_aMemBuff};
-
 #ifdef OPT_CHAFA
 void
 Win::coverImage()
@@ -23,8 +20,7 @@ Win::coverImage()
 
         const int split = pl.m_imgHeight;
 
-        if (!app::g_bChafaSymbols)
-            m_textBuff.clearKittyImages();
+        if (!app::g_bChafaSymbols) m_textBuff.clearKittyImages();
         m_textBuff.forceClean(1, 1, m_prevImgWidth + 1, split + 1);
 
         Image img = app::decoder().getCoverImage();
@@ -51,8 +47,8 @@ Win::info()
     const auto& pl = *app::g_pPlayer;
     const int hOff = m_prevImgWidth + 2;
 
-    Span sp = s_scratch.nextMem<char>();
-    defer( s_scratch.reset() );
+    ArenaPushGuard pushed {m_pArena};
+    Span sp {m_pArena->zallocV<char>(1000), 1000};
 
     auto clDrawLine = [&](
         const int y,
@@ -89,8 +85,8 @@ Win::volume()
     const f32 vol = app::mixer().getVolume();
     const bool bMuted = app::mixer().isMuted();
 
-    Span sp = s_scratch.nextMemZero<char>(width + 1);
-    defer( s_scratch.reset() );
+    ArenaPushGuard pushed {m_pArena};
+    Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
     const isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::mixer().getVolume() * 100.0)));
     const int nVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
@@ -254,8 +250,8 @@ Win::bottomLine()
 
     /* selected / focused */
     {
-        Span sp = s_scratch.nextMemZero<char>(width + 1);
-        defer( s_scratch.reset() );
+        ArenaPushGuard pushed {m_pArena};
+        Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
         isize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);
         if (pl.m_eRepeatMethod != PLAYER_REPEAT_METHOD::NONE)

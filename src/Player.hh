@@ -79,7 +79,7 @@ struct Player
     void focusLast();
     long findSongI(long selI);
     void focusSelected();
-    void subStringSearch(adt::Arena* pAlloc, adt::Span<wchar_t> pBuff);
+    void subStringSearch(adt::FlatArena* pAlloc, adt::Span<wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
     void togglePause();

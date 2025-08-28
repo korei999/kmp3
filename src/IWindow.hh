@@ -8,7 +8,7 @@ struct IWindow
     bool m_bRedraw {};
     bool m_bClear {};
 
-    virtual bool start(adt::Arena* pArena) = 0;
+    virtual bool start(adt::FlatArena* pArena) = 0;
     virtual void destroy() = 0;
     virtual void draw() = 0;
     virtual void procEvents() = 0;
@@ -20,7 +20,7 @@ struct IWindow
 
 struct DummyWindow : IWindow
 {
-    virtual bool start(adt::Arena*) final { return true; };
+    virtual bool start(adt::FlatArena*) final { return true; };
     virtual void destroy() final { };
     virtual void draw() final {};
     virtual void procEvents() final {};

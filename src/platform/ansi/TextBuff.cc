@@ -283,7 +283,7 @@ TextBuff::destroy()
 }
 
 void
-TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
+TextBuff::start(FlatArena* pArena, isize termWidth, isize termHeight)
 {
     m_pArena = pArena;
 #ifdef OPT_CHAFA

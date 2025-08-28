@@ -17,10 +17,12 @@ readModeToString(WINDOW_READ_MODE e) noexcept
 }
 
 StringView
-allocTimeString(Arena* pArena, int width)
+allocTimeString(FlatArena* pArena, int width)
 {
+    ArenaPushGuard pushed {pArena};
+
     auto& mix = app::mixer();
-    char* pBuff = (char*)pArena->zalloc(1, width + 1);
+    char* pBuff = pArena->zallocV<char>(width + 1);
 
     const f64 sampleRateRatio = f64(mix.getSampleRate()) / f64(mix.getChangedSampleRate());
 

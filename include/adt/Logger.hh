@@ -180,7 +180,7 @@ ILogger::setGlobal(ILogger* pInst, std::source_location loc) noexcept
         n = print::toSpan(aBuff, "(prev at: null)");
     }
 
-    LogInfo("global logger set at: ({}, {}), {}\n",
+    LogDebug("global logger set at: ({}, {}), {}\n",
         print::shorterSourcePath(loc.file_name()), loc.line(), StringView{aBuff, n}
     );
 }
@@ -354,6 +354,8 @@ Logger::formatHeader(LEVEL eLevel, std::source_location loc, Span<char> spBuff) 
 inline void
 Logger::destroy() noexcept
 {
+    LogDebug{"destroying logger...\n"};
+
     {
         LockGuard lock {&m_mtxQ};
         m_bDone = true;

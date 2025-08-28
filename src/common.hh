@@ -11,12 +11,14 @@ template<typename READ_LAMBDA, typename DRAW_LAMBDA>
 requires std::same_as<std::invoke_result_t<READ_LAMBDA>, READ_STATUS> && std::same_as<std::invoke_result_t<DRAW_LAMBDA>, void>
 inline void
 subStringSearch(
-    adt::Arena* pArena,
+    adt::FlatArena* pArena,
     adt::i16* pFirstIdx,
     READ_LAMBDA clRead,
     DRAW_LAMBDA clDraw
 )
 {
+    adt::ArenaPushGuard pushed {pArena};
+
     auto& pl = *app::g_pPlayer;
 
     g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEARCH;

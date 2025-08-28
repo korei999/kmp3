@@ -46,7 +46,7 @@ protected:
 
     /* */
 
-    adt::Arena* m_pArena {};
+    adt::FlatArena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
     TermSize m_termSize {};
@@ -63,7 +63,7 @@ protected:
     /* */
 
 public:
-    virtual bool start(adt::Arena* pArena) final;
+    virtual bool start(adt::FlatArena* pArena) final;
     virtual void destroy() final;
     virtual void draw() final;
     virtual void procEvents() final;
