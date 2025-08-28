@@ -128,8 +128,6 @@ struct TextBuff
     adt::Vec<TextBuffImage> m_vImages {};
 #endif
 
-    adt::ScratchBuffer m_scratch {};
-
     /* */
 
     TextBuff() = default;
@@ -164,7 +162,7 @@ struct TextBuff
 
     void string(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::StringView sv, int maxSvLen = 99999);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::Span<const wchar_t> sp);
-    adt::StringView styleToString(adt::ScratchBuffer* pScratch, TEXT_BUFF_STYLE eStyle);
+    adt::StringView styleToString(adt::IArena* pScratch, TEXT_BUFF_STYLE eStyle);
 
 #ifdef OPT_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);

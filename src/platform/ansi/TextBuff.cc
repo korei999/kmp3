@@ -82,7 +82,6 @@ TextBuff::reset()
     m_pData = {};
     m_size = {};
     m_capacity = {};
-    m_scratch = {};
 }
 
 void
@@ -350,9 +349,10 @@ TextBuff::pushDiff()
                     clMove();
                     if (bChangeStyle)
                     {
+                        ArenaPushGuard pushed {m_pArena};
+
                         bChangeStyle = false;
-                        push(styleToString(&m_scratch, back.eStyle));
-                        m_scratch.reset();
+                        push(styleToString(m_pArena, back.eStyle));
                         eLastStyle = back.eStyle;
                     }
                     pushWChar(back.wc);
@@ -444,9 +444,6 @@ TextBuff::clean()
     {
         clearBackBuffer();
     }
-
-    isize scratchSize = SIZE_1K;
-    m_scratch = Span((char*)m_pArena->malloc(scratchSize, 1), scratchSize);
 }
 
 void
@@ -514,10 +511,9 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const Span<const wcha
 }
 
 StringView
-TextBuff::styleToString(ScratchBuffer* pScratch, TEXT_BUFF_STYLE eStyle)
+TextBuff::styleToString(IArena* pArena, TEXT_BUFF_STYLE eStyle)
 {
-    Span<char> sp = pScratch->nextMemZero<char>(128);
-    if (sp.size() <= 0) return {};
+    Span<char> sp {pArena->zallocV<char>(128), 128};
 
     const isize size = sp.size() - 1;
     isize n = 0;
