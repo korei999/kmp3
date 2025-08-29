@@ -124,7 +124,7 @@ struct TextBuff
     /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
      * the image might be forceClean()'d and gone by the next iteration.
      * A separate arena just for the image vector will be sufficient. */
-    adt::Arena m_imgArena {};
+    adt::FlatArena m_imgArena {};
     adt::Vec<TextBuffImage> m_vImages {};
 #endif
 

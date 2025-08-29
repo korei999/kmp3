@@ -286,7 +286,7 @@ TextBuff::start(FlatArena* pArena, isize termWidth, isize termHeight)
 {
     m_pArena = pArena;
 #ifdef OPT_CHAFA
-    m_imgArena = Arena {SIZE_1M};
+    new(&m_imgArena) FlatArena {SIZE_1G};
 #endif
 
     clearTerm();
@@ -396,8 +396,7 @@ TextBuff::showImages()
     if (nDraws > 0)
     {
         m_vImages.destroy(&m_imgArena);
-        m_imgArena.reset();
-        m_imgArena.shrinkToFirstBlock();
+        m_imgArena.resetToFirstPage();
     }
 }
 #endif
