@@ -20,7 +20,7 @@ run()
         return;
     }
 
-    FlatArena arena {SIZE_1G};
+    Arena arena {SIZE_1G};
     defer( arena.freeAll() );
 
     if (app::window().start(&arena) == false)

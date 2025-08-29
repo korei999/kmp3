@@ -17,7 +17,7 @@ readModeToString(WINDOW_READ_MODE e) noexcept
 }
 
 StringView
-allocTimeString(FlatArena* pArena, int width)
+allocTimeString(Arena* pArena, int width)
 {
     ArenaPushGuard pushed {pArena};
 

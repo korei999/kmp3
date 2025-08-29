@@ -50,7 +50,7 @@ sigwinchHandler(int)
 }
 
 bool
-Win::start(FlatArena* pArena)
+Win::start(Arena* pArena)
 {
     m_pArena = pArena;
     m_termSize = getTermSize();

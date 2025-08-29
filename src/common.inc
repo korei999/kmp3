@@ -37,7 +37,7 @@ enum class READ_STATUS : adt::u8 { OK_, DONE, BACKSPACE };
 [[nodiscard]] adt::StringView
 readModeToString(WINDOW_READ_MODE e) noexcept;
 
-[[nodiscard]] adt::StringView allocTimeString(adt::FlatArena* pArena, int width);
+[[nodiscard]] adt::StringView allocTimeString(adt::Arena* pArena, int width);
 
 /* fix song list range on new focus */
 void fixFirstIdx(adt::u16 listHeight, adt::i16* pFirstIdx);

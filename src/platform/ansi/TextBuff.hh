@@ -101,7 +101,7 @@ operator!=(const TextBuffCell& l, const TextBuffCell& r)
 
 struct TextBuff
 {
-    adt::FlatArena* m_pArena {};
+    adt::Arena* m_pArena {};
 
     char* m_pData {};
     adt::isize m_size {};
@@ -124,7 +124,7 @@ struct TextBuff
     /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
      * the image might be forceClean()'d and gone by the next iteration.
      * A separate arena just for the image vector will be sufficient. */
-    adt::FlatArena m_imgArena {};
+    adt::Arena m_imgArena {};
     adt::Vec<TextBuffImage> m_vImages {};
 #endif
 
@@ -153,7 +153,7 @@ struct TextBuff
     /* */
 
     /* main api (more efficient using damage tracking) */
-    void start(adt::FlatArena* pArena, adt::isize termWidth, adt::isize termHeight);
+    void start(adt::Arena* pArena, adt::isize termWidth, adt::isize termHeight);
     void destroy();
     void clean();
     void present();

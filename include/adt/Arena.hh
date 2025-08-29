@@ -1,160 +1,124 @@
 #pragma once
 
-#include "StdAllocator.hh"
+#include "IAllocator.hh"
+#include "assert.hh"
 #include "utils.hh"
 
-#include <cstring>
+#if __has_include(<sys/mman.h>)
+    #define ADT_FLAT_ARENA_MMAP
+    #include <sys/mman.h>
+#elif defined _WIN32
+    #define ADT_FLAT_ARENA_WIN32
+#else
+    #warning "FlatArena in not implemented"
+#endif
 
 namespace adt
 {
 
-/* fast region based allocator, only freeAll() free's memory, free() does nothing */
-struct Arena : public IArena
+struct Arena : IArena
 {
-    struct Block
-    {
-        Block* pNext {};
-        usize size {}; /* excluding sizeof(ArenaBlock) */
-        usize nBytesOccupied {};
-        u8* pLastAlloc {};
-        usize lastAllocSize {};
-        u8 pMem[];
-    };
+    void* m_pData {};
+    isize m_off {};
+    isize m_reserved {};
+    isize m_commited {};
+    void* m_pLastAlloc {};
+    isize m_lastAllocSize {};
 
     /* */
 
-    usize m_defaultCapacity {};
-    IAllocator* m_pBackAlloc {};
-#ifndef NDEBUG
-    std::source_location m_loc {};
-#endif
-    Block* m_pBlocks {};
+    Arena(isize reserveSize, isize commitSize = getPageSize()) noexcept(false); /* AllocException */
+    Arena() noexcept = default;
 
     /* */
 
-    Arena() = default;
+    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override; /* AllocException */
 
-    Arena(
-        usize capacity,
-        IAllocator* pBackingAlloc = StdAllocator::inst()
-#ifndef NDEBUG
-        , std::source_location _DONT_USE_loc = std::source_location::current()
-#endif
-    ) noexcept(false)
-        : m_defaultCapacity(alignUp8(capacity)),
-          m_pBackAlloc(pBackingAlloc),
-#ifndef NDEBUG
-          m_loc {_DONT_USE_loc},
-#endif
-          m_pBlocks(allocBlock(m_defaultCapacity))
-    {}
+    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override; /* AllocException */
+
+    [[nodiscard]] virtual void* realloc(void* p, usize oldCount, usize newCount, usize mSize) noexcept(false) override; /* AllocException */
+
+    virtual void free(void* ptr) noexcept override;
+
+    [[nodiscard]] virtual constexpr bool doesFree() const noexcept override;
+    [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override;
+
+    virtual void freeAll() noexcept override;
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    virtual void free(void* ptr) noexcept override final;
-    virtual void freeAll() noexcept override final;
-    [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return false; }
-    [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
-
-    /* */
-
-    void reset() noexcept;
-    void shrinkToFirstBlock() noexcept;
-    isize nBytesOccupied() const noexcept;
-
-    /* */
+    void reset();
+    void resetToFirstPage();
 
 protected:
-    [[nodiscard]] inline Block* allocBlock(usize size);
-    [[nodiscard]] inline Block* prependBlock(usize size);
-    [[nodiscard]] inline Block* findFittingBlock(usize size);
-    [[nodiscard]] inline Block* findBlockFromPtr(u8* ptr);
+    void growIfNeeded(isize newOff);
+    void commit(void* p, isize size);
+    void decommit(void* p, isize size);
 };
 
-inline Arena::Block*
-Arena::findBlockFromPtr(u8* ptr)
+struct ArenaPushGuard
 {
-    auto* it = m_pBlocks;
-    while (it)
-    {
-        if (ptr >= it->pMem && ptr < &it->pMem[it->size])
-            return it;
+    Arena* m_pArena {};
+    isize m_off {};
+    void* m_pLastAlloc {};
+    isize m_lastAllocSize {};
 
-        it = it->pNext;
-    }
+    /* */
 
-    return nullptr;
+    ArenaPushGuard(Arena* p) noexcept;
+    ~ArenaPushGuard() noexcept;
+};
+
+inline
+ArenaPushGuard::ArenaPushGuard(Arena* p) noexcept
+    : m_pArena{p}, m_off{p->m_off}, m_pLastAlloc{p->m_pLastAlloc}, m_lastAllocSize{p->m_lastAllocSize} {}
+
+inline
+ArenaPushGuard::~ArenaPushGuard() noexcept
+{
+    m_pArena->m_off = m_off;
+    m_pArena->m_pLastAlloc = m_pLastAlloc;
+    m_pArena->m_lastAllocSize = m_lastAllocSize;
 }
 
-inline Arena::Block*
-Arena::findFittingBlock(usize size)
+inline
+Arena::Arena(isize reserveSize, isize commitSize)
 {
-    auto* it = m_pBlocks;
-    while (it)
-    {
-        if (size < it->size - it->nBytesOccupied)
-            return it;
+    [[maybe_unused]] int err = 0;
 
-        it = it->pNext;
-    }
+    const isize realReserved = alignUp(reserveSize, getPageSize());
 
-    return nullptr;
-}
-
-inline Arena::Block*
-Arena::allocBlock(usize size)
-{
-    ADT_ASSERT(m_pBackAlloc, "uninitialized: m_pBackAlloc == nullptr");
-
-    /* NOTE: m_pBackAlloc can throw here */
-    Block* pBlock = static_cast<Block*>(m_pBackAlloc->zalloc(1, size + sizeof(*pBlock)));
-
-#if defined ADT_DBG_MEMORY && !defined NDEBUG
-    print::err("[Arena: {}, {}, {}]: new block of size: {}\n",
-        print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), size
-    );
+#ifdef ADT_FLAT_ARENA_MMAP
+    void* pRes = mmap(nullptr, realReserved, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (pRes == MAP_FAILED) throw AllocException{"mmap() failed"};
+#elif defined ADT_FLAT_ARENA_WIN32
+    void* pRes = VirtualAlloc(nullptr, realReserved, MEM_RESERVE, PAGE_READWRITE);
+    ADT_ALLOC_EXCEPTION_FMT(pRes, "VirtualAlloc() failed to reserve: {}", realReserved);
+#else
 #endif
 
-    pBlock->size = size;
-    pBlock->pLastAlloc = pBlock->pMem;
+    m_pData = pRes;
+    m_reserved = realReserved;
+    m_pLastAlloc = (void*)~0llu;
 
-    return pBlock;
-}
-
-inline Arena::Block*
-Arena::prependBlock(usize size)
-{
-    auto* pNew = allocBlock(size);
-    pNew->pNext = m_pBlocks;
-    m_pBlocks = pNew;
-
-    return pNew;
+    if (commitSize > 0)
+    {
+        const isize realCommit = alignUp(commitSize, getPageSize());
+        commit(m_pData, realCommit);
+        m_commited = realCommit;
+    }
 }
 
 inline void*
 Arena::malloc(usize mCount, usize mSize)
 {
-    usize realSize = alignUp8(mCount * mSize);
-    auto* pBlock = findFittingBlock(realSize);
+    const isize realSize = alignUp8(mCount * mSize);
+    void* pRet = (void*)((u8*)m_pData + m_off);
 
-#if defined ADT_DBG_MEMORY && !defined NDEBUG
-    if (m_defaultCapacity <= realSize)
-        print::err("[Arena: {}, {}, {}]: allocating more than defaultCapacity ({}, {})\n",
-            print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_defaultCapacity, realSize
-        );
-#endif
+    growIfNeeded(m_off + realSize);
 
-    if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, usize(realSize*1.33)));
-
-    auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
-    ADT_ASSERT(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize, " ");
-
-    pBlock->nBytesOccupied += realSize;
-    pBlock->pLastAlloc = pRet;
-    pBlock->lastAllocSize = realSize;
+    m_pLastAlloc = pRet;
+    m_lastAllocSize = realSize;
 
     return pRet;
 }
@@ -162,40 +126,31 @@ Arena::malloc(usize mCount, usize mSize)
 inline void*
 Arena::zalloc(usize mCount, usize mSize)
 {
-    auto* p = malloc(mCount, mSize);
-    memset(p, 0, alignUp8(mCount * mSize));
-    return p;
+    void* pMem = malloc(mCount, mSize);
+    ::memset(pMem, 0, mCount * mSize);
+    return pMem;
 }
 
 inline void*
-Arena::realloc(void* ptr, usize oldCount, usize mCount, usize mSize)
+Arena::realloc(void* p, usize oldCount, usize newCount, usize mSize)
 {
-    if (!ptr) return malloc(mCount, mSize);
+    if (!p) return malloc(newCount, mSize);
 
-    const usize requested = mSize * mCount;
-    const usize realSize = alignUp8(requested);
-
-    auto* pBlock = findBlockFromPtr(static_cast<u8*>(ptr));
-    if (!pBlock) throw AllocException("pointer doesn't belong to this arena");
-
-    if (ptr == pBlock->pLastAlloc &&
-        pBlock->pLastAlloc + realSize < pBlock->pMem + pBlock->size) /* bump case */
+    /* bump case */
+    if (p == m_pLastAlloc)
     {
-        pBlock->nBytesOccupied -= pBlock->lastAllocSize;
-        pBlock->nBytesOccupied += realSize;
-        pBlock->lastAllocSize = realSize;
-
-        return ptr;
+        const isize realSize = alignUp8(newCount * mSize);
+        isize newOff = (m_off - m_lastAllocSize) + realSize;
+        growIfNeeded(newOff);
+        m_lastAllocSize = realSize;
+        return p;
     }
-    else
-    {
-        if (mCount <= oldCount) return ptr;
 
-        auto* pRet = malloc(mCount, mSize);
-        memcpy(pRet, ptr, oldCount * mSize);
+    if (newCount <= oldCount) return p;
 
-        return pRet;
-    }
+    void* pMem = malloc(newCount, mSize);
+    if (p) ::memcpy(pMem, p, oldCount * mSize);
+    return pMem;
 }
 
 inline void
@@ -204,65 +159,96 @@ Arena::free(void*) noexcept
     /* noop */
 }
 
+inline constexpr bool
+Arena::doesFree() const noexcept
+{
+    return false;
+}
+
+inline constexpr bool
+Arena::doesRealloc() const noexcept
+{
+    return true;
+}
+
 inline void
 Arena::freeAll() noexcept
 {
-    auto* it = m_pBlocks;
-    while (it)
-    {
-        auto* next = it->pNext;
-        m_pBackAlloc->free(it);
-        it = next;
-    }
-    m_pBlocks = nullptr;
-}
-
-inline void
-Arena::reset() noexcept
-{
-    auto* it = m_pBlocks;
-    while (it)
-    {
-        it->nBytesOccupied = 0;
-        it->lastAllocSize = 0;
-        it->pLastAlloc = it->pMem;
-
-        it = it->pNext;
-    }
-}
-
-inline void
-Arena::shrinkToFirstBlock() noexcept
-{
-    auto* it = m_pBlocks;
-    if (!it) return;
-
-    while (it->pNext)
-    {
-#if defined ADT_DBG_MEMORY && !defined NDEBUG
-        print::err("[Arena: {}, {}, {}]: shrinking {} sized block\n",
-            print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), it->size
-        );
+#ifdef ADT_FLAT_ARENA_MMAP
+    [[maybe_unused]] int err = munmap(m_pData, m_reserved);
+    ADT_ASSERT(err != - 1, "munmap: {} ({})", err, strerror(errno));
+#elif defined ADT_FLAT_ARENA_WIN32
+    VirtualFree(m_pData, 0, MEM_RELEASE);
+#else
 #endif
-        auto* next = it->pNext;
-        m_pBackAlloc->free(it);
-        it = next;
-    }
-    m_pBlocks = it;
+
+    *this = {};
 }
 
-inline isize
-Arena::nBytesOccupied() const noexcept
+inline void
+Arena::reset()
 {
-    isize total = 0;
-    auto* it = m_pBlocks;
-    while (it)
+    decommit(m_pData, m_commited);
+
+    m_off = 0;
+    m_commited = 0;
+    m_pLastAlloc = (void*)~0llu;
+    m_lastAllocSize = 0;
+}
+
+inline void
+Arena::resetToFirstPage()
+{
+    const isize pageSize = getPageSize();
+    [[maybe_unused]] int err = 0;
+
+    if (m_commited > pageSize)
+        decommit((u8*)m_pData + pageSize, m_commited - pageSize);
+    else if (m_commited < getPageSize())
+        commit((u8*)m_pData + m_commited, pageSize - m_commited);
+
+    m_off = 0;
+    m_commited = pageSize;
+    m_pLastAlloc = (void*)~0llu;
+    m_lastAllocSize = 0;
+}
+
+inline void
+Arena::growIfNeeded(isize newOff)
+{
+    if (newOff > m_commited)
     {
-        total += it->nBytesOccupied;
-        it = it->pNext;
+        isize newCommited = utils::max((isize)alignUp(newOff, getPageSize()), m_commited * 2);
+        ADT_ALLOC_EXCEPTION_FMT(newCommited <= m_reserved, "out of reserved memory, newOff: {}, m_reserved: {}", newCommited, m_reserved);
+        commit((u8*)m_pData + m_commited, newCommited - m_commited);
+        m_commited = newCommited;
     }
 
-    return total;
+    m_off = newOff;
+}
+
+inline void
+Arena::commit(void* p, isize size)
+{
+#ifdef ADT_FLAT_ARENA_MMAP
+    [[maybe_unused]] int err = mprotect(p, size, PROT_READ | PROT_WRITE);
+    ADT_ALLOC_EXCEPTION_FMT(err != - 1, "mprotect: r: {} ({}), size: {}", err, strerror(errno), size);
+#elif defined ADT_FLAT_ARENA_WIN32
+    ADT_ALLOC_EXCEPTION_FMT(VirtualAlloc(p, size, MEM_COMMIT, PAGE_READWRITE), "p: {}, size: {}", p, size);
+#else
+#endif
+}
+
+inline void
+Arena::decommit(void* p, isize size)
+{
+#ifdef ADT_FLAT_ARENA_MMAP
+        [[maybe_unused]] int err = mprotect(p, size, PROT_NONE);
+        ADT_ALLOC_EXCEPTION_FMT(err != - 1, "mprotect: {} ({})", err, strerror(errno));
+#elif defined ADT_FLAT_ARENA_WIN32
+        ADT_ALLOC_EXCEPTION_FMT(VirtualFree(p, size, MEM_DECOMMIT), "");
+#else
+#endif
 }
 
 } /* namespace adt */

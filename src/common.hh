@@ -11,7 +11,7 @@ template<typename READ_LAMBDA, typename DRAW_LAMBDA>
 requires std::same_as<std::invoke_result_t<READ_LAMBDA>, READ_STATUS> && std::same_as<std::invoke_result_t<DRAW_LAMBDA>, void>
 inline void
 subStringSearch(
-    adt::FlatArena* pArena,
+    adt::Arena* pArena,
     adt::i16* pFirstIdx,
     READ_LAMBDA clRead,
     DRAW_LAMBDA clDraw

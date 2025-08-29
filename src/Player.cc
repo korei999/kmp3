@@ -92,7 +92,7 @@ Player::setDefaultIdxs(Vec<u16>* pvIdxs)
 }
 
 void
-Player::subStringSearch(FlatArena* pArena, Span<wchar_t> spBuff)
+Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
 {
     ArenaPushGuard pushed {pArena};
 
