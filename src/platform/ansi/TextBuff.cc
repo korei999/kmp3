@@ -215,10 +215,9 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
 
     int max = 0;
 
-    const isize maxLen = utils::min(m_tWidth, (isize)maxSvLen);
     for (const wchar_t& wc : s)
     {
-        if (x >= maxLen) break;
+        if (x >= m_tWidth || max >= maxSvLen) break;
 
         /* FIXME: regional symbols are broken with some terminals (tmux). */
         if (StringGraphemeIt::isRegional(wc))
@@ -400,7 +399,7 @@ TextBuff::showImages()
     if (nDraws > 0)
     {
         m_vImages.destroy(&m_imgArena);
-        m_imgArena.resetToFirstPage();
+        m_imgArena.resetDecommit();
     }
 }
 #endif

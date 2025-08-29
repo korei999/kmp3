@@ -47,7 +47,8 @@ struct Arena : IArena
 
     /* */
 
-    void reset();
+    void reset() noexcept;
+    void resetDecommit();
     void resetToFirstPage();
 
 protected:
@@ -186,7 +187,15 @@ Arena::freeAll() noexcept
 }
 
 inline void
-Arena::reset()
+Arena::reset() noexcept
+{
+    m_off = 0;
+    m_pLastAlloc = (void*)~0llu;
+    m_lastAllocSize = 0;
+}
+
+inline void
+Arena::resetDecommit()
 {
     decommit(m_pData, m_commited);
 
@@ -245,6 +254,8 @@ Arena::decommit(void* p, isize size)
 #ifdef ADT_FLAT_ARENA_MMAP
         [[maybe_unused]] int err = mprotect(p, size, PROT_NONE);
         ADT_ALLOC_EXCEPTION_FMT(err != - 1, "mprotect: {} ({})", err, strerror(errno));
+        err = madvise(p, size, MADV_DONTNEED);
+        ADT_ALLOC_EXCEPTION_FMT(err != - 1, "madvise: {} ({})", err, strerror(errno));
 #elif defined ADT_FLAT_ARENA_WIN32
         ADT_ALLOC_EXCEPTION_FMT(VirtualFree(p, size, MEM_DECOMMIT), "");
 #else
