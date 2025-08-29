@@ -215,9 +215,10 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
 
     int max = 0;
 
+    const isize maxLen = utils::min(m_tWidth, (isize)maxSvLen);
     for (const wchar_t& wc : s)
     {
-        if (x >= m_tWidth || max >= maxSvLen) break;
+        if (x >= maxLen) break;
 
         /* FIXME: regional symbols are broken with some terminals (tmux). */
         if (StringGraphemeIt::isRegional(wc))
@@ -346,9 +347,6 @@ TextBuff::pushDiff()
 
                 if (col + colWidth <= m_tWidth)
                 {
-                    if (col == m_tWidth - 1 && row == m_tHeight - 1)
-                        LogError("HELLO: '{}'({})\n", back.wc, (int)back.wc);
-
                     clMove();
                     if (bChangeStyle)
                     {
