@@ -346,6 +346,9 @@ TextBuff::pushDiff()
 
                 if (col + colWidth <= m_tWidth)
                 {
+                    if (col == m_tWidth - 1 && row == m_tHeight - 1)
+                        LogError("HELLO: '{}'({})\n", back.wc, (int)back.wc);
+
                     clMove();
                     if (bChangeStyle)
                     {
@@ -355,7 +358,10 @@ TextBuff::pushDiff()
                         push(styleToString(m_pArena, back.eStyle));
                         eLastStyle = back.eStyle;
                     }
-                    pushWChar(back.wc);
+
+                    /* Weird bottom right corner bug on long search strings. */
+                    if (back.wc == L'\0') pushWChar(L' ');
+                    else pushWChar(back.wc);
                 }
 
                 if (colWidth > 1) col += colWidth - 1;

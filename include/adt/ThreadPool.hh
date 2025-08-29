@@ -59,6 +59,8 @@ struct IThreadPool
 
     virtual Task tryStealTask() noexcept = 0;
 
+    virtual int threadId() noexcept = 0;
+
     template<typename CL>
     bool
     add(const CL& cl) noexcept
@@ -241,6 +243,8 @@ struct ThreadPool : IThreadPool
 
     virtual Task tryStealTask() noexcept override;
 
+    virtual int threadId() noexcept override;
+
     /* */
 
     void destroy() noexcept;
@@ -421,6 +425,12 @@ ThreadPool::tryStealTask() noexcept
     return task;
 }
 
+inline int
+ThreadPool::threadId() noexcept
+{
+    return gtl_threadId;
+}
+
 struct IThreadPoolWithMemory : IThreadPool
 {
     virtual ScratchBuffer& scratchBuffer() = 0;
@@ -467,6 +477,7 @@ struct ThreadPoolWithMemory : IThreadPoolWithMemory
     virtual bool addTask(void (*pfn)(void*), void* pArg, isize argSize) noexcept override { return m_base.addTask(pfn, pArg, argSize); }
     virtual int nThreads() const noexcept override { return m_base.nThreads(); }
     virtual Task tryStealTask() noexcept override { return m_base.tryStealTask(); }
+    virtual int threadId() noexcept override { return m_base.threadId(); }
 
     /* */
 
