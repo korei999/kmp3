@@ -27,9 +27,9 @@ On archlinux use aur package: `yay -S kmp3-git`.\
 Or build from source using instructions below.
 
 ### Dependencies
-Compiler: `clang >= 17.0` or `gcc >= 14`, `CMake >= 3.20`.\
-Packages: `libavformat libavcodec libavutil libswresample`.\
-Audio backends: `libpipewire-0.3 #(linux)`, `sndio #(OpenBSD)`, `coreaudio #(Mac)`.\
+Build system: `clang >= 16.0` or `gcc >= 14`, `CMake >= 3.20`.\
+Main packages: `libavformat libavcodec libavutil libswresample`.\
+Audio backends: `alsa` or `libpipewire-0.3 #(linux)`, `sndio #(OpenBSD)`, `coreaudio #(Mac)`.\
 For mpris support: `libsystemd` or `basu`.\
 For image support: `chafa glib-2.0 libswscale`.
 
@@ -37,10 +37,18 @@ For image support: `chafa glib-2.0 libswscale`.
 ```
 cmake -S . -B build/
 cmake --build build/ -j
+# or
+./cmake.sh release
+```
+
+### Install
+```
 sudo cmake --install build/
 ```
 
 ### Uninstall
 ```
-sudo xargs rm < ./build/install_manifest.txt
+sudo rm $(cat "./build/install_manifest.txt")
+# or
+./cmake.sh uninstall
 ```

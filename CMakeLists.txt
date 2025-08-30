@@ -184,10 +184,10 @@ endfunction()
 
 include_directories("include")
 
-add_executable(${CMAKE_PROJECT_NAME})
+add_executable(${kmp3})
 
 # use root sources from everywhere
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "src/kmp3")
+target_include_directories(${kmp3} PRIVATE "src/kmp3")
 add_subdirectory(src/kmp3)
 
 file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
@@ -202,10 +202,10 @@ target_precompile_headers(ADTLIB_PCH INTERFACE
     "$<$<COMPILE_LANGUAGE:CXX>:${ADT_PRECOMPILED_HEADERS}>"
 )
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ADTLIB_PCH)
+target_link_libraries(${kmp3} PRIVATE ADTLIB_PCH)
 
 if (OPT_MIMALLOC)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)
+    target_link_libraries(${kmp3} PRIVATE mimalloc-static)
 endif()
 
-install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(TARGETS ${kmp3} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

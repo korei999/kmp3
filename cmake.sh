@@ -125,7 +125,7 @@ _install()
 
 _uninstall()
 {
-    sudo xargs rm < ./build/install_manifest.txt
+    sudo rm $(cat "./build/install_manifest.txt")
 }
 
 _test()
