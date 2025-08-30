@@ -21,6 +21,7 @@
 - `m` mute.
 - `q` quit.
 - `[` / `]` playback speed shifting fun. `\` Set original speed back.
+- `i` / `I` increase/decrease image size. `o` Set default size.
 
 ### Install
 On archlinux use aur package: `yay -S kmp3-git`.\
@@ -37,12 +38,6 @@ For image support: `chafa glib-2.0 libswscale`.
 ```
 cmake -S . -B build/
 cmake --build build/ -j
-# or
-./cmake.sh release
-```
-
-### Install
-```
 sudo cmake --install build/
 ```
 
