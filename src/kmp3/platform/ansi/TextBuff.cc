@@ -352,7 +352,7 @@ TextBuff::pushDiff()
                         bChangeStyle = false;
 
                         char aBuff[128] {};
-                        const isize nWritten = styleToString(aBuff, back.eStyle);
+                        const isize nWritten = styleToBuffer(aBuff, back.eStyle);
                         push(aBuff, nWritten);
                         eLastStyle = back.eStyle;
                     }
@@ -514,7 +514,7 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const Span<const wcha
 }
 
 isize
-TextBuff::styleToString(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle)
+TextBuff::styleToBuffer(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle)
 {
     const isize size = spFill.size();
     isize n = 0;
@@ -574,7 +574,6 @@ TextBuff::styleToString(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle)
 
     n += print::toBuffer(spFill.data() + n, size - n, "m");
 
-    LogWarn{"n: {}\n", n};
     return n;
 }
 
