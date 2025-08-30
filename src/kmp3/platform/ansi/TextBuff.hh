@@ -117,8 +117,8 @@ struct TextBuff
     bool m_bChanged {};
     bool m_bErase {};
 
-    adt::Vec<TextBuffCell> m_vFront {}; /* what to show */
-    adt::Vec<TextBuffCell> m_vBack {}; /* where to write */
+    adt::VecM<TextBuffCell> m_vFront {}; /* what to show */
+    adt::VecM<TextBuffCell> m_vBack {}; /* where to write */
 
 #ifdef OPT_CHAFA
     /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
@@ -162,7 +162,7 @@ struct TextBuff
 
     void string(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::StringView sv, int maxSvLen = 99999);
     void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::Span<const wchar_t> sp);
-    adt::StringView styleToString(adt::IArena* pScratch, TEXT_BUFF_STYLE eStyle);
+    adt::isize styleToString(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle);
 
 #ifdef OPT_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);

@@ -194,8 +194,8 @@ TextBuff::clearKittyImages()
 void
 TextBuff::resizeBuffers(isize width, isize height)
 {
-    m_vBack.setSize(StdAllocator::inst(), width * height);
-    m_vFront.setSize(StdAllocator::inst(), width * height);
+    m_vBack.setSize(width * height);
+    m_vFront.setSize(width * height);
 
     m_tWidth = width;
     m_tHeight = height;
@@ -264,8 +264,8 @@ TextBuff::resize(isize width, isize height)
 void
 TextBuff::destroy()
 {
-    m_vBack.destroy(StdAllocator::inst());
-    m_vFront.destroy(StdAllocator::inst());
+    m_vBack.destroy();
+    m_vFront.destroy();
 
 #ifdef OPT_CHAFA
     m_imgArena.freeAll();
@@ -349,10 +349,11 @@ TextBuff::pushDiff()
                     clMove();
                     if (bChangeStyle)
                     {
-                        ArenaPushGuard pushed {m_pArena};
-
                         bChangeStyle = false;
-                        push(styleToString(m_pArena, back.eStyle));
+
+                        char aBuff[128] {};
+                        const isize nWritten = styleToString(aBuff, back.eStyle);
+                        push(aBuff, nWritten);
                         eLastStyle = back.eStyle;
                     }
 
@@ -512,15 +513,13 @@ TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const Span<const wcha
     );
 }
 
-StringView
-TextBuff::styleToString(IArena* pArena, TEXT_BUFF_STYLE eStyle)
+isize
+TextBuff::styleToString(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle)
 {
-    Span<char> sp {pArena->zallocV<char>(128), 128};
-
-    const isize size = sp.size() - 1;
+    const isize size = spFill.size();
     isize n = 0;
 
-    n += print::toBuffer(sp.data() + n, size - n, "\x1b[0");
+    n += print::toBuffer(spFill.data() + n, size - n, "\x1b[0");
 
     if (bool(eStyle))
     {
@@ -528,54 +527,55 @@ TextBuff::styleToString(IArena* pArena, TEXT_BUFF_STYLE eStyle)
         using STYLE = TEXT_BUFF_STYLE;
 
         if (bool(eStyle & STYLE::BOLD))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BOLD));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BOLD));
         if (bool(eStyle & STYLE::DIM))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::DIM));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::DIM));
         if (bool(eStyle & STYLE::ITALIC))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::ITALIC));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::ITALIC));
         if (bool(eStyle & STYLE::UNDERLINE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::UNRELINE));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::UNRELINE));
         if (bool(eStyle & STYLE::BLINK))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BLINK));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BLINK));
         if (bool(eStyle & STYLE::REVERSE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::REVERSE));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::REVERSE));
         if (bool(eStyle & STYLE::INVIS))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::INVIS));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::INVIS));
         if (bool(eStyle & STYLE::STRIKE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::STRIKE));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::STRIKE));
         if (bool(eStyle & STYLE::RED))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::RED));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::RED));
         if (bool(eStyle & STYLE::GREEN))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::GREEN));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::GREEN));
         if (bool(eStyle & STYLE::YELLOW))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::YELLOW));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::YELLOW));
         if (bool(eStyle & STYLE::BLUE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BLUE));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BLUE));
         if (bool(eStyle & STYLE::MAGENTA))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::MAGENTA));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::MAGENTA));
         if (bool(eStyle & STYLE::CYAN))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::CYAN));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::CYAN));
         if (bool(eStyle & STYLE::WHITE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::WHITE));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::WHITE));
         if (bool(eStyle & STYLE::BG_RED))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_RED));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BG_RED));
         if (bool(eStyle & STYLE::BG_GREEN))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_GREEN));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BG_GREEN));
         if (bool(eStyle & STYLE::BG_YELLOW))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_YELLOW));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BG_YELLOW));
         if (bool(eStyle & STYLE::BG_BLUE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_BLUE));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BG_BLUE));
         if (bool(eStyle & STYLE::BG_MAGENTA))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_MAGENTA));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BG_MAGENTA));
         if (bool(eStyle & STYLE::BG_CYAN))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_CYAN));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BG_CYAN));
         if (bool(eStyle & STYLE::BG_WHITE))
-            n += print::toBuffer(sp.data() + n, size - n, ";{}", int(CODE::BG_WHITE));
+            n += print::toBuffer(spFill.data() + n, size - n, ";{}", int(CODE::BG_WHITE));
     }
 
-    n += print::toBuffer(sp.data() + n, size - n, "m");
+    n += print::toBuffer(spFill.data() + n, size - n, "m");
 
-    return {sp.data(), n};
+    LogWarn{"n: {}\n", n};
+    return n;
 }
 
 #ifdef OPT_CHAFA
