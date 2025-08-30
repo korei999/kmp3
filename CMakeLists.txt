@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
-file(STRINGS name NAME)
-message(STATUS "NAME: '${NAME}'")
+file(STRINGS name kmp3)
+message(STATUS "kmp3: '${kmp3}'")
 
-project(${NAME} VERSION 0.1 LANGUAGES CXX C)
+project(${kmp3} VERSION 0.1 LANGUAGES CXX C)
 message(STATUS "CMAKE_PROJECT_VERSION: '${CMAKE_PROJECT_VERSION}'")
 
 option(OPT_ALSA "" ON)
@@ -16,7 +16,6 @@ option(OPT_SSE4_2 "" OFF)
 option(OPT_AVX2 "" OFF)
 option(OPT_MARCH_NATIVE "" OFF)
 option(OPT_ANALYZE "" OFF)
-option(OPT_PRECOMPILE_ADT "" ON)
 option(OPT_FTIME_TRACE "" OFF)
 option(OPT_ADT_LOGGER_DISABLE "" ON)
 
@@ -84,9 +83,6 @@ message(STATUS "CMAKE_CXX_COMPILER_ID: '${CMAKE_CXX_COMPILER_ID}'")
 message(STATUS "CMAKE_CXX_STANDARD: '${CMAKE_CXX_STANDARD}'")
 
 add_definitions("-DADT_DEFER_LESS_TYPING")
-
-include_directories("src")
-include_directories("include")
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
@@ -163,42 +159,7 @@ endif()
 message(STATUS "CMAKE_SYSTEM_NAME: '${CMAKE_SYSTEM_NAME}'")
 message(STATUS "CMAKE_SOURCE_DIR: '${CMAKE_SOURCE_DIR}'")
 
-add_executable(
-    ${CMAKE_PROJECT_NAME}
-    src/main.cc
-    src/app.cc
-    src/frame.cc
-    src/Player.cc
-    src/common.cc
-    src/audio.cc
-
-    src/platform/ffmpeg/Decoder.cc
-
-    src/platform/ansi/Win.cc
-    src/platform/ansi/WinDraw.cc
-    src/platform/ansi/WinInput.cc
-    src/platform/ansi/TextBuff.cc
-)
-
-if (OPT_PRECOMPILE_ADT)
-    file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
-
-    if (NOT OPT_MIMALLOC)
-        list(REMOVE_ITEM
-            ADT_PRECOMPILED_HEADERS
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/MiMalloc.hh"
-        )
-    endif()
-
-    target_precompile_headers(
-        ${CMAKE_PROJECT_NAME} PRIVATE
-        "$<$<COMPILE_LANGUAGE:CXX>:${ADT_PRECOMPILED_HEADERS}>"
-    )
-endif()
-
-if (OPT_MIMALLOC)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)
-endif()
+find_package(PkgConfig REQUIRED)
 
 function(allPackageFlags)
     set(oneValueArgs TARGET NAME)
@@ -221,98 +182,30 @@ function(allPackageFlags)
     endif()
 endfunction()
 
-find_package(PkgConfig REQUIRED)
+include_directories("include")
 
-pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswresample)
-allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME FFMPEG)
+add_executable(${CMAKE_PROJECT_NAME})
 
-if (OPT_ALSA)
-    pkg_check_modules(ALSA alsa)
-    if (ALSA_FOUND)
-        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME ALSA)
+# use root sources from everywhere
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "src/kmp3")
+add_subdirectory(src/kmp3)
 
-        add_definitions("-DOPT_ALSA")
-        target_sources(
-            ${CMAKE_PROJECT_NAME} PRIVATE
-            "src/platform/alsa/Mixer.cc"
-        )
-    endif()
-endif()
-
-if (OPT_PIPEWIRE)
-    pkg_check_modules(PIPEWIRE libpipewire-0.3)
-    if (PIPEWIRE_FOUND)
-        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME PIPEWIRE)
-
-        add_definitions("-DOPT_PIPEWIRE")
-        target_sources(
-            ${CMAKE_PROJECT_NAME} PRIVATE
-            "src/platform/pipewire/Mixer.cc"
-        )
-    endif()
-endif()
-
-if (OPT_SNDIO OR CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
-    pkg_check_modules(SNDIO sndio)
-    if (SNDIO_FOUND)
-        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME SNDIO)
-
-        add_definitions("-DOPT_SNDIO")
-        target_sources(
-            ${CMAKE_PROJECT_NAME} PRIVATE
-            "src/platform/sndio/Mixer.cc"
-        )
-    endif()
-endif()
-
-if (OPT_CHAFA)
-    pkg_check_modules(CHAFA chafa)
-    pkg_check_modules(SWSCALE libswscale)
-
-    if (CHAFA_FOUND AND SWSCALE_FOUND)
-        message(STATUS "CHAFA_VERSION: '${CHAFA_VERSION}'")
-        if (${CHAFA_VERSION} VERSION_GREATER_EQUAL 1.14)
-            add_definitions("-DOPT_CHAFA_SYMBOLS")
-        endif()
-
-        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME CHAFA)
-        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME SWSCALE)
-
-        add_definitions("-DOPT_CHAFA")
-        target_sources(
-            ${CMAKE_PROJECT_NAME} PRIVATE
-            "src/platform/chafa/chafa.cc"
-        )
-    endif()
-endif()
-
-if(OPT_MPRIS)
-    pkg_check_modules(SYSTEMD libsystemd)
-    if (SYSTEMD_FOUND)
-        allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME SYSTEMD)
-        add_definitions("-DOPT_MPRIS")
-        target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
-    else()
-        pkg_check_modules(BASU basu)
-        if (BASU_FOUND)
-            allPackageFlags(TARGET ${CMAKE_PROJECT_NAME} NAME BASU)
-            add_definitions("-DOPT_MPRIS -DOPT_BASU")
-            target_sources(${CMAKE_PROJECT_NAME} PRIVATE "src/mpris.cc")
-        endif()
-    endif()
-endif()
-
-if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    add_definitions("-DOPT_COREAUDIO")
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-        "-framework CoreAudio"
-        "-framework AudioToolbox"
-        "-framework CoreServices"
+file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
+if (NOT OPT_MIMALLOC)
+    list(REMOVE_ITEM
+        ADT_PRECOMPILED_HEADERS
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/MiMalloc.hh"
     )
-    target_sources(
-        ${CMAKE_PROJECT_NAME} PRIVATE
-        "src/platform/apple/Mixer.cc"
-    )
+endif()
+add_library(ADTLIB_PCH INTERFACE)
+target_precompile_headers(ADTLIB_PCH INTERFACE
+    "$<$<COMPILE_LANGUAGE:CXX>:${ADT_PRECOMPILED_HEADERS}>"
+)
+
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ADTLIB_PCH)
+
+if (OPT_MIMALLOC)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE mimalloc-static)
 endif()
 
 install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

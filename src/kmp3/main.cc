@@ -4,7 +4,7 @@
 #include "frame.hh"
 
 #ifdef OPT_MPRIS
-    #include "mpris.hh"
+    #include "platform/mpris/mpris.hh"
 #endif
 
 #include <clocale>

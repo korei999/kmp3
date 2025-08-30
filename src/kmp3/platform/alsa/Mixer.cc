@@ -1,7 +1,7 @@
 #include "Mixer.hh"
 
 #include "app.hh"
-#include "mpris.hh"
+#include "platform/mpris/mpris.hh"
 
 using namespace adt;
 

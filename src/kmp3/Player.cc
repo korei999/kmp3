@@ -2,7 +2,7 @@
 
 #include "app.hh"
 #include "defaults.hh"
-#include "mpris.hh"
+#include "platform/mpris/mpris.hh"
 
 #include <cstdlib>
 #include <cwchar>

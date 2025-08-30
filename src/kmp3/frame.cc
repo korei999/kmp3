@@ -3,7 +3,7 @@
 #include "app.hh"
 
 #ifdef OPT_MPRIS
-    #include "mpris.hh"
+    #include "platform/mpris/mpris.hh"
 #endif
 
 using namespace adt;

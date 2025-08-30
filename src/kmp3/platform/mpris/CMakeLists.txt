@@ -1,0 +1,15 @@
+# src/kmp3/platform/mpris/CMakeLists.txt
+
+pkg_check_modules(SYSTEMD libsystemd)
+if (SYSTEMD_FOUND)
+    allPackageFlags(TARGET ${kmp3} NAME SYSTEMD)
+    target_compile_definitions(${kmp3} PRIVATE "-DOPT_MPRIS")
+    target_sources(${kmp3} PRIVATE mpris.cc)
+else()
+    pkg_check_modules(BASU basu)
+    if (BASU_FOUND)
+        allPackageFlags(TARGET ${kmp3} NAME BASU)
+        target_compile_definitions(${kmp3} PRIVATE "-DOPT_MPRIS -DOPT_BASU")
+        target_sources(${kmp3} PRIVATE mpris.cc)
+    endif()
+endif()
