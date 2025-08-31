@@ -703,7 +703,7 @@ destroy()
     if (!s_pBus) return;
 
     if (s_fdWake > 0) close(s_fdWake);
-    sd_bus_unref(s_pBus);
+    sd_bus_flush_close_unref(s_pBus);
     s_pBus = nullptr;
     s_fdMpris = -1;
     g_bReady = false;
