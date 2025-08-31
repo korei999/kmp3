@@ -349,6 +349,8 @@ Win::update()
 
     m_time = time::nowMS();
 
+    if (!app::g_bRunning) return;
+
     if (width <= 40 || height <= 15)
     {
         m_textBuff.erase();

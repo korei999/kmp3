@@ -170,11 +170,12 @@ Player::selectFinal(long selI)
 {
     long nFailed = 0;
 
-    while (!app::mixer().play(m_vSongs[selI]))
+    while (true)
     {
-        LogWarn("failed to open: '{}', selI: {}\n", m_vSongs[selI], selI);
-
         if (!app::g_bRunning) return;
+        if (app::mixer().play(m_vSongs[selI])) break;
+
+        LogWarn("failed to open: '{}', selI: {}\n", m_vSongs[selI], selI);
 
         if (++nFailed >= m_vSearchIdxs.size())
         {

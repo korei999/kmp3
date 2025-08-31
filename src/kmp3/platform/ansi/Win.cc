@@ -45,7 +45,6 @@ void
 sigwinchHandler(int)
 {
     auto& win = *(Win*)app::g_pWin;
-
     win.resizeHandler();
 }
 
