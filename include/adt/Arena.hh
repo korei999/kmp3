@@ -268,7 +268,8 @@ Arena::addToDestructList(Ptr<T>* pPtr) noexcept
     pPtr->data.ppObj = (void**)&pPtr->m_pData;
     pPtr->data.pfnDestruct = [](Arena*, void** ppObj) {
         auto& r = *((T*)*ppObj);
-        r.~T();
+        if constexpr (!std::is_trivially_destructible_v<T>)
+            r.~T();
         *((T**)ppObj) = nullptr;
     };
     m_pTargetList->insert(static_cast<ListNodeType*>(pPtr));
