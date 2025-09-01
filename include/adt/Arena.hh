@@ -281,7 +281,8 @@ inline Arena::Owned<T>
 Arena::allocOwned(ARGS&&... args)
 {
     auto pfnDefaultDestructor = +[](Arena*, void* p) noexcept {
-        ((T*)p)->~T();
+        if constexpr (!std::is_trivially_destructible_v<T>)
+            ((T*)p)->~T();
     };
 
     return allocOwnedWithDeleter<T, ARGS...>(pfnDefaultDestructor, std::forward<ARGS>(args)...);
@@ -291,10 +292,9 @@ template<typename T, typename ...ARGS>
 inline Arena::Owned<T>
 Arena::allocOwnedWithDeleter(void (*pfnDestruct)(Arena*, void*), ARGS&&... args)
 {
-    T* pObj;
     Owned<T> o {UNINIT};
 
-    pObj = (T*)malloc(1, sizeof(T) + sizeof(T*) + sizeof(ListNodeType));
+    T* pObj = (T*)malloc(1, sizeof(T) + sizeof(T*) + sizeof(ListNodeType));
     new(pObj) T (std::forward<ARGS>(args)...);
 
     T** pp = (T**)((u8*)pObj + sizeof(T));
@@ -303,10 +303,7 @@ Arena::allocOwnedWithDeleter(void (*pfnDestruct)(Arena*, void*), ARGS&&... args)
 
     auto* pNode = (ListNodeType*)((u8*)pObj + sizeof(T) + sizeof(T*));
     pNode->data.ppObj = (void**)pp;
-
-    if constexpr (!std::is_trivially_destructible_v<T>)
-        pNode->data.pfnDestruct = pfnDestruct;
-    else pNode->data.pfnDestruct = nullptr;
+    pNode->data.pfnDestruct = pfnDestruct;
 
     m_pTargetList->insert(pNode);
 
@@ -356,7 +353,7 @@ Arena::destructOwned() noexcept
 {
     for (auto e : *m_pTargetList)
     {
-        if (e.pfnDestruct) e.pfnDestruct(this, *e.ppObj);
+        e.pfnDestruct(this, *e.ppObj);
         *e.ppObj = g_null; /* point to global null object */
     }
     m_pTargetList->m_pHead = nullptr;
