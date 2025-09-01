@@ -358,7 +358,7 @@ Arena::destructOwned() noexcept
     for (auto e : *m_pTargetList)
     {
         e.pfnDestruct(this, *e.ppObj);
-        *e.ppObj = g_null; /* point to global null object */
+        *e.ppObj = nullptr;
     }
     m_pTargetList->m_pHead = nullptr;
 }
