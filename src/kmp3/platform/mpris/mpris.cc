@@ -260,7 +260,7 @@ identity(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    const char* id = "kmp3";
+    const char* id = app::g_config.ntsMprisName;
     return sd_bus_message_append_basic(reply, 's', id);
 }
 
@@ -622,7 +622,7 @@ init()
     for (isize i = 0; i < nTries; ++i)
     {
         memset(aBuff, 0, sizeof(aBuff));
-        print::toSpan(aBuff, "org.mpris.MediaPlayer2.kmp3_{}", i);
+        print::toSpan(aBuff, "org.mpris.MediaPlayer2.{}_{}", app::g_config.ntsMprisName, i);
         res = sd_bus_request_name(s_pBus, aBuff, 0);
         if (res >= 0) break;
         if ((i >= nTries - 1) && (res < 0))

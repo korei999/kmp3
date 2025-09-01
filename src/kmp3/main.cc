@@ -152,6 +152,20 @@ parseArgs(int argc, char** argv)
             {
                 app::g_bForceLoggerColors = true;
             }
+            else if (svArg == "--mpris-name")
+            {
+                if (argc > i + 1)
+                {
+                    const StringView svNext = argv[++i];
+                    app::g_config.ntsMprisName = svNext.data();
+                    continue;
+                }
+                else
+                {
+                    print::out("missing arg after '--mpris-name'\n");
+                    exit(0);
+                }
+            }
         }
         else return;
     }
@@ -265,7 +279,6 @@ main(int argc, char** argv)
     static_assert(defaults::MAX_VOLUME != 0.0f);
     static_assert(defaults::UPDATE_RATE > 0);
     static_assert(defaults::IMAGE_UPDATE_RATE_LIMIT > 0);
-    static_assert(defaults::MPRIS_UPDATE_RATE > 0.0);
     static_assert(defaults::FONT_ASPECT_RATIO > 0.0);
 
     try
