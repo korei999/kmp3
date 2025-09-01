@@ -363,6 +363,8 @@ Win::update()
         m_textBuff.erase();
     }
 
+    ArenaStateGuard pushed {m_pArena};
+
     m_textBuff.clean();
 
 #ifdef OPT_CHAFA
