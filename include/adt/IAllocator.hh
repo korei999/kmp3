@@ -51,7 +51,7 @@ getPageSize() noexcept
 #define ADT_WARN_USE_AFTER_FREE [[deprecated("warning: use after free")]]
 
 template<typename BASE>
-struct AllocatorHelperCRTP
+struct AllocatorHelperCRTP /* FIXME: mixed size types (usize/isize) in IAllocator and CRTP helper. */
 {
     template<typename T, typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
     [[nodiscard]] constexpr T*
@@ -183,6 +183,17 @@ struct AllocException : public IException
 
 #define ADT_ALLOC_EXCEPTION_FMT(CND, ...)                                                                              \
     if (!static_cast<bool>(CND))                                                                                       \
+    {                                                                                                                  \
+        adt::AllocException ex;                                                                                        \
+        auto& aMsgBuff = ex.m_sfMsg.data();                                                                            \
+        isize n = adt::print::toBuffer(aMsgBuff, sizeof(aMsgBuff) - 1, #CND);                                          \
+        n += adt::print::toBuffer(aMsgBuff + n, sizeof(aMsgBuff) - 1 - n, "\nMsg: ");                                  \
+        n += adt::print::toBuffer(aMsgBuff + n, sizeof(aMsgBuff) - 1 - n, __VA_ARGS__);                                \
+        throw ex;                                                                                                      \
+    }
+
+#define ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(CND, ...)                                                                     \
+    [[unlikely]] if (!static_cast<bool>(CND))                                                                          \
     {                                                                                                                  \
         adt::AllocException ex;                                                                                        \
         auto& aMsgBuff = ex.m_sfMsg.data();                                                                            \

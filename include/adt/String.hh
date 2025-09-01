@@ -65,6 +65,10 @@ inline constexpr
 StringView::StringView(Span<char> sp)
     : StringView(sp.m_pData, sp.m_size) {}
 
+inline constexpr
+StringView::StringView(const Span<const char> sp) noexcept
+    : StringView(const_cast<char*>(sp.m_pData), sp.m_size) {}
+
 template<isize SIZE>
 inline constexpr
 StringView::StringView(const char (&aCharBuff)[SIZE])

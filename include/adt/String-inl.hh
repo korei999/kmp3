@@ -53,6 +53,8 @@ struct StringView
 
     constexpr StringView(Span<char> sp);
 
+    constexpr StringView(const Span<const char> sp) noexcept;
+
     template<isize SIZE>
     constexpr StringView(const char (&aCharBuff)[SIZE]);
 

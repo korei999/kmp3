@@ -94,7 +94,7 @@ Player::setDefaultIdxs(Vec<u16>* pvIdxs)
 void
 Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
 {
-    ArenaPushGuard pushed {pArena};
+    ArenaStateGuard pushed {pArena};
 
     if (spBuff && wcsnlen(spBuff.data(), spBuff.size()) == 0)
         return;

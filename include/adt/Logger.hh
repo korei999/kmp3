@@ -205,7 +205,7 @@ struct Logger : ILogger
 
     /* */
 
-    Logger(FILE* pFile, ILogger::LEVEL eLevel, isize maxQueueSize, bool bForceColor = false);
+    Logger(FILE* pFile, ILogger::LEVEL eLevel, isize queueCapacity, bool bForceColor = false);
     Logger() noexcept : m_q {}, m_mtxQ {}, m_cnd {}, m_bDone {}, m_thrd {} {}
     Logger(UninitFlag) noexcept {}
 
@@ -254,7 +254,7 @@ struct LoggerNoSource : Logger
                 break;
 
                 case LEVEL::DEBUG:
-                svCol0 = ADT_LOGGER_COL_CYAN;
+                svCol0 = ADT_LOGGER_COL_GREEN;
                 break;
             }
             svCol1 = ADT_LOGGER_COL_NORM;
@@ -265,9 +265,9 @@ struct LoggerNoSource : Logger
 };
 
 inline
-Logger::Logger(FILE* pFile, ILogger::LEVEL eLevel, isize maxQueueSize, bool bForceColor)
+Logger::Logger(FILE* pFile, ILogger::LEVEL eLevel, isize queueCapacity, bool bForceColor)
     : ILogger {pFile, eLevel, bForceColor},
-      m_q {maxQueueSize},
+      m_q {queueCapacity},
       m_mtxQ {Mutex::TYPE::PLAIN},
       m_cnd {INIT},
       m_bDone {false},
@@ -342,7 +342,7 @@ Logger::formatHeader(LEVEL eLevel, std::source_location loc, Span<char> spBuff) 
             break;
 
             case LEVEL::DEBUG:
-            svCol0 = ADT_LOGGER_COL_CYAN;
+            svCol0 = ADT_LOGGER_COL_GREEN;
             break;
         }
         svCol1 = ADT_LOGGER_COL_NORM;

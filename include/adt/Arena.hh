@@ -3,6 +3,7 @@
 #include "IAllocator.hh"
 #include "assert.hh"
 #include "utils.hh"
+#include "SList.hh"
 
 #if __has_include(<sys/mman.h>)
     #define ADT_FLAT_ARENA_MMAP
@@ -16,14 +17,66 @@
 namespace adt
 {
 
+struct ArenaStateGuard;
+
 struct Arena : IArena
 {
+    friend ArenaStateGuard;
+
+    struct DestructorNode
+    {
+        void** ppObj {};
+        void (*pfnDestruct)(Arena* pArena, void* pObj) {};
+    };
+
+    using ListNodeType = SList<DestructorNode>::Node;
+
+    template<typename T>
+    struct Owned
+    {
+        T** m_ppData;
+
+        /* */
+
+        Owned() noexcept : m_ppData{} {}
+        Owned(UninitFlag) noexcept {}
+        Owned(T** ppData) noexcept : m_ppData{ppData} {}
+
+        /* */
+
+        explicit operator bool() noexcept
+        {
+            ADT_ASSERT(m_ppData != nullptr, "");
+            return *m_ppData != nullptr;
+        }
+
+        T&
+        operator*() noexcept
+        {
+            ADT_ASSERT(m_ppData != nullptr, "");
+            ADT_ASSERT(*m_ppData != nullptr, "this object was deleted");
+            return **m_ppData;
+        }
+
+        T*
+        operator->() noexcept
+        {
+            ADT_ASSERT(m_ppData != nullptr, "");
+            ADT_ASSERT(*m_ppData != nullptr, "this object was deleted");
+            return *m_ppData;
+        }
+    };
+
+    /* */
+
     void* m_pData {};
     isize m_off {};
     isize m_reserved {};
     isize m_commited {};
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
+    SList<DestructorNode> m_lDestructors {}; /* Kill all the 'owned' objects on reset()/freeAll() or state restores. */
+    SList<DestructorNode>* m_pTargetList = &m_lDestructors; /* Switch and restore current target on StateGuard changes. */
 
     /* */
 
@@ -47,39 +100,74 @@ struct Arena : IArena
 
     /* */
 
+    template<typename T, typename ...ARGS>
+    [[nodiscard]] Owned<T> allocOwned(ARGS&&... args);
+
+    template<typename T, typename ...ARGS>
+    [[nodiscard]] Owned<T> allocOwnedWithDeleter(void (*pfnDestruct)(Arena*, void*), ARGS&&... args);
+
     void reset() noexcept;
     void resetDecommit();
     void resetToFirstPage();
 
 protected:
+    void destructOwned() noexcept;
     void growIfNeeded(isize newOff);
     void commit(void* p, isize size);
     void decommit(void* p, isize size);
 };
 
-struct ArenaPushGuard
+struct ArenaState
 {
-    Arena* m_pArena {};
     isize m_off {};
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
+    SList<Arena::DestructorNode>* m_pTargetList {};
 
     /* */
 
-    ArenaPushGuard(Arena* p) noexcept;
-    ~ArenaPushGuard() noexcept;
+    void restore(Arena* pArena) noexcept;
 };
 
-inline
-ArenaPushGuard::ArenaPushGuard(Arena* p) noexcept
-    : m_pArena{p}, m_off{p->m_off}, m_pLastAlloc{p->m_pLastAlloc}, m_lastAllocSize{p->m_lastAllocSize} {}
+struct ArenaStateGuard
+{
+    Arena* m_pArena {};
+    SList<Arena::DestructorNode> m_lDestructors {};
+    ArenaState m_state {};
+
+    /* */
+
+    ArenaStateGuard(Arena* p) noexcept;
+    ~ArenaStateGuard() noexcept;
+};
+
+inline void
+ArenaState::restore(Arena* pArena) noexcept
+{
+    pArena->m_off = m_off;
+    pArena->m_pLastAlloc = m_pLastAlloc;
+    pArena->m_lastAllocSize = m_lastAllocSize;
+    pArena->m_pTargetList = m_pTargetList;
+}
 
 inline
-ArenaPushGuard::~ArenaPushGuard() noexcept
+ArenaStateGuard::ArenaStateGuard(Arena* p) noexcept
+    : m_pArena{p},
+      m_state{
+          .m_off = p->m_off,
+          .m_pLastAlloc = p->m_pLastAlloc,
+          .m_lastAllocSize = p->m_lastAllocSize,
+          .m_pTargetList = p->m_pTargetList
+      }
 {
-    m_pArena->m_off = m_off;
-    m_pArena->m_pLastAlloc = m_pLastAlloc;
-    m_pArena->m_lastAllocSize = m_lastAllocSize;
+    m_pArena->m_pTargetList = &m_lDestructors;
+}
+
+inline
+ArenaStateGuard::~ArenaStateGuard() noexcept
+{
+    m_pArena->destructOwned();
+    m_state.restore(m_pArena);
 }
 
 inline
@@ -175,6 +263,8 @@ Arena::doesRealloc() const noexcept
 inline void
 Arena::freeAll() noexcept
 {
+    destructOwned();
+
 #ifdef ADT_FLAT_ARENA_MMAP
     [[maybe_unused]] int err = munmap(m_pData, m_reserved);
     ADT_ASSERT(err != - 1, "munmap: {} ({})", err, strerror(errno));
@@ -186,9 +276,48 @@ Arena::freeAll() noexcept
     *this = {};
 }
 
+template<typename T, typename ...ARGS>
+inline Arena::Owned<T>
+Arena::allocOwned(ARGS&&... args)
+{
+    auto pfnDefaultDestructor = +[](Arena*, void* p) noexcept {
+        ((T*)p)->~T();
+    };
+
+    return allocOwnedWithDeleter<T, ARGS...>(pfnDefaultDestructor, std::forward<ARGS>(args)...);
+}
+
+template<typename T, typename ...ARGS>
+inline Arena::Owned<T>
+Arena::allocOwnedWithDeleter(void (*pfnDestruct)(Arena*, void*), ARGS&&... args)
+{
+    T* pObj;
+    Owned<T> o {UNINIT};
+
+    pObj = (T*)malloc(1, sizeof(T) + sizeof(T*) + sizeof(ListNodeType));
+    new(pObj) T (std::forward<ARGS>(args)...);
+
+    T** pp = (T**)((u8*)pObj + sizeof(T));
+    *pp = pObj;
+    o.m_ppData = pp;
+
+    auto* pNode = (ListNodeType*)((u8*)pObj + sizeof(T) + sizeof(T*));
+    pNode->data.ppObj = (void**)pp;
+
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        pNode->data.pfnDestruct = pfnDestruct;
+    else pNode->data.pfnDestruct = nullptr;
+
+    m_pTargetList->insert(pNode);
+
+    return o;
+}
+
 inline void
 Arena::reset() noexcept
 {
+    destructOwned();
+
     m_off = 0;
     m_pLastAlloc = (void*)~0llu;
     m_lastAllocSize = 0;
@@ -223,12 +352,23 @@ Arena::resetToFirstPage()
 }
 
 inline void
+Arena::destructOwned() noexcept
+{
+    for (auto e : *m_pTargetList)
+    {
+        if (e.pfnDestruct) e.pfnDestruct(this, *e.ppObj);
+        *e.ppObj = g_null; /* point to global null object */
+    }
+    m_pTargetList->m_pHead = nullptr;
+}
+
+inline void
 Arena::growIfNeeded(isize newOff)
 {
     if (newOff > m_commited)
     {
         isize newCommited = utils::max((isize)alignUp(newOff, getPageSize()), m_commited * 2);
-        ADT_ALLOC_EXCEPTION_FMT(newCommited <= m_reserved, "out of reserved memory, newOff: {}, m_reserved: {}", newCommited, m_reserved);
+        ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(newCommited <= m_reserved, "out of reserved memory, newOff: {}, m_reserved: {}", newCommited, m_reserved);
         commit((u8*)m_pData + m_commited, newCommited - m_commited);
         m_commited = newCommited;
     }
@@ -241,9 +381,9 @@ Arena::commit(void* p, isize size)
 {
 #ifdef ADT_FLAT_ARENA_MMAP
     [[maybe_unused]] int err = mprotect(p, size, PROT_READ | PROT_WRITE);
-    ADT_ALLOC_EXCEPTION_FMT(err != - 1, "mprotect: r: {} ({}), size: {}", err, strerror(errno), size);
+    ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(err != - 1, "mprotect: r: {} ({}), size: {}", err, strerror(errno), size);
 #elif defined ADT_FLAT_ARENA_WIN32
-    ADT_ALLOC_EXCEPTION_FMT(VirtualAlloc(p, size, MEM_COMMIT, PAGE_READWRITE), "p: {}, size: {}", p, size);
+    ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(VirtualAlloc(p, size, MEM_COMMIT, PAGE_READWRITE), "p: {}, size: {}", p, size);
 #else
 #endif
 }
@@ -253,11 +393,11 @@ Arena::decommit(void* p, isize size)
 {
 #ifdef ADT_FLAT_ARENA_MMAP
         [[maybe_unused]] int err = mprotect(p, size, PROT_NONE);
-        ADT_ALLOC_EXCEPTION_FMT(err != - 1, "mprotect: {} ({})", err, strerror(errno));
+        ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(err != - 1, "mprotect: {} ({})", err, strerror(errno));
         err = madvise(p, size, MADV_DONTNEED);
-        ADT_ALLOC_EXCEPTION_FMT(err != - 1, "madvise: {} ({})", err, strerror(errno));
+        ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(err != - 1, "madvise: {} ({})", err, strerror(errno));
 #elif defined ADT_FLAT_ARENA_WIN32
-        ADT_ALLOC_EXCEPTION_FMT(VirtualFree(p, size, MEM_DECOMMIT), "");
+        ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(VirtualFree(p, size, MEM_DECOMMIT), "");
 #else
 #endif
 }

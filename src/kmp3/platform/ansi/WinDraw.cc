@@ -47,7 +47,7 @@ Win::info()
     const auto& pl = *app::g_pPlayer;
     const int hOff = m_prevImgWidth + 2;
 
-    ArenaPushGuard pushed {m_pArena};
+    ArenaStateGuard pushed {m_pArena};
     Span sp {m_pArena->zallocV<char>(1000), 1000};
 
     auto clDrawLine = [&](
@@ -85,7 +85,7 @@ Win::volume()
     const f32 vol = app::mixer().getVolume();
     const bool bMuted = app::mixer().isMuted();
 
-    ArenaPushGuard pushed {m_pArena};
+    ArenaStateGuard pushed {m_pArena};
     Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
     const isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::mixer().getVolume() * 100.0)));
@@ -250,7 +250,7 @@ Win::bottomLine()
 
     /* selected / focused */
     {
-        ArenaPushGuard pushed {m_pArena};
+        ArenaStateGuard pushed {m_pArena};
         Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
         isize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);

@@ -13,6 +13,9 @@ struct Pair
 };
 
 template<typename A, typename B>
+Pair(A&&, B&&) -> Pair<A, B>;
+
+template<typename A, typename B>
 constexpr bool
 operator==(const Pair<A, B>& l, const Pair<A, B>& r)
 {

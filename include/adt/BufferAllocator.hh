@@ -51,6 +51,46 @@ struct BufferAllocator : public IArena
     isize realCap() const noexcept;
 };
 
+struct BufferOffsets
+{
+    usize m_size {};
+    void* m_pLastAlloc {};
+    usize m_lastAllocSize {};
+
+    /* */
+
+    void restore(BufferAllocator* pAlloc) noexcept;
+};
+
+struct BufferStateGuard
+{
+    BufferAllocator* m_pAlloc {};
+    BufferOffsets m_offsets {};
+
+    /* */
+
+    BufferStateGuard(BufferAllocator* pAlloc) noexcept;
+    ~BufferStateGuard() noexcept;
+};
+
+inline void
+BufferOffsets::restore(BufferAllocator* pAlloc) noexcept
+{
+    pAlloc->m_size = m_size;
+    pAlloc->m_pLastAlloc = m_pLastAlloc;
+    pAlloc->m_lastAllocSize = m_lastAllocSize;
+}
+
+inline
+BufferStateGuard::BufferStateGuard(BufferAllocator* pAlloc) noexcept
+    : m_pAlloc{pAlloc}, m_offsets{.m_size = pAlloc->m_size, .m_pLastAlloc = pAlloc->m_pLastAlloc, .m_lastAllocSize = pAlloc->m_lastAllocSize} {}
+
+inline
+BufferStateGuard::~BufferStateGuard() noexcept
+{
+    m_offsets.restore(m_pAlloc);
+}
+
 inline void*
 BufferAllocator::malloc(usize mCount, usize mSize)
 {

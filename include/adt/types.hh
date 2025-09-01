@@ -69,6 +69,8 @@ using f64 = double;
 
 using null = decltype(nullptr);
 
+static const inline null g_null = nullptr;
+
 struct InitFlag {};
 constexpr InitFlag INIT {};
 

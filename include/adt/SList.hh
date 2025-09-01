@@ -116,7 +116,7 @@ template<typename T>
 inline typename SList<T>::Node*
 SList<T>::insert(Node* pNode)
 {
-    insertNode(pNode);
+    return insertNode(pNode);
 }
 
 template<typename T>

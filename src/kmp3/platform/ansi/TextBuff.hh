@@ -101,11 +101,18 @@ operator!=(const TextBuffCell& l, const TextBuffCell& r)
 
 struct TextBuff
 {
+    struct Buffer
+    {
+        char* pData {};
+        adt::isize size {};
+        adt::isize capacity {};
+    };
+
+    /* */
+
     adt::Arena* m_pArena {};
 
-    char* m_pData {};
-    adt::isize m_size {};
-    adt::isize m_capacity {};
+    adt::Arena::Owned<Buffer> m_oBuff {};
 
     adt::isize m_tWidth {};
     adt::isize m_tHeight {};
@@ -174,7 +181,6 @@ protected:
     adt::Span2D<TextBuffCell> frontBufferSpan();
     adt::Span2D<TextBuffCell> backBufferSpan();
     void grow(adt::isize newCap);
-    void reset();
     void clearBackBuffer();
     void pushDiff();
     void resetBuffers();

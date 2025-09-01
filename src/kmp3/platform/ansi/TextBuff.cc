@@ -41,33 +41,39 @@ namespace platform::ansi
 void
 TextBuff::grow(isize newCap)
 {
-    m_pData = m_pArena->reallocV<char>(m_pData, m_capacity, newCap);
-    m_capacity = newCap;
+    auto& b = *m_oBuff;
+
+    b.pData = m_pArena->reallocV<char>(b.pData, b.capacity, newCap);
+    b.capacity = newCap;
 }
 
 void
 TextBuff::push(const char ch)
 {
-    if (m_size >= m_capacity)
+    auto& b = *m_oBuff;
+
+    if (b.size >= b.capacity)
     {
-        const isize newCap = utils::max(isize(2), m_capacity*2);
+        const isize newCap = utils::max(isize(2), b.capacity*2);
         grow(newCap);
     }
 
-    m_pData[m_size++] = ch;
+    b.pData[b.size++] = ch;
 }
 
 void
 TextBuff::push(const char* pBuff, const isize buffSize)
 {
-    if (buffSize + m_size >= m_capacity)
+    auto& b = *m_oBuff;
+
+    if (buffSize + b.size >= b.capacity)
     {
-        const isize newCap = utils::max(buffSize + m_size, m_capacity*2);
+        const isize newCap = utils::max(buffSize + b.size, b.capacity*2);
         grow(newCap);
     }
 
-    memcpy(m_pData + m_size, pBuff, buffSize);
-    m_size += buffSize;
+    memcpy(b.pData + b.size, pBuff, buffSize);
+    b.size += buffSize;
 }
 
 void
@@ -77,22 +83,14 @@ TextBuff::push(const StringView sv)
 }
 
 void
-TextBuff::reset()
-{
-    m_pData = {};
-    m_size = {};
-    m_capacity = {};
-}
-
-void
 TextBuff::flush()
 {
-    if (m_size > 0)
+    if (m_oBuff->size > 0)
     {
         [[maybe_unused]] auto _unused =
-            write(STDOUT_FILENO, m_pData, m_size);
+            write(STDOUT_FILENO, m_oBuff->pData, m_oBuff->size);
 
-        m_size = 0;
+        m_oBuff->size = 0;
     }
 }
 
@@ -264,12 +262,12 @@ TextBuff::resize(isize width, isize height)
 void
 TextBuff::destroy()
 {
-    m_vBack.destroy();
-    m_vFront.destroy();
-
-#ifdef OPT_CHAFA
-    m_imgArena.freeAll();
-#endif
+    ArenaStateGuard pushed {m_pArena};
+    if (!m_oBuff) m_oBuff = m_pArena->allocOwned<Buffer>();
+    ADT_ASSERT(m_oBuff->pData == nullptr && m_oBuff->size == 0 && m_oBuff->capacity == 0,
+        "m_oBuff->pData: {}, m_oBuff->size {}, m_oBuff->capacity {}",
+        m_oBuff->pData, m_oBuff->size, m_oBuff->capacity
+    );
 
     present();
 
@@ -279,6 +277,13 @@ TextBuff::destroy()
     push(TEXT_BUFF_ALT_SCREEN_DISABLE);
     push(TEXT_BUFF_MOUSE_DISABLE);
     flush();
+
+    m_vBack.destroy();
+    m_vFront.destroy();
+
+#ifdef OPT_CHAFA
+    m_imgArena.freeAll();
+#endif
 }
 
 void
@@ -288,6 +293,9 @@ TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
 #ifdef OPT_CHAFA
     new(&m_imgArena) Arena {SIZE_1G};
 #endif
+
+    ArenaStateGuard pushed {m_pArena};
+    m_oBuff = m_pArena->allocOwned<Buffer>();
 
     clearTerm();
     moveTopLeft();
@@ -430,6 +438,8 @@ TextBuff::resetBuffers()
 void
 TextBuff::clean()
 {
+    m_oBuff = m_pArena->allocOwned<Buffer>();
+
     if (m_bErase)
     {
         m_bErase = false;
@@ -471,7 +481,6 @@ TextBuff::present()
     }
 
     flush();
-    reset();
 }
 
 Span2D<TextBuffCell>
