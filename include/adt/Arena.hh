@@ -323,6 +323,8 @@ Arena::reset() noexcept
 inline void
 Arena::resetDecommit()
 {
+    destructOwned();
+
     decommit(m_pData, m_commited);
 
     m_off = 0;
@@ -334,6 +336,8 @@ Arena::resetDecommit()
 inline void
 Arena::resetToFirstPage()
 {
+    destructOwned();
+
     const isize pageSize = getPageSize();
     [[maybe_unused]] int err = 0;
 
