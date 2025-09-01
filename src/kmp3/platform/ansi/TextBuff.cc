@@ -439,7 +439,7 @@ TextBuff::resetBuffers()
 void
 TextBuff::clean()
 {
-    ADT_ASSERT(!m_oBuff, "this shold've been deleted");
+    ADT_ASSERT(!m_oBuff, "this should've been deleted");
     new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
 
     if (m_bErase)
