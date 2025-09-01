@@ -42,7 +42,27 @@ struct Arena : IArena
 
         template<typename ...ARGS>
         Ptr(Arena* pArena, ARGS&&... args)
-            : m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)} {}
+            : m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
+        {
+            pArena->addToDestructList(this, defaultDeleter);
+        }
+
+        template<typename ...ARGS>
+        Ptr(void (*pfn)(Arena*, void**), Arena* pArena, ARGS&&... args)
+            : m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
+        {
+            pArena->addToDestructList(this, pfn);
+        }
+
+        /* */
+
+        static void
+        defaultDeleter(Arena*, void** ppObj)
+        {
+            if constexpr (!std::is_trivially_destructible_v<T>)
+                ((T*)*ppObj)->~T();
+            *((T**)ppObj) = nullptr;
+        };
 
         /* */
 
@@ -85,17 +105,14 @@ struct Arena : IArena
 
     /* */
 
-    template<typename T>
-    void addToDestructList(Ptr<T>* pPtr) noexcept;
-
-    template<typename T>
-    void addToDestructList(Ptr<T>* pPtr, void (*pfn)(Arena* pArena, void** ppObj)) noexcept;
-
     void reset() noexcept;
     void resetDecommit();
     void resetToFirstPage();
 
 protected:
+    template<typename T>
+    void addToDestructList(Ptr<T>* pPtr, void (*pfn)(Arena* pArena, void** ppObj)) noexcept;
+
     void destructOwned() noexcept;
     void growIfNeeded(isize newOff);
     void commit(void* p, isize size);
@@ -259,20 +276,6 @@ Arena::freeAll() noexcept
 #endif
 
     *this = {};
-}
-
-template<typename T>
-inline void
-Arena::addToDestructList(Ptr<T>* pPtr) noexcept
-{
-    pPtr->data.ppObj = (void**)&pPtr->m_pData;
-    pPtr->data.pfnDestruct = [](Arena*, void** ppObj) {
-        auto& r = *((T*)*ppObj);
-        if constexpr (!std::is_trivially_destructible_v<T>)
-            r.~T();
-        *((T**)ppObj) = nullptr;
-    };
-    m_pTargetList->insert(static_cast<ListNodeType*>(pPtr));
 }
 
 template<typename T>
