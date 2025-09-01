@@ -58,11 +58,6 @@ struct IMixer
     void changeSampleRateDown(int ms, bool bSave);
     void changeSampleRateUp(int ms, bool bSave);
     void restoreSampleRate();
-
-#ifdef OPT_MPRIS
-    const adt::atomic::Int& mprisHasToUpdate() const { return m_atom_bUpdateMpris; }
-    void mprisSetToUpdate(bool b) { m_atom_bUpdateMpris.store(b, adt::atomic::ORDER::RELEASE); }
-#endif
 };
 
 struct DummyMixer : public IMixer

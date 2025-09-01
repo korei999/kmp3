@@ -713,19 +713,7 @@ THREAD_STATUS
 pollLoop(void*) noexcept
 {
     while (app::g_bRunning)
-    {
         mpris::proc();
-
-        /* TODO: probably needs to be removed.
-         * Used to top kmp3 in the playerctl list,
-         * however it causes other problems like flickering in media control programs. */
-        // if (app::mixer().mprisHasToUpdate().load(atomic::ORDER::ACQUIRE))
-        // {
-        //     app::mixer().mprisSetToUpdate(false);
-        //     mpris::destroy();
-        //     mpris::init();
-        // }
-    }
 
     return THREAD_STATUS(0);
 }
