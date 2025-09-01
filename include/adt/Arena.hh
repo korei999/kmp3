@@ -26,45 +26,30 @@ struct Arena : IArena
     struct DestructorNode
     {
         void** ppObj {};
-        void (*pfnDestruct)(Arena* pArena, void* pObj) {};
+        void (*pfnDestruct)(Arena* pArena, void** ppObj) {};
     };
 
     using ListNodeType = SList<DestructorNode>::Node;
 
     template<typename T>
-    struct Owned
+    struct Ptr : ListNodeType
     {
-        T** m_ppData;
+        T* m_pData {};
 
         /* */
 
-        Owned() noexcept : m_ppData{} {}
-        Owned(UninitFlag) noexcept {}
-        Owned(T** ppData) noexcept : m_ppData{ppData} {}
+        Ptr() noexcept = default;
+
+        template<typename ...ARGS>
+        Ptr(Arena* pArena, ARGS&&... args)
+            : m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)} {}
 
         /* */
 
-        explicit operator bool() noexcept
-        {
-            ADT_ASSERT(m_ppData != nullptr, "");
-            return *m_ppData != nullptr;
-        }
+        explicit operator bool() noexcept { return m_pData != nullptr; }
 
-        T&
-        operator*() noexcept
-        {
-            ADT_ASSERT(m_ppData != nullptr, "");
-            ADT_ASSERT(*m_ppData != nullptr, "this object was deleted");
-            return **m_ppData;
-        }
-
-        T*
-        operator->() noexcept
-        {
-            ADT_ASSERT(m_ppData != nullptr, "");
-            ADT_ASSERT(*m_ppData != nullptr, "this object was deleted");
-            return *m_ppData;
-        }
+        T& operator*() noexcept { ADT_ASSERT(m_pData != nullptr, ""); return *m_pData; }
+        T* operator->() noexcept { ADT_ASSERT(m_pData != nullptr, ""); return m_pData; }
     };
 
     /* */
@@ -100,11 +85,11 @@ struct Arena : IArena
 
     /* */
 
-    template<typename T, typename ...ARGS>
-    [[nodiscard]] Owned<T> allocOwned(ARGS&&... args);
+    template<typename T>
+    void addToDestructList(Ptr<T>* pPtr) noexcept;
 
-    template<typename T, typename ...ARGS>
-    [[nodiscard]] Owned<T> allocOwnedWithDeleter(void (*pfnDestruct)(Arena*, void*), ARGS&&... args);
+    template<typename T>
+    void addToDestructList(Ptr<T>* pPtr, void (*pfn)(Arena* pArena, void** ppObj)) noexcept;
 
     void reset() noexcept;
     void resetDecommit();
@@ -276,38 +261,26 @@ Arena::freeAll() noexcept
     *this = {};
 }
 
-template<typename T, typename ...ARGS>
-inline Arena::Owned<T>
-Arena::allocOwned(ARGS&&... args)
+template<typename T>
+inline void
+Arena::addToDestructList(Ptr<T>* pPtr) noexcept
 {
-    auto pfnDefaultDestructor = +[](Arena*, void* p) noexcept {
-        if constexpr (!std::is_trivially_destructible_v<T>)
-            ((T*)p)->~T();
+    pPtr->data.ppObj = (void**)&pPtr->m_pData;
+    pPtr->data.pfnDestruct = [](Arena*, void** ppObj) {
+        auto& r = *((T*)*ppObj);
+        r.~T();
+        *((T**)ppObj) = nullptr;
     };
-
-    return allocOwnedWithDeleter<T, ARGS...>(pfnDefaultDestructor, std::forward<ARGS>(args)...);
+    m_pTargetList->insert(static_cast<ListNodeType*>(pPtr));
 }
 
-template<typename T, typename ...ARGS>
-inline Arena::Owned<T>
-Arena::allocOwnedWithDeleter(void (*pfnDestruct)(Arena*, void*), ARGS&&... args)
+template<typename T>
+inline void
+Arena::addToDestructList(Ptr<T>* pPtr, void (*pfn)(Arena* pArena, void** ppObj)) noexcept
 {
-    Owned<T> o {UNINIT};
-
-    T* pObj = (T*)malloc(1, sizeof(T) + sizeof(T*) + sizeof(ListNodeType));
-    new(pObj) T (std::forward<ARGS>(args)...);
-
-    T** pp = (T**)((u8*)pObj + sizeof(T));
-    *pp = pObj;
-    o.m_ppData = pp;
-
-    auto* pNode = (ListNodeType*)((u8*)pObj + sizeof(T) + sizeof(T*));
-    pNode->data.ppObj = (void**)pp;
-    pNode->data.pfnDestruct = pfnDestruct;
-
-    m_pTargetList->insert(pNode);
-
-    return o;
+    pPtr->data.ppObj = (void**)&pPtr->m_pData;
+    pPtr->data.pfnDestruct = pfn;
+    m_pTargetList->insert(static_cast<ListNodeType*>(pPtr));
 }
 
 inline void
@@ -356,10 +329,8 @@ inline void
 Arena::destructOwned() noexcept
 {
     for (auto e : *m_pTargetList)
-    {
-        e.pfnDestruct(this, *e.ppObj);
-        *e.ppObj = nullptr;
-    }
+        e.pfnDestruct(this, e.ppObj);
+
     m_pTargetList->m_pHead = nullptr;
 }
 

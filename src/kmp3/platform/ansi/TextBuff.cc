@@ -263,7 +263,12 @@ void
 TextBuff::destroy()
 {
     ArenaStateGuard pushed {m_pArena};
-    if (!m_oBuff) m_oBuff = m_pArena->allocOwned<Buffer>();
+    if (!m_oBuff)
+    {
+        new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
+        m_pArena->addToDestructList(&m_oBuff);
+    }
+
     ADT_ASSERT(m_oBuff->pData == nullptr && m_oBuff->size == 0 && m_oBuff->capacity == 0,
         "m_oBuff->pData: {}, m_oBuff->size {}, m_oBuff->capacity {}",
         m_oBuff->pData, m_oBuff->size, m_oBuff->capacity
@@ -295,7 +300,8 @@ TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
 #endif
 
     ArenaStateGuard pushed {m_pArena};
-    m_oBuff = m_pArena->allocOwned<Buffer>();
+    new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
+    m_pArena->addToDestructList(&m_oBuff);
 
     clearTerm();
     moveTopLeft();
@@ -438,7 +444,8 @@ TextBuff::resetBuffers()
 void
 TextBuff::clean()
 {
-    m_oBuff = m_pArena->allocOwned<Buffer>();
+    new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
+    m_pArena->addToDestructList(&m_oBuff);
 
     if (m_bErase)
     {

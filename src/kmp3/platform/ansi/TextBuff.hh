@@ -112,7 +112,7 @@ struct TextBuff
 
     adt::Arena* m_pArena {};
 
-    adt::Arena::Owned<Buffer> m_oBuff {};
+    adt::Arena::Ptr<Buffer> m_oBuff {};
 
     adt::isize m_tWidth {};
     adt::isize m_tHeight {};
