@@ -86,7 +86,7 @@ struct Arena : IArena
     /* */
 
     void* m_pData {};
-    isize m_off {};
+    isize m_pos {};
     isize m_reserved {};
     isize m_commited {};
     void* m_pLastAlloc {};
@@ -119,6 +119,7 @@ struct Arena : IArena
     void reset() noexcept;
     void resetDecommit();
     void resetToFirstPage();
+    isize memoryUsed() noexcept;
 
 protected:
     void runDeleters() noexcept;
@@ -154,7 +155,7 @@ struct ArenaStateGuard
 inline void
 ArenaState::restore(Arena* pArena) noexcept
 {
-    pArena->m_off = m_off;
+    pArena->m_pos = m_off;
     pArena->m_pLastAlloc = m_pLastAlloc;
     pArena->m_lastAllocSize = m_lastAllocSize;
     pArena->m_pLCurrentDeleters = m_pLCurrentDeleters;
@@ -164,7 +165,7 @@ inline
 ArenaStateGuard::ArenaStateGuard(Arena* p) noexcept
     : m_pArena{p},
       m_state{
-          .m_off = p->m_off,
+          .m_off = p->m_pos,
           .m_pLastAlloc = p->m_pLastAlloc,
           .m_lastAllocSize = p->m_lastAllocSize,
           .m_pLCurrentDeleters = p->m_pLCurrentDeleters
@@ -212,9 +213,9 @@ inline void*
 Arena::malloc(usize mCount, usize mSize)
 {
     const isize realSize = alignUp8(mCount * mSize);
-    void* pRet = (void*)((u8*)m_pData + m_off);
+    void* pRet = (void*)((u8*)m_pData + m_pos);
 
-    growIfNeeded(m_off + realSize);
+    growIfNeeded(m_pos + realSize);
 
     m_pLastAlloc = pRet;
     m_lastAllocSize = realSize;
@@ -239,7 +240,7 @@ Arena::realloc(void* p, usize oldCount, usize newCount, usize mSize)
     if (p == m_pLastAlloc)
     {
         const isize realSize = alignUp8(newCount * mSize);
-        isize newOff = (m_off - m_lastAllocSize) + realSize;
+        isize newOff = (m_pos - m_lastAllocSize) + realSize;
         growIfNeeded(newOff);
         m_lastAllocSize = realSize;
         return p;
@@ -291,7 +292,7 @@ Arena::reset() noexcept
 {
     runDeleters();
 
-    m_off = 0;
+    m_pos = 0;
     m_pLastAlloc = (void*)INVALID_PTR;
     m_lastAllocSize = 0;
 }
@@ -303,7 +304,7 @@ Arena::resetDecommit()
 
     decommit(m_pData, m_commited);
 
-    m_off = 0;
+    m_pos = 0;
     m_commited = 0;
     m_pLastAlloc = (void*)INVALID_PTR;
     m_lastAllocSize = 0;
@@ -322,10 +323,16 @@ Arena::resetToFirstPage()
     else if (m_commited < getPageSize())
         commit((u8*)m_pData + m_commited, pageSize - m_commited);
 
-    m_off = 0;
+    m_pos = 0;
     m_commited = pageSize;
     m_pLastAlloc = (void*)INVALID_PTR;
     m_lastAllocSize = 0;
+}
+
+inline isize
+Arena::memoryUsed() noexcept
+{
+    return m_pos;
 }
 
 inline void
@@ -348,7 +355,7 @@ Arena::growIfNeeded(isize newOff)
         m_commited = newCommited;
     }
 
-    m_off = newOff;
+    m_pos = newOff;
 }
 
 inline void

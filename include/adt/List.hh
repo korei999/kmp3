@@ -12,37 +12,19 @@ namespace adt
 #define ADT_LIST_FOREACH(L, IT) for (auto IT = (L)->m_pFirst; (IT); (IT) = (IT)->pNext)
 
 template<typename T>
-struct ListNode
-{
-    ListNode* pPrev;
-    ListNode* pNext;
-    ADT_NO_UNIQUE_ADDRESS T data;
-};
-
-template<typename T>
-constexpr ListNode<T>*
-ListNodeAlloc(IAllocator* pA, const T& x)
-{
-    auto* pNew = (ListNode<T>*)pA->alloc<ListNode<T>>();
-    new(&pNew->data) T(x);
-
-    return pNew;
-}
-
-template<typename T, typename ...ARGS>
-constexpr ListNode<T>*
-ListNodeAlloc(IAllocator* pA, ARGS&&... args)
-{
-    auto* pNew = (ListNode<T>*)pA->alloc<ListNode<T>>();
-    new(&pNew->data) T {std::forward<ARGS>(args)...};
-
-    return pNew;
-}
-
-template<typename T>
 struct List
 {
-    using Node = ListNode<T>;
+    struct Node
+    {
+        Node* pPrev;
+        Node* pNext;
+        ADT_NO_UNIQUE_ADDRESS T data;
+
+        /* */
+
+        template<typename ...ARGS>
+        [[nodiscard("leak")]] static Node* alloc(IAllocator* pAlloc, ARGS&&... args);
+    };
 
     /* */
 
@@ -58,6 +40,9 @@ struct List
 
     constexpr void destroy(IAllocator* pA) noexcept;
     constexpr void destructElements() noexcept;
+
+    template<typename CL_DELETER>
+    constexpr void destroy(IAllocator* pA, CL_DELETER cl) noexcept;
 
     constexpr List release() noexcept;
 
@@ -127,6 +112,14 @@ struct List
 };
 
 template<typename T>
+template<typename ...ARGS>
+inline typename List<T>::Node*
+List<T>::Node::alloc(IAllocator* pAlloc, ARGS&&... args)
+{
+    return pAlloc->alloc<Node>(nullptr, nullptr, std::forward<ARGS>(args)...);
+}
+
+template<typename T>
 constexpr void
 List<T>::destroy(IAllocator* pA) noexcept
 {
@@ -145,6 +138,20 @@ List<T>::destructElements() noexcept
 }
 
 template<typename T>
+template<typename CL_DELETER>
+inline constexpr void
+List<T>::destroy(IAllocator* pA, CL_DELETER cl) noexcept
+{
+    ADT_LIST_FOREACH_SAFE(this, it, tmp)
+    {
+        cl(&it->data);
+        pA->free(it);
+    }
+
+    *this = {};
+}
+
+template<typename T>
 constexpr List<T>
 List<T>::release() noexcept
 {
@@ -152,8 +159,8 @@ List<T>::release() noexcept
 }
 
 template<typename T>
-constexpr ListNode<T>*
-List<T>::pushFront(ListNode<T>* pNew)
+constexpr List<T>::Node*
+List<T>::pushFront(Node* pNew)
 {
     if (!m_pFirst)
     {
@@ -172,8 +179,8 @@ List<T>::pushFront(ListNode<T>* pNew)
 }
 
 template<typename T>
-constexpr ListNode<T>*
-List<T>::pushBack(ListNode<T>* pNew)
+constexpr List<T>::Node*
+List<T>::pushBack(Node* pNew)
 {
     if (!m_pFirst)
     {
@@ -192,56 +199,56 @@ List<T>::pushBack(ListNode<T>* pNew)
 }
 
 template<typename T>
-constexpr ListNode<T>*
+constexpr List<T>::Node*
 List<T>::pushFront(IAllocator* pA, const T& x)
 {
-    auto* pNew = ListNodeAlloc(pA, x);
+    auto* pNew = Node::alloc(pA, x);
     return pushFront(pNew);
 }
 
 template<typename T>
-constexpr ListNode<T>*
+constexpr List<T>::Node*
 List<T>::pushBack(IAllocator* pA, const T& x)
 {
-    auto* pNew = ListNodeAlloc(pA, x);
+    auto* pNew = Node::alloc(pA, x);
     return pushBack(pNew);
 }
 
 template<typename T>
-constexpr ListNode<T>*
+constexpr List<T>::Node*
 List<T>::pushFront(IAllocator* pA, T&& x)
 {
-    auto* pNew = ListNodeAlloc(pA, std::move(x));
+    auto* pNew = Node::alloc(pA, std::move(x));
     return pushFront(pNew);
 }
 
 template<typename T>
-constexpr ListNode<T>*
+constexpr List<T>::Node*
 List<T>::pushBack(IAllocator* pA, T&& x)
 {
-    auto* pNew = ListNodeAlloc(pA, std::move(x));
+    auto* pNew = Node::alloc(pA, std::move(x));
     return pushBack(pNew);
 }
 
 template<typename T>
 template<typename ...ARGS>
-constexpr ListNode<T>*
+constexpr List<T>::Node*
 List<T>::emplaceFront(IAllocator* p, ARGS&&... args)
 {
-    return pushFront(ListNodeAlloc(p, std::forward<ARGS>(args)...));
+    return pushFront(Node::alloc(p, std::forward<ARGS>(args)...));
 }
 
 template<typename T>
 template<typename ...ARGS>
-constexpr ListNode<T>*
+constexpr List<T>::Node*
 List<T>::emplaceBack(IAllocator* p, ARGS&&... args)
 {
-    return pushBack(ListNodeAlloc(p, std::forward<ARGS>(args)...));
+    return pushBack(Node::alloc(p, std::forward<ARGS>(args)...));
 }
 
 template<typename T>
 constexpr void
-List<T>::remove(ListNode<T>* p)
+List<T>::remove(Node* p)
 {
     ADT_ASSERT(p != nullptr, "");
 
@@ -270,7 +277,7 @@ template<typename T>
 inline void
 List<T>::remove(T* p)
 {
-    ListNode<T>* pNode = (u8*)(p) - sizeof(void*)*2;
+    Node* pNode = (u8*)(p) - sizeof(void*)*2;
     remove(pNode);
 }
 
@@ -278,14 +285,14 @@ template<typename T>
 inline void
 List<T>::remove(IAllocator* pAlloc, T* p)
 {
-    ListNode<T>* pNode = (ListNode<T>*)((u8*)(p) - offsetof(ListNode<T>, data));
+    Node* pNode = (Node*)((u8*)(p) - offsetof(Node, data));
     remove(pNode);
     pAlloc->free(pNode);
 }
 
 template<typename T>
 constexpr void
-List<T>::insertAfter(ListNode<T>* pAfter, ListNode<T>* p)
+List<T>::insertAfter(Node* pAfter, Node* p)
 {
     p->pPrev = pAfter;
     p->pNext = pAfter->pNext;
@@ -299,7 +306,7 @@ List<T>::insertAfter(ListNode<T>* pAfter, ListNode<T>* p)
 
 template<typename T>
 constexpr void
-List<T>::insertBefore(ListNode<T>* pBefore, ListNode<T>* p)
+List<T>::insertBefore(Node* pBefore, Node* p)
 {
     p->pNext = pBefore;
     p->pPrev = pBefore->pPrev;
@@ -317,9 +324,9 @@ template<auto FN_CMP>
 constexpr void
 List<T>::sort()
 {
-    ListNode<T>* p {}, * q {}, * e {}, * tail {};
+    Node* p {}, * q {}, * e {}, * tail {};
     long inSize {}, nMerges {}, pSize {}, qSize {}, i {};
-    ListNode<T>* list = m_pFirst;
+    Node* list = m_pFirst;
 
     if (!m_pFirst)
         return;
@@ -417,18 +424,16 @@ struct ListManaged : public List<T>
     [[nodiscard]] constexpr bool empty() const { return Base::empty(); }
 
     constexpr Node* pushFront(const T& x) { return Base::pushFront(allocator(), x); }
-
     constexpr Node* pushBack(const T& x) { return Base::pushBack(allocator(), x); }
 
-    constexpr void remove(Node* p) { Base::remove(p); allocator().free(p); }
+    constexpr void remove(Node* p) { Base::remove(p); allocator()->free(p); }
 
     constexpr void destroy() { Base::destroy(allocator()); }
 
+    template<typename CL_DELETER>
+    constexpr void destroy(CL_DELETER cl) noexcept { Base::destroy(allocator(), cl); }
+
     constexpr ListManaged release() noexcept { return utils::exchange(this, {}); }
-
-    constexpr void insertAfter(Node* pAfter, Node* p) { Base::insertAfter(pAfter, p); }
-
-    constexpr void insertBefore(Node* pBefore, Node* p) { Base::insertBefore(pBefore, p); }
 
     template<auto FN_CMP = utils::compare<T>>
     constexpr void sort() { Base::template sort<FN_CMP>(); }

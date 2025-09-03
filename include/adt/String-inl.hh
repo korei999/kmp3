@@ -55,6 +55,8 @@ struct StringView
 
     constexpr StringView(const Span<const char> sp) noexcept;
 
+    constexpr StringView(const Span<const char> sp, isize size) noexcept;
+
     template<isize SIZE>
     constexpr StringView(const char (&aCharBuff)[SIZE]);
 
@@ -128,7 +130,8 @@ struct String : public StringView
     String() = default;
     String(IAllocator* pAlloc, const char* pChars, isize size);
     String(IAllocator* pAlloc, const char* nts);
-    String(IAllocator* pAlloc, Span<char> spChars);
+    String(IAllocator* pAlloc, const Span<const char> spChars);
+    String(IAllocator* pAlloc, const Span<const char> spChars, isize size);
     String(IAllocator* pAlloc, const StringView sv);
 
     /* */
@@ -148,6 +151,7 @@ struct StringManaged : public String
     StringManaged(const char* nts) : String {allocator(), nts} {}
     StringManaged(Span<char> spChars) : String {allocator(), spChars} {}
     StringManaged(const StringView sv) : String {allocator(), sv} {}
+    StringManaged(const Span<const char> spChars, isize size) : String {allocator(), spChars.m_pData, size} {}
 
     /* */
 
@@ -180,6 +184,10 @@ struct StringFixed
     StringFixed(const char* nts) : StringFixed(StringView(nts)) {}
 
     StringFixed(const char* p, const isize size) : StringFixed(StringView {const_cast<char*>(p), size}) {}
+
+    StringFixed(const Span<const char> sp) : StringFixed(StringView {const_cast<char*>(sp.m_pData), sp.m_size}) {}
+
+    StringFixed(const Span<const char> sp, isize size) : StringFixed(StringView {const_cast<char*>(sp.m_pData), size}) {}
 
     template<int SIZE_B>
     StringFixed(const StringFixed<SIZE_B> other);

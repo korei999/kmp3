@@ -69,11 +69,11 @@ public:
     virtual void procEvents() final;
     virtual void seekFromInput() final;
     virtual void subStringSearch() final;
-    virtual void adjustListHeight() final;
 
     /* */
 
 protected:
+    void adjustListHeight();
     void resizeHandler();
     int calcImageHeightSplit();
 

@@ -69,6 +69,10 @@ inline constexpr
 StringView::StringView(const Span<const char> sp) noexcept
     : StringView(const_cast<char*>(sp.m_pData), sp.m_size) {}
 
+inline constexpr
+StringView::StringView(const Span<const char> sp, isize size) noexcept
+    : StringView(const_cast<char*>(sp.m_pData), size) {}
+
 template<isize SIZE>
 inline constexpr
 StringView::StringView(const char (&aCharBuff)[SIZE])
@@ -677,8 +681,12 @@ String::String(IAllocator* pAlloc, const char* nts)
     : String(pAlloc, nts, ntsSize(nts)) {}
 
 inline
-String::String(IAllocator* pAlloc, Span<char> spChars)
+String::String(IAllocator* pAlloc, const Span<const char> spChars)
     : String(pAlloc, spChars.m_pData, spChars.m_size) {}
+
+inline
+String::String(IAllocator* pAlloc, const Span<const char> spChars, isize size)
+    : String(pAlloc, spChars.m_pData, size) {}
 
 inline
 String::String(IAllocator* pAlloc, const StringView sv)

@@ -50,6 +50,13 @@ Buffer::operator String() noexcept
     return r;
 }
 
+inline void
+Buffer::destroy() noexcept
+{
+    if (m_pAlloc && m_bDataAllocated)
+        m_pAlloc->free(m_pData);
+}
+
 inline isize
 Buffer::push(char c)
 {
@@ -758,40 +765,14 @@ toSpan(Span<char> sp, const StringView fmt, const ARGS_T&... tArgs) noexcept
 
 template<typename ...ARGS_T>
 inline String
-toString(IAllocator* pAlloc, const StringView fmt, const ARGS_T&... tArgs) noexcept
+toString(IAllocator* pAlloc, const StringView fmt, const ARGS_T&... tArgs)
 {
-    Buffer buff {pAlloc};
-
-    Context pCtx {.fmt = fmt, .pBuffer = &buff};
-
-    try
-    {
-        printArgs(&pCtx, tArgs...);
-        buff.push('\0');
-        buff.m_size -= 1;
-    }
-    catch (const AllocException& ex)
-    {
-#ifdef ADT_DBG_MEMORY
-        ex.printErrorMsg(stderr);
-#endif
-        if (buff.m_size > 0)
-        {
-            buff.m_pData[buff.m_size] = '\0';
-            buff.m_size -= 1;
-        }
-        else
-        {
-            return {};
-        }
-    }
-
-    return String(buff);
+    return toString(pAlloc, 0, fmt, tArgs...);
 }
 
 template<typename ...ARGS_T>
 [[nodiscard]] inline String
-toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&... tArgs) noexcept
+toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&... tArgs)
 {
     Buffer buff;
 
@@ -808,18 +789,36 @@ toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&
 #ifdef ADT_DBG_MEMORY
         ex.printErrorMsg(stderr);
 #endif
-        if (buff.m_size > 0)
-        {
-            buff.m_pData[buff.m_size] = '\0';
-            buff.m_size -= 1;
-        }
-        else
-        {
-            return {};
-        }
+        if (buff.m_size > 0) buff.m_pData[--buff.m_size] = '\0';
+        else return {};
     }
 
     return String(buff);
+}
+
+template<typename ...ARGS_T>
+inline StringView
+toPrintBuffer(Buffer* pBuffer, const StringView fmt, const ARGS_T&... tArgs)
+{
+    ADT_ASSERT(pBuffer != nullptr, "");
+
+    try
+    {
+        Context pCtx {.fmt = fmt, .pBuffer = pBuffer};
+        printArgs(&pCtx, tArgs...);
+        pBuffer->push('\0');
+        pBuffer->m_size -= 1;
+    }
+    catch (const AllocException& ex)
+    {
+#ifdef ADT_DBG_MEMORY
+        ex.printErrorMsg(stderr);
+#endif
+        if (pBuffer->m_size > 0) pBuffer->m_pData[--pBuffer->m_size] = '\0';
+        else return {};
+    }
+
+    return StringView(*pBuffer);
 }
 
 template<typename ...ARGS_T>

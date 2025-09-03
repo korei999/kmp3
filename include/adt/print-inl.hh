@@ -57,6 +57,7 @@ struct Buffer
 
     /* */
 
+    void destroy() noexcept;
     isize push(char c) noexcept(false); /* AllocException */
     isize push(const Span<const char> sp) noexcept(false); /* AllocException */
     isize push(const StringView sv) noexcept(false); /* AllocException */
@@ -145,10 +146,13 @@ template<typename ...ARGS_T>
 inline constexpr isize toSpan(Span<char> sp, const StringView fmt, const ARGS_T&... tArgs) noexcept;
 
 template<typename ...ARGS_T>
-[[nodiscard]] inline String toString(IAllocator* pAlloc, const StringView fmt, const ARGS_T&... tArgs) noexcept;
+[[nodiscard]] inline String toString(IAllocator* pAlloc, const StringView fmt, const ARGS_T&... tArgs);
 
 template<typename ...ARGS_T>
-[[nodiscard]] inline String toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&... tArgs) noexcept;
+[[nodiscard]] inline String toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&... tArgs);
+
+template<typename ...ARGS_T>
+inline StringView toPrintBuffer(Buffer* pBuffer, const StringView fmt, const ARGS_T&... tArgs);
 
 template<typename ...ARGS_T>
 inline isize out(const StringView fmt, const ARGS_T&... tArgs);

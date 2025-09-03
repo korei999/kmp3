@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Arena.hh"
 #include "FuncBuffer.hh"
 #include "Queue.hh"
-#include "ScratchBuffer.hh"
 #include "StdAllocator.hh"
 #include "Thread.hh"
 #include "Vec.hh"
@@ -60,6 +60,8 @@ struct IThreadPool
     virtual Task tryStealTask() noexcept = 0;
 
     virtual int threadId() noexcept = 0;
+
+    virtual Arena* arena() noexcept = 0;
 
     template<typename CL>
     bool
@@ -211,16 +213,18 @@ struct ThreadPool : IThreadPool
     atomic::Int m_atomIdCounter {};
     bool m_bStarted {};
     QueueM<Task> m_qTasks {};
+    isize m_arenaReserved {};
 
     /* */
 
     static inline thread_local int gtl_threadId {};
+    static inline thread_local Arena gtl_arena {};
 
     /* */
 
     ThreadPool() = default;
 
-    ThreadPool(isize qSize, int nThreads = optimalThreadCount());
+    ThreadPool(isize qSize, isize arenaReserve, int nThreads = optimalThreadCount());
 
     ThreadPool(
         void (*pfnOnLoopStart)(void*),
@@ -228,6 +232,7 @@ struct ThreadPool : IThreadPool
         void (*pfnOnLoopEnd)(void*),
         void* pLoopEndArg,
         isize qSize,
+        isize arenaReserve,
         int nThreads = optimalThreadCount()
     );
 
@@ -245,6 +250,8 @@ struct ThreadPool : IThreadPool
 
     virtual int threadId() noexcept override;
 
+    virtual Arena* arena() noexcept override;
+
     /* */
 
     void destroy() noexcept;
@@ -255,12 +262,13 @@ protected:
 };
 
 inline
-ThreadPool::ThreadPool(isize qSize, int nThreads)
+ThreadPool::ThreadPool(isize qSize, isize arenaReserve, int nThreads)
     : m_spThreads(StdAllocator::inst()->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
-      m_qTasks(qSize)
+      m_qTasks(qSize),
+      m_arenaReserved(arenaReserve)
 {
     start();
 }
@@ -270,6 +278,7 @@ ThreadPool::ThreadPool(
     void (*pfnOnLoopStart)(void*), void* pLoopStartArg,
     void (*pfnOnLoopEnd)(void*), void* pLoopEndArg,
     isize qSize,
+    isize arenaReserve,
     int nThreads
 )
     : m_spThreads(StdAllocator::inst()->zallocV<Thread>(nThreads), nThreads),
@@ -280,7 +289,8 @@ ThreadPool::ThreadPool(
       m_pLoopStartArg(pLoopStartArg),
       m_pfnLoopEnd(pfnOnLoopEnd),
       m_pLoopEndArg(pLoopEndArg),
-      m_qTasks(qSize)
+      m_qTasks(qSize),
+      m_arenaReserved(arenaReserve)
 {
     start();
 }
@@ -292,6 +302,8 @@ ThreadPool::loop()
     ADT_DEFER( if (m_pfnLoopEnd) m_pfnLoopEnd(m_pLoopEndArg) );
 
     gtl_threadId = 1 + m_atomIdCounter.fetchAdd(1, atomic::ORDER::RELAXED);
+    new(&gtl_arena) Arena {m_arenaReserved};
+    ADT_DEFER( gtl_arena.freeAll() );
 
     while (true)
     {
@@ -334,6 +346,8 @@ ThreadPool::start()
             this
         );
     }
+
+    new(&gtl_arena) Arena {m_arenaReserved};
 
     m_bStarted = true;
 
@@ -390,6 +404,8 @@ ThreadPool::destroy() noexcept
     m_mtxQ.destroy();
     m_cndQ.destroy();
     m_cndWait.destroy();
+
+    gtl_arena.freeAll();
 }
 
 inline bool
@@ -431,89 +447,11 @@ ThreadPool::threadId() noexcept
     return gtl_threadId;
 }
 
-struct IThreadPoolWithMemory : IThreadPool
+inline Arena*
+ThreadPool::arena() noexcept
 {
-    virtual ScratchBuffer& scratchBuffer() = 0;
-};
-
-/* ThreadPool with ScratchBuffers created for each thread.
- * Any thread can access its own thread local buffer with `threadPool.scratch()`. */
-struct ThreadPoolWithMemory : IThreadPoolWithMemory
-{
-    using Task = ThreadPool::Task;
-
-    /* */
-
-    static inline thread_local u8* gtl_pScratchMem;
-    static inline thread_local ScratchBuffer gtl_scratchBuff;
-
-    /* */
-
-    ThreadPool m_base {};
-
-    /* */
-
-    ThreadPoolWithMemory() = default;
-
-    ThreadPoolWithMemory(isize qSize, isize nBytesEachBuffer, int nThreads = optimalThreadCount())
-        : m_base(
-            +[](void* p) { allocScratchBufferForThisThread(reinterpret_cast<isize>(p)); },
-            reinterpret_cast<void*>(nBytesEachBuffer),
-            +[](void*) { destroyScratchBufferForThisThread(); },
-            nullptr,
-            qSize,
-            nThreads
-        )
-    {
-        ADT_ASSERT(nThreads > 0, "nThreads: {}", nThreads);
-        allocScratchBufferForThisThread(nBytesEachBuffer);
-    }
-
-    /* */
-
-    virtual ScratchBuffer& scratchBuffer() override { return gtl_scratchBuff; }
-    virtual const atomic::Int& nActiveTasks() const noexcept override { return m_base.nActiveTasks(); }
-    virtual void wait(bool bHelp) noexcept override { m_base.wait(bHelp); }
-    virtual bool addTask(void (*pfn)(void*), void* pArg, isize argSize) noexcept override { return m_base.addTask(pfn, pArg, argSize); }
-    virtual int nThreads() const noexcept override { return m_base.nThreads(); }
-    virtual Task tryStealTask() noexcept override { return m_base.tryStealTask(); }
-    virtual int threadId() noexcept override { return m_base.threadId(); }
-
-    /* */
-
-    void
-    destroy() noexcept
-    {
-        m_base.destroy();
-        destroyScratchBufferForThisThread();
-    }
-
-    /* `destroyScratchBufferForThisThread()` later. */
-    void
-    destroyKeepScratchBuffer() noexcept
-    {
-        m_base.destroy();
-    }
-
-    /* */
-
-    static void
-    allocScratchBufferForThisThread(isize size)
-    {
-        ADT_ASSERT(gtl_pScratchMem == nullptr, "already allocated");
-
-        gtl_pScratchMem = StdAllocator::inst()->zallocV<u8>(size);
-        gtl_scratchBuff = ScratchBuffer {gtl_pScratchMem, size};
-    }
-
-    static void
-    destroyScratchBufferForThisThread() noexcept
-    {
-        StdAllocator::inst()->free(gtl_pScratchMem);
-        gtl_pScratchMem = {};
-        gtl_scratchBuff = {};
-    }
-};
+    return &gtl_arena;
+}
 
 /* Usage example:
  * Vec<IThreadPool::Future<Span<f32>>*> vFutures = parallelFor(&arena, &tp, Span<f32> {v},
