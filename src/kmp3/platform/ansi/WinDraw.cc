@@ -195,15 +195,15 @@ Win::songList()
 
         const u16 songIdx = pl.m_vSearchIdxs[h];
         const StringView svSong = pl.m_vShortSongs[songIdx];
-        const bool bSelected = songIdx == pl.m_selected ? true : false;
+        const bool bSelected = songIdx == pl.m_selectedI ? true : false;
 
         using STYLE = TEXT_BUFF_STYLE;
 
         STYLE eStyle = STYLE::NORM;
 
-        if (h == pl.m_focused && bSelected)
+        if (h == pl.m_focusedI && bSelected)
             eStyle = STYLE::BOLD | STYLE::YELLOW | STYLE::REVERSE;
-        else if (h == pl.m_focused)
+        else if (h == pl.m_focusedI)
             eStyle = STYLE::REVERSE;
         else if (bSelected)
             eStyle = STYLE::BOLD | STYLE::YELLOW;
@@ -253,7 +253,7 @@ Win::bottomLine()
         ArenaStateGuard pushed {m_pArena};
         Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
-        isize n = print::toSpan(sp, "{} / {}", pl.m_selected, pl.m_vShortSongs.size() - 1);
+        isize n = print::toSpan(sp, "{} / {}", pl.m_selectedI, pl.m_vShortSongs.size() - 1);
         if (pl.m_eRepeatMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};

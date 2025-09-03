@@ -55,8 +55,8 @@ subStringSearch(
     if (nSearches == 1) *pFirstIdx = savedFirst;
 
     /* fix focused if it ends up out of the list range */
-    if (pl.m_focused >= pl.m_vSongIdxs.size())
-        pl.m_focused = 0;
+    if (pl.m_focusedI >= pl.m_vSongIdxs.size())
+        pl.m_focusedI = 0;
 }
 
 template<typename READ_LAMBDA, typename DRAW_LAMBDA>

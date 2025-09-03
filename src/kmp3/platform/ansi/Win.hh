@@ -50,7 +50,6 @@ protected:
     TextBuff m_textBuff {};
     termios m_termOg {};
     TermSize m_termSize {};
-    adt::i16 m_firstIdx {};
     int m_prevImgWidth = 0;
     adt::Mutex m_mtxUpdate {};
     adt::f64 m_time {};

@@ -62,10 +62,11 @@ inline void focusPrev() { player().focusPrev(); }
 inline void focusFirst() { player().focusFirst(); }
 inline void focusLast() { player().focusLast(); }
 inline void focus(long i) { player().focus(i); }
-inline void focusUp(long step) { focus(player().m_focused - step); }
-inline void focusDown(long step) { focus(player().m_focused + step); }
+inline void focusUp(long step) { focus(player().m_focusedI - step); }
+inline void focusDown(long step) { focus(player().m_focusedI + step); }
 inline void selectFocused() { player().selectFocused(); }
 inline void focusSelected() { player().focusSelected(); }
+inline void focusSelectedAtCenter() { player().focusSelectedAtCenter(); }
 inline void togglePause() { player().togglePause(); }
 inline void volumeDown(const adt::f32 step) { g_pMixer->volumeDown(step); }
 inline void volumeUp(const adt::f32 step) { g_pMixer->volumeUp(step); }

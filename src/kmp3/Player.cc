@@ -31,27 +31,27 @@ Player::acceptedFormat(const StringView s)
 void
 Player::focusNext()
 {
-    long ns = m_focused + 1;
+    long ns = m_focusedI + 1;
     if (ns >= m_vSongIdxs.size()) ns = 0;
-    m_focused = ns;
+    m_focusedI = ns;
 }
 
 void
 Player::focusPrev()
 {
-    long prev = m_focused - 1;
+    long prev = m_focusedI - 1;
     if (prev < 0)
     {
         if (m_vSongIdxs.empty()) prev = 0;
         else prev = m_vSongIdxs.size() - 1;
     }
-    m_focused = prev;
+    m_focusedI = prev;
 }
 
 void
 Player::focus(long i)
 {
-    m_focused = utils::clamp(i, 0L, long(m_vSongIdxs.size() - 1));
+    m_focusedI = utils::clamp(i, 0L, long(m_vSongIdxs.size() - 1));
 }
 
 void
@@ -66,7 +66,7 @@ Player::findSongI(long toFindI)
     if (m_vSongs.empty()) return 0;
 
 again:
-    const isize res = utils::searchI(m_vSearchIdxs, [&](u16 e) { return e == toFindI; });
+    const isize res = utils::searchI(m_vSearchIdxs, [toFindI](u16 e) { return e == toFindI; });
 
     if (res <= NPOS)
     {
@@ -81,7 +81,20 @@ again:
 void
 Player::focusSelected()
 {
-    focus(findSongI(m_selected));
+    focus(findSongI(m_selectedI));
+}
+
+void
+Player::focusSelectedAtCenter() noexcept
+{
+    focusSelected();
+
+    const isize height = app::window().m_listHeight;
+
+    if (m_vSearchIdxs.size() <= height) return;
+
+    const isize half = (height-1) / 2;
+    app::window().m_firstIdx = utils::max(0ll, m_focusedI - half);
 }
 
 void
@@ -130,7 +143,7 @@ Player::nextSelectionI(long selI)
     const long currI = findSongI(selI);
     long nextI = currI + 1;
 
-    defer( LogDebug("currI: {}, nextI: {}\n", currI, nextI) );
+    defer( LogDebug{"currI: {}, nextI: {}\n", currI, nextI} );
 
     if (m_eRepeatMethod == PLAYER_REPEAT_METHOD::TRACK)
     {
@@ -160,7 +173,7 @@ Player::updateInfo()
     m_info.sfArtist = app::decoder().getMetadata("artist");
 
     if (m_info.sfTitle.size() == 0)
-        m_info.sfTitle = m_vShortSongs[m_selected];
+        m_info.sfTitle = m_vShortSongs[m_selectedI];
 
     m_bSelectionChanged = true;
 }
@@ -197,21 +210,21 @@ Player::selectFinal(long selI)
     }
 
     m_bSelectionChanged = true;
-    m_selected = selI;
+    m_selectedI = selI;
     updateInfo();
 }
 
 void
 Player::selectFocused()
 {
-    if (m_vSongIdxs.size() <= m_focused)
+    if (m_vSongIdxs.size() <= m_focusedI)
     {
         LogWarn("out of range selection: (vec.size: {})\n", m_vSongIdxs.size());
         return;
     }
 
-    LogDebug("selected: {}\n", m_vSongs[m_vSongIdxs[m_focused]]);
-    selectFinal(m_vSongIdxs[m_focused]);
+    LogDebug("selected: {}\n", m_vSongs[m_vSongIdxs[m_focusedI]]);
+    selectFinal(m_vSongIdxs[m_focusedI]);
 }
 
 void
@@ -230,7 +243,7 @@ Player::nextSongIfPrevEnded()
         )
     )
     {
-        selectFinal(nextSelectionI(m_selected));
+        selectFinal(nextSelectionI(m_selectedI));
     }
 }
 
@@ -261,13 +274,13 @@ Player::select(long i)
 void
 Player::selectNext()
 {
-    select(utils::cycleForward(findSongI(m_selected), m_vSearchIdxs.size()));
+    select(utils::cycleForward(findSongI(m_selectedI), m_vSearchIdxs.size()));
 }
 
 void
 Player::selectPrev()
 {
-    select(utils::cycleBackward(findSongI(m_selected), m_vSearchIdxs.size()));
+    select(utils::cycleBackward(findSongI(m_selectedI), m_vSearchIdxs.size()));
 }
 
 void

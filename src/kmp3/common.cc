@@ -51,7 +51,7 @@ fixFirstIdx(u16 listHeight, i16* pFirstIdx)
 {
     const Player& pl = app::player();
 
-    const long focused = pl.m_focused;
+    const long focused = pl.m_focusedI;
     adt::i16 first = *pFirstIdx;
 
     defer( *pFirstIdx = first );

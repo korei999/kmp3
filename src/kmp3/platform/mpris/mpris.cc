@@ -220,18 +220,18 @@ seekAbs(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-	char aBuff[] = "/1122334455667788";
-    sprintf(aBuff, "/%" PRIx64, app::g_pPlayer->m_selected);
+    char aBuff[] = "/1122334455667788";
+    sprintf(aBuff, "/%" PRIx64, app::g_pPlayer->m_selectedI);
 
-	const char *pPath = NULL;
-	i64 val = 0;
-	CK(sd_bus_message_read_basic(m, 'o', &pPath));
-	CK(sd_bus_message_read_basic(m, 'x', &val));
+    const char *pPath = NULL;
+    i64 val = 0;
+    CK(sd_bus_message_read_basic(m, 'o', &pPath));
+    CK(sd_bus_message_read_basic(m, 'x', &val));
 
-	if (strncmp(aBuff, pPath, utils::size(aBuff)) == 0)
+    if (strncmp(aBuff, pPath, utils::size(aBuff)) == 0)
         app::mixer().seekMS(val / 1000.0);
 
-	return sd_bus_reply_method_return(m, "");
+    return sd_bus_reply_method_return(m, "");
 }
 
 static int
@@ -490,7 +490,7 @@ metadata(
 
     {
         char aBuff[] = "/1122334455667788";
-        auto currIdx = pl.m_selected;
+        auto currIdx = pl.m_selectedI;
         sprintf(aBuff, "/%" PRIx64, currIdx);
         CK(msgAppendDictSO(reply, "mpris:trackid", aBuff));
     }

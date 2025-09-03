@@ -49,8 +49,8 @@ struct Player
     /* two index buffers for recursive filtering */
     adt::Vec<adt::u16> m_vSongIdxs {}; /* index buffer */
     adt::Vec<adt::u16> m_vSearchIdxs {}; /* search index buffer */
-    long m_focused {};
-    long m_selected {};
+    long m_focusedI {};
+    long m_selectedI {};
     adt::isize m_longestString {};
     PLAYER_REPEAT_METHOD m_eRepeatMethod {};
     bool m_bSelectionChanged {};
@@ -79,6 +79,7 @@ struct Player
     void focusLast();
     long findSongI(long selI);
     void focusSelected();
+    void focusSelectedAtCenter() noexcept;
     void subStringSearch(adt::Arena* pAlloc, adt::Span<wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
@@ -97,7 +98,7 @@ struct Player
 
     /* */
 
-private:
+protected:
     long nextSelectionI(long selI);
     void updateInfo();
     void selectFinal(long selI);

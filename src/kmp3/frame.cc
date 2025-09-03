@@ -29,7 +29,7 @@ run()
         return;
     }
 
-    app::player().m_focused = 0;
+    app::player().m_focusedI = 0;
     app::player().selectFocused();
 
 #ifdef OPT_MPRIS

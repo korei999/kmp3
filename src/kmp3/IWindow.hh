@@ -4,6 +4,7 @@ enum class WINDOW_READ_MODE : adt::u8 { NONE, SEARCH, SEEK };
 
 struct IWindow
 {
+    adt::i16 m_firstIdx {};
     adt::i16 m_listHeight {};
     bool m_bRedraw {};
     bool m_bClear {};
