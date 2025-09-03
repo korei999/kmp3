@@ -21,7 +21,7 @@ enum : int
     HAT = L'^',
     SEVEN = L'7',
     AND = L'&',
-    EIGTH = L'8',
+    EIGHT = L'8',
     STAR = L'*',
     NINE = L'9',
     LPAREN = L'(',
