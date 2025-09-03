@@ -80,7 +80,7 @@ struct Player
     long findSongI(long selI);
     void focusSelected();
     void focusSelectedAtCenter();
-    void subStringSearch(adt::Arena* pAlloc, adt::Span<wchar_t> pBuff);
+    void subStringSearch(adt::Arena* pAlloc, adt::Span<const wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
     void togglePause();
@@ -91,7 +91,7 @@ struct Player
     void selectPrev();
     void copySearchToSongIdxs();
     void setImgSize(long height);
-    void adjustImgWidth();
+    void adjustImgWidth() noexcept;
     void destroy();
     void pushErrorMsg(const Msg& msg);
     Msg popErrorMsg();

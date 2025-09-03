@@ -105,34 +105,34 @@ Player::setDefaultIdxs(Vec<u16>* pvIdxs)
 }
 
 void
-Player::subStringSearch(Arena* pArena, Span<wchar_t> spBuff)
+Player::subStringSearch(Arena* pArena, Span<const wchar_t> spBuff)
 {
     ArenaStateGuard pushed {pArena};
 
     if (spBuff && wcsnlen(spBuff.data(), spBuff.size()) == 0)
         return;
 
-    Array<wchar_t, 64> aUpperRight {};
-    const isize maxLen = utils::min(spBuff.size(), aUpperRight.cap());
+    Vec<wchar_t> vUpperRight {pArena, spBuff.size() + 1};
+    vUpperRight.setSize(pArena, vUpperRight.cap());
 
-    for (isize i = 0; i < maxLen && spBuff[i]; ++i)
-        aUpperRight.push(wchar_t(towupper(spBuff[i])));
+    for (isize i = 0; i < spBuff.size() && spBuff[i]; ++i)
+        vUpperRight[i] = (wchar_t)towupper(spBuff[i]);
 
-    Vec<wchar_t> aSongToUpper(pArena, m_longestString + 1);
-    aSongToUpper.setSize(pArena, m_longestString + 1);
+    Vec<wchar_t> vSongToUpper(pArena, m_longestString + 1);
+    vSongToUpper.setSize(pArena, vSongToUpper.cap());
 
     m_vSearchIdxs.setSize(m_pAlloc, 0);
     for (const u16 songIdx : m_vSongIdxs)
     {
         const StringView song = m_vShortSongs[songIdx];
 
-        aSongToUpper.zeroOut();
-        mbstowcs(aSongToUpper.data(), song.data(), song.size());
+        vSongToUpper.zeroOut();
+        mbstowcs(vSongToUpper.data(), song.data(), song.size());
 
-        for (auto& wc : aSongToUpper)
+        for (auto& wc : vSongToUpper)
             wc = towupper(wc);
 
-        if (wcsstr(aSongToUpper.data(), aUpperRight.data()) != nullptr)
+        if (wcsstr(vSongToUpper.data(), vUpperRight.data()) != nullptr)
             m_vSearchIdxs.push(m_pAlloc, songIdx);
     }
 }
@@ -305,7 +305,7 @@ Player::setImgSize(long height)
 }
 
 void
-Player::adjustImgWidth()
+Player::adjustImgWidth() noexcept
 {
     m_imgWidth = std::round((m_imgHeight * (1920.0/1080.0)) / defaults::FONT_ASPECT_RATIO);
 }
