@@ -93,7 +93,7 @@ Player::focusSelectedAtCenter() noexcept
 
     if (m_vSearchIdxs.size() <= height) return;
 
-    const isize half = (height-1) / 2;
+    const isize half = (height-2) / 2;
     app::window().m_firstIdx = utils::max(0ll, m_focusedI - half);
 }
 
