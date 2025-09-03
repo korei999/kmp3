@@ -1,6 +1,7 @@
 # src/kmp3/CMakeLists.txt
 
-target_sources(${kmp3} PRIVATE
+set(subProj ${projName})
+target_sources(${subProj} PRIVATE
     app.cc
     audio.cc
     common.cc
@@ -8,5 +9,6 @@ target_sources(${kmp3} PRIVATE
     main.cc
     Player.cc
 )
+target_include_directories(${subProj} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_subdirectory(platform)

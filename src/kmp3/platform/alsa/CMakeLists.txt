@@ -2,11 +2,11 @@
 
 pkg_check_modules(ALSA alsa)
 if (ALSA_FOUND)
-    allPackageFlags(TARGET ${kmp3} NAME ALSA)
+    allPackageFlags(TARGET ${subProj} NAME ALSA)
 
-    target_compile_definitions(${kmp3} PRIVATE "-DOPT_ALSA")
+    target_compile_definitions(${subProj} PRIVATE "-DOPT_ALSA")
     target_sources(
-        ${kmp3} PRIVATE
+        ${subProj} PRIVATE
         Mixer.cc
     )
 endif()

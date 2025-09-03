@@ -2,10 +2,10 @@
 
 pkg_check_modules(PIPEWIRE libpipewire-0.3)
 if (PIPEWIRE_FOUND)
-    allPackageFlags(TARGET ${kmp3} NAME PIPEWIRE)
+    allPackageFlags(TARGET ${subProj} NAME PIPEWIRE)
 
-    target_compile_definitions(${kmp3} PRIVATE "-DOPT_PIPEWIRE")
-    target_sources(${kmp3} PRIVATE
+    target_compile_definitions(${subProj} PRIVATE "-DOPT_PIPEWIRE")
+    target_sources(${subProj} PRIVATE
         Mixer.cc
     )
 endif()

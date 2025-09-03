@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
-file(STRINGS name kmp3)
-message(STATUS "kmp3: '${kmp3}'")
+file(STRINGS name projName)
+message(STATUS "projName: '${projName}'")
 
-project(${kmp3} VERSION 0.1 LANGUAGES CXX C)
+project(${projName} VERSION 0.1 LANGUAGES CXX C)
 message(STATUS "CMAKE_PROJECT_VERSION: '${CMAKE_PROJECT_VERSION}'")
 
 option(OPT_ALSA "" ON)
@@ -18,6 +18,7 @@ option(OPT_MARCH_NATIVE "" OFF)
 option(OPT_ANALYZE "" OFF)
 option(OPT_FTIME_TRACE "" OFF)
 option(OPT_ADT_LOGGER_DISABLE "" ON)
+option(OPT_STATIC_LIBCXX "" OFF)
 
 if (OPT_SSE4_2)
     add_definitions("-DADT_SSE4_2")
@@ -152,6 +153,9 @@ endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")
+    if (OPT_STATIC_LIBCXX)
+        add_link_options(-static-libstdc++ -static-libgcc)
+    endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-c99-designator)
 endif()
@@ -184,10 +188,8 @@ endfunction()
 
 include_directories("include")
 
-add_executable(${kmp3})
+add_executable(${projName})
 
-# use root sources from everywhere
-target_include_directories(${kmp3} PRIVATE "src/kmp3")
 add_subdirectory(src/kmp3)
 
 file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
@@ -202,10 +204,10 @@ target_precompile_headers(ADTLIB_PCH INTERFACE
     "$<$<COMPILE_LANGUAGE:CXX>:${ADT_PRECOMPILED_HEADERS}>"
 )
 
-target_link_libraries(${kmp3} PRIVATE ADTLIB_PCH)
+target_link_libraries(${projName} PRIVATE ADTLIB_PCH)
 
 if (OPT_MIMALLOC)
-    target_link_libraries(${kmp3} PRIVATE mimalloc-static)
+    target_link_libraries(${projName} PRIVATE mimalloc-static)
 endif()
 
-install(TARGETS ${kmp3} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(TARGETS ${projName} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

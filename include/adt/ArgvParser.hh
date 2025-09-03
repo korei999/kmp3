@@ -158,7 +158,7 @@ done:
 inline void
 ArgvParser::printUsage()
 {
-    print::err("Usage: {} <args>... {}\n\n", m_sFirst, m_sUsage);
+    print::err("Usage: {} {}\n\n", m_sFirst, m_sUsage);
     for (auto& p : m_vArgParsers)
     {
         print::err("    {}{}" "{}" "{}{}\n        {}\n\n",
