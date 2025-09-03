@@ -102,7 +102,7 @@ struct Log
 
         ILogger* pLogger = ILogger::inst();
 
-        if (eLevel > pLogger->m_eLevel || !pLogger) return;
+        if (!pLogger || eLevel > pLogger->m_eLevel) return;
 
         StringFixed<SIZE> msg;
         isize n = print::toSpan(msg.data(), std::forward<ARGS>(args)...);

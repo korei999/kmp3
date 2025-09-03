@@ -13,7 +13,7 @@
     {                                                                                                                  \
         adt::RuntimeException ex;                                                                                      \
         auto& aMsgBuff = ex.m_sfMsg.data();                                                                            \
-        isize n = adt::print::toBuffer(aMsgBuff, sizeof(aMsgBuff) - 1, #CND);                                          \
+        adt::isize n = adt::print::toBuffer(aMsgBuff, sizeof(aMsgBuff) - 1, #CND);                                     \
         n += adt::print::toBuffer(aMsgBuff + n, sizeof(aMsgBuff) - 1 - n, "\nMsg: ");                                  \
         n += adt::print::toBuffer(aMsgBuff + n, sizeof(aMsgBuff) - 1 - n, __VA_ARGS__);                                \
         throw ex;                                                                                                      \
