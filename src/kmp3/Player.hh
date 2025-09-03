@@ -66,20 +66,20 @@ struct Player
 
     /* */
 
-    static bool acceptedFormat(const adt::StringView s);
+    static bool acceptedFormat(const adt::StringView s) noexcept;
 
     /* */
 
-    void focusNext();
-    void focusPrev();
-    void focus(long i);
+    void focusNext() noexcept;
+    void focusPrev() noexcept;
+    void focus(long i) noexcept;
     void focusFirst() { focus(0); }
     void setDefaultSongIdxs() { setDefaultIdxs(&m_vSongIdxs); }
     void setDefaultSearchIdxs() { setDefaultIdxs(&m_vSearchIdxs); }
-    void focusLast();
+    void focusLast() noexcept;
     long findSongI(long selI);
     void focusSelected();
-    void focusSelectedAtCenter() noexcept;
+    void focusSelectedAtCenter();
     void subStringSearch(adt::Arena* pAlloc, adt::Span<wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
@@ -100,7 +100,7 @@ struct Player
 
 protected:
     long nextSelectionI(long selI);
-    void updateInfo();
+    void updateInfo() noexcept;
     void selectFinal(long selI);
     void setDefaultIdxs(adt::Vec<adt::u16>* pIdxs);
 };

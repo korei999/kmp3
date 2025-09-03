@@ -21,7 +21,7 @@ static constexpr StringView aSvAcceptedFileEndings[] {
 };
 
 bool
-Player::acceptedFormat(const StringView s)
+Player::acceptedFormat(const StringView s) noexcept
 {
     return utils::searchI(aSvAcceptedFileEndings, [&](const StringView ending)
         { return s.endsWith(ending); }
@@ -29,7 +29,7 @@ Player::acceptedFormat(const StringView s)
 }
 
 void
-Player::focusNext()
+Player::focusNext() noexcept
 {
     long ns = m_focusedI + 1;
     if (ns >= m_vSongIdxs.size()) ns = 0;
@@ -37,7 +37,7 @@ Player::focusNext()
 }
 
 void
-Player::focusPrev()
+Player::focusPrev() noexcept
 {
     long prev = m_focusedI - 1;
     if (prev < 0)
@@ -49,13 +49,13 @@ Player::focusPrev()
 }
 
 void
-Player::focus(long i)
+Player::focus(long i) noexcept
 {
-    m_focusedI = utils::clamp(i, 0L, long(m_vSongIdxs.size() - 1));
+    m_focusedI = utils::clamp(i, 0l, (long)(m_vSongIdxs.size() - 1));
 }
 
 void
-Player::focusLast()
+Player::focusLast() noexcept
 {
     focus(m_vSongIdxs.size() - 1);
 }
@@ -85,7 +85,7 @@ Player::focusSelected()
 }
 
 void
-Player::focusSelectedAtCenter() noexcept
+Player::focusSelectedAtCenter()
 {
     focusSelected();
 
@@ -166,7 +166,7 @@ Player::nextSelectionI(long selI)
 }
 
 void
-Player::updateInfo()
+Player::updateInfo() noexcept
 {
     m_info.sfTitle = app::decoder().getMetadata("title");
     m_info.sfAlbum = app::decoder().getMetadata("album");
