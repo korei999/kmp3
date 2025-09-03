@@ -81,9 +81,6 @@ protected:
     void disableRawMode() noexcept(false); /* RuntimeException */
     void enableRawMode() noexcept(false); /* RuntimeException */
 
-    /* draw */
-    void clearArea(int x, int y, int width, int height);
-
 #ifdef OPT_CHAFA
     void coverImage();
 #endif
