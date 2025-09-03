@@ -15,7 +15,6 @@ struct IWindow
     virtual void seekFromInput() = 0;
     virtual void subStringSearch() = 0;
     virtual void adjustListHeight() = 0;
-    virtual void forceResize() = 0;
 };
 
 struct DummyWindow : IWindow
@@ -27,5 +26,4 @@ struct DummyWindow : IWindow
     virtual void seekFromInput() final {};
     virtual void subStringSearch() final {};
     virtual void adjustListHeight() final {};
-    virtual void forceResize() final {};
 };

@@ -126,12 +126,6 @@ Win::adjustListHeight()
 }
 
 void
-Win::forceResize()
-{
-    resizeHandler();
-}
-
-void
 Win::resizeHandler()
 {
     Player& pl = app::player();

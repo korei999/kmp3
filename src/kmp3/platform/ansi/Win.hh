@@ -70,7 +70,6 @@ public:
     virtual void seekFromInput() final;
     virtual void subStringSearch() final;
     virtual void adjustListHeight() final;
-    virtual void forceResize() final;
 
     /* */
 
