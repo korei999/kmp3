@@ -201,7 +201,7 @@ parseArgs(int argc, char** argv)
     const ArgvParser::RESULT eResult = s_cmdParser.parse();
     if (eResult == ArgvParser::RESULT::FAILED)
     {
-        s_cmdParser.printUsage(StdAllocator::inst());
+        s_cmdParser.printFullUsage(StdAllocator::inst());
         exit(1);
     }
     else if (argc <= 1)
@@ -323,7 +323,6 @@ startup(int argc, char** argv)
     else
     {
         print::err("No accepted input provided\n");
-        s_cmdParser.printUsage(StdAllocator::inst());
     }
 }
 

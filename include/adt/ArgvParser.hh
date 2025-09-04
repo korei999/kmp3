@@ -55,6 +55,7 @@ struct ArgvParser
     void destroy() noexcept;
     RESULT parse();
     void printUsage(IAllocator* pAlloc);
+    void printFullUsage(IAllocator* pAlloc);
 
 protected:
     Pair<RESULT, bool /* bIncArgc */> parseArg(isize i, const StringView svKey);
@@ -162,6 +163,12 @@ done:
 inline void
 ArgvParser::printUsage(IAllocator* pAlloc)
 {
+    print::toFILE(pAlloc, m_pFile, "Usage: {} {}\n", m_sFirst, m_sUsage);
+}
+
+inline void
+ArgvParser::printFullUsage(IAllocator* pAlloc)
+{
     print::toFILE(pAlloc, m_pFile, "Usage: {} {}\n\n", m_sFirst, m_sUsage);
     for (auto& p : m_vArgParsers)
     {
@@ -216,7 +223,7 @@ done:
     else if (eResult == RESULT::SHOW_EXTRA)
         print::toFILE(m_pAlloc, m_pFile, "{}\n", parser.sExtra);
     else if (eResult == RESULT::SHOW_ALL_USAGE)
-        printUsage(m_pAlloc);
+        printFullUsage(m_pAlloc);
 
     return {eResult, parser.bNeedsValue};
 }
