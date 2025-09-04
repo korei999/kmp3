@@ -3,8 +3,26 @@ cmake_minimum_required(VERSION 3.20)
 file(STRINGS name projName)
 message(STATUS "projName: '${projName}'")
 
-project(${projName} VERSION 0.1 LANGUAGES CXX C)
+project(${projName} VERSION 1.0 LANGUAGES CXX C)
 message(STATUS "CMAKE_PROJECT_VERSION: '${CMAKE_PROJECT_VERSION}'")
+
+execute_process(
+    COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE PROJECT_COMMIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+
+if (NOT PROJECT_COMMIT_HASH)
+    set(PROJECT_COMMIT_HASH "no-git")
+endif()
+
+add_definitions("-DPROJECT_COMMIT_HASH=\"${PROJECT_COMMIT_HASH}\"")
+add_definitions("-DPROJECT_NAME=\"${projName}\"")
+add_definitions("-DPROJECT_VERSION=\"${CMAKE_PROJECT_VERSION}\"")
+add_definitions("-DPROJECT_VERSION_MAJOR=\"${CMAKE_PROJECT_VERSION_MAJOR}\"")
+add_definitions("-DPROJECT_VERSION_MINOR=\"${CMAKE_PROJECT_VERSION_MINOR}\"")
 
 option(OPT_ALSA "" ON)
 option(OPT_PIPEWIRE "" ON)
@@ -157,7 +175,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         add_link_options(-static-libstdc++ -static-libgcc)
     endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options(-Wno-c99-designator)
+    # add_compile_options(-Wno-c99-designator)
 endif()
 
 message(STATUS "CMAKE_SYSTEM_NAME: '${CMAKE_SYSTEM_NAME}'")
@@ -186,12 +204,6 @@ function(allPackageFlags)
     endif()
 endfunction()
 
-include_directories("include")
-
-add_executable(${projName})
-
-add_subdirectory(src/kmp3)
-
 file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
 if (NOT OPT_MIMALLOC)
     list(REMOVE_ITEM
@@ -199,15 +211,20 @@ if (NOT OPT_MIMALLOC)
         "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/MiMalloc.hh"
     )
 endif()
+
 add_library(ADTLIB_PCH INTERFACE)
 target_precompile_headers(ADTLIB_PCH INTERFACE
     "$<$<COMPILE_LANGUAGE:CXX>:${ADT_PRECOMPILED_HEADERS}>"
 )
 
-target_link_libraries(${projName} PRIVATE ADTLIB_PCH)
+include_directories("include")
 
-if (OPT_MIMALLOC)
-    target_link_libraries(${projName} PRIVATE mimalloc-static)
+add_executable(${projName})
+
+if (CMAKE_BUILD_TYPE MATCHES "Release")
+    target_link_options(${projName} PRIVATE -s)
 endif()
+
+add_subdirectory(src/kmp3)
 
 install(TARGETS ${projName} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

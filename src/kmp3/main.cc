@@ -18,6 +18,7 @@
 using namespace adt;
 
 static Logger s_logger;
+static ArgvParser s_cmdParser;
 
 static void
 setTermEnv()
@@ -64,110 +65,161 @@ setTermEnv()
 static void
 parseArgs(int argc, char** argv)
 {
-    for (int i = 1; i < argc; ++i)
-    {
-        const StringView svArg = argv[i];
-        if (svArg.beginsWith("--"))
+    new(&s_cmdParser) ArgvParser{StdAllocator::inst(), stderr, "[options...] [file...]", argc, argv, {
         {
-            if (svArg == "--ansi")
-            {
-                app::g_eUIFrontend = app::UI::ANSI;
-            }
-            else if (svArg.beginsWith("--volume"))
-            {
-                if (argc > i + 1)
-                {
-                    const StringView svNext = argv[++i];
-                    app::g_config.volume = svNext.toF64();
-                    continue;
-                }
-                else
-                {
-                    print::out("missing arg after '--volume'\n");
-                    exit(0);
-                }
-            }
-            else if (svArg == "--no-image")
-            {
+            .bNeedsValue = false,
+            .sOneDash = "h",
+            .sTwoDashes = "help",
+            .sUsage = "show this message",
+            .pfn = [](ArgvParser*, void*, const StringView, const StringView) {
+                return ArgvParser::RESULT::SHOW_ALL_USAGE;
+            },
+        },
+        {
+            .bNeedsValue = true,
+            .sTwoDashes = "volume",
+            .sUsage = "set startup volume",
+            .pfn = [](ArgvParser*, void*, const StringView, const StringView svVal) {
+                app::g_config.volume = svVal.toF64();
+                return ArgvParser::RESULT::GOOD;
+            },
+        },
+        {
+            .bNeedsValue = false,
+            .sTwoDashes = "no-image",
+            .sUsage = "disable cover images",
+            .pfn = [](ArgvParser*, void*, const StringView, const StringView) {
                 app::g_bNoImage = true;
-            }
-            else if (svArg == "--sndio")
-            {
+                return ArgvParser::RESULT::GOOD;
+            },
+        },
+        {
+            .bNeedsValue = false,
+            .sTwoDashes = "sndio",
+            .sUsage = "use sndio audio driver",
+            .pfn = []([[maybe_unused]] ArgvParser* pSelf, void*, const StringView, const StringView) {
 #ifdef OPT_SNDIO
                 app::g_eMixer = app::MIXER::SNDIO;
+                return ArgvParser::RESULT::GOOD;
 #else
-                print::out("compiled without sndio\n");
-                exit(0);
+                print::toFILE(pSelf->m_pFile, "compiled without sndio support\n");
+                return ArgvParser::RESULT::QUIT_NICELY;
 #endif
-            }
-            else if (svArg == "--alsa")
-            {
+            },
+        },
+        {
+            .bNeedsValue = false,
+            .sTwoDashes = "alsa",
+            .sUsage = "use alsa audio driver",
+            .pfn = []([[maybe_unused]] ArgvParser* pSelf, void*, const StringView, const StringView) {
 #ifdef OPT_ALSA
                 app::g_eMixer = app::MIXER::ALSA;
+                return ArgvParser::RESULT::GOOD;
 #else
-                print::out("compiled without alsa\n");
-                exit(0);
+                print::toFILE(pSelf->m_pFile, "compiled without alsa support\n");
+                return ArgvParser::RESULT::QUIT_NICELY;
 #endif
-            }
-            else if (svArg == "--pipewire")
-            {
+            },
+        },
+        {
+            .bNeedsValue = false,
+            .sTwoDashes = "pipewire",
+            .sUsage = "use pipewire audio driver",
+            .pfn = []([[maybe_unused]] ArgvParser* pSelf, void*, const StringView, const StringView) {
 #ifdef OPT_PIPEWIRE
                 app::g_eMixer = app::MIXER::PIPEWIRE;
+                return ArgvParser::RESULT::GOOD;
 #else
-                print::out("compiled without pipewire\n");
-                exit(0);
+                print::toFILE(pSelf->m_pFile, "compiled without pipewire support\n");
+                return ArgvParser::RESULT::QUIT_NICELY;
 #endif
-            }
-            else if (svArg == "--coreaudio")
-            {
+            },
+        },
+        {
+            .bNeedsValue = false,
+            .sTwoDashes = "coreaudio",
+            .sUsage = "use coreaudio audio driver",
+            .pfn = []([[maybe_unused]] ArgvParser* pSelf, void*, const StringView, const StringView) {
 #ifdef OPT_COREAUDIO
                 app::g_eMixer = app::MIXER::COREAUDIO;
+                return ArgvParser::RESULT::GOOD;
 #else
-                print::out("compiled without coreaudio\n");
-                exit(0);
+                print::toFILE(pSelf->m_pFile, "compiled without pipewire support\n");
+                return ArgvParser::RESULT::QUIT_NICELY;
 #endif
-            }
-            else if (svArg == "--logs")
-            {
-                if (argc > i + 1)
-                {
-                    const StringView svNext = argv[++i];
-                    ILogger::LEVEL eLevel = static_cast<ILogger::LEVEL>(svNext.toI64());
-                    if (eLevel < ILogger::LEVEL::NONE || eLevel > ILogger::LEVEL::DEBUG)
-                    {
-                        print::out("bad log level ({}), allowed levels: [-1, 0, 1, 2, 3] (none, errors, warnings, info, debug)\n", (int)eLevel);
-                        exit(0);
-                    }
+            },
+        },
+        {
+            .bNeedsValue = true,
+            .sOneDash = "l",
+            .sTwoDashes = "logs",
+            .sUsage = "set log level [-1, 0, 1, 2, 3] (none, errors, warnings, info, debug)",
+            .pfn = [](ArgvParser*, void*, const StringView, const StringView svVal) {
+                ILogger::LEVEL eLevel = static_cast<ILogger::LEVEL>(svVal.toI64());
+                if (eLevel < ILogger::LEVEL::NONE || eLevel > ILogger::LEVEL::DEBUG)
+                    return ArgvParser::RESULT::QUIT_BADLY;
 
-                    app::g_eLogLevel = eLevel;
-                    continue;
-                }
-                else
-                {
-                    print::out("missing arg after '--logs'\n");
-                    exit(0);
-                }
-            }
-            else if (svArg == "--forceLoggerColors")
-            {
+                app::g_eLogLevel = eLevel;
+                return ArgvParser::RESULT::GOOD;
+            },
+        },
+        {
+            .bNeedsValue = false,
+            .sTwoDashes = "forceLoggerColors",
+            .sUsage = "force colored output for the logger",
+            .pfn = [](ArgvParser*, void*, const StringView, const StringView) {
                 app::g_bForceLoggerColors = true;
-            }
-            else if (svArg == "--mpris-name")
-            {
-                if (argc > i + 1)
+                return ArgvParser::RESULT::GOOD;
+            },
+        },
+        {
+            .bNeedsValue = true,
+            .sTwoDashes = "mpris-name",
+            .sUsage = "set name prefix for mpris-dbus instance",
+            .pfn = [](ArgvParser* pSelf, void*, const StringView, const StringView svVal) {
+                if (svVal.size() <= 0)
                 {
-                    const StringView svNext = argv[++i];
-                    app::g_config.ntsMprisName = svNext.data();
-                    continue;
+                    print::toFILE(pSelf->m_pFile, "failed to get the name\n");
+                    return ArgvParser::RESULT::QUIT_BADLY;
                 }
-                else
-                {
-                    print::out("missing arg after '--mpris-name'\n");
-                    exit(0);
-                }
-            }
-        }
-        else return;
+                app::g_config.ntsMprisName = svVal.data();
+                return ArgvParser::RESULT::GOOD;
+            },
+        },
+        {
+            .bNeedsValue = false,
+            .sOneDash = "v",
+            .sTwoDashes = "version",
+            .sUsage = "print " PROJECT_NAME "'s version",
+            .pfn = [](ArgvParser* pSelf, void*, const StringView, const StringView) {
+                print::toFILE(pSelf->m_pAlloc, pSelf->m_pFile, PROJECT_NAME " " PROJECT_VERSION "-" PROJECT_COMMIT_HASH "\n");
+                return ArgvParser::RESULT::QUIT_NICELY;
+            },
+        },
+    }};
+
+    const ArgvParser::RESULT eResult = s_cmdParser.parse();
+    if (eResult == ArgvParser::RESULT::FAILED)
+    {
+        s_cmdParser.printUsage(StdAllocator::inst());
+        exit(1);
+    }
+    else if (argc <= 1)
+    {
+        s_cmdParser.printUsage(StdAllocator::inst());
+        exit(0);
+    }
+    else if (eResult == ArgvParser::RESULT::QUIT_NICELY ||
+        eResult == ArgvParser::RESULT::SHOW_USAGE ||
+        eResult == ArgvParser::RESULT::SHOW_EXTRA ||
+        eResult == ArgvParser::RESULT::SHOW_ALL_USAGE
+    )
+    {
+        exit(0);
+    }
+    else if (eResult == ArgvParser::RESULT::QUIT_BADLY)
+    {
+        exit(1);
     }
 }
 
@@ -188,6 +240,7 @@ startup(int argc, char** argv)
 #endif
 
     parseArgs(argc, argv);
+    defer( s_cmdParser.destroy() );
 
 #ifndef NDEBUG
     app::g_eLogLevel = ILogger::LEVEL::DEBUG;
@@ -200,10 +253,6 @@ startup(int argc, char** argv)
 #endif
 
     setlocale(LC_ALL, "");
-
-    /* Hide mpg123 and other errors. */
-    if (app::g_eLogLevel == ILogger::LEVEL::NONE)
-        ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
 
     VecManaged<char*> aInput;
     defer( aInput.destroy() );
@@ -263,13 +312,18 @@ startup(int argc, char** argv)
     {
         app::g_bRunning = true;
 
+        /* Hide mpg123 and other errors. */
+        if (app::g_eLogLevel == ILogger::LEVEL::NONE)
+            ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
+
         ADT_RUNTIME_EXCEPTION_FMT(freopen("/dev/tty", "r", stdin), "{}", strerror(errno));
 
         frame::run();
     }
     else
     {
-        print::out("No accepted input provided\n");
+        print::err("No accepted input provided\n");
+        s_cmdParser.printUsage(StdAllocator::inst());
     }
 }
 
