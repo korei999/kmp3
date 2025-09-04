@@ -65,7 +65,7 @@ setTermEnv()
 static void
 parseArgs(int argc, char** argv)
 {
-    new(&s_cmdParser) ArgvParser{StdAllocator::inst(), stderr, "[options...] [file...]", argc, argv, {
+    new(&s_cmdParser) ArgvParser{StdAllocator::inst(), stderr, "[option]... [file]...", argc, argv, {
         {
             .bNeedsValue = false,
             .sOneDash = "h",
@@ -144,7 +144,7 @@ parseArgs(int argc, char** argv)
                 app::g_eMixer = app::MIXER::COREAUDIO;
                 return ArgvParser::RESULT::GOOD;
 #else
-                print::toFILE(pSelf->m_pFile, "compiled without pipewire support\n");
+                print::toFILE(pSelf->m_pFile, "compiled without coreaudio support (mac only)\n");
                 return ArgvParser::RESULT::QUIT_NICELY;
 #endif
             },
