@@ -34,7 +34,7 @@ struct FormatArgs
 };
 ADT_ENUM_BITWISE_OPERATORS(FormatArgs::FLAGS);
 
-struct Buffer
+struct Builder
 {
     IAllocator* m_pAlloc {};
     char* m_pData {};
@@ -44,11 +44,11 @@ struct Buffer
 
     /* */
 
-    Buffer() = default;
-    Buffer(IAllocator* pAlloc) noexcept : m_pAlloc {pAlloc} {}
-    Buffer(IAllocator* pAlloc, isize prealloc);
-    Buffer(IAllocator* pAlloc, char* pBuff, isize buffSize) noexcept : m_pAlloc {pAlloc}, m_pData {pBuff}, m_cap {buffSize} {}
-    Buffer(char* pBuff, isize buffSize) noexcept : m_pData {pBuff}, m_cap {buffSize} {}
+    Builder() = default;
+    Builder(IAllocator* pAlloc) noexcept : m_pAlloc {pAlloc} {}
+    Builder(IAllocator* pAlloc, isize prealloc);
+    Builder(IAllocator* pAlloc, char* pBuff, isize buffSize) noexcept : m_pAlloc {pAlloc}, m_pData {pBuff}, m_cap {buffSize} {}
+    Builder(char* pBuff, isize buffSize) noexcept : m_pData {pBuff}, m_cap {buffSize} {}
 
     /* */
 
@@ -57,6 +57,7 @@ struct Buffer
 
     /* */
 
+    void reset() noexcept;
     void destroy() noexcept;
     isize push(char c) noexcept(false); /* AllocException */
     isize push(const Span<const char> sp) noexcept(false); /* AllocException */
@@ -79,7 +80,7 @@ struct Context
 
     StringView fmt {};
     isize fmtIdx {};
-    Buffer* pBuffer {};
+    Builder* pBuffer {};
     FormatArgs prevFmtArgs {};
     FLAGS eFlags {};
 };
@@ -152,7 +153,7 @@ template<typename ...ARGS_T>
 [[nodiscard]] inline String toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&... tArgs);
 
 template<typename ...ARGS_T>
-inline StringView toPrintBuffer(Buffer* pBuffer, const StringView fmt, const ARGS_T&... tArgs);
+inline StringView toBuilder(Builder* pBuffer, const StringView fmt, const ARGS_T&... tArgs);
 
 template<typename ...ARGS_T>
 inline isize out(const StringView fmt, const ARGS_T&... tArgs);

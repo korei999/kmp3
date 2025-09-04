@@ -58,6 +58,7 @@ protected:
     int m_lastMouseSelection {};
     adt::f64 m_lastMouseSelectionTime {};
     bool m_bUpdateFirstIdx {};
+    bool m_bNeedsResize {};
 
     /* */
 
@@ -79,10 +80,22 @@ protected:
     void disableRawMode() noexcept(false); /* RuntimeException */
     void enableRawMode() noexcept(false); /* RuntimeException */
 
+    void procInput();
+    common::READ_STATUS readWChar();
+
+    friend void sigwinchHandler(int sig);
+
+    Input readFromStdin(const int timeoutMS);
+    [[nodiscard]] ADT_NO_UB int parseSeq(adt::Span<char> spBuff, ssize_t nRead);
+    [[nodiscard]] ADT_NO_UB MouseInput parseMouse(adt::Span<char> spBuff, ssize_t nRead);
+    void procMouse(MouseInput in);
+
+private:
+
 #ifdef OPT_CHAFA
     void coverImage();
 #endif
-
+    void tooSmall(int width, int height);
     void info();
     void volume();
     void time();
@@ -93,18 +106,6 @@ protected:
     void errorMsg();
     void update();
     /* */
-
-    /* input */
-    void procInput();
-    common::READ_STATUS readWChar();
-    /* */
-
-    friend void sigwinchHandler(int sig);
-
-    Input readFromStdin(const int timeoutMS);
-    [[nodiscard]] ADT_NO_UB int parseSeq(adt::Span<char> spBuff, ssize_t nRead);
-    [[nodiscard]] ADT_NO_UB MouseInput parseMouse(adt::Span<char> spBuff, ssize_t nRead);
-    void procMouse(MouseInput in);
 };
 
 } /* namespace platform::ansi */

@@ -122,7 +122,7 @@ struct Arena : IArena
     isize memoryUsed() noexcept;
 
 protected:
-    void runDeleters() noexcept;
+    ADT_NO_UB void runDeleters() noexcept; /* Type casting function pointers here. */
     void growIfNeeded(isize newOff);
     void commit(void* p, isize size);
     void decommit(void* p, isize size);

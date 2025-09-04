@@ -42,6 +42,50 @@ Win::coverImage()
 #endif
 
 void
+Win::tooSmall(int width, int height)
+{
+    ArenaStateGuard pushed {m_pArena};
+
+    using STYLE = TEXT_BUFF_STYLE;
+
+    print::Builder builder {m_pArena, 128};
+
+    constexpr StringView svTooSmall = "window is too small";
+    const int y = (m_termSize.height - 2) / 2;
+
+    m_textBuff.string((m_termSize.width-svTooSmall.size()) / 2, y, STYLE::NORM, svTooSmall);
+
+    {
+        const StringView svMinWidth = print::toBuilder(&builder, "min ({}, {})", width, height);
+        m_textBuff.string((m_termSize.width - svMinWidth.size()) / 2, y + 1, STYLE::NORM, svMinWidth);
+    }
+
+    builder.reset();
+    StringView svCurr = print::toBuilder(&builder, "width: {}, height: {}", m_termSize.width, m_termSize.height);
+
+    const isize currWidthX = (m_termSize.width - svCurr.size()) / 2;
+    m_textBuff.string(currWidthX, y + 2, STYLE::NORM, svCurr.subString(0, 7));
+
+    STYLE eWidthStyle = STYLE::GREEN;
+    if (m_termSize.width < width)
+        eWidthStyle = STYLE::RED | STYLE::BOLD;
+
+    const isize commaI = svCurr.firstOf(',');
+    const StringView svWidthNumber = svCurr.subString(7, commaI - 7);
+    m_textBuff.string(currWidthX + 7, y + 2, eWidthStyle, svWidthNumber);
+
+    {
+        STYLE eHeightStyle = STYLE::GREEN;
+        if (m_termSize.height < height)
+            eHeightStyle = STYLE::RED | STYLE::BOLD;
+
+        StringView svHeight = svCurr.subString(7 + svWidthNumber.size(), svCurr.size() - 7 - svWidthNumber.size());
+        m_textBuff.string(currWidthX + 7 + svWidthNumber.size(), y + 2, STYLE::NORM, svHeight.subString(0, 10));
+        m_textBuff.string(currWidthX + 7 + svWidthNumber.size() + 10, y + 2, eHeightStyle, svHeight.subString(10, svHeight.size() - 10));
+    }
+}
+
+void
 Win::info()
 {
     const auto& pl = *app::g_pPlayer;
@@ -351,10 +395,12 @@ Win::update()
 
     if (!app::g_bRunning) return;
 
-    if (width <= 40 || height <= 15)
+    ArenaStateGuard pushed {m_pArena};
+
+    if (m_bNeedsResize)
     {
-        m_textBuff.erase();
-        return;
+        m_bNeedsResize = false;
+        resizeHandler();
     }
 
     if (m_bClear)
@@ -363,22 +409,27 @@ Win::update()
         m_textBuff.erase();
     }
 
-    ArenaStateGuard pushed {m_pArena};
-
     m_textBuff.clean();
 
+    const int minWidth = 35, minHeight = 17;
+    if (width < minWidth || height < minHeight)
+    {
+        tooSmall(minWidth, minHeight);
+    }
+    else
+    {
 #ifdef OPT_CHAFA
-    if (!app::g_bNoImage) coverImage();
+        if (!app::g_bNoImage) coverImage();
 #endif
-
-    time();
-    timeSlider();
-    volume();
-    info();
-    songList();
-    scrollBar();
-    bottomLine();
-    errorMsg();
+        time();
+        timeSlider();
+        volume();
+        info();
+        songList();
+        scrollBar();
+        bottomLine();
+        errorMsg();
+    }
 
     m_textBuff.present();
 }

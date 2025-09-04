@@ -25,7 +25,7 @@ namespace adt::print
 {
 
 inline
-Buffer::Buffer(IAllocator* pAlloc, isize prealloc)
+Builder::Builder(IAllocator* pAlloc, isize prealloc)
     : m_pAlloc {pAlloc}
 {
     m_pData = pAlloc->mallocV<char>(prealloc);
@@ -34,13 +34,13 @@ Buffer::Buffer(IAllocator* pAlloc, isize prealloc)
 }
 
 inline
-Buffer::operator StringView() noexcept
+Builder::operator StringView() noexcept
 {
     return {m_pData, m_size};
 }
 
 inline
-Buffer::operator String() noexcept
+Builder::operator String() noexcept
 {
     ADT_ASSERT(m_bDataAllocated && m_pAlloc, "{}, {}", m_bDataAllocated, m_pAlloc);
 
@@ -51,14 +51,20 @@ Buffer::operator String() noexcept
 }
 
 inline void
-Buffer::destroy() noexcept
+Builder::reset() noexcept
+{
+    m_size = 0;
+}
+
+inline void
+Builder::destroy() noexcept
 {
     if (m_pAlloc && m_bDataAllocated)
         m_pAlloc->free(m_pData);
 }
 
 inline isize
-Buffer::push(char c)
+Builder::push(char c)
 {
     if (m_size >= m_cap)
     {
@@ -72,7 +78,7 @@ Buffer::push(char c)
 }
 
 inline isize
-Buffer::push(const Span<const char> sp)
+Builder::push(const Span<const char> sp)
 {
     if (sp.empty()) return m_size;
 
@@ -89,13 +95,13 @@ Buffer::push(const Span<const char> sp)
 }
 
 inline isize
-Buffer::push(const StringView sv)
+Builder::push(const StringView sv)
 {
     return push(Span{sv.data(), sv.size()});
 }
 
 inline isize
-Buffer::pushN(const char c, const isize nTimes)
+Builder::pushN(const char c, const isize nTimes)
 {
     if (nTimes <= 0) return m_size;
 
@@ -112,7 +118,7 @@ Buffer::pushN(const char c, const isize nTimes)
 }
 
 inline void
-Buffer::grow(isize newCap)
+Builder::grow(isize newCap)
 {
     char* pNewData {};
 
@@ -721,7 +727,7 @@ inline isize
 toFILE(IAllocator* pAlloc, FILE* fp, const StringView fmt, const ARGS_T&... tArgs)
 {
     char aPreallocated[SIZE] {};
-    Buffer buff {pAlloc, aPreallocated, sizeof(aPreallocated) - 1};
+    Builder buff {pAlloc, aPreallocated, sizeof(aPreallocated) - 1};
 
     try
     {
@@ -747,7 +753,7 @@ toBuffer(char* pBuff, isize buffSize, const StringView fmt, const ARGS_T&... tAr
 {
     if (!pBuff || buffSize <= 0) return 0;
 
-    Buffer buff {pBuff, buffSize};
+    Builder buff {pBuff, buffSize};
 
     Context pCtx {.fmt = fmt, .pBuffer = &buff};
     printArgs(&pCtx, tArgs...);
@@ -774,11 +780,11 @@ template<typename ...ARGS_T>
 [[nodiscard]] inline String
 toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&... tArgs)
 {
-    Buffer buff;
+    Builder buff;
 
     try
     {
-        new(&buff) Buffer {pAlloc, prealloc};
+        new(&buff) Builder {pAlloc, prealloc};
         Context pCtx {.fmt = fmt, .pBuffer = &buff};
         printArgs(&pCtx, tArgs...);
         buff.push('\0');
@@ -798,7 +804,7 @@ toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&
 
 template<typename ...ARGS_T>
 inline StringView
-toPrintBuffer(Buffer* pBuffer, const StringView fmt, const ARGS_T&... tArgs)
+toBuilder(Builder* pBuffer, const StringView fmt, const ARGS_T&... tArgs)
 {
     ADT_ASSERT(pBuffer != nullptr, "");
 
