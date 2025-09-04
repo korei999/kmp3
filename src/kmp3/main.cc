@@ -1,7 +1,7 @@
 #include "app.hh"
 
-#include "defaults.hh"
 #include "frame.hh"
+#include "defaults.hh"
 
 #ifdef OPT_MPRIS
     #include "platform/mpris/mpris.hh"
@@ -330,10 +330,10 @@ startup(int argc, char** argv)
 int
 main(int argc, char** argv)
 {
-    static_assert(defaults::MAX_VOLUME != 0.0f);
-    static_assert(defaults::UPDATE_RATE > 0);
-    static_assert(defaults::IMAGE_UPDATE_RATE_LIMIT > 0);
-    static_assert(defaults::FONT_ASPECT_RATIO > 0.0);
+    static_assert(defaults::CONFIG.maxVolume != 0.0f);
+    static_assert(defaults::CONFIG.updateRate > 0);
+    static_assert(defaults::CONFIG.imageUpdateRateLimit > 0);
+    static_assert(defaults::CONFIG.fontAspectRatio > 0.0);
 
     try
     {

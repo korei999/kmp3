@@ -3,7 +3,6 @@
 #include "IWindow.hh"
 #include "Player.hh"
 #include "audio.hh"
-#include "defaults.hh"
 #include "config.hh"
 
 #include "platform/ffmpeg/Decoder.hh"
@@ -81,6 +80,6 @@ inline void toggleMute() { g_pMixer->toggleMute(); }
 inline void seekFromInput() { g_pWin->seekFromInput(); }
 inline void subStringSearch() { g_pWin->subStringSearch(); }
 inline void increaseImageSize(long i) { player().setImgSize(player().m_imgHeight + i); }
-inline void restoreImageSize() { player().setImgSize(defaults::IMAGE_HEIGHT); }
+inline void restoreImageSize() { player().setImgSize(g_config.imageHeight); }
 
 } /* namespace app */

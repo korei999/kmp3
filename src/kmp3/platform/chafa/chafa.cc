@@ -1,6 +1,6 @@
 #include "chafa.hh"
 
-#include "defaults.hh"
+#include "app.hh"
 
 #include <sys/ioctl.h>
 
@@ -280,7 +280,7 @@ allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int term
     TermSize termSize {};
     getTTYSize(&termSize);
 
-    f64 fontRatio = defaults::FONT_ASPECT_RATIO;
+    f64 fontRatio = app::g_config.fontAspectRatio;
     int cellWidth = -1, cellHeight = -1; /* Size of each character cell, in pixels */
     int widthCells {}, heightCells {}; /* Size of output image, in cells */
 

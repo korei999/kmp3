@@ -1,6 +1,5 @@
 #include "Win.hh"
 
-#include "defaults.hh"
 #include "keybinds.hh"
 
 #include <sys/select.h>
@@ -335,7 +334,7 @@ Win::procMouse(MouseInput in)
                 pl.focus(target);
 
                 if (target == m_lastMouseSelection &&
-                    time < m_lastMouseSelectionTime + defaults::DOUBLE_CLICK_DELAY
+                    time < m_lastMouseSelectionTime + app::g_config.doubleClickDelay
                 )
                 {
                     pl.selectFocused();
@@ -348,13 +347,13 @@ Win::procMouse(MouseInput in)
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_UP)
     {
-        m_firstIdx -= defaults::MOUSE_STEP;
+        m_firstIdx -= app::g_config.mouseStep;
         if (m_firstIdx < 0) m_firstIdx = 0;
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
     {
         m_firstIdx = utils::clamp(
-            i16(m_firstIdx + defaults::MOUSE_STEP),
+            i16(m_firstIdx + app::g_config.mouseStep),
             i16(0),
             i16((pl.m_vSearchIdxs.size() - m_listHeight) + 1)
         );
@@ -448,7 +447,7 @@ Win::readWChar()
 {
     namespace c = common;
 
-    Input in = readFromStdin(defaults::READ_TIMEOUT);
+    Input in = readFromStdin(app::g_config.readTimeout);
 
     int wc = in.key;
     if (wc == 0 /* timeout */ || wc == keys::CTRL_C || wc == keys::ESC)
@@ -486,7 +485,7 @@ Win::readWChar()
 void
 Win::procInput()
 {
-    const Input in = readFromStdin(defaults::UPDATE_RATE);
+    const Input in = readFromStdin(app::g_config.updateRate);
 
     m_bUpdateFirstIdx = false;
 

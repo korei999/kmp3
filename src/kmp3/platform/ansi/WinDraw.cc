@@ -1,7 +1,6 @@
 #include "Win.hh"
 
 #include "app.hh"
-#include "defaults.hh"
 
 using namespace adt;
 
@@ -14,7 +13,7 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    if (pl.m_bSelectionChanged && m_time > m_lastResizeTime + defaults::IMAGE_UPDATE_RATE_LIMIT)
+    if (pl.m_bSelectionChanged && m_time > m_lastResizeTime + app::g_config.imageUpdateRateLimit)
     {
         pl.m_bSelectionChanged = false;
 
@@ -133,7 +132,7 @@ Win::volume()
     Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
     const isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::mixer().getVolume() * 100.0)));
-    const int nVolumeBars = (width - off - n - 2) * vol * (1.0f/defaults::MAX_VOLUME);
+    const int nVolumeBars = (width - off - n - 2) * vol * (1.0f/app::g_config.maxVolume);
 
     using STYLE = TEXT_BUFF_STYLE;
 
@@ -147,7 +146,7 @@ Win::volume()
 
     auto clBarColor = [&](int i) -> STYLE
     {
-        const f32 col = f32(i) / ((f32(width - off - n - 2 - 1) * (1.0f/defaults::MAX_VOLUME)));
+        const f32 col = f32(i) / ((f32(width - off - n - 2 - 1) * (1.0f/app::g_config.maxVolume)));
 
         return clVolumeStringColor(col);
     };
@@ -388,9 +387,6 @@ Win::update()
 {
     LockGuard lock {&m_mtxUpdate};
 
-    const int width = m_termSize.width;
-    const int height = m_termSize.height;
-
     m_time = time::nowMS();
 
     if (!app::g_bRunning) return;
@@ -411,10 +407,11 @@ Win::update()
 
     m_textBuff.clean();
 
-    const int minWidth = 35, minHeight = 17;
-    if (width < minWidth || height < minHeight)
+    if (m_termSize.width < app::g_config.minWidth ||
+        m_termSize.height < app::g_config.minHeight
+    )
     {
-        tooSmall(minWidth, minHeight);
+        tooSmall(app::g_config.minWidth, app::g_config.minHeight);
     }
     else
     {

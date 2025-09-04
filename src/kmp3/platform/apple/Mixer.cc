@@ -10,7 +10,7 @@ namespace platform::apple
 void
 Mixer::setConfig(adt::f64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
-    sampleRate = utils::clamp(sampleRate, f64(defaults::MIN_SAMPLE_RATE), f64(defaults::MAX_SAMPLE_RATE));
+    sampleRate = utils::clamp(sampleRate, f64(app::g_config.minSampleRate), f64(app::g_config.maxSampleRate));
 
     if (bSaveNewConfig)
     {
@@ -229,7 +229,7 @@ Mixer::seekOff(f64 offset)
 void
 Mixer::setVolume(const f32 volume)
 {
-    m_volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
+    m_volume = utils::clamp(volume, 0.0f, app::g_config.maxVolume);
 }
 
 i64

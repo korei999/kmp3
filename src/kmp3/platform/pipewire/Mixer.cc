@@ -1,7 +1,6 @@
 #include "Mixer.hh"
 
 #include "app.hh"
-#include "defaults.hh"
 #include "platform/mpris/mpris.hh"
 
 #include <cmath>
@@ -307,7 +306,7 @@ Mixer::togglePause()
 void
 Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 {
-    sampleRate = utils::clamp(sampleRate, defaults::MIN_SAMPLE_RATE, defaults::MAX_SAMPLE_RATE);
+    sampleRate = utils::clamp(sampleRate, app::g_config.minSampleRate, app::g_config.maxSampleRate);
 
     u8 aSetupBuff[512] {};
     spa_audio_info_raw rawInfo {
@@ -368,7 +367,7 @@ Mixer::seekOff(f64 offset)
 void
 Mixer::setVolume(const f32 volume)
 {
-    m_volume = utils::clamp(volume, 0.0f, defaults::MAX_VOLUME);
+    m_volume = utils::clamp(volume, 0.0f, app::g_config.maxVolume);
     mpris::volumeChanged();
 }
 

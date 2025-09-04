@@ -1,7 +1,6 @@
 #include "Player.hh"
 
 #include "app.hh"
-#include "defaults.hh"
 #include "platform/mpris/mpris.hh"
 
 #include <cstdlib>
@@ -293,7 +292,7 @@ Player::copySearchToSongIdxs()
 void
 Player::setImgSize(long height)
 {
-    height = utils::clamp(height, long(defaults::MIN_IMAGE_HEIGHT), long(defaults::MAX_IMAGE_HEIGHT));
+    height = utils::clamp(height, long(app::g_config.minImageHeight), long(app::g_config.maxImageHeight));
 
     if (m_imgHeight == height) return;
 
@@ -307,7 +306,7 @@ Player::setImgSize(long height)
 void
 Player::adjustImgWidth() noexcept
 {
-    m_imgWidth = std::round((m_imgHeight * (1920.0/1080.0)) / defaults::FONT_ASPECT_RATIO);
+    m_imgWidth = std::round((m_imgHeight * (1920.0/1080.0)) / app::g_config.fontAspectRatio);
 }
 
 void

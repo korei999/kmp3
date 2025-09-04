@@ -1,6 +1,7 @@
 #include "app.hh"
 
 #include "platform/ansi/Win.hh"
+#include "defaults.hh"
 
 #ifdef OPT_ALSA
     #include "platform/alsa/Mixer.hh"
@@ -36,10 +37,11 @@ bool g_bNoImage {};
 bool g_bSixelOrKitty {};
 bool g_bChafaSymbols {};
 
-Config g_config {};
 Player* g_pPlayer {};
 audio::IMixer* g_pMixer {};
 platform::ffmpeg::Decoder g_decoder {};
+
+Config g_config = defaults::CONFIG;
 
 IWindow*
 allocWindow(IAllocator* pAlloc)

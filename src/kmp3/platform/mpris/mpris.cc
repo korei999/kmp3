@@ -3,7 +3,6 @@
 #include "mpris.hh"
 
 #include "app.hh"
-#include "defaults.hh"
 
 #include <sys/eventfd.h>
 #include <sys/poll.h>
@@ -428,7 +427,7 @@ minRate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = (f64)defaults::MIN_SAMPLE_RATE / (f64)app::mixer().getSampleRate();
+    f64 mul = (f64)app::g_config.minSampleRate / (f64)app::mixer().getSampleRate();
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
@@ -443,7 +442,7 @@ maxRate(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 mul = (f64)defaults::MAX_SAMPLE_RATE / (f64)app::mixer().getSampleRate();
+    f64 mul = (f64)app::g_config.maxSampleRate / (f64)app::mixer().getSampleRate();
     return sd_bus_message_append_basic(reply, 'd', &mul);
 }
 
