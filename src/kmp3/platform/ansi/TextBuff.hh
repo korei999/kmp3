@@ -167,9 +167,11 @@ struct TextBuff
     void erase();
     void resize(adt::isize width, adt::isize height);
 
-    void string(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::StringView sv, int maxSvLen = 99999);
-    void wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::Span<const wchar_t> sp);
-    adt::isize styleToBuffer(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle);
+    adt::isize string(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::StringView sv, int maxSvLen = 99999);
+    adt::isize wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::Span<const wchar_t> sp);
+
+    adt::isize strings(int x, int y, std::initializer_list<adt::Pair<TEXT_BUFF_STYLE, const adt::StringView>> lStrings, int maxSvLen = 99999);
+    adt::isize wideStrings(int x, int y, std::initializer_list<adt::Pair<TEXT_BUFF_STYLE, adt::Span<const wchar_t>>> lStrings, int maxSvLen = 99999);
 
 #ifdef OPT_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);
@@ -178,6 +180,7 @@ struct TextBuff
     /* */
 
 protected:
+    adt::isize styleToBuffer(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle);
     adt::Span2D<TextBuffCell> frontBufferSpan();
     adt::Span2D<TextBuffCell> backBufferSpan();
     void grow(adt::isize newCap);
@@ -187,7 +190,7 @@ protected:
     void resizeBuffers(adt::isize width, adt::isize height);
 
     template<typename STRING_T>
-    void stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, int maxSvLen = 99999);
+    adt::isize stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, int maxSvLen = 99999);
 
 #ifdef OPT_CHAFA
     void showImages();

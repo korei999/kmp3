@@ -49,10 +49,12 @@ Win::tooSmall(int width, int height)
 
     print::Builder builder {m_pArena, 128};
 
-    constexpr StringView svTooSmall = "window is too small";
     const int y = (m_termSize.height - 2) / 2;
 
-    m_textBuff.string((m_termSize.width-svTooSmall.size()) / 2, y, STYLE::NORM, svTooSmall);
+    {
+        constexpr StringView svTooSmall = "window is too small";
+        m_textBuff.string((m_termSize.width - svTooSmall.size()) / 2, y, STYLE::NORM, "window is too small");
+    }
 
     {
         const StringView svMinWidth = print::toBuilder(&builder, "min ({}, {})", width, height);
@@ -60,28 +62,27 @@ Win::tooSmall(int width, int height)
     }
 
     builder.reset();
-    StringView svCurr = print::toBuilder(&builder, "width: {}, height: {}", m_termSize.width, m_termSize.height);
-
-    const isize currWidthX = (m_termSize.width - svCurr.size()) / 2;
-    m_textBuff.string(currWidthX, y + 2, STYLE::NORM, svCurr.subString(0, 7));
+    constexpr StringView svWidth = "width: ";
+    constexpr StringView svHeight = "height: ";
+    const StringView svWidthVal = print::toBuilder(&builder, "{}", m_termSize.width);
+    const StringView svHeightVal = print::toBuilder(&builder, "{}", m_termSize.height);
 
     STYLE eWidthStyle = STYLE::GREEN;
     if (m_termSize.width < width)
         eWidthStyle = STYLE::RED | STYLE::BOLD;
 
-    const isize commaI = svCurr.firstOf(',');
-    const StringView svWidthNumber = svCurr.subString(7, commaI - 7);
-    m_textBuff.string(currWidthX + 7, y + 2, eWidthStyle, svWidthNumber);
+    STYLE eHeightStyle = STYLE::GREEN;
+    if (m_termSize.height < height)
+        eHeightStyle = STYLE::RED | STYLE::BOLD;
 
-    {
-        STYLE eHeightStyle = STYLE::GREEN;
-        if (m_termSize.height < height)
-            eHeightStyle = STYLE::RED | STYLE::BOLD;
-
-        StringView svHeight = svCurr.subString(7 + svWidthNumber.size(), svCurr.size() - 7 - svWidthNumber.size());
-        m_textBuff.string(currWidthX + 7 + svWidthNumber.size(), y + 2, STYLE::NORM, svHeight.subString(0, 10));
-        m_textBuff.string(currWidthX + 7 + svWidthNumber.size() + 10, y + 2, eHeightStyle, svHeight.subString(10, svHeight.size() - 10));
-    }
+    const isize totalSize = svWidth.size() + svHeight.size() + svWidthVal.size() + svHeightVal.size() + 2; /* +2 ", " */
+    m_textBuff.strings((m_termSize.width - totalSize) / 2, y + 2, {
+        {STYLE::NORM, svWidth},
+        {eWidthStyle, svWidthVal},
+        {STYLE::NORM, ", "},
+        {STYLE::NORM, svHeight},
+        {eHeightStyle, svHeightVal},
+    });
 }
 
 void
@@ -90,30 +91,19 @@ Win::info()
     const auto& pl = *app::g_pPlayer;
     const int hOff = m_prevImgWidth + 2;
 
-    ArenaStateGuard pushed {m_pArena};
-    Span sp {m_pArena->zallocV<char>(1000), 1000};
+    using STYLE = TEXT_BUFF_STYLE;
 
     auto clDrawLine = [&](
         const int y,
         const StringView svPrefix,
         const StringView svLine,
         const TEXT_BUFF_STYLE eStyle
-    ) -> void
-    {
-        utils::memSet(sp.data(), 0, sp.size());
-
-        isize n = print::toSpan(sp, svPrefix);
-        m_textBuff.string(hOff, y, {}, sp.data());
+    ) -> void {
+        const isize n = m_textBuff.string(hOff, y, STYLE::NORM, svPrefix);
 
         if (svLine.size() > 0)
-        {
-            utils::memSet(sp.data(), 0, sp.size());
-            print::toSpan(sp, "{}", svLine);
-            m_textBuff.string(hOff + n, y, eStyle, sp.data());
-        }
+            m_textBuff.string(hOff + n, y, eStyle, svLine);
     };
-
-    using STYLE = TEXT_BUFF_STYLE;
 
     clDrawLine(1, "title: ", pl.m_info.sfTitle, STYLE::BOLD | STYLE::ITALIC | STYLE::YELLOW);
     clDrawLine(2, "album: ", pl.m_info.sfAlbum, STYLE::BOLD);
@@ -213,8 +203,7 @@ Win::timeSlider()
 
         for (long i = n + 1, t = 0; i < wMax; ++i, ++t)
         {
-            const char* nts = [&]
-            {
+            const char* nts = [&] {
                 if (t == std::floor(timePlace)) return "╂";
                 else return "─";
             }();

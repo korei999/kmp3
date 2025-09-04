@@ -202,11 +202,11 @@ TextBuff::resizeBuffers(isize width, isize height)
 }
 
 template<typename STRING_T>
-inline void
+inline isize
 TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, int maxSvLen)
 {
     if (x < 0 || x >= m_tWidth || y < 0 || y >= m_tHeight)
-        return;
+        return 0;
 
     Span2D bb = backBufferSpan();
     Span2D fb = frontBufferSpan();
@@ -233,7 +233,7 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
         for (int i = 1; i < colWidth; ++i)
         {
             if (x + i >= bb.width() || y >= bb.height())
-                return;
+                return max;
 
             auto& back = bb[x + i, y];
             back.wc = -1;
@@ -243,6 +243,8 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
         x += colWidth;
         max += colWidth;
     }
+
+    return max;
 }
 
 void
@@ -506,21 +508,49 @@ TextBuff::backBufferSpan()
     };
 }
 
-void
+isize
 TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int maxSvLen)
 {
-    stringHelper(x, y, eStyle, StringWCharIt(str), maxSvLen);
+    return stringHelper(x, y, eStyle, StringWCharIt(str), maxSvLen);
 }
 
-void
+isize
 TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const Span<const wchar_t> sp)
 {
-    stringHelper(x, y, eStyle,
+    return stringHelper(x, y, eStyle,
         Span {
             sp.data(),
             isize(wcsnlen(sp.data(), sp.size()))
         }
     );
+}
+
+isize
+TextBuff::strings(int x, int y, std::initializer_list<Pair<TEXT_BUFF_STYLE, const StringView>> lStrings, int maxSvLen)
+{
+    isize xOff = 0;
+    for (auto& e : lStrings)
+    {
+        const isize n = stringHelper(x + xOff, y, e.first, StringWCharIt(e.second), maxSvLen); 
+        xOff += n;
+    }
+
+    return xOff;
+}
+
+isize
+TextBuff::wideStrings(int x, int y, std::initializer_list<Pair<TEXT_BUFF_STYLE, Span<const wchar_t>>> lStrings, int maxSvLen)
+{
+    isize xOff = 0;
+    for (auto& e : lStrings)
+    {
+        const isize n = stringHelper(x + xOff, y, e.first,
+            Span{e.second.data(), (isize)wcsnlen(e.second.data(), e.second.size())},
+            maxSvLen
+        ); 
+        xOff += n;
+    }
+    return xOff;
 }
 
 isize

@@ -170,7 +170,7 @@ inline isize
 printArgs(Context* pCtx)
 {
     const StringView svFmtSlice = pCtx->fmt.subString(pCtx->fmtIdx, pCtx->fmt.size() - pCtx->fmtIdx);
-    if (pCtx->pBuffer->push(svFmtSlice) != -1)
+    if (pCtx->pBuilder->push(svFmtSlice) != -1)
         return svFmtSlice.size();
 
     return 0;
@@ -380,7 +380,7 @@ copyBackToContext(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
     auto clCopySpan = [&]
     {
         const isize mLen = utils::min(sv.size(), isize(fmtArgs.maxLen));
-        if (pCtx->pBuffer->push(Span{sv.data(), mLen}) != -1)
+        if (pCtx->pBuilder->push(Span{sv.data(), mLen}) != -1)
             i += mLen;
     };
 
@@ -392,7 +392,7 @@ copyBackToContext(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
 
         if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i && nSpaces > 0)
         {
-            if (pCtx->pBuffer->pushN(filler, nSpaces) != -1)
+            if (pCtx->pBuilder->pushN(filler, nSpaces) != -1)
                 j += nSpaces;
         }
 
@@ -406,7 +406,7 @@ copyBackToContext(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
 
         if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i)
         {
-            if (pCtx->pBuffer->pushN(filler, fmtArgs.maxLen - i) != -1)
+            if (pCtx->pBuilder->pushN(filler, fmtArgs.maxLen - i) != -1)
                 i += fmtArgs.maxLen;
         }
     }
@@ -525,7 +525,7 @@ printArg(isize& rNWritten, isize& rI, bool& rbArg, Context* pCtx, const T& rArg)
         const isize openBraceI = svFmtSlice.charAt('{');
         const StringView svFmtUntilOpenBrace = svFmtSlice.subString(0, openBraceI == -1 ? svFmtSlice.size() : openBraceI);
 
-        pCtx->pBuffer->push(svFmtUntilOpenBrace);
+        pCtx->pBuilder->push(svFmtUntilOpenBrace);
         rI += svFmtUntilOpenBrace.size();
         rNWritten += svFmtUntilOpenBrace.size();
 
@@ -568,7 +568,7 @@ printArg(isize& rNWritten, isize& rI, bool& rbArg, Context* pCtx, const T& rArg)
         }
         else
         {
-            pCtx->pBuffer->push(pCtx->fmt[rI]);
+            pCtx->pBuilder->push(pCtx->fmt[rI]);
         }
     }
 }
@@ -593,7 +593,7 @@ formatVariadic(Context* pCtx, FormatArgs fmtArgs, const T& first, const ARGS&...
     isize n = format(pCtx, fmtArgs, first);
     if (n < 0) return n;
 
-    if (pCtx->pBuffer->push(StringView{", "}) == -1) return n;
+    if (pCtx->pBuilder->push(StringView{", "}) == -1) return n;
     n += 2;
 
     return n + details::formatVariadic(pCtx, fmtArgs, args...);
@@ -659,7 +659,7 @@ pushOpenCloseFlag(Context* pCtx, const FormatArgs::FLAGS e)
             n = print::toBuffer(aBuff + n, sizeof(aBuff) - n, ")");
     }
 
-    if (pCtx->pBuffer->push(StringView{aBuff, n}) != -1)
+    if (pCtx->pBuilder->push(StringView{aBuff, n}) != -1)
         return n;
 
     return 0;
@@ -731,9 +731,9 @@ toFILE(IAllocator* pAlloc, FILE* fp, const StringView fmt, const ARGS_T&... tArg
 
     try
     {
-        Context pCtx {.fmt = fmt, .pBuffer = &buff};
+        Context pCtx {.fmt = fmt, .pBuilder = &buff};
         const isize r = printArgs(&pCtx, tArgs...);
-        fwrite(pCtx.pBuffer->m_pData, r, 1, fp);
+        fwrite(pCtx.pBuilder->m_pData, r, 1, fp);
     }
     catch (const AllocException& ex)
     {
@@ -753,12 +753,12 @@ toBuffer(char* pBuff, isize buffSize, const StringView fmt, const ARGS_T&... tAr
 {
     if (!pBuff || buffSize <= 0) return 0;
 
-    Builder buff {pBuff, buffSize};
+    Builder builder {pBuff, buffSize};
 
-    Context pCtx {.fmt = fmt, .pBuffer = &buff};
+    Context pCtx {.fmt = fmt, .pBuilder = &builder};
     printArgs(&pCtx, tArgs...);
 
-    return buff.m_size;
+    return builder.m_size;
 }
 
 template<typename ...ARGS_T>
@@ -780,51 +780,54 @@ template<typename ...ARGS_T>
 [[nodiscard]] inline String
 toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&... tArgs)
 {
-    Builder buff;
+    Builder builder;
 
     try
     {
-        new(&buff) Builder {pAlloc, prealloc};
-        Context pCtx {.fmt = fmt, .pBuffer = &buff};
+        new(&builder) Builder {pAlloc, prealloc};
+        Context pCtx {.fmt = fmt, .pBuilder = &builder};
         printArgs(&pCtx, tArgs...);
-        buff.push('\0');
-        buff.m_size -= 1;
+        builder.push('\0');
+        builder.m_size -= 1;
     }
     catch (const AllocException& ex)
     {
 #ifdef ADT_DBG_MEMORY
         ex.printErrorMsg(stderr);
 #endif
-        if (buff.m_size > 0) buff.m_pData[--buff.m_size] = '\0';
+        if (builder.m_size > 0) builder.m_pData[--builder.m_size] = '\0';
         else return {};
     }
 
-    return String(buff);
+    return String(builder);
 }
 
 template<typename ...ARGS_T>
 inline StringView
-toBuilder(Builder* pBuffer, const StringView fmt, const ARGS_T&... tArgs)
+toBuilder(Builder* pBuilder, const StringView fmt, const ARGS_T&... tArgs)
 {
-    ADT_ASSERT(pBuffer != nullptr, "");
+    ADT_ASSERT(pBuilder != nullptr, "");
+
+    const isize savedPos = pBuilder->m_size;
+    isize nWritten = 0;
 
     try
     {
-        Context pCtx {.fmt = fmt, .pBuffer = pBuffer};
-        printArgs(&pCtx, tArgs...);
-        pBuffer->push('\0');
-        pBuffer->m_size -= 1;
+        Context pCtx {.fmt = fmt, .pBuilder = pBuilder};
+        nWritten = printArgs(&pCtx, tArgs...);
+        pBuilder->push('\0');
+        pBuilder->m_size -= 1;
     }
     catch (const AllocException& ex)
     {
 #ifdef ADT_DBG_MEMORY
         ex.printErrorMsg(stderr);
 #endif
-        if (pBuffer->m_size > 0) pBuffer->m_pData[--pBuffer->m_size] = '\0';
+        if (pBuilder->m_size > 0) pBuilder->m_pData[--pBuilder->m_size] = '\0';
         else return {};
     }
 
-    return StringView(*pBuffer);
+    return StringView(*pBuilder).subString(savedPos, nWritten);
 }
 
 template<typename ...ARGS_T>
@@ -844,7 +847,7 @@ err(const StringView fmt, const ARGS_T&... tArgs)
 inline isize
 formatExpSize(Context* pCtx, FormatArgs fmtArgs, const auto& x, const isize contSize)
 {
-    if (pCtx->pBuffer->push('[') < 0) return 0;
+    if (pCtx->pBuilder->push('[') < 0) return 0;
 
     isize nWritten = 1;
     isize i = 0;
@@ -859,13 +862,13 @@ formatExpSize(Context* pCtx, FormatArgs fmtArgs, const auto& x, const isize cont
         if (i < contSize - 1)
         {
             const StringView svMore = ", ";
-            if (pCtx->pBuffer->push(svMore) != -1) nWritten += svMore.size();
+            if (pCtx->pBuilder->push(svMore) != -1) nWritten += svMore.size();
         }
 
         ++i;
     }
 
-    if (pCtx->pBuffer->push(']') >= 0) ++nWritten;
+    if (pCtx->pBuilder->push(']') >= 0) ++nWritten;
 
     return nWritten;
 }
@@ -875,7 +878,7 @@ formatUntilEnd(Context* pCtx, FormatArgs fmtArgs, const auto& x)
 {
     if (!x.data()) return copyBackToContext(pCtx, fmtArgs, "[]");
 
-    if (pCtx->pBuffer->push('[') < 0) return 0;
+    if (pCtx->pBuilder->push('[') < 0) return 0;
     isize nWritten = 1;
 
     for (auto it = x.begin(); it != x.end(); ++it)
@@ -888,11 +891,11 @@ formatUntilEnd(Context* pCtx, FormatArgs fmtArgs, const auto& x)
         if (it.next() != x.end())
         {
             const StringView svMore = ", ";
-            if (pCtx->pBuffer->push(svMore) != -1) nWritten += svMore.size();
+            if (pCtx->pBuilder->push(svMore) != -1) nWritten += svMore.size();
         }
     }
 
-    if (pCtx->pBuffer->push(']') >= 0) ++nWritten;
+    if (pCtx->pBuilder->push(']') >= 0) ++nWritten;
 
     return nWritten;
 }

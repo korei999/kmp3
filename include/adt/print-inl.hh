@@ -80,7 +80,7 @@ struct Context
 
     StringView fmt {};
     isize fmtIdx {};
-    Builder* pBuffer {};
+    Builder* pBuilder {};
     FormatArgs prevFmtArgs {};
     FLAGS eFlags {};
 };
