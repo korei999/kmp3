@@ -103,7 +103,7 @@ Win::seekFromInput()
 {
     common::seekFromInput(
         [&] { return readWChar(); },
-        [&] { m_bRedraw = true; update(); }
+        [&] { update(); }
     );
 }
 
@@ -112,7 +112,7 @@ Win::subStringSearch()
 {
     common::subStringSearch(m_pArena, &m_firstIdx,
         [&] { return readWChar(); },
-        [&] { m_bRedraw = true; update(); }
+        [&] { update(); }
     );
 }
 
@@ -135,7 +135,6 @@ Win::resizeHandler()
     m_textBuff.resize(m_termSize.width, m_termSize.height);
 
     pl.m_bSelectionChanged = true;
-    m_bRedraw = true;
 
     m_bClear = true;
     m_lastResizeTime = time::nowMS();
