@@ -30,24 +30,14 @@ Player::acceptedFormat(const StringView s) noexcept
 void
 Player::focusNext() noexcept
 {
-    long ns = m_focusedI + 1;
-    if (ns >= m_vSongIdxs.size()) ns = 0;
-    m_focusedI = ns;
-
+    m_focusedI = m_vSongIdxs.size() > 0 ? utils::cycleForward(m_focusedI, m_vSongIdxs.size()) : 0;
     app::window().m_bUpdateFirstIdx = true;
 }
 
 void
 Player::focusPrev() noexcept
 {
-    long prev = m_focusedI - 1;
-    if (prev < 0)
-    {
-        if (m_vSongIdxs.empty()) prev = 0;
-        else prev = m_vSongIdxs.size() - 1;
-    }
-    m_focusedI = prev;
-
+    m_focusedI = m_vSongIdxs.size() > 0 ? utils::cycleBackward(m_focusedI, m_vSongIdxs.size()) : 0;
     app::window().m_bUpdateFirstIdx = true;
 }
 
