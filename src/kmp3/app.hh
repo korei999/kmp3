@@ -5,6 +5,7 @@
 #include "audio.hh"
 #include "config.hh"
 
+#include "platform/ansi/Win.hh"
 #include "platform/ffmpeg/Decoder.hh"
 
 namespace app
@@ -41,7 +42,7 @@ extern bool g_bNoImage;
 extern bool g_bSixelOrKitty;
 extern bool g_bChafaSymbols;
 
-extern IWindow* g_pWin;
+extern platform::ansi::Win* g_pWin;
 extern Config g_config;
 extern Player* g_pPlayer;
 extern audio::IMixer* g_pMixer;
@@ -50,7 +51,7 @@ extern platform::ffmpeg::Decoder g_decoder;
 inline Player& player() { return *g_pPlayer; }
 inline audio::IMixer& mixer() { return *g_pMixer; }
 inline platform::ffmpeg::Decoder& decoder() { return g_decoder; }
-inline IWindow& window() { return *g_pWin; }
+inline platform::ansi::Win& window() { return *g_pWin; }
 
 IWindow* allocWindow(adt::IAllocator* pArena);
 audio::IMixer* allocMixer(adt::IAllocator* pAlloc);

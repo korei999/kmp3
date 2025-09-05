@@ -14,11 +14,9 @@ namespace frame
 void
 run()
 {
-    if (!(app::g_pWin = app::allocWindow(app::player().m_pAlloc)))
-    {
-        print::out("app::allocWindow(): failed\n");
-        return;
-    }
+    /* There is just one ui for now. */
+    platform::ansi::Win ansiWindow {};
+    app::g_pWin = &ansiWindow;
 
     Arena arena {SIZE_8G};
     defer( arena.freeAll() );

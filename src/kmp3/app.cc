@@ -31,7 +31,7 @@ UI g_eUIFrontend {};
 MIXER g_eMixer = MIXER::DUMMY;
 StringView g_svTerm {};
 TERM g_eTerm = TERM::XTERM;
-IWindow* g_pWin {};
+platform::ansi::Win* g_pWin {};
 volatile bool g_vol_bRunning {};
 bool g_bNoImage {};
 bool g_bSixelOrKitty {};
