@@ -154,6 +154,10 @@ ArgvParser::parse()
                 }
             }
         }
+        else
+        {
+            break;
+        }
     }
 
 done:

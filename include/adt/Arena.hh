@@ -316,7 +316,6 @@ Arena::resetToFirstPage()
     runDeleters();
 
     const isize pageSize = getPageSize();
-    [[maybe_unused]] int err = 0;
 
     if (m_commited > pageSize)
         decommit((u8*)m_pData + pageSize, m_commited - pageSize);
