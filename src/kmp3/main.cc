@@ -204,11 +204,6 @@ parseArgs(int argc, char** argv)
         s_cmdParser.printFullUsage(StdAllocator::inst());
         exit(1);
     }
-    else if (argc <= 1)
-    {
-        s_cmdParser.printUsage(StdAllocator::inst());
-        exit(0);
-    }
     else if (eResult == ArgvParser::RESULT::QUIT_NICELY ||
         eResult == ArgvParser::RESULT::SHOW_USAGE ||
         eResult == ArgvParser::RESULT::SHOW_EXTRA ||
