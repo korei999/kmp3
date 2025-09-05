@@ -82,7 +82,6 @@ Win::destroy()
 void
 Win::draw()
 {
-    app::player().nextSongIfPrevEnded();
     update();
 }
 

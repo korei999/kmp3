@@ -48,6 +48,7 @@ run()
 
     do
     {
+        app::player().nextSongIfPrevEnded();
         app::window().draw();
         app::window().procEvents();
 

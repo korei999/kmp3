@@ -37,11 +37,10 @@ bool g_bNoImage {};
 bool g_bSixelOrKitty {};
 bool g_bChafaSymbols {};
 
+Config g_config = defaults::CONFIG;
 Player* g_pPlayer {};
 audio::IMixer* g_pMixer {};
 platform::ffmpeg::Decoder g_decoder {};
-
-Config g_config = defaults::CONFIG;
 
 IWindow*
 allocWindow(IAllocator* pAlloc)

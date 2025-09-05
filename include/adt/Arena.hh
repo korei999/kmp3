@@ -123,7 +123,7 @@ struct Arena : IArena
 
 protected:
     ADT_NO_UB void runDeleters() noexcept; /* Type casting function pointers here. */
-    void growIfNeeded(isize newOff);
+    void growIfNeeded(isize newPos);
     void commit(void* p, isize size);
     void decommit(void* p, isize size);
 };
@@ -240,8 +240,8 @@ Arena::realloc(void* p, usize oldCount, usize newCount, usize mSize)
     if (p == m_pLastAlloc)
     {
         const isize realSize = alignUp8(newCount * mSize);
-        isize newOff = (m_pos - m_lastAllocSize) + realSize;
-        growIfNeeded(newOff);
+        const isize newPos = (m_pos - m_lastAllocSize) + realSize;
+        growIfNeeded(newPos);
         m_lastAllocSize = realSize;
         return p;
     }
@@ -344,17 +344,17 @@ Arena::runDeleters() noexcept
 }
 
 inline void
-Arena::growIfNeeded(isize newOff)
+Arena::growIfNeeded(isize newPos)
 {
-    if (newOff > m_commited)
+    if (newPos > m_commited)
     {
-        isize newCommited = utils::max((isize)alignUp(newOff, getPageSize()), m_commited * 2);
-        ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(newCommited <= m_reserved, "out of reserved memory, newOff: {}, m_reserved: {}", newCommited, m_reserved);
+        const isize newCommited = utils::max((isize)alignUp(newPos, getPageSize()), m_commited * 2);
+        ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(newCommited <= m_reserved, "out of reserved memory, newPos: {}, m_reserved: {}", newCommited, m_reserved);
         commit((u8*)m_pData + m_commited, newCommited - m_commited);
         m_commited = newCommited;
     }
 
-    m_pos = newOff;
+    m_pos = newPos;
 }
 
 inline void
