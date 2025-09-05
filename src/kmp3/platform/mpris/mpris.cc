@@ -678,6 +678,10 @@ proc()
             LogDebug("eventfd_read({}): {}\n", r, d);
         }
     }
+    else
+    {
+        g_mtx.lock();
+    }
 }
 
 void
