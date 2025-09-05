@@ -667,7 +667,7 @@ proc()
 
         if (s_aPfds[0].revents & POLLIN)
         {
-            while (sd_bus_process(s_pBus, nullptr) > 0 && app::g_bRunning)
+            while (sd_bus_process(s_pBus, nullptr) > 0 && app::g_vol_bRunning)
                 ;
         }
 
@@ -709,7 +709,7 @@ destroy()
 THREAD_STATUS
 pollLoop(void*) noexcept
 {
-    while (app::g_bRunning)
+    while (app::g_vol_bRunning)
         mpris::proc();
 
     return THREAD_STATUS(0);

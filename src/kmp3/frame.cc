@@ -38,7 +38,7 @@ run()
     Thread thMPris {mpris::pollLoop, nullptr};
     defer(
         /* NOTE: prevent deadlock if something throws */
-        app::g_bRunning = false;
+        app::g_vol_bRunning = false;
         mpris::wakeUp();
         thMPris.join()
     );
@@ -54,7 +54,7 @@ run()
 
         arena.reset();
     }
-    while (app::g_bRunning);
+    while (app::g_vol_bRunning);
 }
 
 } /* namespace frame */

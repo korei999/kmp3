@@ -497,10 +497,7 @@ Win::procInput()
             for (const auto& k : keybinds::inl_aKeys)
             {
                 if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == u32(wc)))
-                {
                     keybinds::exec(k.pfn, k.arg);
-                    m_bUpdateFirstIdx = true;
-                }
             }
         }
         break;

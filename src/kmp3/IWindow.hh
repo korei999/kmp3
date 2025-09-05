@@ -6,6 +6,7 @@ struct IWindow
 {
     adt::i16 m_firstIdx {};
     adt::i16 m_listHeight {};
+    bool m_bUpdateFirstIdx {};
     bool m_bClear {};
 
     virtual bool start(adt::Arena* pArena) = 0;

@@ -57,7 +57,6 @@ protected:
     Input m_lastInput {};
     int m_lastMouseSelection {};
     adt::f64 m_lastMouseSelectionTime {};
-    bool m_bUpdateFirstIdx {};
     bool m_bNeedsResize {};
 
     /* */

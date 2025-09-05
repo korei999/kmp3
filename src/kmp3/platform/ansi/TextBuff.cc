@@ -515,13 +515,14 @@ TextBuff::string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView str, int
 }
 
 isize
-TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const Span<const wchar_t> sp)
+TextBuff::wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const Span<const wchar_t> sp, int maxSvLen)
 {
     return stringHelper(x, y, eStyle,
         Span {
             sp.data(),
             isize(wcsnlen(sp.data(), sp.size()))
-        }
+        },
+        maxSvLen
     );
 }
 

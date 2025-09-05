@@ -36,7 +36,7 @@ extern UI g_eUIFrontend;
 extern MIXER g_eMixer;
 extern adt::StringView g_svTerm;
 extern TERM g_eTerm;
-extern volatile bool g_bRunning;
+extern volatile bool g_vol_bRunning;
 extern bool g_bNoImage;
 extern bool g_bSixelOrKitty;
 extern bool g_bChafaSymbols;
@@ -55,7 +55,7 @@ inline IWindow& window() { return *g_pWin; }
 IWindow* allocWindow(adt::IAllocator* pArena);
 audio::IMixer* allocMixer(adt::IAllocator* pAlloc);
 
-inline void quit() { g_bRunning = false; }
+inline void quit() { g_vol_bRunning = false; }
 inline void focusNext() { player().focusNext(); }
 inline void focusPrev() { player().focusPrev(); }
 inline void focusFirst() { player().focusFirst(); }

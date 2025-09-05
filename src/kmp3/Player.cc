@@ -33,6 +33,8 @@ Player::focusNext() noexcept
     long ns = m_focusedI + 1;
     if (ns >= m_vSongIdxs.size()) ns = 0;
     m_focusedI = ns;
+
+    app::window().m_bUpdateFirstIdx = true;
 }
 
 void
@@ -45,12 +47,15 @@ Player::focusPrev() noexcept
         else prev = m_vSongIdxs.size() - 1;
     }
     m_focusedI = prev;
+
+    app::window().m_bUpdateFirstIdx = true;
 }
 
 void
 Player::focus(long i) noexcept
 {
     m_focusedI = utils::clamp(i, 0l, (long)(m_vSongIdxs.size() - 1));
+    app::window().m_bUpdateFirstIdx = true;
 }
 
 void
@@ -156,7 +161,7 @@ Player::nextSelectionI(long selI)
         }
         else
         {
-            app::g_bRunning = false;
+            app::g_vol_bRunning = false;
             return m_vSongIdxs[currI];
         }
     }
@@ -184,7 +189,7 @@ Player::selectFinal(long selI)
 
     while (true)
     {
-        if (!app::g_bRunning) return;
+        if (!app::g_vol_bRunning) return;
         if (app::mixer().play(m_vSongs[selI])) break;
 
         LogWarn("failed to open: '{}', selI: {}\n", m_vSongs[selI], selI);
@@ -273,12 +278,20 @@ Player::select(long i)
 void
 Player::selectNext()
 {
+    if (m_vSongs.empty() || m_vSearchIdxs.empty())
+        setAllDefaultIdxs();
+
+    ADT_ASSERT(m_vSearchIdxs.size() > 0, "size: {}", m_vSearchIdxs.size());
     select(utils::cycleForward(findSongI(m_selectedI), m_vSearchIdxs.size()));
 }
 
 void
 Player::selectPrev()
 {
+    if (m_vSongs.empty() || m_vSearchIdxs.empty())
+        setAllDefaultIdxs();
+
+    ADT_ASSERT(m_vSearchIdxs.size() > 0, "size: {}", m_vSearchIdxs.size());
     select(utils::cycleBackward(findSongI(m_selectedI), m_vSearchIdxs.size()));
 }
 

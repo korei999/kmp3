@@ -310,7 +310,7 @@ startup(int argc, char** argv)
 
     if (!player.m_vSongs.empty())
     {
-        app::g_bRunning = true;
+        app::g_vol_bRunning = true;
 
         /* Hide mpg123 and other errors. */
         if (app::g_eLogLevel == ILogger::LEVEL::NONE)

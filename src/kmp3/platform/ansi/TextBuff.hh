@@ -168,7 +168,7 @@ struct TextBuff
     void resize(adt::isize width, adt::isize height);
 
     adt::isize string(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::StringView sv, int maxSvLen = 99999);
-    adt::isize wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::Span<const wchar_t> sp);
+    adt::isize wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::Span<const wchar_t> sp, int maxSvLen = 99999);
 
     adt::isize strings(int x, int y, std::initializer_list<adt::Pair<TEXT_BUFF_STYLE, const adt::StringView>> lStrings, int maxSvLen = 99999);
     adt::isize wideStrings(int x, int y, std::initializer_list<adt::Pair<TEXT_BUFF_STYLE, adt::Span<const wchar_t>>> lStrings, int maxSvLen = 99999);

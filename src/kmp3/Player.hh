@@ -76,6 +76,7 @@ struct Player
     void focusFirst() { focus(0); }
     void setDefaultSongIdxs() { setDefaultIdxs(&m_vSongIdxs); }
     void setDefaultSearchIdxs() { setDefaultIdxs(&m_vSearchIdxs); }
+    void setAllDefaultIdxs() { setDefaultSongIdxs(); setDefaultSearchIdxs(); }
     void focusLast() noexcept;
     long findSongI(long selI);
     void focusSelected();

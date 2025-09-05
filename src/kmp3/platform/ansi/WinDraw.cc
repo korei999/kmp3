@@ -378,7 +378,7 @@ Win::update()
 
     m_time = time::nowMS();
 
-    if (!app::g_bRunning) return;
+    if (!app::g_vol_bRunning) return;
 
     ArenaStateGuard pushed {m_pArena};
 
