@@ -14,7 +14,7 @@ constexpr Config CONFIG {
     .minSampleRate = 1000,
     .maxSampleRate = 9999999,
     .fontAspectRatio = 1.0 / 2.0, /* Typical monospaced font is 1/2 or 3/5 (width/height). */
-    .mouseStep = 4,
+    .mouseScrollStep = 4,
     .imageHeight = 11, /* Terminal rows height. */
     .minImageHeight = 10,
     .maxImageHeight = 30,
@@ -22,6 +22,7 @@ constexpr Config CONFIG {
     .ntsMprisName = "a_kmp3", /* Using 'a' to top kmp3 instance in playerctl. */
     .minWidth = 35,
     .minHeight = 17,
+    .frameArenaReserveVirtualSpace = adt::SIZE_8G,
 };
 
 } /* namespace defaults */

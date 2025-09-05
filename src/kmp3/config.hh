@@ -10,7 +10,7 @@ struct Config
     adt::u64 minSampleRate {};
     adt::u64 maxSampleRate {};
     adt::f64 fontAspectRatio {};
-    int mouseStep {};
+    int mouseScrollStep {};
     adt::u8 imageHeight {};
     adt::u8 minImageHeight {};
     adt::u8 maxImageHeight {};
@@ -18,4 +18,5 @@ struct Config
     const char* ntsMprisName {};
     int minWidth {};
     int minHeight {};
+    adt::isize frameArenaReserveVirtualSpace {};
 };

@@ -18,7 +18,7 @@ run()
     platform::ansi::Win ansiWindow {};
     app::g_pWin = &ansiWindow;
 
-    Arena arena {SIZE_8G};
+    Arena arena {app::g_config.frameArenaReserveVirtualSpace};
     defer( arena.freeAll() );
 
     if (app::window().start(&arena) == false)

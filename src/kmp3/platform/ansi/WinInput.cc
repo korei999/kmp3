@@ -347,13 +347,13 @@ Win::procMouse(MouseInput in)
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_UP)
     {
-        m_firstIdx -= app::g_config.mouseStep;
+        m_firstIdx -= app::g_config.mouseScrollStep;
         if (m_firstIdx < 0) m_firstIdx = 0;
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
     {
         m_firstIdx = utils::clamp(
-            i16(m_firstIdx + app::g_config.mouseStep),
+            i16(m_firstIdx + app::g_config.mouseScrollStep),
             i16(0),
             i16((pl.m_vSearchIdxs.size() - m_listHeight) + 1)
         );
