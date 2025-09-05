@@ -269,7 +269,10 @@ void
 Player::selectNext()
 {
     if (m_vSongs.empty() || m_vSearchIdxs.empty())
+    {
         setAllDefaultIdxs();
+        focusSelectedAtCenter();
+    }
 
     ADT_ASSERT(m_vSearchIdxs.size() > 0, "size: {}", m_vSearchIdxs.size());
     select(utils::cycleForward(findSongI(m_selectedI), m_vSearchIdxs.size()));
@@ -279,7 +282,10 @@ void
 Player::selectPrev()
 {
     if (m_vSongs.empty() || m_vSearchIdxs.empty())
+    {
         setAllDefaultIdxs();
+        focusSelectedAtCenter();
+    }
 
     ADT_ASSERT(m_vSearchIdxs.size() > 0, "size: {}", m_vSearchIdxs.size());
     select(utils::cycleBackward(findSongI(m_selectedI), m_vSearchIdxs.size()));
