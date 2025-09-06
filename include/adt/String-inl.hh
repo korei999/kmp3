@@ -93,6 +93,7 @@ struct StringView
     [[nodiscard]] u64 toU64(int base = 10) const noexcept;
     [[nodiscard]] f64 toF64() const noexcept;
     [[nodiscard]] StringView subString(isize start, isize size) const noexcept;
+    [[nodiscard]] StringView subString(isize start) const noexcept; /* From start + all the leftovers. */
 
     template<typename T>
     T reinterpret(isize at) const;

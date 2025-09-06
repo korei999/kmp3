@@ -78,7 +78,7 @@ parseArgs(int argc, char** argv)
         {
             .bNeedsValue = true,
             .sTwoDashes = "volume",
-            .sUsage = "set startup volume",
+            .sUsage = "value: real number in [0, 1.0) range",
             .pfn = [](ArgvParser*, void*, const StringView, const StringView svVal) {
                 app::g_config.volume = svVal.toF64();
                 return ArgvParser::RESULT::GOOD;
@@ -153,7 +153,7 @@ parseArgs(int argc, char** argv)
             .bNeedsValue = true,
             .sOneDash = "l",
             .sTwoDashes = "logs",
-            .sUsage = "set log level [-1, 0, 1, 2, 3] (none, errors, warnings, info, debug)",
+            .sUsage = "value: log level [-1, 0, 1, 2, 3] (none, errors, warnings, info, debug)",
             .pfn = [](ArgvParser*, void*, const StringView, const StringView svVal) {
                 ILogger::LEVEL eLevel = static_cast<ILogger::LEVEL>(svVal.toI64());
                 if (eLevel < ILogger::LEVEL::NONE || eLevel > ILogger::LEVEL::DEBUG)
@@ -175,7 +175,7 @@ parseArgs(int argc, char** argv)
         {
             .bNeedsValue = true,
             .sTwoDashes = "mpris-name",
-            .sUsage = "set name prefix for mpris-dbus instance",
+            .sUsage = "value: string prefix that will be used for mpris-dbus instance",
             .pfn = [](ArgvParser* pSelf, void*, const StringView, const StringView svVal) {
                 if (svVal.size() <= 0)
                 {
@@ -307,7 +307,7 @@ startup(int argc, char** argv)
     {
         app::g_vol_bRunning = true;
 
-        /* Hide mpg123 and other errors. */
+        /* Hide mpg123 and other spam. */
         if (app::g_eLogLevel == ILogger::LEVEL::NONE)
             ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
 
@@ -318,6 +318,7 @@ startup(int argc, char** argv)
     else
     {
         print::err("No accepted input provided\n");
+        s_cmdParser.printUsage(StdAllocator::inst());
     }
 }
 

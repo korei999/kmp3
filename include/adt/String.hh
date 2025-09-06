@@ -615,6 +615,13 @@ StringView::subString(isize start, isize size) const noexcept
     return StringView((char*)m_pData + start, size);
 }
 
+inline StringView
+StringView::subString(isize start) const noexcept
+{
+    ADT_ASSERT(start <= m_size, "(out of range) start: {}, size: {}", start, m_size);
+    return subString(start, m_size - start);
+}
+
 template<typename T>
 ADT_NO_UB inline T
 StringView::reinterpret(isize at) const
