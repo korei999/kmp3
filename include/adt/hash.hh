@@ -181,7 +181,7 @@ func(const STRING_T& x)
 }
 
 template<typename T>
-requires (sizeof(T) == 8)
+requires ((sizeof(T) == 8) && !ConvertsToStringView<T>)
 ADT_NO_UB inline usize
 func(const T& x)
 {
@@ -243,6 +243,12 @@ inline usize
 dumbFunc(const T& key)
 {
     return static_cast<usize>(key);
+}
+
+ADT_NO_UB inline usize
+nullTermStringFunc(const char* const& nts)
+{
+    return func(StringView(nts));
 }
 
 template<typename T>

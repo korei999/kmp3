@@ -28,14 +28,14 @@ covertFormat(int format)
 void
 Decoder::close()
 {
-    if (m_pFormatCtx) avformat_close_input(&m_pFormatCtx), m_pFormatCtx = {};
-    if (m_pCodecCtx) avcodec_free_context(&m_pCodecCtx), m_pCodecCtx = {};
-    if (m_pSwr) swr_free(&m_pSwr), m_pSwr = {};
-    if (m_pImgPacket) av_packet_free(&m_pImgPacket), m_pImgPacket = {};
-    if (m_pImgFrame) av_frame_free(&m_pImgFrame), m_pImgFrame = {};
+    if (m_pFormatCtx) avformat_close_input(&m_pFormatCtx);
+    if (m_pCodecCtx) avcodec_free_context(&m_pCodecCtx);
+    if (m_pSwr) swr_free(&m_pSwr);
+    if (m_pImgPacket) av_packet_free(&m_pImgPacket);
+    if (m_pImgFrame) av_frame_free(&m_pImgFrame);
 
 #ifdef OPT_CHAFA
-    if (m_pConverted) av_frame_free(&m_pConverted), m_pConverted = {};
+    if (m_pConverted) av_frame_free(&m_pConverted);
     if (m_pSwsCtx) sws_freeContext(m_pSwsCtx), m_pSwsCtx = {};
 #endif
 
@@ -303,23 +303,94 @@ Decoder::writeToBuffer(
 
             if (err < 0)
             {
-                char buff[32] {};
-                av_strerror(err, buff, utils::size(buff) - 1);
-                LogDebug("swr_convert_frame(): {}\n", buff);
+                LogDebug("swr_convert_frame(): {}\n", av_err2str(err));
                 continue;
             }
 
             int maxSamples = res.nb_samples * res.ch_layout.nb_channels;
             if (maxSamples >= spBuff.size()) maxSamples = spBuff.size() - 1;
 
-            const auto& nFrameChannels = res.ch_layout.nb_channels;
-            ADT_ASSERT(nFrameChannels > 0, "{}", nFrameChannels);
+            ADT_ASSERT(res.ch_layout.nb_channels > 0, "{}", res.ch_layout.nb_channels);
 
             utils::memCopy(spBuff.data() + nWrites, reinterpret_cast<f32*>(res.data[0]), maxSamples);
             nWrites += maxSamples;
 
             /* return when its filled enough */
-            if (nWrites >= maxSamples && nWrites >= nFrames * nFrameChannels) /* mul by nChannels */
+            if (nWrites >= maxSamples && nWrites >= nFrames * res.ch_layout.nb_channels)
+            {
+                *pSamplesWritten += nWrites;
+                return audio::ERROR::OK_;
+            }
+        }
+    }
+
+    return audio::ERROR::END_OF_FILE;
+}
+
+audio::ERROR
+Decoder::writeToRingBuffer(
+    audio::RingBuffer* pRingBuff,
+    const adt::isize nFrames,
+    const int nChannels,
+    long* pSamplesWritten,
+    adt::isize* pPcmPos
+)
+{
+    if (!m_pStream) return audio::ERROR::END_OF_FILE;
+
+    int err = 0;
+    long nWrites = 0;
+
+    *pSamplesWritten = 0;
+
+    int nTimes = 0;
+    AVPacket packet {};
+    while (av_read_frame(m_pFormatCtx, &packet) == 0)
+    {
+        defer(av_packet_unref(&packet));
+
+        if (packet.stream_index != m_pStream->index)
+            continue;
+        err = avcodec_send_packet(m_pCodecCtx, &packet);
+        if (err != 0 && err != AVERROR(EAGAIN))
+            LogDebug("!EAGAIN\n");
+
+        AVFrame frame {};
+        while ((err = avcodec_receive_frame(m_pCodecCtx, &frame)) == 0)
+        {
+            defer(av_frame_unref(&frame));
+
+            f64 currentTimeInSeconds = av_q2d(m_pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
+            m_currentMS = currentTimeInSeconds * 1000.0;
+            long pcmPos = currentTimeInSeconds * frame.ch_layout.nb_channels * frame.sample_rate;
+            m_currentSamplePos = pcmPos;
+            *pPcmPos = pcmPos;
+
+            AVFrame res {};
+            /* NOTE: not changing sample rate here, but on the mixer side instead. */
+            res.sample_rate = frame.sample_rate;
+            res.ch_layout = frame.ch_layout;
+            res.format = AV_SAMPLE_FMT_FLT;
+            defer(av_frame_unref(&res));
+
+            swr_config_frame(m_pSwr, &res, &frame);
+            err = swr_convert_frame(m_pSwr, &res, &frame);
+
+            if (err < 0)
+            {
+                LogDebug("swr_convert_frame(): {}\n", av_err2str(err));
+                continue;
+            }
+
+            int maxSamples = res.nb_samples * res.ch_layout.nb_channels;
+            // if (maxSamples >= spBuff.size()) maxSamples = spBuff.size() - 1;
+
+            // utils::memCopy(spBuff.data() + nWrites, reinterpret_cast<f32*>(res.data[0]), maxSamples);
+            pRingBuff->push(Span{reinterpret_cast<f32*>(res.data[0]), maxSamples});
+            nWrites += maxSamples;
+
+            /* return when its filled enough */
+            if (nWrites >= maxSamples && nWrites >= nFrames * res.ch_layout.nb_channels)
             {
                 *pSamplesWritten += nWrites;
                 return audio::ERROR::OK_;

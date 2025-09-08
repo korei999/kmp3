@@ -26,6 +26,14 @@ struct Decoder : audio::IDecoder
         long* pSamplesWritten, adt::isize* pPcmPos
     ) override final;
 
+    [[nodiscard]] virtual audio::ERROR writeToRingBuffer(
+        audio::RingBuffer* pRingBuff,
+        const adt::isize nFrames,
+        const int nChannels,
+        long* pSamplesWritten,
+        adt::isize* pPcmPos
+    ) override final;
+
     virtual Decoder& init() override final;
     virtual void destroy() override final;
     [[nodiscard]] virtual adt::u32 getSampleRate() override final;
@@ -40,9 +48,13 @@ struct Decoder : audio::IDecoder
     [[nodiscard]] virtual audio::ERROR open(adt::StringView sPath) override final;
     virtual void close() override final;
 
+    [[nodiscard]] audio::ERROR writeToBuffer2(audio::RingBuffer* pRingBuff,
+        const int nFrames, const int nChannels,
+        adt::isize* pNSamplesWritten, adt::isize* pPcmPos
+    );
+
     /* */
 
-    adt::Mutex m_mtx {};
     AVStream* m_pStream {};
     AVFormatContext* m_pFormatCtx {};
     AVCodecContext* m_pCodecCtx {};

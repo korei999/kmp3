@@ -198,6 +198,7 @@ struct Num
 };
 
 using Int = Num<i32>;
+using Bool = Num<bool>;
 
 } /* namespace adt::atomic */
 

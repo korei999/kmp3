@@ -182,10 +182,6 @@ Mixer::play(StringView svPath)
 
     pause(false);
 
-#ifdef OPT_MPRIS
-    m_atom_bUpdateMpris.store(true, atomic::ORDER::RELEASE); /* mark to update in frame::run() */
-#endif
-
     return true;
 }
 

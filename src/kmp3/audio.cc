@@ -10,30 +10,31 @@ namespace audio
 f32 g_aRenderBuffer[CHUNK_SIZE] {};
 
 void
+IMixer::writeFramesLocked2(u32 nFrames, long* pSamplesWritten, i64* pPcmPos)
+{
+
+}
+
+void
 IMixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i64* pPcmPos)
 {
-    audio::ERROR err {};
-    {
-        LockGuard lockDec {&app::decoder().m_mtx};
+    LockGuard lockDec {&app::decoder().m_mtx};
 
-        if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
+    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
-        err = app::decoder().writeToBuffer(
-            spBuff,
-            nFrames, m_nChannels,
-            pSamplesWritten, pPcmPos
-        );
-
-        if (err == audio::ERROR::END_OF_FILE)
-        {
-            pause(true);
-            app::decoder().close();
-            m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
-        }
-    }
+    audio::ERROR err = app::decoder().writeToBuffer(
+        spBuff,
+        nFrames, m_nChannels,
+        pSamplesWritten, pPcmPos
+    );
 
     if (err == audio::ERROR::END_OF_FILE)
+    {
+        pause(true);
+        app::decoder().close();
+        m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
         m_atom_bSongEnd.store(true, atomic::ORDER::RELEASE);
+    }
 }
 
 bool
@@ -78,7 +79,7 @@ IMixer::getCurrentTimeStamp() const
     return m_currentTimeStamp;
 }
 
-const atomic::Int&
+const atomic::Bool&
 IMixer::isPaused() const
 {
     return m_atom_bPaused;
@@ -210,6 +211,13 @@ RingBuffer::pop(Span<f32> sp) noexcept
     m_firstI = nextFirstI;
     m_size -= sp.size();
     return sp.size();
+}
+
+void
+RingBuffer::clear() noexcept
+{
+    LockGuard lockGuard {&m_mtx};
+    m_firstI = m_lastI = m_size = 0;
 }
 
 } /* namespace audio */

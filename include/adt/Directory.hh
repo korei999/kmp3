@@ -60,17 +60,11 @@ struct Directory
 
         /* */
 
-        It(const Directory* pSelf, int _i)
+        It(const Directory* pSelf, int _i) noexcept
             : p(const_cast<Directory*>(pSelf)), i(_i)
         {
             if (i == NPOS) return;
-
-            while ((p->m_pEntry = readdir(p->m_pDir)))
-            {
-                if (strcmp(p->m_pEntry->d_name, ".") == 0 || strcmp(p->m_pEntry->d_name, "..") == 0)
-                    continue;
-                else break;
-            }
+            p->m_pEntry = readdir(p->m_pDir);
         }
 
         It(int _i) : i(_i) {}

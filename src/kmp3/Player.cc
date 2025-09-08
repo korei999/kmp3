@@ -230,7 +230,7 @@ Player::togglePause()
 void
 Player::nextSongIfPrevEnded()
 {
-    int bExpected = true;
+    bool bExpected = true;
     if (app::mixer().m_atom_bSongEnd.compareExchange(
             &bExpected, false,
             atomic::ORDER::RELAXED, atomic::ORDER::RELAXED

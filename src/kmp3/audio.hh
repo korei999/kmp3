@@ -31,17 +31,17 @@ struct RingBuffer
     void destroy() noexcept;
     bool push(const adt::Span<const adt::f32> sp) noexcept;
     adt::isize pop(adt::Span<adt::f32> sp) noexcept;
+    void clear() noexcept;
+
+protected:
 };
 
 /* Platrform abstracted audio interface */
 struct IMixer
 {
-    adt::atomic::Int m_atom_bPaused {false};
-#ifdef OPT_MPRIS
-    adt::atomic::Int m_atom_bUpdateMpris {false};
-#endif
-    adt::atomic::Int m_atom_bSongEnd {false};
-    adt::atomic::Int m_atom_bDecodes {false};
+    adt::atomic::Bool m_atom_bPaused {false};
+    adt::atomic::Bool m_atom_bSongEnd {false};
+    adt::atomic::Bool m_atom_bDecodes {false};
 
     bool m_bMuted = false;
     bool m_bRunning = true;
@@ -51,6 +51,8 @@ struct IMixer
     adt::f32 m_volume = 0.5f;
     adt::i64 m_currentTimeStamp {};
     adt::i64 m_nTotalSamples {};
+
+    RingBuffer m_ringBuff {};
 
     virtual IMixer& init() = 0;
     virtual void destroy() = 0;
@@ -66,6 +68,8 @@ struct IMixer
 
     /* */
 
+    void writeFramesLocked2(adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
+
     void writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
     bool isMuted() const;
     void toggleMute();
@@ -74,7 +78,7 @@ struct IMixer
     adt::u8 getNChannels() const;
     adt::u64 getTotalSamplesCount() const;
     adt::u64 getCurrentTimeStamp() const;
-    const adt::atomic::Int& isPaused() const;
+    const adt::atomic::Bool& isPaused() const;
     adt::f64 getVolume() const;
     void volumeDown(const adt::f32 step);
     void volumeUp(const adt::f32 step);
@@ -117,9 +121,21 @@ constexpr adt::StringView mapERRORToString[] {
 
 struct IDecoder
 {
+    adt::Mutex m_mtx {};
+
+    /* */
+
     [[nodiscard]] virtual ERROR writeToBuffer(
         adt::Span<adt::f32> spBuff,
         const int nFrames,
+        const int nChannels,
+        long* pSamplesWritten,
+        adt::isize* pPcmPos
+    ) = 0;
+
+    [[nodiscard]] virtual ERROR writeToRingBuffer(
+        audio::RingBuffer* pRingBuff,
+        const adt::isize nFrames,
         const int nChannels,
         long* pSamplesWritten,
         adt::isize* pPcmPos

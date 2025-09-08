@@ -25,7 +25,7 @@
 namespace adt::file
 {
 
-enum class TYPE : u8 { UNHANDLED, FILE, DIRECTORY };
+enum class TYPE : u8 { UNHANDLED, FILE, DIRECTORY, ESIZE };
 
 [[nodiscard]] inline String
 load(IAllocator* pAlloc, const char* ntsPath)
@@ -250,3 +250,16 @@ map(const char* ntsPath)
 }
 
 } /* namespace adt::file */
+
+namespace adt::print
+{
+
+inline isize
+format(Context* pCtx, FormatArgs fArgs, file::TYPE e)
+{
+    static const char* map[] { "UNHANDLED", "FILE", "DIRECTORY" };
+    ADT_ASSERT((int)e >= 0 && (int)e < (int)file::TYPE::ESIZE, "{}", (int)e);
+    return format(pCtx, fArgs, map[(int)e]);
+}
+
+} /* namespace adt::print */
