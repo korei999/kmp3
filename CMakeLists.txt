@@ -86,10 +86,6 @@ if (OPT_FTIME_TRACE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
 endif()
 
-if (OPT_ADT_LOGGER_DISABLE)
-    add_definitions("-DADT_LOGGER_DISABLE")
-endif()
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_C_STANDARD 17)
@@ -154,7 +150,6 @@ endif()
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
     add_definitions("-DADT_LOGS")
     add_definitions("-DADT_DBG_MEMORY")
-    add_definitions("-UADT_LOGGER_DISABLE")
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         add_compile_options(/wd4267 /wd4101 /wd4200 /wd4244)
@@ -223,6 +218,9 @@ add_executable(${projName})
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     target_link_options(${projName} PRIVATE -s)
+    if (OPT_ADT_LOGGER_DISABLE)
+        add_definitions("-DADT_LOGGER_DISABLE")
+    endif()
 endif()
 
 add_subdirectory(src/kmp3)

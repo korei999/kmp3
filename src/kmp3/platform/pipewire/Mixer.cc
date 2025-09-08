@@ -251,7 +251,7 @@ Mixer::onProcess()
     const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
     isize destI = 0;
-    for (u32 frameIdx = 0; frameIdx < nFrames; ++frameIdx)
+    for (u32 frameI = 0; frameI < nFrames; ++frameI)
     {
         /* fill the buffer when it's empty */
         if (s_nWrites >= s_nDecodedSamples)
@@ -262,7 +262,7 @@ Mixer::onProcess()
             s_nWrites = 0;
         }
 
-        for (u32 chIdx = 0; chIdx < m_nChannels; ++chIdx)
+        for (u32 channelI = 0; channelI < m_nChannels; ++channelI)
         {
             /* modify each sample here */
             pDest[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;

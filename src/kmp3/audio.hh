@@ -8,6 +8,31 @@ namespace audio
 constexpr adt::u64 CHUNK_SIZE = (1 << 17); /* big enough */
 extern adt::f32 g_aRenderBuffer[CHUNK_SIZE];
 
+struct RingBuffer
+{
+    adt::isize m_firstI {};
+    adt::isize m_lastI {};
+    adt::isize m_size {};
+    adt::isize m_cap {};
+    adt::f32* m_pData {};
+
+    adt::Mutex m_mtx {};
+    adt::CndVar m_cnd {};
+    adt::Thread m_thrd {};
+    bool m_bDone {};
+
+    /* */
+
+    RingBuffer() = default;
+    RingBuffer(adt::isize capacityPowOf2); /* capacityPowOf2 is rounded to next power of two */
+
+    /* */
+
+    void destroy() noexcept;
+    bool push(const adt::Span<const adt::f32> sp) noexcept;
+    adt::isize pop(adt::Span<adt::f32> sp) noexcept;
+};
+
 /* Platrform abstracted audio interface */
 struct IMixer
 {
