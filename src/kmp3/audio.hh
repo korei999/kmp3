@@ -5,7 +5,7 @@
 namespace audio
 {
 
-constexpr adt::u64 CHUNK_SIZE = (1 << 17); /* big enough */
+constexpr adt::u64 CHUNK_SIZE = (1 << 15); /* big enough */
 extern adt::f32 g_aRenderBuffer[CHUNK_SIZE];
 
 struct RingBuffer
@@ -29,11 +29,9 @@ struct RingBuffer
     /* */
 
     void destroy() noexcept;
-    bool push(const adt::Span<const adt::f32> sp) noexcept;
+    adt::isize push(const adt::Span<const adt::f32> sp) noexcept; /* Returns size after push. */
     adt::isize pop(adt::Span<adt::f32> sp) noexcept;
     void clear() noexcept;
-
-protected:
 };
 
 /* Platrform abstracted audio interface */
@@ -68,7 +66,8 @@ struct IMixer
 
     /* */
 
-    void writeFramesLocked2(adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
+    void startDecoderThread();
+    void writeFramesLocked2(long* pSamplesWritten, adt::i64* pPcmPos);
 
     void writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
     bool isMuted() const;
@@ -87,6 +86,9 @@ struct IMixer
     void changeSampleRateDown(int ms, bool bSave);
     void changeSampleRateUp(int ms, bool bSave);
     void restoreSampleRate();
+
+protected:
+    adt::THREAD_STATUS loop();
 };
 
 struct DummyMixer : public IMixer
@@ -135,7 +137,6 @@ struct IDecoder
 
     [[nodiscard]] virtual ERROR writeToRingBuffer(
         audio::RingBuffer* pRingBuff,
-        const adt::isize nFrames,
         const int nChannels,
         long* pSamplesWritten,
         adt::isize* pPcmPos

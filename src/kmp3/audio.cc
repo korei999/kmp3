@@ -10,9 +10,52 @@ namespace audio
 f32 g_aRenderBuffer[CHUNK_SIZE] {};
 
 void
-IMixer::writeFramesLocked2(u32 nFrames, long* pSamplesWritten, i64* pPcmPos)
+IMixer::startDecoderThread()
 {
+    new(&m_ringBuff) RingBuffer {CHUNK_SIZE};
+    new(&m_ringBuff.m_thrd) Thread {(ThreadFn)methodPointerNonVirtual(&IMixer::loop), this};
+}
 
+THREAD_STATUS
+IMixer::loop()
+{
+    while (m_bRunning)
+    {
+        {
+            LockGuard lockRing {&m_ringBuff.m_mtx};
+            while (m_ringBuff.m_size >= m_ringBuff.m_cap >> 1)
+                m_ringBuff.m_cnd.wait(&m_ringBuff.m_mtx);
+        }
+
+        long weDontCare = 0;
+        writeFramesLocked2(&weDontCare, &m_currentTimeStamp);
+    }
+
+    return THREAD_STATUS{0};
+}
+
+void
+IMixer::writeFramesLocked2(long* pSamplesWritten, i64* pPcmPos)
+{
+    LockGuard lockDec {&app::decoder().m_mtx};
+
+    *pSamplesWritten = 0;
+    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
+
+    audio::ERROR err = app::decoder().writeToRingBuffer(
+        &m_ringBuff,
+        m_nChannels,
+        pSamplesWritten,
+        pPcmPos
+    );
+
+    if (err == audio::ERROR::END_OF_FILE)
+    {
+        pause(true);
+        app::decoder().close();
+        m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
+        m_atom_bSongEnd.store(true, atomic::ORDER::RELEASE);
+    }
 }
 
 void
@@ -20,6 +63,7 @@ IMixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, 
 {
     LockGuard lockDec {&app::decoder().m_mtx};
 
+    *pSamplesWritten = 0;
     if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
     audio::ERROR err = app::decoder().writeToBuffer(
@@ -158,7 +202,7 @@ RingBuffer::destroy() noexcept
     *this = {};
 }
 
-bool
+isize
 RingBuffer::push(const Span<const f32> sp) noexcept
 {
     LockGuard lockGuard {&m_mtx};
@@ -166,25 +210,27 @@ RingBuffer::push(const Span<const f32> sp) noexcept
     if (sp.size() + m_size > m_cap)
     {
         LogWarn{"dropping out of range push (size: {}\n", sp.size()};
-        return false;
+        return sp.size();
     }
 
     const isize nextLastI = (m_lastI + sp.size()) & (m_cap - 1);
 
-    if (m_firstI <= m_lastI)
+    if (m_lastI >= m_firstI)
     {
-        const isize nUntilEnd = m_cap - m_lastI;
-        ::memcpy(m_pData + m_lastI, sp.data(), nUntilEnd);
-        ::memcpy(m_pData, sp.data(), sp.size() - nUntilEnd);
+        const isize nUntilEnd = utils::min(m_cap - (m_lastI), sp.size());
+        // const isize nUntilEnd = m_size - utils::min(m_cap, m_lastI + sp.size());
+
+        utils::memCopy(m_pData + m_lastI, sp.data(), nUntilEnd);
+        utils::memCopy(m_pData, sp.data() + nUntilEnd, sp.size() - nUntilEnd);
     }
     else
     {
-        ::memcpy(m_pData + m_lastI, sp.data(), sp.size());
+        utils::memCopy(m_pData + m_lastI, sp.data(), sp.size());
     }
 
     m_lastI = nextLastI;
     m_size += sp.size();
-    return true;
+    return m_size;
 }
 
 isize
@@ -193,24 +239,29 @@ RingBuffer::pop(Span<f32> sp) noexcept
     LockGuard lockGuard {&m_mtx};
 
     /* Write as much as we can. */
-    if (sp.size() > m_size) sp.m_size = m_size;
+    if (sp.size() > m_size)
+    {
+        LogWarn{"dropping some size: {} to {}\n", sp.size(), m_size};
+        sp.m_size = m_size;
+    }
 
     const isize nextFirstI = (m_firstI + sp.size()) & (m_cap - 1);
 
     if (m_firstI >= m_lastI)
     {
-        const isize nUntilEnd = m_cap - m_firstI;
-        ::memcpy(sp.data(), m_pData + m_firstI, nUntilEnd);
-        ::memcpy(sp.data() + nUntilEnd, m_pData, sp.size() - nUntilEnd);
+        const isize nUntilEnd = utils::min(m_cap - m_firstI, sp.size());
+        utils::memCopy(sp.data(), m_pData + m_firstI, nUntilEnd);
+        utils::memCopy(sp.data() + nUntilEnd, m_pData, sp.size() - nUntilEnd);
     }
     else
     {
-        ::memcpy(sp.data(), m_pData, sp.size());
+        utils::memCopy(sp.data(), m_pData + m_firstI, sp.size());
     }
 
     m_firstI = nextFirstI;
     m_size -= sp.size();
-    return sp.size();
+    m_cnd.signal();
+    return m_size;
 }
 
 void

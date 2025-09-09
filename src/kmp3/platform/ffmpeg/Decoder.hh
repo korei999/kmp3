@@ -28,7 +28,6 @@ struct Decoder : audio::IDecoder
 
     [[nodiscard]] virtual audio::ERROR writeToRingBuffer(
         audio::RingBuffer* pRingBuff,
-        const adt::isize nFrames,
         const int nChannels,
         long* pSamplesWritten,
         adt::isize* pPcmPos

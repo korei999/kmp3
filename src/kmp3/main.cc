@@ -293,6 +293,8 @@ startup(int argc, char** argv)
     app::mixer().setVolume(app::g_config.volume);
     defer( app::mixer().destroy() );
 
+    app::mixer().startDecoderThread();
+
 #ifdef OPT_MPRIS
     mpris::initLocks();
     defer(

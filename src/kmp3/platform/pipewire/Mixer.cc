@@ -247,23 +247,13 @@ Mixer::onProcess()
     const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
     isize destI = 0;
-    for (u32 frameI = 0; frameI < nFrames; ++frameI)
-    {
-        /* fill the buffer when it's empty */
-        if (s_nWrites >= s_nDecodedSamples)
-        {
-            writeFramesLocked({audio::g_aRenderBuffer}, nFrames, &s_nDecodedSamples, &m_currentTimeStamp);
+    s_nWrites = 0;
 
-            m_currMs = app::decoder().getCurrentMS();
-            s_nWrites = 0;
-        }
-
-        for (u32 channelI = 0; channelI < m_nChannels; ++channelI)
-        {
-            /* modify each sample here */
-            pDest[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
-        }
-    }
+    const isize ringSize = m_ringBuff.pop({audio::g_aRenderBuffer, nFrames*m_nChannels});
+    m_currMs = app::decoder().getCurrentMS();
+    s_nDecodedSamples = nFrames*m_nChannels;
+    for (isize i = 0; i < s_nDecodedSamples; ++i)
+        pDest[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
 
     if (s_nDecodedSamples == 0)
     {

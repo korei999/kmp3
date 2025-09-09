@@ -268,8 +268,6 @@ Decoder::writeToBuffer(
     int err = 0;
     long nWrites = 0;
 
-    *pSamplesWritten = 0;
-
     AVPacket packet {};
     while (av_read_frame(m_pFormatCtx, &packet) == 0)
     {
@@ -330,7 +328,6 @@ Decoder::writeToBuffer(
 audio::ERROR
 Decoder::writeToRingBuffer(
     audio::RingBuffer* pRingBuff,
-    const adt::isize nFrames,
     const int nChannels,
     long* pSamplesWritten,
     adt::isize* pPcmPos
@@ -382,15 +379,12 @@ Decoder::writeToRingBuffer(
                 continue;
             }
 
-            int maxSamples = res.nb_samples * res.ch_layout.nb_channels;
-            // if (maxSamples >= spBuff.size()) maxSamples = spBuff.size() - 1;
+            const int nFrameSamples = res.nb_samples * res.ch_layout.nb_channels;
 
-            // utils::memCopy(spBuff.data() + nWrites, reinterpret_cast<f32*>(res.data[0]), maxSamples);
-            pRingBuff->push(Span{reinterpret_cast<f32*>(res.data[0]), maxSamples});
-            nWrites += maxSamples;
+            const isize ringSize = pRingBuff->push(Span{reinterpret_cast<f32*>(res.data[0]), nFrameSamples});
+            nWrites += nFrameSamples;
 
-            /* return when its filled enough */
-            if (nWrites >= maxSamples && nWrites >= nFrames * res.ch_layout.nb_channels)
+            if (ringSize >= (pRingBuff->m_cap >> 1)) /* TODO: greater than what? */
             {
                 *pSamplesWritten += nWrites;
                 return audio::ERROR::OK_;

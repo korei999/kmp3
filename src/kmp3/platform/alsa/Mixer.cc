@@ -223,25 +223,19 @@ Mixer::loop()
 
     constexpr isize NFRAMES = 2048;
 
+    const isize ringSize = m_ringBuff.pop({audio::g_aRenderBuffer, NFRAMES * m_nChannels});
+    m_currMs = app::decoder().getCurrentMS();
+    nDecodedSamples = NFRAMES*m_nChannels;
+
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
         const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
         isize destI = 0;
-        for (isize frameIdx = 0; frameIdx < NFRAMES; ++frameIdx)
-        {
-            /* fill the buffer when it's empty */
-            if (nWrites >= nDecodedSamples)
-            {
-                writeFramesLocked(audio::g_aRenderBuffer, NFRAMES, &nDecodedSamples, &m_currentTimeStamp);
+        nWrites = 0;
 
-                m_currMs = app::decoder().getCurrentMS();
-                nWrites = 0;
-            }
-
-            for (u32 chIdx = 0; chIdx < m_nChannels; ++chIdx)
-                pRenderBuff[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
-        }
+        for (isize i = 0; i < nDecodedSamples; ++i)
+            pRenderBuff[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
 
         if (nDecodedSamples == 0)
         {
@@ -267,7 +261,7 @@ Mixer::loop()
             if (nFrameWritten < 0) nFrameWritten = snd_pcm_recover(m_pHandle, nFrameWritten, 0);
             if (nFrameWritten < 0)
             {
-                LogDebug("snd_pcm_recover() failed: {}\n", snd_strerror(nFrameWritten));
+                LogError("snd_pcm_recover() failed: {}\n", snd_strerror(nFrameWritten));
                 app::quit();
                 goto GOTO_done;
             }
