@@ -8,7 +8,7 @@ using namespace adt;
 namespace platform::sndio
 {
 
-static constexpr isize N_BUF_FRAMES = 1024 * 2;
+static constexpr isize N_BUF_FRAMES = 1024;
 
 void
 Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
@@ -178,8 +178,6 @@ Mixer::play(StringView svPath)
 void
 Mixer::pause(bool bPause)
 {
-    LockGuard lock {&m_mtxLoop};
-
     defer(
         m_cndLoop.signal();
         mpris::playbackStatusChanged()
@@ -189,6 +187,8 @@ Mixer::pause(bool bPause)
     if (bCurr == bPause) return;
 
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
+
+    LockGuard lock {&m_mtxLoop};
 
     if (bPause) sio_stop(m_pHdl);
     else sio_start(m_pHdl);

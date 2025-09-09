@@ -328,7 +328,7 @@ Decoder::writeToBuffer(
 audio::ERROR
 Decoder::writeToRingBuffer(
     audio::RingBuffer* pRingBuff,
-    const int nChannels,
+    [[maybe_unused]] const int nChannels,
     long* pSamplesWritten,
     adt::isize* pPcmPos
 )
@@ -340,7 +340,6 @@ Decoder::writeToRingBuffer(
 
     *pSamplesWritten = 0;
 
-    int nTimes = 0;
     AVPacket packet {};
     while (av_read_frame(m_pFormatCtx, &packet) == 0)
     {

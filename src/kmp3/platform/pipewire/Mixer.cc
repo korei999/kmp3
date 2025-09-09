@@ -235,7 +235,7 @@ Mixer::onProcess()
     isize destI = 0;
     nWrites = 0;
 
-    const isize ringSize = m_ringBuff.pop({audio::g_aRenderBuffer, nFrames*m_nChannels});
+    m_ringBuff.pop({audio::g_aRenderBuffer, nFrames*m_nChannels});
     m_currMs = app::decoder().getCurrentMS();
     nDecodedSamples = nFrames*m_nChannels;
     for (isize i = 0; i < nDecodedSamples; ++i)
@@ -261,9 +261,10 @@ Mixer::onProcess()
 void
 Mixer::pause(bool bPause)
 {
+    m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
+
     PWLockGuard lock(m_pThrdLoop);
     pw_stream_set_active(m_pStream, !bPause);
-    m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
     LogInfo("bPaused: {}\n", m_atom_bPaused);
     mpris::playbackStatusChanged();

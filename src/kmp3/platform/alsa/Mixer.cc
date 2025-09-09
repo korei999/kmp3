@@ -82,8 +82,6 @@ Mixer::play(StringView svPath)
 void
 Mixer::pause(bool bPause)
 {
-    LockGuard lock {&m_mtxLoop};
-
     defer(
         m_cndLoop.signal();
         mpris::playbackStatusChanged()
@@ -94,6 +92,8 @@ Mixer::pause(bool bPause)
 
     LogInfo("bPause: {}\n", bPause);
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
+
+    LockGuard lock {&m_mtxLoop};
 
     if (bPause) snd_pcm_pause(m_pHandle, true);
     else snd_pcm_pause(m_pHandle, false);
@@ -193,7 +193,7 @@ Mixer::loop()
         isize destI = 0;
         nWrites = 0;
 
-        const isize ringSize = m_ringBuff.pop({audio::g_aRenderBuffer, NFRAMES * m_nChannels});
+        m_ringBuff.pop({audio::g_aRenderBuffer, NFRAMES * m_nChannels});
         m_currMs = app::decoder().getCurrentMS();
         nDecodedSamples = NFRAMES*m_nChannels;
 
@@ -211,27 +211,24 @@ Mixer::loop()
         }
 
         {
+            LockGuard lock {&m_mtxLoop};
+            while (m_atom_bPaused.load(atomic::ORDER::ACQUIRE))
             {
-                LockGuard lock {&m_mtxLoop};
-                while (m_atom_bPaused.load(atomic::ORDER::ACQUIRE))
-                {
-                    m_cndLoop.wait(&m_mtxLoop);
+                m_cndLoop.wait(&m_mtxLoop);
 
-                    if (!m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
-                        goto GOTO_done;
-                }
+                if (!m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
+                    goto GOTO_done;
             }
 
-            auto nFrameWritten = snd_pcm_writei(m_pHandle, pRenderBuff, NFRAMES);
+            snd_pcm_sframes_t writeStatus = snd_pcm_writei(m_pHandle, pRenderBuff, NFRAMES);
 
-            if (nFrameWritten < 0)
+            if (writeStatus < 0)
             {
-                LockGuard lock {&m_mtxLoop};
-                nFrameWritten = snd_pcm_recover(m_pHandle, nFrameWritten, 0);
+                writeStatus = snd_pcm_recover(m_pHandle, writeStatus, 0);
 
-                if (nFrameWritten < 0)
+                if (writeStatus < 0)
                 {
-                    LogError("snd_pcm_recover() failed: {}\n", snd_strerror(nFrameWritten));
+                    LogError("snd_pcm_recover() failed: {}\n", snd_strerror(writeStatus));
                     app::quit();
                     goto GOTO_done;
                 }
