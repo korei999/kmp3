@@ -4,7 +4,7 @@
 
 #include <AudioToolbox/AudioToolbox.h>
 
-namespace platform::apple
+namespace platform::coreaudio
 {
 
 struct Mixer : public audio::IMixer

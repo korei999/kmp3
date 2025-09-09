@@ -241,7 +241,8 @@ IMixer::seekOff(adt::f64 offset)
 RingBuffer::RingBuffer(isize capacityPowOf2)
     : m_cap{nextPowerOf2(capacityPowOf2)},
       m_pData{StdAllocator::inst()->zallocV<f32>(m_cap)},
-      m_mtx{Mutex::TYPE::PLAIN}
+      m_mtx{Mutex::TYPE::PLAIN},
+      m_cnd{INIT}
 {
     ADT_ASSERT(capacityPowOf2 > 0, "capacityPowOf2: {}", capacityPowOf2);
 }

@@ -12,7 +12,7 @@
 #endif
 
 #ifdef __APPLE__
-    #include "platform/apple/Mixer.hh"
+    #include "platform/coreaudio/Mixer.hh"
 #endif
 
 #ifdef OPT_SNDIO
@@ -86,7 +86,7 @@ allocMixer(IAllocator* pAlloc)
 
 #ifdef __APPLE__
         case MIXER::COREAUDIO:
-        pMix = pAlloc->alloc<platform::apple::Mixer>();
+        pMix = pAlloc->alloc<platform::coreaudio::Mixer>();
         break;
 #endif
 

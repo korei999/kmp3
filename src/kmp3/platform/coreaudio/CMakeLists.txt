@@ -1,4 +1,4 @@
-# src/kmp3/platform/apple/CMakeLists.txt
+# src/kmp3/platform/coreaudio/CMakeLists.txt
 
 target_compile_definitions(${subProj} PRIVATE "-DOPT_COREAUDIO")
 target_link_libraries(${subProj} PRIVATE

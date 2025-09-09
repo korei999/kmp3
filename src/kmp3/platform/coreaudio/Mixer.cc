@@ -4,7 +4,7 @@
 
 using namespace adt;
 
-namespace platform::apple
+namespace platform::coreaudio
 {
 
 void
@@ -49,31 +49,19 @@ Mixer::writeCallBack(
 {
     f32 *pDest = static_cast<f32*>(pIOData->mBuffers[0].mData);
 
-    static long s_nDecodedSamples = 0;
-    static long s_nWrites = 0;
-
     const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
+    const isize nDecodedSamples = inNumberFrames * m_nChannels;
+    isize nWrites = 0;
     isize destI = 0;
-    for (u32 i = 0; i < inNumberFrames; ++i)
-    {
-        /* fill the buffer when it's empty */
-        if (s_nWrites >= s_nDecodedSamples)
-        {
-            writeFramesLocked({audio::g_aRenderBuffer}, inNumberFrames, &s_nDecodedSamples, &m_currentTimeStamp);
 
-            m_currMs = app::decoder().getCurrentMS();
-            s_nWrites = 0;
-        }
+    m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
+    m_currMs = app::decoder().getCurrentMS();
 
-        for (u32 chIdx = 0; chIdx < m_nChannels; ++chIdx)
-        {
-            /* modify each sample here */
-            pDest[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
-        }
-    }
+    for (isize i = 0; i < nDecodedSamples; ++i)
+        pDest[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
 
-    if (s_nDecodedSamples == 0)
+    if (nDecodedSamples == 0)
     {
         m_currentTimeStamp = 0;
         m_nTotalSamples = 0;

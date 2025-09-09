@@ -24,5 +24,5 @@ if (OPT_SNDIO OR CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    add_subdirectory(apple)
+    add_subdirectory(coreaudio)
 endif()
