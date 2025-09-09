@@ -32,7 +32,7 @@ struct InputBuff
 
 extern InputBuff g_input;
 
-enum class READ_STATUS : adt::u8 { OK_, DONE, BACKSPACE };
+enum class READ_STATUS : adt::u8 { OK_, DONE, BACKSPACE, TIMEOUT };
 
 [[nodiscard]] adt::StringView
 readModeToString(WINDOW_READ_MODE e) noexcept;

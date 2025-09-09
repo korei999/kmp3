@@ -318,7 +318,7 @@ Decoder::writeToRingBuffer(
             /* NOTE: Fill until its good enough, but not all the way, since different audio drivers can ask for different amount of samples each update (like pipewire). */
             if (ringSize >= (pRingBuff->m_cap * 0.75))
             {
-                *pSamplesWritten += nWrites;
+                *pSamplesWritten = nWrites;
                 return audio::ERROR::OK_;
             }
         }

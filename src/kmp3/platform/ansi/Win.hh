@@ -33,7 +33,7 @@ protected:
 
     struct Input
     {
-        enum class TYPE : adt::u8 { KB, MOUSE };
+        enum class TYPE : adt::u8 { KB, MOUSE, TIMEOUT };
 
         /* */
 

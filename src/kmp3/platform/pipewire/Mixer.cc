@@ -233,14 +233,13 @@ Mixer::onProcess()
     isize destI = 0;
     nWrites = 0;
 
-    m_ringBuff.pop({audio::g_aRenderBuffer, nFrames*m_nChannels});
+    nDecodedSamples = nFrames * m_nChannels;
+    m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
     m_currMs = app::decoder().getCurrentMS();
-    nDecodedSamples = nFrames*m_nChannels;
     // m_nTotalSamples = app::decoder().getTotalSamplesCount();
 
     for (isize i = 0; i < nDecodedSamples; ++i)
         pDest[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
-
 
     pBuffData.chunk->offset = 0;
     pBuffData.chunk->stride = stride;

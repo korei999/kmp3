@@ -6,7 +6,6 @@ struct Config
     adt::f32 volume {};
     int updateRate {};
     int imageUpdateRateLimit {};
-    int readTimeout {};
     adt::u64 minSampleRate {};
     adt::u64 maxSampleRate {};
     adt::f64 fontAspectRatio {};

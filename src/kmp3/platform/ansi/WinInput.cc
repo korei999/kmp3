@@ -410,7 +410,11 @@ Win::readFromStdin(const int timeoutMS)
     select(1, &fds, {}, {}, &tv);
     ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
 
-    if (nRead > 1)
+    if (nRead == 0)
+    {
+        return {INVALID_MOUSE, L'\0', Input::TYPE::TIMEOUT };
+    }
+    else if (nRead > 1)
     {
         MouseInput mouse = parseMouse({aBuff, sizeof(aBuff)}, nRead);
         if (mouse != INVALID_MOUSE)
@@ -447,10 +451,14 @@ Win::readWChar()
 {
     namespace c = common;
 
-    Input in = readFromStdin(app::g_config.readTimeout);
+    Input in = readFromStdin(app::g_config.updateRate);
 
     int wc = in.key;
-    if (wc == 0 /* timeout */ || wc == keys::CTRL_C || wc == keys::ESC)
+    if (in.eType == Input::TYPE::TIMEOUT)
+    {
+        return c::READ_STATUS::TIMEOUT;
+    }
+    else if (wc == 0 || wc == keys::CTRL_C || wc == keys::ESC)
     {
         c::g_input.zeroOut();
         return c::READ_STATUS::DONE;
@@ -504,6 +512,9 @@ Win::procInput()
 
         case Input::TYPE::MOUSE:
         procMouse(in.mouse);
+        break;
+
+        case Input::TYPE::TIMEOUT:
         break;
     }
 }

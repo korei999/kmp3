@@ -27,7 +27,7 @@ Mixer::init()
             m_pHandle,
             SND_PCM_FORMAT_FLOAT,
             SND_PCM_ACCESS_RW_INTERLEAVED,
-            2, 48000, 1, 100000
+            2, 48000, 1, 50000
         )) >= 0,
         "({}): {}", err, snd_strerror(err)
     );
@@ -120,7 +120,7 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
             m_pHandle,
             SND_PCM_FORMAT_FLOAT,
             SND_PCM_ACCESS_RW_INTERLEAVED,
-            m_nChannels, sampleRate, 1, 250000
+            m_nChannels, sampleRate, 1, 50000
         )) >= 0,
         "({}): {}", err, snd_strerror(err)
     );
@@ -170,7 +170,7 @@ Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
             m_pHandle,
             SND_PCM_FORMAT_FLOAT,
             SND_PCM_ACCESS_RW_INTERLEAVED,
-            nChannels, sampleRate, 1, 100000
+            nChannels, sampleRate, 1, 50000
         )) >= 0,
         "({}): {}", err, snd_strerror(err)
     );
@@ -197,9 +197,9 @@ Mixer::loop()
         isize destI = 0;
         nWrites = 0;
 
-        m_ringBuff.pop({audio::g_aRenderBuffer, NFRAMES * m_nChannels});
+        nDecodedSamples = NFRAMES * m_nChannels;
+        m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
         m_currMs = app::decoder().getCurrentMS();
-        nDecodedSamples = NFRAMES*m_nChannels;
         // m_nTotalSamples = app::decoder().getTotalSamplesCount();
 
         for (isize i = 0; i < nDecodedSamples; ++i)

@@ -10,7 +10,6 @@ constexpr Config CONFIG {
     .volume = 0.4f, /* Startup volume. */
     .updateRate = 500, /* Ui update rate (ms). */
     .imageUpdateRateLimit = 100, /* (ms). Is also limited by UPDATE_RATE. */
-    .readTimeout = 5000, /* String input timeout (ms). */
     .minSampleRate = 1000,
     .maxSampleRate = 9999999,
     .fontAspectRatio = 1.0 / 2.0, /* Typical monospaced font is 1/2 or 3/5 (width/height). */
