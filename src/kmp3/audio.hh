@@ -21,7 +21,6 @@ struct RingBuffer
     adt::Mutex m_mtx {};
     adt::CndVar m_cnd {};
     adt::Thread m_thrd {};
-    bool m_bDone {};
 
     /* */
 

@@ -231,7 +231,6 @@ RingBuffer::destroy() noexcept
 {
     {
         LockGuard lockGuard {&m_mtx};
-        m_bDone = true;
         m_cnd.signal();
         m_thrd.join();
     }
