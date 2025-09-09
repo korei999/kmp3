@@ -3,6 +3,8 @@
 add_subdirectory(ansi)
 add_subdirectory(ffmpeg)
 
+set(bAtLeastOneAudioDriver false)
+
 if (OPT_ALSA)
     add_subdirectory(alsa)
 endif()
@@ -25,4 +27,8 @@ endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     add_subdirectory(coreaudio)
+endif()
+
+if (NOT bAtLeastOneAudioDriver)
+    message(FATAL_ERROR "No audio driver was enabled.")
 endif()

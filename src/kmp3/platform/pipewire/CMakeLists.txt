@@ -2,6 +2,7 @@
 
 pkg_check_modules(PIPEWIRE libpipewire-0.3)
 if (PIPEWIRE_FOUND)
+    set(bAtLeastOneAudioDriver true PARENT_SCOPE)
     allPackageFlags(TARGET ${subProj} NAME PIPEWIRE)
 
     target_compile_definitions(${subProj} PRIVATE "-DOPT_PIPEWIRE")
