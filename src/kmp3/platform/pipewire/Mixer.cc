@@ -306,17 +306,4 @@ Mixer::setVolume(const f32 volume)
     mpris::volumeChanged();
 }
 
-i64
-Mixer::getCurrentMS()
-{
-    return m_currMs;
-}
-
-i64
-Mixer::getTotalMS()
-{
-    LockGuard lock {&app::decoder().m_mtx};
-    return app::decoder().getTotalMS();
-}
-
 } /* namespace platform::pipewire */

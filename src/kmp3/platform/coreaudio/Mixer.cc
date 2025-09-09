@@ -176,16 +176,4 @@ Mixer::setVolume(const f32 volume)
     m_volume = utils::clamp(volume, 0.0f, app::g_config.maxVolume);
 }
 
-i64
-Mixer::getCurrentMS()
-{
-    return m_currMs;
-}
-
-i64
-Mixer::getTotalMS()
-{
-    return app::decoder().getTotalMS();
-}
-
 } /* namespace platform::apple */

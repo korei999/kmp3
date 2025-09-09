@@ -62,8 +62,6 @@ struct IMixer
     virtual void togglePause() = 0;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) = 0;
     virtual void setVolume(const adt::f32 volume) = 0;
-    [[nodiscard]] virtual adt::i64 getCurrentMS() = 0;
-    [[nodiscard]] virtual adt::i64 getTotalMS() = 0;
 
     /* */
 
@@ -88,6 +86,8 @@ struct IMixer
     void restoreSampleRate();
     void seekMS(adt::f64 ms);
     void seekOff(adt::f64 offset);
+    [[nodiscard]] adt::i64 getCurrentMS();
+    [[nodiscard]] adt::i64 getTotalMS();
 
 protected:
     adt::THREAD_STATUS refillRingBufferLoop();
@@ -103,8 +103,6 @@ struct DummyMixer : public IMixer
     virtual void togglePause() override final {}
     virtual void changeSampleRate(adt::u64, bool) override final {}
     virtual void setVolume(const adt::f32) override final {}
-    virtual adt::i64 getCurrentMS() override final { return {}; };
-    virtual adt::i64 getTotalMS() override final { return {}; };
 };
 
 enum class ERROR : adt::u8

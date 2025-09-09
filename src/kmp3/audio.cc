@@ -217,6 +217,19 @@ IMixer::seekOff(adt::f64 offset)
     seekMS(time);
 }
 
+i64
+IMixer::getCurrentMS()
+{
+    return m_currMs;
+}
+
+i64
+IMixer::getTotalMS()
+{
+    LockGuard lockGuard {&app::decoder().m_mtx};
+    return app::decoder().getTotalMS();
+}
+
 RingBuffer::RingBuffer(isize capacityPowOf2)
     : m_cap{nextPowerOf2(capacityPowOf2)},
       m_pData{StdAllocator::inst()->zallocV<f32>(m_cap)},
