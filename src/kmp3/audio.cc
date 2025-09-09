@@ -9,11 +9,13 @@ namespace audio
 
 f32 g_aRenderBuffer[CHUNK_SIZE] {};
 
-void
+IMixer&
 IMixer::startDecoderThread()
 {
     new(&m_ringBuff) RingBuffer {CHUNK_SIZE};
     new(&m_ringBuff.m_thrd) Thread {(ThreadFn)methodPointerNonVirtual(&IMixer::loop), this};
+
+    return *this;
 }
 
 THREAD_STATUS
@@ -32,6 +34,12 @@ IMixer::loop()
     }
 
     return THREAD_STATUS{0};
+}
+
+IMixer&
+IMixer::start()
+{
+    startDecoderThread().init();
 }
 
 void
@@ -53,6 +61,7 @@ IMixer::writeFramesLocked2(long* pSamplesWritten, i64* pPcmPos)
     {
         pause(true);
         app::decoder().close();
+        m_ringBuff.clear();
         m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
         m_atom_bSongEnd.store(true, atomic::ORDER::RELEASE);
     }
@@ -238,7 +247,6 @@ RingBuffer::pop(Span<f32> sp) noexcept
 {
     LockGuard lockGuard {&m_mtx};
 
-    /* Write as much as we can. */
     if (sp.size() > m_size)
     {
         LogWarn{"dropping some size: {} to {}\n", sp.size(), m_size};

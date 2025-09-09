@@ -5,7 +5,7 @@
 namespace audio
 {
 
-constexpr adt::u64 CHUNK_SIZE = (1 << 15); /* big enough */
+constexpr adt::u64 CHUNK_SIZE = (1 << 16); /* big enough */
 extern adt::f32 g_aRenderBuffer[CHUNK_SIZE];
 
 struct RingBuffer
@@ -66,9 +66,8 @@ struct IMixer
 
     /* */
 
-    void startDecoderThread();
+    IMixer& start();
     void writeFramesLocked2(long* pSamplesWritten, adt::i64* pPcmPos);
-
     void writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
     bool isMuted() const;
     void toggleMute();
@@ -88,6 +87,7 @@ struct IMixer
     void restoreSampleRate();
 
 protected:
+    IMixer& startDecoderThread();
     adt::THREAD_STATUS loop();
 };
 

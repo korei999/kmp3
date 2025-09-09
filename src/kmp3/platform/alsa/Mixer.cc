@@ -223,16 +223,16 @@ Mixer::loop()
 
     constexpr isize NFRAMES = 2048;
 
-    const isize ringSize = m_ringBuff.pop({audio::g_aRenderBuffer, NFRAMES * m_nChannels});
-    m_currMs = app::decoder().getCurrentMS();
-    nDecodedSamples = NFRAMES*m_nChannels;
-
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
         const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
         isize destI = 0;
         nWrites = 0;
+
+        const isize ringSize = m_ringBuff.pop({audio::g_aRenderBuffer, NFRAMES * m_nChannels});
+        m_currMs = app::decoder().getCurrentMS();
+        nDecodedSamples = NFRAMES*m_nChannels;
 
         for (isize i = 0; i < nDecodedSamples; ++i)
             pRenderBuff[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
