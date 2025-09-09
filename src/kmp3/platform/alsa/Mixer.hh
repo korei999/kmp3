@@ -11,7 +11,6 @@ struct Mixer : public audio::IMixer
 {
     snd_pcm_t *m_pHandle {};
 
-    adt::f64 m_currMs {};
     adt::atomic::Int m_atom_bRunning {false};
     adt::atomic::Int m_atom_bLoopDone {false};
     adt::Thread m_thrdLoop {};

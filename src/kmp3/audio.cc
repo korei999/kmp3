@@ -44,9 +44,7 @@ IMixer::play2(adt::StringView svPath)
     if (m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) app::decoder().close();
 
     m_ringBuff.clear();
-    m_currentTimeStamp = 0;
-    m_nTotalSamples = 0;
-    m_currMs = 0;
+    m_currentTimeStamp = m_nTotalSamples = m_currMs = 0;
 
     if (audio::ERROR err = app::decoder().open(svPath);
         err != audio::ERROR::OK_
@@ -83,6 +81,7 @@ IMixer::fillRingBuffer()
         &samplesWritten,
         &m_currentTimeStamp
     );
+    m_currMs = app::decoder().getCurrentMS();
 
     if (err == audio::ERROR::END_OF_FILE)
     {

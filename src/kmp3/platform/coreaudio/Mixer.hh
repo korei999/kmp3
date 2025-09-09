@@ -10,7 +10,6 @@ namespace platform::coreaudio
 struct Mixer : public audio::IMixer
 {
     AudioUnit m_unit {};
-    adt::f64 m_currMs {};
 
     /* */
 

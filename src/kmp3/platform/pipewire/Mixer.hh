@@ -29,7 +29,6 @@ namespace platform::pipewire
 class Mixer : public audio::IMixer
 {
 protected:
-    adt::u8 m_nChannels = 2;
     enum spa_audio_format m_eformat {};
 
     pw_thread_loop* m_pThrdLoop {};

@@ -51,8 +51,6 @@ Mixer::loop()
 
         nDecodedSamples = N_BUF_FRAMES * m_nChannels;
         m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
-        m_currMs = app::decoder().getCurrentMS();
-        // m_nTotalSamples = app::decoder().getTotalSamplesCount();
 
         isize destI = 0;
         nWrites = 0;
