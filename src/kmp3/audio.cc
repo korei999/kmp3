@@ -55,6 +55,7 @@ IMixer::play2(adt::StringView svPath)
         return false;
     }
 
+    m_nTotalSamples = app::decoder().getTotalSamplesCount();
     m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
     m_ringBuff.m_cnd.signal();
 

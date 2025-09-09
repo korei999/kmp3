@@ -170,11 +170,6 @@ Mixer::play(StringView svPath)
 void
 Mixer::pause(bool bPause)
 {
-    defer(
-        m_cndLoop.signal();
-        mpris::playbackStatusChanged()
-    );
-
     bool bCurr = m_atom_bPaused.load(atomic::ORDER::ACQUIRE);
     if (bCurr == bPause) return;
 
@@ -182,8 +177,17 @@ Mixer::pause(bool bPause)
 
     LockGuard lock {&m_mtxLoop};
 
-    if (bPause) sio_stop(m_pHdl);
-    else sio_start(m_pHdl);
+    if (bPause)
+    {
+        sio_stop(m_pHdl);
+    }
+    else
+    {
+        m_cndLoop.signal();
+        sio_start(m_pHdl);
+    }
+
+    mpris::playbackStatusChanged();
 }
 
 void
