@@ -17,10 +17,8 @@ readModeToString(WINDOW_READ_MODE e) noexcept
 }
 
 StringView
-allocTimeString(Arena* pArena, int width)
+allocTimeString(IArena* pArena, int width)
 {
-    ArenaStateGuard pushed {pArena};
-
     auto& mix = app::mixer();
     char* pBuff = pArena->zallocV<char>(width + 1);
 

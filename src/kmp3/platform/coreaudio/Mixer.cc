@@ -57,19 +57,10 @@ Mixer::writeCallBack(
 
     m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
     m_currMs = app::decoder().getCurrentMS();
+    m_nTotalSamples = app::decoder().getTotalSamplesCount();
 
     for (isize i = 0; i < nDecodedSamples; ++i)
         pDest[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
-
-    if (nDecodedSamples == 0)
-    {
-        m_currentTimeStamp = 0;
-        m_nTotalSamples = 0;
-    }
-    else
-    {
-        m_nTotalSamples = app::decoder().getTotalSamplesCount();
-    }
 
     return noErr;
 }

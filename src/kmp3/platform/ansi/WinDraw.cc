@@ -166,6 +166,8 @@ Win::volume()
 void
 Win::time()
 {
+    ArenaStateGuard pushed {m_pArena};
+
     const auto width = m_termSize.width;
     const int off = m_prevImgWidth + 2;
 
