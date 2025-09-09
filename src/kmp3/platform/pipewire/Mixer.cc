@@ -159,20 +159,7 @@ Mixer::play(StringView svPath)
 
     pause(true);
 
-    {
-        LockGuard lockDec {&app::decoder().m_mtx};
-
-        if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) app::decoder().close();
-
-        if (audio::ERROR err = app::decoder().open(svPath);
-            err != audio::ERROR::OK_
-        )
-        {
-            return false;
-        }
-
-        m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
-    }
+    if (!play2(svPath)) return false;
 
     setNChannels(app::decoder().getChannelsCount());
     changeSampleRate(app::decoder().getSampleRate(), true);
@@ -241,21 +228,20 @@ Mixer::onProcess()
 
     if (nFrames*m_nChannels > utils::size(audio::g_aRenderBuffer)) nFrames = utils::size(audio::g_aRenderBuffer);
 
-    static long s_nDecodedSamples = 0;
-    static long s_nWrites = 0;
-
     const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
+    isize nDecodedSamples = 0;
+    isize nWrites = 0;
     isize destI = 0;
-    s_nWrites = 0;
+    nWrites = 0;
 
     const isize ringSize = m_ringBuff.pop({audio::g_aRenderBuffer, nFrames*m_nChannels});
     m_currMs = app::decoder().getCurrentMS();
-    s_nDecodedSamples = nFrames*m_nChannels;
-    for (isize i = 0; i < s_nDecodedSamples; ++i)
-        pDest[destI++] = audio::g_aRenderBuffer[s_nWrites++] * vol;
+    nDecodedSamples = nFrames*m_nChannels;
+    for (isize i = 0; i < nDecodedSamples; ++i)
+        pDest[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
 
-    if (s_nDecodedSamples == 0)
+    if (nDecodedSamples == 0)
     {
         m_currentTimeStamp = 0;
         m_nTotalSamples = 0;
@@ -322,32 +308,6 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     if (bSave) m_sampleRate = sampleRate;
 
     m_changedSampleRate = sampleRate;
-}
-
-void
-Mixer::seekMS(f64 ms)
-{
-    {
-        LockGuard lock {&app::decoder().m_mtx};
-
-        if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
-
-        ms = utils::clamp(ms, 0.0, f64(app::decoder().getTotalMS()));
-        app::decoder().seekMS(ms);
-
-        m_currMs = ms;
-        m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
-        m_nTotalSamples = app::decoder().getTotalSamplesCount();
-    }
-
-    mpris::seeked();
-}
-
-void
-Mixer::seekOff(f64 offset)
-{
-    auto time = app::decoder().getCurrentMS() + offset;
-    seekMS(time);
 }
 
 void

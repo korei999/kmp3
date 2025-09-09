@@ -67,20 +67,7 @@ Mixer::play(StringView svPath)
 
     pause(true);
 
-    {
-        LockGuard lockDec {&app::decoder().m_mtx};
-
-        if (m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) app::decoder().close();
-
-        if (audio::ERROR err = app::decoder().open(svPath);
-            err != audio::ERROR::OK_
-        )
-        {
-            return false;
-        }
-
-        m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
-    }
+    if (!play2(svPath)) return false;
 
     setConfig(app::decoder().getSampleRate(), app::decoder().getChannelsCount(), true);
 
@@ -137,30 +124,6 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 
     if (bSave) m_sampleRate = sampleRate;
     m_changedSampleRate = sampleRate;
-}
-
-void
-Mixer::seekMS(f64 ms)
-{
-    LockGuard lock {&app::decoder().m_mtx};
-
-    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
-
-    ms = utils::clamp(ms, 0.0, f64(app::decoder().getTotalMS()));
-    app::decoder().seekMS(ms);
-
-    m_currMs = ms;
-    m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
-    m_nTotalSamples = app::decoder().getTotalSamplesCount();
-
-    mpris::seeked();
-}
-
-void
-Mixer::seekOff(f64 offset)
-{
-    auto time = app::decoder().getCurrentMS() + offset;
-    seekMS(time);
 }
 
 void
@@ -248,22 +211,30 @@ Mixer::loop()
         }
 
         {
-            LockGuard lock {&m_mtxLoop};
-            while (m_atom_bPaused.load(atomic::ORDER::ACQUIRE))
             {
-                m_cndLoop.wait(&m_mtxLoop);
+                LockGuard lock {&m_mtxLoop};
+                while (m_atom_bPaused.load(atomic::ORDER::ACQUIRE))
+                {
+                    m_cndLoop.wait(&m_mtxLoop);
 
-                if (!m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
-                    goto GOTO_done;
+                    if (!m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
+                        goto GOTO_done;
+                }
             }
 
             auto nFrameWritten = snd_pcm_writei(m_pHandle, pRenderBuff, NFRAMES);
-            if (nFrameWritten < 0) nFrameWritten = snd_pcm_recover(m_pHandle, nFrameWritten, 0);
+
             if (nFrameWritten < 0)
             {
-                LogError("snd_pcm_recover() failed: {}\n", snd_strerror(nFrameWritten));
-                app::quit();
-                goto GOTO_done;
+                LockGuard lock {&m_mtxLoop};
+                nFrameWritten = snd_pcm_recover(m_pHandle, nFrameWritten, 0);
+
+                if (nFrameWritten < 0)
+                {
+                    LogError("snd_pcm_recover() failed: {}\n", snd_strerror(nFrameWritten));
+                    app::quit();
+                    goto GOTO_done;
+                }
             }
         }
     }

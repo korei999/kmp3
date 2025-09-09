@@ -49,6 +49,7 @@ struct IMixer
     adt::f32 m_volume = 0.5f;
     adt::i64 m_currentTimeStamp {};
     adt::i64 m_nTotalSamples {};
+    adt::f64 m_currMs {};
 
     RingBuffer m_ringBuff {};
 
@@ -58,14 +59,13 @@ struct IMixer
     virtual void pause(bool bPause) = 0;
     virtual void togglePause() = 0;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) = 0;
-    virtual void seekMS(adt::f64 ms) = 0;
-    virtual void seekOff(adt::f64 offset) = 0;
     virtual void setVolume(const adt::f32 volume) = 0;
     [[nodiscard]] virtual adt::i64 getCurrentMS() = 0;
     [[nodiscard]] virtual adt::i64 getTotalMS() = 0;
 
     /* */
 
+    IMixer& startDecoderThread();
     IMixer& start();
     void writeFramesLocked2(long* pSamplesWritten, adt::i64* pPcmPos);
     void writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
@@ -85,10 +85,12 @@ struct IMixer
     void changeSampleRateDown(int ms, bool bSave);
     void changeSampleRateUp(int ms, bool bSave);
     void restoreSampleRate();
+    void seekMS(adt::f64 ms);
+    void seekOff(adt::f64 offset);
 
 protected:
-    IMixer& startDecoderThread();
     adt::THREAD_STATUS loop();
+    bool play2(adt::StringView svPath);
 };
 
 struct DummyMixer : public IMixer
@@ -99,8 +101,6 @@ struct DummyMixer : public IMixer
     virtual void pause(bool) override final {}
     virtual void togglePause() override final {}
     virtual void changeSampleRate(adt::u64, bool) override final {}
-    virtual void seekMS(adt::f64) override final {}
-    virtual void seekOff(adt::f64) override final {}
     virtual void setVolume(const adt::f32) override final {}
     virtual adt::i64 getCurrentMS() override final { return {}; };
     virtual adt::i64 getTotalMS() override final { return {}; };

@@ -1,6 +1,7 @@
 #include "audio.hh"
 
 #include "app.hh"
+#include "platform/mpris/mpris.hh"
 
 using namespace adt;
 
@@ -36,10 +37,33 @@ IMixer::loop()
     return THREAD_STATUS{0};
 }
 
+bool
+IMixer::play2(adt::StringView svPath)
+{
+    LockGuard lockDec {&app::decoder().m_mtx};
+
+    if (m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) app::decoder().close();
+
+    m_ringBuff.clear();
+
+    if (audio::ERROR err = app::decoder().open(svPath);
+        err != audio::ERROR::OK_
+    )
+    {
+        return false;
+    }
+
+    m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
+    m_ringBuff.m_cnd.signal();
+
+    return true;
+}
+
 IMixer&
 IMixer::start()
 {
     startDecoderThread().init();
+    return *this;
 }
 
 void
@@ -186,6 +210,34 @@ IMixer::restoreSampleRate()
     changeSampleRate(m_sampleRate, false);
 }
 
+void
+IMixer::seekMS(adt::f64 ms)
+{
+    {
+        LockGuard lock {&app::decoder().m_mtx};
+
+        if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
+
+        ms = utils::clamp(ms, 0.0, f64(app::decoder().getTotalMS()));
+        m_ringBuff.clear();
+        m_ringBuff.m_cnd.signal();
+        app::decoder().seekMS(ms);
+
+        m_currMs = ms;
+        m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
+        m_nTotalSamples = app::decoder().getTotalSamplesCount();
+    }
+
+    mpris::seeked();
+}
+
+void
+IMixer::seekOff(adt::f64 offset)
+{
+    f64 time = app::decoder().getCurrentMS() + offset;
+    seekMS(time);
+}
+
 RingBuffer::RingBuffer(isize capacityPowOf2)
     : m_cap{nextPowerOf2(capacityPowOf2)},
       m_pData{StdAllocator::inst()->zallocV<f32>(m_cap)},
@@ -218,7 +270,7 @@ RingBuffer::push(const Span<const f32> sp) noexcept
 
     if (sp.size() + m_size > m_cap)
     {
-        LogWarn{"dropping out of range push (size: {}\n", sp.size()};
+        LogWarn{"dropping out of range push (sp.size: {}, size, cap)\n", sp.size(), m_size, m_cap};
         return sp.size();
     }
 
@@ -239,19 +291,33 @@ RingBuffer::push(const Span<const f32> sp) noexcept
 
     m_lastI = nextLastI;
     m_size += sp.size();
+    m_cnd.signal();
     return m_size;
 }
 
 isize
 RingBuffer::pop(Span<f32> sp) noexcept
 {
-    LockGuard lockGuard {&m_mtx};
-
-    if (sp.size() > m_size)
     {
-        LogWarn{"dropping some size: {} to {}\n", sp.size(), m_size};
-        sp.m_size = m_size;
+        LockGuard lockGuard {&m_mtx};
+
+        if (sp.size() > m_cap)
+        {
+            LogWarn{"dropping some size: {} to {}\n", sp.size(), m_cap};
+            sp.m_size = m_cap;
+        }
     }
+
+    {
+        LockGuard lockGuard {&m_mtx};
+        while (sp.size() > m_size)
+        {
+            LogWarn{"waiting for: {}, (m_size: {})\n", sp.size(), m_size};
+            m_cnd.wait(&m_mtx);
+        }
+    }
+
+    LockGuard lockGuard {&m_mtx};
 
     const isize nextFirstI = (m_firstI + sp.size()) & (m_cap - 1);
 

@@ -42,34 +42,26 @@ Mixer::loop()
     i16* pRenderBuffer = stdAl.zallocV<i16>(audio::CHUNK_SIZE);
     defer( stdAl.free(pRenderBuffer) );
 
-    long s_nDecodedSamples = 0;
-    long s_nWrites = 0;
+    long nDecodedSamples = 0;
+    long nWrites = 0;
 
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
         const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
+        nDecodedSamples = N_BUF_FRAMES * m_nChannels;
+        m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
+        m_currMs = app::decoder().getCurrentMS();
         isize destI = 0;
-        for (u32 frameIdx = 0; frameIdx < N_BUF_FRAMES; ++frameIdx)
+        nWrites = 0;
+
+        for (isize i = 0; i < nDecodedSamples; ++i)
         {
-            /* fill the buffer when it's empty */
-            if (s_nWrites >= s_nDecodedSamples)
-            {
-                writeFramesLocked(audio::g_aRenderBuffer, N_BUF_FRAMES, &s_nDecodedSamples, &m_currentTimeStamp);
-
-                m_currMs = app::decoder().getCurrentMS();
-                s_nWrites = 0;
-            }
-
-            for (u32 chIdx = 0; chIdx < m_par.pchan; ++chIdx)
-            {
-                /* Convert to signed 16bit. */
-                const i16 sample = std::numeric_limits<i16>::max() * (audio::g_aRenderBuffer[s_nWrites++] * vol);
-                pRenderBuffer[destI++] = sample;
-            }
+            const i16 sample = std::numeric_limits<i16>::max() * (audio::g_aRenderBuffer[nWrites++] * vol);
+            pRenderBuffer[destI++] = sample;
         }
 
-        if (s_nDecodedSamples == 0)
+        if (nDecodedSamples == 0)
         {
             m_currentTimeStamp = 0;
             m_nTotalSamples = 0;
@@ -171,21 +163,7 @@ Mixer::play(StringView svPath)
     const f64 prevSpeed = f64(m_changedSampleRate) / f64(m_sampleRate);
 
     pause(true);
-
-    {
-        LockGuard lockDec {&app::decoder().m_mtx};
-
-        if (m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) app::decoder().close();
-
-        if (audio::ERROR err = app::decoder().open(svPath);
-            err != audio::ERROR::OK_
-        )
-        {
-            return false;
-        }
-
-        m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
-    }
+    if (!play2(svPath)) return false;
 
     setConfig(app::decoder().getSampleRate(), app::decoder().getChannelsCount(), true);
 
@@ -231,30 +209,6 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 
     if (bSave) m_sampleRate = sampleRate;
     m_changedSampleRate = sampleRate;
-}
-
-void
-Mixer::seekMS(f64 ms)
-{
-    LockGuard lock {&app::decoder().m_mtx};
-
-    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
-
-    ms = utils::clamp(ms, 0.0, f64(app::decoder().getTotalMS()));
-    app::decoder().seekMS(ms);
-
-    m_currMs = ms;
-    m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
-    m_nTotalSamples = app::decoder().getTotalSamplesCount();
-
-    mpris::seeked();
-}
-
-void
-Mixer::seekOff(f64 offset)
-{
-    auto time = app::decoder().getCurrentMS() + offset;
-    seekMS(time);
 }
 
 void

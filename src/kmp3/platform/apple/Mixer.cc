@@ -152,18 +152,7 @@ Mixer::play(StringView svPath)
 
     pause(true);
 
-    {
-        if (m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) app::decoder().close();
-
-        if (audio::ERROR err = app::decoder().open(svPath);
-            err != audio::ERROR::OK_
-        )
-        {
-            return false;
-        }
-
-        m_atom_bDecodes.store(true, atomic::ORDER::RELAXED);
-    }
+    if (!play2(svPath)) return false;
 
     setConfig(app::decoder().getSampleRate(), app::decoder().getChannelsCount(), true);
 
@@ -202,28 +191,6 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 
     if (bSave) m_sampleRate = sampleRate;
     m_changedSampleRate = sampleRate;
-}
-
-void
-Mixer::seekMS(f64 ms)
-{
-    LockGuard lockDec {&app::decoder().m_mtx};
-
-    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
-
-    ms = utils::clamp(ms, 0.0, f64(app::decoder().getTotalMS()));
-    app::decoder().seekMS(ms);
-
-    m_currMs = ms;
-    m_currentTimeStamp = (ms * m_sampleRate * m_nChannels) / 1000.0;
-    m_nTotalSamples = app::decoder().getTotalSamplesCount();
-}
-
-void
-Mixer::seekOff(f64 offset)
-{
-    auto time = app::decoder().getCurrentMS() + offset;
-    seekMS(time);
 }
 
 void

@@ -34,7 +34,6 @@ protected:
 
     pw_thread_loop* m_pThrdLoop {};
     pw_stream* m_pStream {};
-    adt::f64 m_currMs {};
 
     /* */
 
@@ -45,8 +44,6 @@ public:
     virtual void pause(bool bPause) override final;
     virtual void togglePause() override final;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override final;
-    virtual void seekMS(adt::f64 ms) override final;
-    virtual void seekOff(adt::f64 offset) override final;
     virtual void setVolume(const adt::f32 volume) override final;
     [[nodiscard]] virtual adt::i64 getCurrentMS() override final;
     [[nodiscard]] virtual adt::i64 getTotalMS() override final;
