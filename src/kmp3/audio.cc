@@ -30,8 +30,7 @@ IMixer::loop()
                 m_ringBuff.m_cnd.wait(&m_ringBuff.m_mtx);
         }
 
-        long weDontCare = 0;
-        writeFramesLocked2(&weDontCare, &m_currentTimeStamp);
+        fillRingBuffer();
     }
 
     return THREAD_STATUS{0};
@@ -70,18 +69,18 @@ IMixer::start()
 }
 
 void
-IMixer::writeFramesLocked2(long* pSamplesWritten, i64* pPcmPos)
+IMixer::fillRingBuffer()
 {
     LockGuard lockDec {&app::decoder().m_mtx};
 
-    *pSamplesWritten = 0;
     if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
+    long samplesWritten = 0;
     audio::ERROR err = app::decoder().writeToRingBuffer(
         &m_ringBuff,
         m_nChannels,
-        pSamplesWritten,
-        pPcmPos
+        &samplesWritten,
+        &m_currentTimeStamp
     );
 
     if (err == audio::ERROR::END_OF_FILE)
@@ -89,29 +88,6 @@ IMixer::writeFramesLocked2(long* pSamplesWritten, i64* pPcmPos)
         pause(true);
         app::decoder().close();
         m_ringBuff.clear();
-        m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
-        m_atom_bSongEnd.store(true, atomic::ORDER::RELEASE);
-    }
-}
-
-void
-IMixer::writeFramesLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i64* pPcmPos)
-{
-    LockGuard lockDec {&app::decoder().m_mtx};
-
-    *pSamplesWritten = 0;
-    if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
-
-    audio::ERROR err = app::decoder().writeToBuffer(
-        spBuff,
-        nFrames, m_nChannels,
-        pSamplesWritten, pPcmPos
-    );
-
-    if (err == audio::ERROR::END_OF_FILE)
-    {
-        pause(true);
-        app::decoder().close();
         m_atom_bDecodes.store(false, atomic::ORDER::RELEASE);
         m_atom_bSongEnd.store(true, atomic::ORDER::RELEASE);
     }
@@ -282,9 +258,7 @@ RingBuffer::push(const Span<const f32> sp) noexcept
 
     if (m_lastI >= m_firstI)
     {
-        const isize nUntilEnd = utils::min(m_cap - (m_lastI), sp.size());
-        // const isize nUntilEnd = m_size - utils::min(m_cap, m_lastI + sp.size());
-
+        const isize nUntilEnd = utils::min(m_cap - m_lastI, sp.size());
         utils::memCopy(m_pData + m_lastI, sp.data(), nUntilEnd);
         utils::memCopy(m_pData, sp.data() + nUntilEnd, sp.size() - nUntilEnd);
     }

@@ -21,11 +21,6 @@ namespace platform::ffmpeg
 
 struct Decoder : audio::IDecoder
 {
-    [[nodiscard]] virtual audio::ERROR writeToBuffer(
-        adt::Span<adt::f32> spBuff, const int nFrames, const int nChannels,
-        long* pSamplesWritten, adt::isize* pPcmPos
-    ) override final;
-
     [[nodiscard]] virtual audio::ERROR writeToRingBuffer(
         audio::RingBuffer* pRingBuff,
         const int nChannels,

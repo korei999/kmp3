@@ -62,7 +62,10 @@ Decoder::destroy()
 {
     LogDebug("Decoder::destroy() ATTEMPT\n");
 
-    close();
+    {
+        LockGuard lockGuard {&m_mtx};
+        close();
+    }
     m_mtx.destroy();
 
     LogDebug("Decoder::destroy()\n");
@@ -255,77 +258,6 @@ Decoder::open(StringView svPath)
 }
 
 audio::ERROR
-Decoder::writeToBuffer(
-    Span<f32> spBuff,
-    const int nFrames,
-    [[maybe_unused]] const int nChannels,
-    long* pSamplesWritten,
-    i64* pPcmPos
-)
-{
-    if (!m_pStream) return audio::ERROR::END_OF_FILE;
-
-    int err = 0;
-    long nWrites = 0;
-
-    AVPacket packet {};
-    while (av_read_frame(m_pFormatCtx, &packet) == 0)
-    {
-        defer( av_packet_unref(&packet) );
-
-        if (packet.stream_index != m_pStream->index) continue;
-        err = avcodec_send_packet(m_pCodecCtx, &packet);
-        if (err != 0 && err != AVERROR(EAGAIN))
-            LogDebug("!EAGAIN\n");
-
-        AVFrame frame {};
-        while ((err = avcodec_receive_frame(m_pCodecCtx, &frame)) == 0)
-        {
-            defer( av_frame_unref(&frame) );
-
-            f64 currentTimeInSeconds = av_q2d(m_pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
-            m_currentMS = currentTimeInSeconds * 1000.0;
-            long pcmPos = currentTimeInSeconds * frame.ch_layout.nb_channels * frame.sample_rate;
-            m_currentSamplePos = pcmPos;
-            *pPcmPos = pcmPos;
-
-            AVFrame res {};
-            /* NOTE: not changing sample rate here, changing pipewire's sample rate instead */
-            res.sample_rate = frame.sample_rate;
-            res.ch_layout = frame.ch_layout;
-            res.format = AV_SAMPLE_FMT_FLT;
-            defer( av_frame_unref(&res) );
-
-            swr_config_frame(m_pSwr, &res, &frame);
-            err = swr_convert_frame(m_pSwr, &res, &frame);
-
-            if (err < 0)
-            {
-                LogDebug("swr_convert_frame(): {}\n", av_err2str(err));
-                continue;
-            }
-
-            int maxSamples = res.nb_samples * res.ch_layout.nb_channels;
-            if (maxSamples >= spBuff.size()) maxSamples = spBuff.size() - 1;
-
-            ADT_ASSERT(res.ch_layout.nb_channels > 0, "{}", res.ch_layout.nb_channels);
-
-            utils::memCopy(spBuff.data() + nWrites, reinterpret_cast<f32*>(res.data[0]), maxSamples);
-            nWrites += maxSamples;
-
-            /* return when its filled enough */
-            if (nWrites >= maxSamples && nWrites >= nFrames * res.ch_layout.nb_channels)
-            {
-                *pSamplesWritten += nWrites;
-                return audio::ERROR::OK_;
-            }
-        }
-    }
-
-    return audio::ERROR::END_OF_FILE;
-}
-
-audio::ERROR
 Decoder::writeToRingBuffer(
     audio::RingBuffer* pRingBuff,
     [[maybe_unused]] const int nChannels,
@@ -383,7 +315,8 @@ Decoder::writeToRingBuffer(
             const isize ringSize = pRingBuff->push(Span{reinterpret_cast<f32*>(res.data[0]), nFrameSamples});
             nWrites += nFrameSamples;
 
-            if (ringSize >= (pRingBuff->m_cap >> 1)) /* TODO: greater than what? */
+            /* NOTE: Fill until its good enough, but not all the way, since different audio drivers can ask for different amount of samples each update (like pipewire). */
+            if (ringSize >= (pRingBuff->m_cap * 0.75))
             {
                 *pSamplesWritten += nWrites;
                 return audio::ERROR::OK_;

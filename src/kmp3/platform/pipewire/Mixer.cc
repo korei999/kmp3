@@ -143,8 +143,6 @@ Mixer::destroy()
 
     m_bRunning = false;
 
-    if (m_atom_bDecodes.load(atomic::ORDER::RELAXED)) app::decoder().close();
-
     if (m_pStream) pw_stream_destroy(m_pStream);
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);
     pw_deinit();
@@ -238,18 +236,11 @@ Mixer::onProcess()
     m_ringBuff.pop({audio::g_aRenderBuffer, nFrames*m_nChannels});
     m_currMs = app::decoder().getCurrentMS();
     nDecodedSamples = nFrames*m_nChannels;
+    // m_nTotalSamples = app::decoder().getTotalSamplesCount();
+
     for (isize i = 0; i < nDecodedSamples; ++i)
         pDest[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
 
-    if (nDecodedSamples == 0)
-    {
-        m_currentTimeStamp = 0;
-        m_nTotalSamples = 0;
-    }
-    else
-    {
-        m_nTotalSamples = app::decoder().getTotalSamplesCount();
-    }
 
     pBuffData.chunk->offset = 0;
     pBuffData.chunk->stride = stride;

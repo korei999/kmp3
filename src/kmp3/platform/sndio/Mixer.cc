@@ -52,6 +52,8 @@ Mixer::loop()
         nDecodedSamples = N_BUF_FRAMES * m_nChannels;
         m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
         m_currMs = app::decoder().getCurrentMS();
+        // m_nTotalSamples = app::decoder().getTotalSamplesCount();
+
         isize destI = 0;
         nWrites = 0;
 
@@ -59,16 +61,6 @@ Mixer::loop()
         {
             const i16 sample = std::numeric_limits<i16>::max() * (audio::g_aRenderBuffer[nWrites++] * vol);
             pRenderBuffer[destI++] = sample;
-        }
-
-        if (nDecodedSamples == 0)
-        {
-            m_currentTimeStamp = 0;
-            m_nTotalSamples = 0;
-        }
-        else
-        {
-            m_nTotalSamples = app::decoder().getTotalSamplesCount();
         }
 
         {

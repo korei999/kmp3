@@ -196,19 +196,10 @@ Mixer::loop()
         m_ringBuff.pop({audio::g_aRenderBuffer, NFRAMES * m_nChannels});
         m_currMs = app::decoder().getCurrentMS();
         nDecodedSamples = NFRAMES*m_nChannels;
+        // m_nTotalSamples = app::decoder().getTotalSamplesCount();
 
         for (isize i = 0; i < nDecodedSamples; ++i)
             pRenderBuff[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
-
-        if (nDecodedSamples == 0)
-        {
-            m_currentTimeStamp = 0;
-            m_nTotalSamples = 0;
-        }
-        else
-        {
-            m_nTotalSamples = app::decoder().getTotalSamplesCount();
-        }
 
         {
             LockGuard lock {&m_mtxLoop};

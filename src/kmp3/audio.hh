@@ -67,8 +67,7 @@ struct IMixer
 
     IMixer& startDecoderThread();
     IMixer& start();
-    void writeFramesLocked2(long* pSamplesWritten, adt::i64* pPcmPos);
-    void writeFramesLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
+    void fillRingBuffer();
     bool isMuted() const;
     void toggleMute();
     adt::u32 getSampleRate() const;
@@ -126,14 +125,6 @@ struct IDecoder
     adt::Mutex m_mtx {};
 
     /* */
-
-    [[nodiscard]] virtual ERROR writeToBuffer(
-        adt::Span<adt::f32> spBuff,
-        const int nFrames,
-        const int nChannels,
-        long* pSamplesWritten,
-        adt::isize* pPcmPos
-    ) = 0;
 
     [[nodiscard]] virtual ERROR writeToRingBuffer(
         audio::RingBuffer* pRingBuff,
