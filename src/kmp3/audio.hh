@@ -8,6 +8,8 @@ namespace audio
 constexpr adt::u64 CHUNK_SIZE = (1 << 16); /* big enough */
 extern adt::f32 g_aRenderBuffer[CHUNK_SIZE];
 
+/* NOTE: refillRingBufferLoop() thread will lock, push() and signal if pop() thread sits on the m_cnd (waiting for more data).
+  While pop() thread will signal if refillRingBufferLoop() thread is waiting on the same m_cnd. */
 struct RingBuffer
 {
     adt::isize m_firstI {};
@@ -88,7 +90,7 @@ struct IMixer
     void seekOff(adt::f64 offset);
 
 protected:
-    adt::THREAD_STATUS loop();
+    adt::THREAD_STATUS refillRingBufferLoop();
     bool play2(adt::StringView svPath);
 };
 

@@ -14,13 +14,13 @@ IMixer&
 IMixer::startDecoderThread()
 {
     new(&m_ringBuff) RingBuffer {CHUNK_SIZE};
-    new(&m_ringBuff.m_thrd) Thread {(ThreadFn)methodPointerNonVirtual(&IMixer::loop), this};
+    new(&m_ringBuff.m_thrd) Thread {(ThreadFn)methodPointerNonVirtual(&IMixer::refillRingBufferLoop), this};
 
     return *this;
 }
 
 THREAD_STATUS
-IMixer::loop()
+IMixer::refillRingBufferLoop()
 {
     while (m_bRunning)
     {
