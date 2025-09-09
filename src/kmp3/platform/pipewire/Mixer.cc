@@ -235,7 +235,6 @@ Mixer::onProcess()
 
     nDecodedSamples = nFramesRequested * m_nChannels;
     m_ringBuff.pop({audio::g_aDrainBuffer, nDecodedSamples});
-    LogDebug{"nFramesRequested: {}\n", nFramesRequested};
 
     for (isize i = 0; i < nDecodedSamples; ++i)
         pDest[destI++] = audio::g_aDrainBuffer[nWrites++] * vol;

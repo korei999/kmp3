@@ -6,7 +6,7 @@ namespace audio
 {
 
 constexpr adt::isize RING_BUFFER_SIZE = 1 << 16; /* Big enough (up to FILLED_ENOUGH_RATIO filled). */
-constexpr adt::isize DRAIN_BUFFER_SIZE = 1 << 15; /* Usually 1-2K frames * nChannels. */
+constexpr adt::isize DRAIN_BUFFER_SIZE = 1 << 15; /* Usually its 1-2K frames * nChannels. */
 extern adt::f32 g_aDrainBuffer[DRAIN_BUFFER_SIZE];
 
 /* NOTE: refillRingBufferLoop() thread will lock, push() and signal if pop() thread sits on the m_cnd (waiting for more data).
