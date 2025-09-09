@@ -39,7 +39,7 @@ Mixer::loop()
 
     StdAllocator stdAl;
     /* sndio doesn't support f32 pcm. */
-    i16* pRenderBuffer = stdAl.zallocV<i16>(audio::CHUNK_SIZE);
+    i16* pRenderBuffer = stdAl.zallocV<i16>(utils::size(audio::g_aDrainBuffer));
     defer( stdAl.free(pRenderBuffer) );
 
     long nDecodedSamples = 0;
@@ -50,14 +50,14 @@ Mixer::loop()
         const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
 
         nDecodedSamples = N_BUF_FRAMES * m_nChannels;
-        m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
+        m_ringBuff.pop({audio::g_aDrainBuffer, nDecodedSamples});
 
         isize destI = 0;
         nWrites = 0;
 
         for (isize i = 0; i < nDecodedSamples; ++i)
         {
-            const i16 sample = std::numeric_limits<i16>::max() * (audio::g_aRenderBuffer[nWrites++] * vol);
+            const i16 sample = std::numeric_limits<i16>::max() * (audio::g_aDrainBuffer[nWrites++] * vol);
             pRenderBuffer[destI++] = sample;
         }
 

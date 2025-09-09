@@ -5,8 +5,9 @@
 namespace audio
 {
 
-constexpr adt::u64 CHUNK_SIZE = (1 << 16); /* big enough */
-extern adt::f32 g_aRenderBuffer[CHUNK_SIZE];
+constexpr adt::isize RING_BUFFER_SIZE = 1 << 16; /* Big enough (up to FILLED_ENOUGH_RATIO filled). */
+constexpr adt::isize DRAIN_BUFFER_SIZE = 1 << 15; /* Usually 1-2K frames * nChannels. */
+extern adt::f32 g_aDrainBuffer[DRAIN_BUFFER_SIZE];
 
 /* NOTE: refillRingBufferLoop() thread will lock, push() and signal if pop() thread sits on the m_cnd (waiting for more data).
   While pop() thread will signal if refillRingBufferLoop() thread is waiting on the same m_cnd. */

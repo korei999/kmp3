@@ -8,12 +8,12 @@ using namespace adt;
 namespace audio
 {
 
-f32 g_aRenderBuffer[CHUNK_SIZE] {};
+f32 g_aDrainBuffer[DRAIN_BUFFER_SIZE] {};
 
 IMixer&
 IMixer::startDecoderThread()
 {
-    new(&m_ringBuff) RingBuffer {CHUNK_SIZE};
+    new(&m_ringBuff) RingBuffer {RING_BUFFER_SIZE};
     new(&m_ringBuff.m_thrd) Thread {(ThreadFn)methodPointerNonVirtual(&IMixer::refillRingBufferLoop), this};
 
     return *this;

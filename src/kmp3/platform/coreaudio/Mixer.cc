@@ -55,10 +55,10 @@ Mixer::writeCallBack(
     isize nWrites = 0;
     isize destI = 0;
 
-    m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
+    m_ringBuff.pop({audio::g_aDrainBuffer, nDecodedSamples});
 
     for (isize i = 0; i < nDecodedSamples; ++i)
-        pDest[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
+        pDest[destI++] = audio::g_aDrainBuffer[nWrites++] * vol;
 
     return noErr;
 }

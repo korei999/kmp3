@@ -182,7 +182,7 @@ Mixer::loop()
     defer( m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE) );
 
     StdAllocator stdAl;
-    f32* pRenderBuff = stdAl.zallocV<f32>(utils::size(audio::g_aRenderBuffer));
+    f32* pRenderBuff = stdAl.zallocV<f32>(utils::size(audio::g_aDrainBuffer));
     defer( stdAl.free(pRenderBuff) );
 
     long nDecodedSamples = 0;
@@ -198,10 +198,10 @@ Mixer::loop()
         nWrites = 0;
 
         nDecodedSamples = NFRAMES * m_nChannels;
-        m_ringBuff.pop({audio::g_aRenderBuffer, nDecodedSamples});
+        m_ringBuff.pop({audio::g_aDrainBuffer, nDecodedSamples});
 
         for (isize i = 0; i < nDecodedSamples; ++i)
-            pRenderBuff[destI++] = audio::g_aRenderBuffer[nWrites++] * vol;
+            pRenderBuff[destI++] = audio::g_aDrainBuffer[nWrites++] * vol;
 
         {
             LockGuard lock {&m_mtxLoop};
