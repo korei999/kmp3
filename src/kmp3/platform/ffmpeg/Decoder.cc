@@ -315,9 +315,7 @@ Decoder::writeToRingBuffer(
             const isize ringSize = pRingBuff->push(Span{reinterpret_cast<f32*>(res.data[0]), nFrameSamples});
             nWrites += nFrameSamples;
 
-            /* NOTE: Fill until its good enough, but not all the way, since different audio drivers can ask for different amount of samples each update (like pipewire).
-             * So we dont end up in a weird situation with overflowing pushes. */
-            if (ringSize >= (pRingBuff->m_cap >> 1))
+            if (ringSize >= audio::RING_BUFFER_HIGH_THRESHOLD)
             {
                 *pSamplesWritten = nWrites;
                 return audio::ERROR::OK_;

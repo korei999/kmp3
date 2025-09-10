@@ -5,12 +5,14 @@
 namespace audio
 {
 
-constexpr adt::isize RING_BUFFER_SIZE = 1 << 16; /* Big enough (up to FILLED_ENOUGH_RATIO filled). */
-constexpr adt::isize DRAIN_BUFFER_SIZE = 1 << 15; /* Usually its 1-2K frames * nChannels. */
+constexpr adt::isize RING_BUFFER_SIZE = 1 << 16; /* Big enough. */
+constexpr adt::isize RING_BUFFER_LOW_THRESHOLD = RING_BUFFER_SIZE * 0.25; /* Minimal size after which refillRingBufferLoop() kicks in. */
+constexpr adt::isize RING_BUFFER_HIGH_THRESHOLD = RING_BUFFER_SIZE * 0.75; /* refillRingBufferLoop() will keep filling until this. */
+constexpr adt::isize DRAIN_BUFFER_SIZE = 1 << 15; /* Usually its 1-2K frames*nChannels. */
 extern adt::f32 g_aDrainBuffer[DRAIN_BUFFER_SIZE];
 
 /* NOTE: refillRingBufferLoop() thread will lock, push() and signal if pop() thread sits on the m_cnd (waiting for more data).
-  While pop() thread will signal if refillRingBufferLoop() thread is waiting on the same m_cnd. */
+ * While pop() thread will signal if refillRingBufferLoop() thread is waiting on the same m_cnd. */
 struct RingBuffer
 {
     adt::isize m_firstI {};
@@ -56,6 +58,8 @@ struct IMixer
     adt::f64 m_currMs {};
 
     RingBuffer m_ringBuff {};
+
+    /* */
 
     virtual IMixer& init() = 0;
     virtual void deinit() = 0;

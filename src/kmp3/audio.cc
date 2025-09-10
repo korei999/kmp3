@@ -28,7 +28,7 @@ IMixer::refillRingBufferLoop()
     {
         {
             LockGuard lockRing {&m_ringBuff.m_mtx};
-            while (!m_ringBuff.m_bQuit && m_ringBuff.m_size >= m_ringBuff.m_cap >> 1)
+            while (!m_ringBuff.m_bQuit && m_ringBuff.m_size >= RING_BUFFER_LOW_THRESHOLD)
                 m_ringBuff.m_cnd.wait(&m_ringBuff.m_mtx);
 
             if (m_ringBuff.m_bQuit) break;
@@ -304,17 +304,13 @@ RingBuffer::push(const Span<const f32> sp) noexcept
 isize
 RingBuffer::pop(Span<f32> sp) noexcept
 {
-    {
-        LockGuard lockGuard {&m_mtx};
-
-        if (sp.size() > m_cap)
-        {
-            LogWarn{"dropping some size: {} to {}\n", sp.size(), m_cap};
-            sp.m_size = m_cap;
-        }
-    }
-
     LockGuard lockGuard {&m_mtx};
+
+    if (sp.size() > m_cap)
+    {
+        LogWarn{"dropping some size: {} to {}\n", sp.size(), m_cap};
+        sp.m_size = m_cap;
+    }
 
     while (!m_bQuit && sp.size() > m_size)
     {
@@ -338,7 +334,7 @@ RingBuffer::pop(Span<f32> sp) noexcept
 
     m_firstI = nextFirstI;
     m_size -= sp.size();
-    m_cnd.signal();
+    if (m_size < RING_BUFFER_LOW_THRESHOLD) m_cnd.signal();
     return m_size;
 }
 
