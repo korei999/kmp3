@@ -261,6 +261,7 @@ audio::ERROR
 Decoder::writeToRingBuffer(
     audio::RingBuffer* pRingBuff,
     [[maybe_unused]] const int nChannels,
+    [[maybe_unused]] const audio::PCM_TYPE ePcmType,
     long* pSamplesWritten,
     adt::isize* pPcmPos
 )

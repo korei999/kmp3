@@ -95,6 +95,7 @@ IMixer::fillRingBuffer()
     audio::ERROR err = app::decoder().writeToRingBuffer(
         &m_ringBuff,
         m_nChannels,
+        m_ePcmType,
         &samplesWritten,
         &m_currentTimeStamp
     );

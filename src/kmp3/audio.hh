@@ -11,6 +11,8 @@ constexpr adt::isize RING_BUFFER_HIGH_THRESHOLD = RING_BUFFER_SIZE * 0.75; /* re
 constexpr adt::isize DRAIN_BUFFER_SIZE = 1 << 15; /* Usually its 1-2K frames*nChannels. */
 extern adt::f32 g_aDrainBuffer[DRAIN_BUFFER_SIZE];
 
+enum class PCM_TYPE : adt::u8 { S16, F32 };
+
 /* NOTE: refillRingBufferLoop() thread will lock, push() and signal if pop() thread sits on the m_cnd (waiting for more data).
  * While pop() thread will signal if refillRingBufferLoop() thread is waiting on the same m_cnd. */
 struct RingBuffer
@@ -53,6 +55,7 @@ struct IMixer
     adt::u32 m_changedSampleRate = 48000;
     adt::u8 m_nChannels = 2;
     int m_volume = 40;
+    PCM_TYPE m_ePcmType = PCM_TYPE::F32;
     adt::i64 m_currentTimeStamp {};
     adt::i64 m_nTotalSamples {};
     adt::f64 m_currMs {};
@@ -128,6 +131,7 @@ constexpr adt::StringView mapERRORToString[] {
 
 struct IDecoder
 {
+
     adt::Mutex m_mtx {};
 
     /* */
@@ -135,6 +139,7 @@ struct IDecoder
     [[nodiscard]] virtual ERROR writeToRingBuffer(
         audio::RingBuffer* pRingBuff,
         const int nChannels,
+        const PCM_TYPE ePcmType,
         long* pSamplesWritten,
         adt::isize* pPcmPos
     ) = 0;
