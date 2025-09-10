@@ -151,7 +151,7 @@ Mixer::play(StringView svPath)
     const f64 prevSpeed = f64(m_changedSampleRate) / f64(m_sampleRate);
 
     pause(true);
-    if (!play2(svPath)) return false;
+    if (!playFinal(svPath)) return false;
 
     setConfig(app::decoder().getSampleRate(), app::decoder().getChannelsCount(), true);
 
@@ -184,12 +184,6 @@ Mixer::pause(bool bPause)
     }
 
     mpris::playbackStatusChanged();
-}
-
-void
-Mixer::togglePause()
-{
-    pause(!m_atom_bPaused.load(atomic::ORDER::ACQUIRE));
 }
 
 void

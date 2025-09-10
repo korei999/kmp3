@@ -153,7 +153,7 @@ Mixer::play(StringView svPath)
 
     pause(true);
 
-    if (!play2(svPath)) return false;
+    if (!playFinal(svPath)) return false;
 
     setNChannels(app::decoder().getChannelsCount());
     changeSampleRate(app::decoder().getSampleRate(), true);
@@ -246,12 +246,6 @@ Mixer::pause(bool bPause)
 
     LogInfo("bPaused: {}\n", m_atom_bPaused);
     mpris::playbackStatusChanged();
-}
-
-void
-Mixer::togglePause()
-{
-    pause(!m_atom_bPaused.load(atomic::ORDER::ACQUIRE));
 }
 
 void

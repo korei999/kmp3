@@ -68,7 +68,6 @@ struct IMixer
     virtual void deinit() = 0;
     virtual bool play(adt::StringView svPath) = 0;
     virtual void pause(bool bPause) = 0;
-    virtual void togglePause() = 0;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) = 0;
 
     /* */
@@ -78,6 +77,7 @@ struct IMixer
     void fillRingBuffer();
     bool isMuted() const;
     void toggleMute();
+    void togglePause();
     adt::u32 getSampleRate() const;
     adt::u32 getChangedSampleRate() const;
     adt::u8 getNChannels() const;
@@ -101,7 +101,7 @@ struct IMixer
 protected:
     IMixer& startDecoderThread();
     adt::THREAD_STATUS refillRingBufferLoop();
-    bool play2(adt::StringView svPath);
+    bool playFinal(adt::StringView svPath);
 };
 
 struct DummyMixer : public IMixer
@@ -110,7 +110,6 @@ struct DummyMixer : public IMixer
     virtual void deinit() override final {}
     virtual bool play(adt::StringView) override final { return true; }
     virtual void pause(bool) override final {}
-    virtual void togglePause() override final {}
     virtual void changeSampleRate(adt::u64, bool) override final {}
 };
 

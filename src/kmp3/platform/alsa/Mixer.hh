@@ -23,7 +23,6 @@ struct Mixer : public audio::IMixer
     virtual void deinit() override;
     virtual bool play(adt::StringView svPath) override;
     virtual void pause(bool bPause) override;
-    virtual void togglePause() override;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override;
 
     void setConfig(adt::u64 sampleRate, int nChannels, bool bSaveNewConfig);

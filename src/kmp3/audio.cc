@@ -41,7 +41,7 @@ IMixer::refillRingBufferLoop()
 }
 
 bool
-IMixer::play2(adt::StringView svPath)
+IMixer::playFinal(adt::StringView svPath)
 {
     LockGuard lockDec {&app::decoder().m_mtx};
 
@@ -120,7 +120,13 @@ IMixer::isMuted() const
 void
 IMixer::toggleMute()
 {
-    utils::toggle(&m_bMuted);
+    m_bMuted = !m_bMuted;
+}
+
+void
+IMixer::togglePause()
+{
+    pause(!m_atom_bPaused.load(atomic::ORDER::ACQUIRE));
 }
 
 u32

@@ -83,18 +83,6 @@ exchange(A* pObj, B&& replaceObjWith)
     return ret;
 }
 
-inline constexpr void
-toggle(auto* x)
-{
-    *x = !*x;
-}
-
-inline constexpr void
-negate(auto* x)
-{
-    *x = -(*x);
-}
-
 template<typename T>
 [[nodiscard]] inline constexpr const T&
 max(const T& l, const T& r)
