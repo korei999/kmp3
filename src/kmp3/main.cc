@@ -77,10 +77,11 @@ parseArgs(int argc, char** argv)
         },
         {
             .bNeedsValue = true,
+            .sOneDash = "v",
             .sTwoDashes = "volume",
-            .sUsage = "value: real number in [0, 1.0) range",
+            .sUsage = "value: integer in [0, 100) range",
             .pfn = [](ArgvParser*, void*, const StringView, const StringView svVal) {
-                app::g_config.volume = svVal.toF64();
+                app::g_config.volume = static_cast<int>(svVal.toI64());
                 return ArgvParser::RESULT::GOOD;
             },
         },
@@ -188,7 +189,6 @@ parseArgs(int argc, char** argv)
         },
         {
             .bNeedsValue = false,
-            .sOneDash = "v",
             .sTwoDashes = "version",
             .sUsage = "print " PROJECT_NAME "'s version",
             .pfn = [](ArgvParser* pSelf, void*, const StringView, const StringView) {

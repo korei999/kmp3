@@ -360,7 +360,7 @@ getVolume(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    f64 vol = app::mixer().getVolume();
+    f64 vol = app::mixer().getVolume() * (1.0/100.0);
     return sd_bus_message_append_basic(reply, 'd', &vol);
 }
 
@@ -377,7 +377,7 @@ setVolume(
 {
     f64 vol;
     CK(sd_bus_message_read_basic(value, 'd', &vol));
-    app::mixer().setVolume(vol);
+    app::mixer().setVolume(vol * 100);
 
     return sd_bus_reply_method_return(value, "");
 }
@@ -393,9 +393,7 @@ position(
     [[maybe_unused]] sd_bus_error* retError
 )
 {
-    i64 t = app::mixer().getCurrentMS();
-    t *= 1000;
-
+    i64 t = app::mixer().getCurrentMS() * 1000;
     return sd_bus_message_append_basic(reply, 'x', &t);
 }
 
