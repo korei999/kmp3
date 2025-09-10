@@ -159,10 +159,4 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     m_changedSampleRate = sampleRate;
 }
 
-void
-Mixer::setVolume(const f32 volume)
-{
-    m_volume = utils::clamp(volume, 0.0f, app::g_config.maxVolume);
-}
-
 } /* namespace platform::apple */
