@@ -121,16 +121,16 @@ Win::volume()
     ArenaStateGuard pushed {m_pArena};
     Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
-    const isize n = print::toSpan(sp, "volume: {:>3}", int(std::round(app::mixer().getVolume() * 100.0)));
+    const isize n = print::toSpan(sp, "volume: {:>3}", app::mixer().getVolume());
     const int nVolumeBars = (width - off - n - 2) * vol * (1.0f/app::g_config.maxVolume);
 
     using STYLE = TEXT_BUFF_STYLE;
 
-    auto clVolumeStringColor = [&](f32 x) -> STYLE
+    auto clVolumeStringColor = [&](const int x) -> STYLE
     {
-        if (x <= 0.33f) return STYLE::GREEN;
-        else if (x > 0.33f && x <= 0.66f) return STYLE::GREEN;
-        else if (x > 0.66f && x <= 1.01f) return STYLE::YELLOW;
+        if (x <= 33) return STYLE::GREEN;
+        else if (x > 33 && x <= 66) return STYLE::GREEN;
+        else if (x > 66 && x <= 100) return STYLE::YELLOW;
         else return STYLE::RED;
     };
 

@@ -6,8 +6,8 @@ namespace defaults
 {
 
 constexpr Config CONFIG {
-    .maxVolume = 1.5f, /* (0.0f, 1.0f], > 1.0f might cause distortion. */
-    .volume = 0.4f, /* Startup volume. */
+    .maxVolume = 150, /* (0, 100], > 100 might cause distortions. */
+    .volume = 40, /* Startup volume. */
     .updateRate = 500, /* Ui update rate (ms). */
     .imageUpdateRateLimit = 100, /* (ms). Is also limited by UPDATE_RATE. */
     .minSampleRate = 1000,

@@ -288,11 +288,11 @@ Win::procMouse(MouseInput in)
     {
         if (in.eKey == MouseInput::KEY::WHEEL_DOWN)
         {
-            app::volumeDown(0.1f);
+            app::volumeDown(10);
         }
         else if (in.eKey == MouseInput::KEY::WHEEL_UP)
         {
-            app::volumeUp(0.1f);
+            app::volumeUp(10);
         }
         else if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
         {

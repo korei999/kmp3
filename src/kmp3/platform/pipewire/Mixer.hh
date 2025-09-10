@@ -43,7 +43,6 @@ public:
     virtual void pause(bool bPause) override final;
     virtual void togglePause() override final;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override final;
-    virtual void setVolume(const adt::f32 volume) override final;
 
     /* */
 

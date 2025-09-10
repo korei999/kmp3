@@ -42,23 +42,21 @@ Mixer::loop()
     i16* pRenderBuffer = stdAl.zallocV<i16>(utils::size(audio::g_aDrainBuffer));
     defer( stdAl.free(pRenderBuffer) );
 
-    long nDecodedSamples = 0;
-    long nWrites = 0;
-
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
-        const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
+        const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume * (1.0f/100.0f), 3.0f);
 
-        nDecodedSamples = N_BUF_FRAMES * m_nChannels;
-        m_ringBuff.pop({audio::g_aDrainBuffer, nDecodedSamples});
+        const long nSamplesRequested = N_BUF_FRAMES * m_nChannels;
+        m_ringBuff.pop({audio::g_aDrainBuffer, nSamplesRequested});
 
-        isize destI = 0;
-        nWrites = 0;
-
-        for (isize i = 0; i < nDecodedSamples; ++i)
+        for (isize i = 0; i < nSamplesRequested; ++i)
         {
-            const i16 sample = std::numeric_limits<i16>::max() * (audio::g_aDrainBuffer[nWrites++] * vol);
-            pRenderBuffer[destI++] = sample;
+            const f32 sample = utils::clamp(
+                std::numeric_limits<i16>::max() * (audio::g_aDrainBuffer[i] * vol),
+                (f32)std::numeric_limits<i16>::min(),
+                (f32)std::numeric_limits<i16>::max()
+            );
+            pRenderBuffer[i] = static_cast<i16>(sample);
         }
 
         {
@@ -203,13 +201,6 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 
     if (bSave) m_sampleRate = sampleRate;
     m_changedSampleRate = sampleRate;
-}
-
-void
-Mixer::setVolume(const f32 volume)
-{
-    m_volume = utils::clamp(volume, 0.0f, app::g_config.maxVolume);
-    mpris::volumeChanged();
 }
 
 } /* namespace platform::sndio */

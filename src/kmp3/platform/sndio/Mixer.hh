@@ -26,7 +26,6 @@ struct Mixer : public audio::IMixer
     virtual void pause(bool bPause) override;
     virtual void togglePause() override;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override;
-    virtual void setVolume(const adt::f32 volume) override;
 
     /* */
 

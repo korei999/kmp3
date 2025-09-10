@@ -131,13 +131,6 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 }
 
 void
-Mixer::setVolume(const f32 volume)
-{
-    m_volume = utils::clamp(volume, 0.0f, app::g_config.maxVolume);
-    mpris::volumeChanged();
-}
-
-void
 Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
     LockGuard lock {&m_mtxLoop};
@@ -169,26 +162,19 @@ Mixer::loop()
     defer( m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE) );
 
     StdAllocator stdAl;
-    f32* pRenderBuff = stdAl.zallocV<f32>(utils::size(audio::g_aDrainBuffer));
-    defer( stdAl.free(pRenderBuff) );
-
-    long nDecodedSamples = 0;
-    long nWrites = 0;
 
     constexpr isize NFRAMES = 2048;
+    isize nSamplesRequested = 0;
 
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
-        const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
+        const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume * (1.0f/100.0f), 3.0f);
 
-        isize destI = 0;
-        nWrites = 0;
+        nSamplesRequested = NFRAMES * m_nChannels;
+        m_ringBuff.pop({audio::g_aDrainBuffer, nSamplesRequested});
 
-        nDecodedSamples = NFRAMES * m_nChannels;
-        m_ringBuff.pop({audio::g_aDrainBuffer, nDecodedSamples});
-
-        for (isize i = 0; i < nDecodedSamples; ++i)
-            pRenderBuff[destI++] = audio::g_aDrainBuffer[nWrites++] * vol;
+        for (isize sampleI = 0; sampleI < nSamplesRequested; ++sampleI)
+            audio::g_aDrainBuffer[sampleI] *= vol;
 
         {
             LockGuard lock {&m_mtxLoop};
@@ -200,7 +186,7 @@ Mixer::loop()
                     goto GOTO_done;
             }
 
-            snd_pcm_sframes_t writeStatus = snd_pcm_writei(m_pHandle, pRenderBuff, NFRAMES);
+            snd_pcm_sframes_t writeStatus = snd_pcm_writei(m_pHandle, audio::g_aDrainBuffer, NFRAMES);
 
             if (writeStatus < 0)
             {

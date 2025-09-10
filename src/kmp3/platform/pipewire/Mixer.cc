@@ -75,8 +75,6 @@ Mixer&
 Mixer::init()
 {
     m_bRunning = true;
-    m_bMuted = false;
-    m_volume = 0.1f;
 
     m_sampleRate = 48000;
     m_nChannels = 2;
@@ -220,22 +218,16 @@ Mixer::onProcess()
 
     u32 stride = formatByteSize(m_eformat) * m_nChannels;
     u32 nFramesRequested = (stride > 0) ? (pBuffData.maxsize / stride) : 0;
-    if (pPwBuffer->requested) nFramesRequested = SPA_MIN(pPwBuffer->requested, (u64)nFramesRequested);
+    if (pPwBuffer->requested) nFramesRequested = utils::min((u64)pPwBuffer->requested, (u64)nFramesRequested);
 
     if (nFramesRequested*m_nChannels > utils::size(audio::g_aDrainBuffer)) nFramesRequested = utils::size(audio::g_aDrainBuffer);
 
-    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
+    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume * (1.f/100.f), 3.0f);
+    const isize nSamplesRequested = nFramesRequested * m_nChannels;
+    m_ringBuff.pop({pDest, nSamplesRequested});
 
-    isize nDecodedSamples = 0;
-    isize nWrites = 0;
-    isize destI = 0;
-    nWrites = 0;
-
-    nDecodedSamples = nFramesRequested * m_nChannels;
-    m_ringBuff.pop({audio::g_aDrainBuffer, nDecodedSamples});
-
-    for (isize i = 0; i < nDecodedSamples; ++i)
-        pDest[destI++] = audio::g_aDrainBuffer[nWrites++] * vol;
+    for (isize sampleI = 0; sampleI < nSamplesRequested; ++sampleI)
+        pDest[sampleI] *= vol;
 
     pBuffData.chunk->offset = 0;
     pBuffData.chunk->stride = stride;
@@ -295,13 +287,6 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     if (bSave) m_sampleRate = sampleRate;
 
     m_changedSampleRate = sampleRate;
-}
-
-void
-Mixer::setVolume(const f32 volume)
-{
-    m_volume = utils::clamp(volume, 0.0f, app::g_config.maxVolume);
-    mpris::volumeChanged();
 }
 
 } /* namespace platform::pipewire */

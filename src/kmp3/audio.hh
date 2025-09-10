@@ -52,7 +52,7 @@ struct IMixer
     adt::u32 m_sampleRate = 48000;
     adt::u32 m_changedSampleRate = 48000;
     adt::u8 m_nChannels = 2;
-    adt::f32 m_volume = 0.5f;
+    int m_volume = 40;
     adt::i64 m_currentTimeStamp {};
     adt::i64 m_nTotalSamples {};
     adt::f64 m_currMs {};
@@ -67,7 +67,6 @@ struct IMixer
     virtual void pause(bool bPause) = 0;
     virtual void togglePause() = 0;
     virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) = 0;
-    virtual void setVolume(const adt::f32 volume) = 0;
 
     /* */
 
@@ -82,9 +81,10 @@ struct IMixer
     adt::u64 getTotalSamplesCount() const;
     adt::u64 getCurrentTimeStamp() const;
     const adt::atomic::Bool& isPaused() const;
-    adt::f64 getVolume() const;
-    void volumeDown(const adt::f32 step);
-    void volumeUp(const adt::f32 step);
+    int getVolume() const;
+    void volumeDown(const int step);
+    void volumeUp(const int step);
+    void setVolume(const int volume);
     [[nodiscard]] adt::f64 calcCurrentMS();
     [[nodiscard]] adt::f64 calcTotalMS();
     void changeSampleRateDown(int ms, bool bSave);
@@ -109,7 +109,6 @@ struct DummyMixer : public IMixer
     virtual void pause(bool) override final {}
     virtual void togglePause() override final {}
     virtual void changeSampleRate(adt::u64, bool) override final {}
-    virtual void setVolume(const adt::f32) override final {}
 };
 
 enum class ERROR : adt::u8

@@ -48,17 +48,12 @@ Mixer::writeCallBack(
 )
 {
     f32 *pDest = static_cast<f32*>(pIOData->mBuffers[0].mData);
+    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume * (1.f/100.f), 3.0f);
+    const isize nSamplesRequested = inNumberFrames * m_nChannels;
+    m_ringBuff.pop({pDest, nSamplesRequested});
 
-    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume, 3.0f);
-
-    const isize nDecodedSamples = inNumberFrames * m_nChannels;
-    isize nWrites = 0;
-    isize destI = 0;
-
-    m_ringBuff.pop({audio::g_aDrainBuffer, nDecodedSamples});
-
-    for (isize i = 0; i < nDecodedSamples; ++i)
-        pDest[destI++] = audio::g_aDrainBuffer[nWrites++] * vol;
+    for (isize sampleI = 0; sampleI < nSamplesRequested; ++sampleI)
+        pDest[sampleI] *= vol;
 
     return noErr;
 }

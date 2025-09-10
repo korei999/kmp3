@@ -158,22 +158,32 @@ IMixer::isPaused() const
     return m_atom_bPaused;
 }
 
-f64
+int
 IMixer::getVolume() const
 {
     return m_volume;
 }
 
 void
-IMixer::volumeDown(const f32 step)
+IMixer::volumeDown(const int step)
 {
     setVolume(m_volume - step);
 }
 
 void
-IMixer::volumeUp(const f32 step)
+IMixer::volumeUp(const int step)
 {
     setVolume(m_volume + step);
+}
+
+void
+IMixer::setVolume(const int volume)
+{
+    m_volume = utils::clamp(volume, 0, app::g_config.maxVolume);
+    LogInfo{"volume: {}\n", m_volume};
+#ifdef OPT_MPRIS
+    mpris::volumeChanged();
+#endif
 }
 
 f64

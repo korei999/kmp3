@@ -2,8 +2,8 @@
 
 struct Config
 {
-    adt::f32 maxVolume {};
-    adt::f32 volume {};
+    int maxVolume {};
+    int volume {};
     int updateRate {};
     int imageUpdateRateLimit {};
     adt::u64 minSampleRate {};

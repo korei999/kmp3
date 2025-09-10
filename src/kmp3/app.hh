@@ -68,8 +68,8 @@ inline void selectFocused() { player().selectFocused(); }
 inline void focusSelected() { player().focusSelected(); }
 inline void focusSelectedAtCenter() { player().focusSelectedAtCenter(); }
 inline void togglePause() { player().togglePause(); }
-inline void volumeDown(const adt::f32 step) { g_pMixer->volumeDown(step); }
-inline void volumeUp(const adt::f32 step) { g_pMixer->volumeUp(step); }
+inline void volumeDown(const long step) { g_pMixer->volumeDown(step); }
+inline void volumeUp(const long step) { g_pMixer->volumeUp(step); }
 inline void changeSampleRateDown(adt::u64 ms, bool bSave) { g_pMixer->changeSampleRateDown(ms, bSave); }
 inline void changeSampleRateUp(adt::u64 ms, bool bSave) { g_pMixer->changeSampleRateUp(ms, bSave); }
 inline void restoreSampleRate() { g_pMixer->restoreSampleRate(); }
