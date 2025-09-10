@@ -276,9 +276,10 @@ TextBuff::destroy()
 
     hideCursor(false);
     clearKittyImages();
+    move(m_tWidth - 1, m_tHeight - 1); /* Helps with default tty buffer. */
+    push(TEXT_BUFF_MOUSE_DISABLE);
     push(TEXT_BUFF_KEYPAD_DISABLE);
     push(TEXT_BUFF_ALT_SCREEN_DISABLE);
-    push(TEXT_BUFF_MOUSE_DISABLE);
     flush();
 
     m_vBack.destroy();
@@ -300,11 +301,11 @@ TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
     ArenaStateGuard pushed {m_pArena};
     new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
 
-    clearTerm();
-    moveTopLeft();
     push(TEXT_BUFF_ALT_SCREEN_ENABLE);
     push(TEXT_BUFF_KEYPAD_ENABLE);
     push(TEXT_BUFF_MOUSE_ENABLE);
+    clearTerm();
+    moveTopLeft();
     hideCursor(true);
     flush();
 
