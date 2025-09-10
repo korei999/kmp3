@@ -12,7 +12,7 @@ struct Mixer : public audio::IMixer
     snd_pcm_t *m_pHandle {};
 
     adt::atomic::Int m_atom_bRunning {false};
-    adt::atomic::Int m_atom_bLoopDone {false};
+    adt::atomic::Int m_atom_bLoopDone {true};
     adt::Thread m_thrdLoop {};
     adt::Mutex m_mtxLoop {adt::INIT};
     adt::CndVar m_cndLoop {adt::INIT};
@@ -20,7 +20,7 @@ struct Mixer : public audio::IMixer
     /* */
 
     virtual Mixer& init() override;
-    virtual void destroy() override;
+    virtual void deinit() override;
     virtual bool play(adt::StringView svPath) override;
     virtual void pause(bool bPause) override;
     virtual void togglePause() override;

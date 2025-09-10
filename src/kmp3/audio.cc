@@ -22,12 +22,16 @@ IMixer::startDecoderThread()
 THREAD_STATUS
 IMixer::refillRingBufferLoop()
 {
+    defer( m_ringBuff.m_atom_bLoopDone.store(true, atomic::ORDER::RELAXED) );
+
     while (m_bRunning)
     {
         {
             LockGuard lockRing {&m_ringBuff.m_mtx};
-            while (m_ringBuff.m_size >= m_ringBuff.m_cap >> 1)
+            while (!m_ringBuff.m_bQuit && m_ringBuff.m_size >= m_ringBuff.m_cap >> 1)
                 m_ringBuff.m_cnd.wait(&m_ringBuff.m_mtx);
+
+            if (m_ringBuff.m_bQuit) break;
         }
 
         fillRingBuffer();
@@ -65,6 +69,19 @@ IMixer::start()
 {
     startDecoderThread().init();
     return *this;
+}
+
+void
+IMixer::destroy() noexcept
+{
+    m_bRunning = false;
+    {
+        LockGuard lockRing {&m_ringBuff.m_mtx};
+        m_ringBuff.m_bQuit = true;
+        m_ringBuff.m_cnd.signal();
+    }
+    deinit();
+    m_ringBuff.destroy();
 }
 
 void
@@ -242,11 +259,10 @@ RingBuffer::RingBuffer(isize capacityPowOf2)
 void
 RingBuffer::destroy() noexcept
 {
-    {
-        LockGuard lockGuard {&m_mtx};
+    while (!m_atom_bLoopDone.load(atomic::ORDER::RELAXED))
         m_cnd.signal();
-        m_thrd.join();
-    }
+
+    m_thrd.join();
 
     m_mtx.destroy();
     m_cnd.destroy();
@@ -298,16 +314,14 @@ RingBuffer::pop(Span<f32> sp) noexcept
         }
     }
 
-    {
-        LockGuard lockGuard {&m_mtx};
-        while (sp.size() > m_size)
-        {
-            LogWarn{"waiting for: {}, (m_size: {})\n", sp.size(), m_size};
-            m_cnd.wait(&m_mtx);
-        }
-    }
-
     LockGuard lockGuard {&m_mtx};
+
+    while (!m_bQuit && sp.size() > m_size)
+    {
+        LogWarn{"waiting for: {}, (m_size: {})\n", sp.size(), m_size};
+        m_cnd.wait(&m_mtx);
+    }
+    if (m_bQuit) return 0;
 
     const isize nextFirstI = (m_firstI + sp.size()) & (m_cap - 1);
 

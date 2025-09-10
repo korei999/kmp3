@@ -14,7 +14,7 @@ struct Mixer : public audio::IMixer
     /* */
 
     virtual Mixer& init() override;
-    virtual void destroy() override;
+    virtual void deinit() override;
     virtual bool play(adt::StringView svPath) override;
     virtual void pause(bool bPause) override;
     virtual void togglePause() override;

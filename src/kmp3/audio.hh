@@ -22,6 +22,8 @@ struct RingBuffer
     adt::Mutex m_mtx {};
     adt::CndVar m_cnd {};
     adt::Thread m_thrd {};
+    adt::atomic::Bool m_atom_bLoopDone {false};
+    bool m_bQuit = false;
 
     /* */
 
@@ -56,7 +58,7 @@ struct IMixer
     RingBuffer m_ringBuff {};
 
     virtual IMixer& init() = 0;
-    virtual void destroy() = 0;
+    virtual void deinit() = 0;
     virtual bool play(adt::StringView svPath) = 0;
     virtual void pause(bool bPause) = 0;
     virtual void togglePause() = 0;
@@ -65,8 +67,8 @@ struct IMixer
 
     /* */
 
-    IMixer& startDecoderThread();
     IMixer& start();
+    void destroy() noexcept;
     void fillRingBuffer();
     bool isMuted() const;
     void toggleMute();
@@ -90,6 +92,7 @@ struct IMixer
     [[nodiscard]] adt::i64 getTotalMS();
 
 protected:
+    IMixer& startDecoderThread();
     adt::THREAD_STATUS refillRingBufferLoop();
     bool play2(adt::StringView svPath);
 };
@@ -97,7 +100,7 @@ protected:
 struct DummyMixer : public IMixer
 {
     virtual DummyMixer& init() override final { return *this; }
-    virtual void destroy() override final {}
+    virtual void deinit() override final {}
     virtual bool play(adt::StringView) override final { return true; }
     virtual void pause(bool) override final {}
     virtual void togglePause() override final {}

@@ -131,7 +131,7 @@ Mixer::init()
 }
 
 void
-Mixer::destroy()
+Mixer::deinit()
 {
     {
         PWLockGuard tLock(m_pThrdLoop);
@@ -140,8 +140,6 @@ Mixer::destroy()
 
     pw_thread_loop_stop(m_pThrdLoop);
     LogDebug("pw_thread_loop_stop()\n");
-
-    m_bRunning = false;
 
     if (m_pStream) pw_stream_destroy(m_pStream);
     if (m_pThrdLoop) pw_thread_loop_destroy(m_pThrdLoop);

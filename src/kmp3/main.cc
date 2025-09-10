@@ -286,25 +286,25 @@ startup(int argc, char** argv)
     player.m_eRepeatMethod = PLAYER_REPEAT_METHOD::PLAYLIST;
     player.m_bSelectionChanged = true;
 
-    app::decoder().init();
-    defer( app::decoder().destroy() );
-
-    app::g_pMixer = &app::allocMixer(&alloc)->start();
-    app::mixer().setVolume(app::g_config.volume);
-    defer( app::mixer().destroy() );
-
-#ifdef OPT_MPRIS
-    mpris::initLocks();
-    defer(
-        if (mpris::g_bReady) mpris::destroy();
-        mpris::destroyLocks();
-    );
-#endif
-
     setTermEnv();
 
     if (!player.m_vSongs.empty())
     {
+        app::decoder().init();
+        defer( app::decoder().destroy() );
+
+        app::g_pMixer = &app::allocMixer(&alloc)->start();
+        app::mixer().setVolume(app::g_config.volume);
+        defer( app::mixer().destroy() );
+
+#ifdef OPT_MPRIS
+        mpris::initLocks();
+        defer(
+            if (mpris::g_bReady) mpris::destroy();
+            mpris::destroyLocks();
+        );
+#endif
+
         app::g_vol_bRunning = true;
 
         /* Hide mpg123 and other spam. */

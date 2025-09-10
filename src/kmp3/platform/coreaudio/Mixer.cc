@@ -115,7 +115,7 @@ Mixer::init()
 }
 
 void
-Mixer::destroy()
+Mixer::deinit()
 {
     AudioOutputUnitStop(m_unit);
     AudioUnitUninitialize(m_unit);

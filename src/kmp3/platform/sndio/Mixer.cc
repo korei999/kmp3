@@ -131,7 +131,7 @@ Mixer::init()
 }
 
 void
-Mixer::destroy()
+Mixer::deinit()
 {
     m_atom_bRunning.store(false, atomic::ORDER::RELEASE);
 
