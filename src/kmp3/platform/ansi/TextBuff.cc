@@ -333,8 +333,7 @@ TextBuff::pushDiff()
                     move(nForwards, rowI);
                     nForwards = 0;
                 }
-
-                if (nForwards > 0)
+                else if (nForwards > 0)
                 {
                     forward(nForwards);
                     nForwards = 0;
