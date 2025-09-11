@@ -7,7 +7,10 @@
 #include "utils.hh"
 #include "Span.hh" /* IWYU pragma: keep */
 #include "print.hh" /* IWYU pragma: keep */
-#include "wcwidth.hh"
+
+#ifdef _MSC_VER
+    #include "wcwidth.hh"
+#endif
 
 #include <cwchar>
 
@@ -50,7 +53,11 @@ charBuffStringSize(const char (&aCharBuff)[SIZE])
 inline constexpr int
 wcWidth(wchar_t wc)
 {
+#ifdef _MSC_VER
     return mk_wcwidth(wc);
+#else
+    return wcwidth(wc);
+#endif
 }
 
 inline constexpr
@@ -166,14 +173,6 @@ struct StringGraphemeIt
 
     /* */
 
-    static constexpr bool
-    isRegional(const wchar_t wc)
-    {
-        return u32(wc) >= 0x1F1E6 && u32(wc) <= 0x1F1FF;
-    }
-
-    /* */
-
     struct It
     {
         const char* m_pStr {};
@@ -214,15 +213,6 @@ struct StringGraphemeIt
             m_clusterI = m_i;
             m_i += nBytesDecoded;
 
-            if (isRegional(wc1))
-            {
-                mbstate_t mb2 {};
-                wchar_t wc2;
-                int nBytesDecoded2 = mbrtowc(&wc2, &m_pStr[m_i], m_size - m_i, &mb2);
-                if (nBytesDecoded2 > 0 && isRegional(wc2))
-                    m_i += nBytesDecoded2;
-            }
-
             while (m_i < m_size)
             {
                 mbstate_t mb2 {};
@@ -246,8 +236,7 @@ struct StringGraphemeIt
                     break;
                 }
 
-                if (wcWidth(wc2) != 0)
-                    break;
+                if (wcWidth(wc2) != 0) break;
                 m_i += nBytesDecoded2;
             }
 

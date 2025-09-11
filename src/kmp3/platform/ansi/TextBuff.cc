@@ -217,9 +217,8 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
     {
         if (x >= m_tWidth || max >= maxSvLen) break;
 
-        /* FIXME: regional symbols are broken with some terminals (tmux). */
-        if (StringGraphemeIt::isRegional(wc))
-            continue;
+        /* FIXME: regional symbols are very broken rn (and probably some other quirky unicode stuff). */
+        if (u32(wc) >= 0x1f1e6 && u32(wc) <= 0x1f1ff) continue;
 
         if (fb[x, y] != TextBuffCell {wc, eStyle})
             m_bChanged = true;
