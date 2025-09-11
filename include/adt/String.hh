@@ -138,14 +138,14 @@ struct StringWCharIt
         {
             if (!p || i < 0 || i >= size)
             {
-GOTO_quit:
+quit:
                 i = NPOS;
                 return {NPOS};
             }
 
             int len = mbrtowc(&wc, &p[i], size - i, &state);
 
-            if (len == -1) goto GOTO_quit;
+            if (len == -1) goto quit;
             else if (len == 0 || len < -1) len = 1;
 
             i += len;
@@ -162,96 +162,6 @@ GOTO_quit:
 
     const It begin() const { return {m_s.data(), 0, m_s.size()}; }
     const It end() const { return {NPOS}; }
-};
-
-/* Not a real glyph iterator, but this is the best what can be done with just libc. */
-struct StringGlyphIt
-{
-    const StringView m_sv {};
-
-    StringGlyphIt(const StringView sv) : m_sv {sv} {};
-
-    /* */
-
-    struct It
-    {
-        const char* m_pStr {};
-        isize m_size {};
-        isize m_i {};
-        isize m_clusterI {};
-        isize m_clusterSize {};
-        mbstate_t m_mbState {};
-
-        /* */
-
-        It(isize _NPOS) : m_i {_NPOS} {}
-        It(const StringView sv) : m_pStr {sv.m_pData}, m_size {sv.m_size} { operator++(); }
-
-        /* */
-
-        const StringView operator*() const { return {const_cast<char*>(&m_pStr[m_clusterI]), m_clusterSize}; }
-
-        It
-        operator++()
-        {
-            if (!m_pStr || m_i >= m_size)
-            {
-                m_i = NPOS;
-                return NPOS;
-            }
-
-            wchar_t wc1;
-            int nBytesDecoded = mbrtowc(&wc1, &m_pStr[m_i], m_size - m_i, &m_mbState);
-            if (nBytesDecoded == -1 || nBytesDecoded == -2)
-            {
-                /* just skip */
-                nBytesDecoded = 1;
-                wc1 = L' ';
-                m_mbState = {};
-            }
-
-            m_clusterI = m_i;
-            m_i += nBytesDecoded;
-
-            while (m_i < m_size)
-            {
-                mbstate_t mb2 {};
-                wchar_t wc2;
-                int nBytesDecoded2 = mbrtowc(&wc2, &m_pStr[m_i], m_size - m_i, &mb2);
-                if (nBytesDecoded2 == 0 || nBytesDecoded2 == -1 || nBytesDecoded2 == -2)
-                    break;
-
-                /* zero-width joiner (ZWJ) */
-                if (wc2 == 0x200D)
-                {
-                    m_i += nBytesDecoded2;
-                    mbstate_t mb3 {};
-                    wchar_t wc3;
-                    int nBytesDecoded3 = mbrtowc(&wc3, &m_pStr[m_i], m_size - m_i, &mb3);
-                    if (nBytesDecoded3 > 0)
-                    {
-                        m_i += nBytesDecoded3;
-                        continue;
-                    }
-                    break;
-                }
-
-                if (wcWidth(wc2) != 0) break;
-                m_i += nBytesDecoded2;
-            }
-
-            m_clusterSize = m_i - m_clusterI;
-            return *this;
-        }
-
-        /* */
-
-        friend bool operator==(const It& l, const It& r) { return l.m_i == r.m_i; }
-        friend bool operator!=(const It& l, const It& r) { return l.m_i != r.m_i; }
-    };
-
-    It begin() { return m_sv; }
-    It end() { return NPOS; }
 };
 
 /* Separated by delimiters String iterator adapter */

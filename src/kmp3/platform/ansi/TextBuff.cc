@@ -87,8 +87,10 @@ TextBuff::flush()
 {
     if (m_oBuff->size > 0)
     {
-        [[maybe_unused]] auto _unused =
-            write(STDOUT_FILENO, m_oBuff->pData, m_oBuff->size);
+        const isize n = write(STDOUT_FILENO, m_oBuff->pData, m_oBuff->size);
+
+        ADT_ASSERT(n == m_oBuff->size, "n: {}, size: {}", n, m_oBuff->size);
+        LogDebug{"flushed: {} ({})\n", n, m_oBuff->size};
 
         m_oBuff->size = 0;
     }
@@ -217,17 +219,14 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
     {
         if (x >= m_tWidth || max >= maxSvLen) break;
 
-        /* FIXME: regional symbols are very broken rn (and probably some other quirky unicode stuff). */
-        if (u32(wc) >= 0x1f1e6 && u32(wc) <= 0x1f1ff) continue;
+        /* Zero width joiners and other non printable unicode stuff goes to hell. */
+        int colWidth;
+        if ((u32)wc == 0x200d || (colWidth = wcWidth(wc)) <= 0) continue;
 
-        if (fb[x, y] != TextBuffCell {wc, eStyle})
-            m_bChanged = true;
+        if (fb[x, y] != TextBuffCell {wc, eStyle}) m_bChanged = true;
 
         bb[x, y].wc = wc;
         bb[x, y].eStyle = eStyle;
-
-        int colWidth = wcwidth(wc);
-        if (colWidth < 0) break;
 
         for (int i = 1; i < colWidth; ++i)
         {
@@ -314,70 +313,53 @@ TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
 void
 TextBuff::pushDiff()
 {
-    isize row = 0;
-    isize col = 0;
-    isize nForwards = 0;
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
-    bool bChangeStyle = false;
 
     /* won't hurt */
     ADT_DEFER( push(TEXT_BUFF_NORM) );
 
-    for (row = 0; row < m_tHeight; ++row)
+    for (isize rowI = 0; rowI < m_tHeight; ++rowI)
     {
-        nForwards = 0;
         bool bMoved = false;
+        isize nForwards = 0;
 
-        auto clMove = [&]
+        for (isize colI = 0; colI < m_tWidth; ++colI)
         {
-            if (!bMoved)
-            {
-                move(0, row);
-                bMoved = true;
-            }
-        };
-
-        for (col = 0; col < m_tWidth; ++col)
-        {
-            const auto& front = frontBufferSpan()[col, row];
-            const auto& back = backBufferSpan()[col, row];
-
-            if (back.eStyle != eLastStyle) bChangeStyle = true;
+            const auto& front = frontBufferSpan()[colI, rowI];
+            const auto& back = backBufferSpan()[colI, rowI];
 
             if (front != back && back.wc != -1)
             {
+                if (!bMoved)
+                {
+                    bMoved = true;
+                    move(0, rowI);
+                }
+
                 if (nForwards > 0)
                 {
-                    clMove();
                     forward(nForwards);
                     nForwards = 0;
                 }
 
-                int colWidth = wcwidth(back.wc);
-
-                if (col + colWidth <= m_tWidth)
+                if (back.eStyle != eLastStyle)
                 {
-                    clMove();
-                    if (bChangeStyle)
-                    {
-                        bChangeStyle = false;
-
-                        char aBuff[128] {};
-                        const isize nWritten = styleToBuffer(aBuff, back.eStyle);
-                        push(aBuff, nWritten);
-                        eLastStyle = back.eStyle;
-                    }
-
-                    /* Weird bottom right corner bug on long search strings. */
-                    if (back.wc == L'\0') pushWChar(L' ');
-                    else pushWChar(back.wc);
+                    char aBuff[32];
+                    const isize nBytes = styleToBuffer(aBuff, back.eStyle);
+                    push(aBuff, nBytes);
+                    eLastStyle = back.eStyle;
                 }
 
-                if (colWidth > 1) col += colWidth - 1;
+                if (back.wc == L'\0') pushWChar(L' ');
+                else pushWChar(back.wc);
             }
             else
             {
-                ++nForwards;
+                if (back.wc != -1)
+                {
+                    const isize w = wcWidth(back.wc);
+                    if (w > 0) nForwards += w;
+                }
             }
         }
     }
