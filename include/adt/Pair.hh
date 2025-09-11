@@ -13,7 +13,7 @@ struct Pair
 
     /* */
 
-    constexpr bool operator==(const Pair<A, B>&) const = default;
+    bool operator==(const Pair<A, B>&) const = default;
 };
 
 template<typename A, typename B>

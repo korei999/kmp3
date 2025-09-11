@@ -87,7 +87,7 @@ TextBuff::flush()
 {
     if (m_oBuff->size > 0)
     {
-        const isize n = write(STDOUT_FILENO, m_oBuff->pData, m_oBuff->size);
+        [[maybe_unused]] const isize n = write(STDOUT_FILENO, m_oBuff->pData, m_oBuff->size);
         ADT_ASSERT(n == m_oBuff->size, "n: {}, size: {}", n, m_oBuff->size);
         m_oBuff->size = 0;
     }
