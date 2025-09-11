@@ -164,12 +164,12 @@ GOTO_quit:
     const It end() const { return {NPOS}; }
 };
 
-/* Grapheme cluster iterator */
-struct StringGraphemeIt
+/* Not a real glyph iterator, but this is the best what can be done with just libc. */
+struct StringGlyphIt
 {
     const StringView m_sv {};
 
-    StringGraphemeIt(const StringView sv) : m_sv {sv} {};
+    StringGlyphIt(const StringView sv) : m_sv {sv} {};
 
     /* */
 
@@ -363,73 +363,80 @@ StringView::endsWith(const StringView r) const
 }
 
 inline bool
-operator==(const StringView& l, const StringView& r)
+StringView::operator==(const StringView& r) const noexcept
 {
-    if (l.m_pData == r.m_pData)
+    if (m_pData == r.m_pData)
         return true;
 
-    if (l.m_size != r.m_size)
+    if (m_size != r.m_size)
         return false;
 
-    return strncmp(l.m_pData, r.m_pData, l.m_size) == 0; /* (glibc) strncmp is as fast as handmade SIMD optimized function. */
+    return strncmp(m_pData, r.m_pData, m_size) == 0; /* (glibc) strncmp is as fast as handmade SIMD optimized function. */
 }
 
 inline bool
-operator==(const StringView& l, const char* r)
+StringView::operator==(const char* r) const noexcept
 {
-    auto sr = StringView(r);
-    return l == sr;
+    return *this == StringView(r);
 }
 
 inline bool
-operator!=(const StringView& l, const StringView& r)
+StringView::operator!=(const StringView& r) const noexcept
 {
-    return !(l == r);
+    return !(*this == r);
 }
 
 inline i64
-operator-(const StringView& l, const StringView& r)
+StringView::operator-(const StringView& r) const noexcept
 {
-    if (l.m_size < r.m_size) return -1;
-    else if (l.m_size > r.m_size) return 1;
+    if (m_size < r.m_size) return -1;
+    else if (m_size > r.m_size) return 1;
 
     i64 sum = 0;
-    for (isize i = 0; i < l.m_size; --i)
-        sum += (l.m_pData[i] - r.m_pData[i]);
+    for (isize i = 0; i < m_size; --i)
+        sum += (m_pData[i] - r.m_pData[i]);
 
     return sum;
 }
 
 inline bool
-operator<(const StringView& l, const StringView& r)
+StringView::operator<(const StringView& r) const noexcept
 {
-    const isize len = utils::min(l.m_size, r.m_size);
-    const isize res = strncmp(l.m_pData, r.m_pData, len);
+    const isize len = utils::min(m_size, r.m_size);
+    const isize res = ::strncmp(m_pData, r.m_pData, len);
 
-    if (res == 0) return l.m_size < r.m_size;
+    if (res == 0) return m_size < r.m_size;
     else return res < 0;
 }
 
 inline bool
-operator<=(const StringView& l, const StringView& r)
+StringView::operator<=(const StringView& r) const noexcept
 {
-    return (l.m_size == r.m_size) || (l < r);
+    const isize len = utils::min(m_size, r.m_size);
+    const isize res = ::strncmp(m_pData, r.m_pData, len);
+
+    if (res == 0) return m_size <= r.m_size;
+    else return res < 0;
 }
 
 inline bool
-operator>(const StringView& l, const StringView& r)
+StringView::operator>(const StringView& r) const noexcept
 {
-    const isize len = utils::min(l.m_size, r.m_size);
-    const isize res = ::strncmp(l.m_pData, r.m_pData, len);
+    const isize len = utils::min(m_size, r.m_size);
+    const isize res = ::strncmp(m_pData, r.m_pData, len);
 
-    if (res == 0) return l.m_size > r.m_size;
+    if (res == 0) return m_size > r.m_size;
     else return res > 0;
 }
 
 inline bool
-operator>=(const StringView& l, const StringView& r)
+StringView::operator>=(const StringView& r) const noexcept
 {
-    return (l.m_size == r.m_size) || (l > r);
+    const isize len = utils::min(m_size, r.m_size);
+    const isize res = ::strncmp(m_pData, r.m_pData, len);
+
+    if (res == 0) return m_size >= r.m_size;
+    else return res > 0;
 }
 
 inline constexpr isize
@@ -738,7 +745,7 @@ String::release() noexcept
 
 template<int SIZE>
 inline
-StringFixed<SIZE>::StringFixed(const StringView svName)
+StringFixed<SIZE>::StringFixed(const StringView svName) noexcept
 {
     /* memcpy doesn't like nullptrs */
     if (!svName.m_pData || svName.m_size <= 0) return;
@@ -751,7 +758,7 @@ StringFixed<SIZE>::StringFixed(const StringView svName)
 template<int SIZE>
 template<int SIZE_B>
 inline
-StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other)
+StringFixed<SIZE>::StringFixed(const StringFixed<SIZE_B> other) noexcept
 {
     const isize size = utils::min(SIZE - 1, SIZE_B);
     memcpy(m_aBuff, other.m_aBuff, size);
@@ -774,14 +781,14 @@ StringFixed<SIZE>::destroy() noexcept
 
 template<int SIZE>
 inline bool
-StringFixed<SIZE>::operator==(const StringFixed<SIZE>& other) const
+StringFixed<SIZE>::operator==(const StringFixed<SIZE>& other) const noexcept
 {
     return StringView(*this) == StringView(other);
 }
 
 template<int SIZE>
 inline bool
-StringFixed<SIZE>::operator==(const StringView sv) const
+StringFixed<SIZE>::operator==(const StringView sv) const noexcept
 {
     return StringView(m_aBuff) == sv;
 }
@@ -789,16 +796,17 @@ StringFixed<SIZE>::operator==(const StringView sv) const
 template<int SIZE>
 template<isize ARRAY_SIZE>
 inline bool
-StringFixed<SIZE>::operator==(const char (&aBuff)[ARRAY_SIZE]) const
+StringFixed<SIZE>::operator==(const char (&aBuff)[ARRAY_SIZE]) const noexcept
 {
     return StringView(*this) == aBuff;
 }
 
-template<int SIZE_L, int SIZE_R>
+template<int SIZE>
+template<int SIZE_R>
 inline bool
-operator==(const StringFixed<SIZE_L>& l, const StringFixed<SIZE_R>& r)
+StringFixed<SIZE>::operator==(const StringFixed<SIZE_R>& r) const noexcept
 {
-    return StringView(l) == StringView(r);
+    return StringView(*this) == StringView(r);
 }
 
 inline String

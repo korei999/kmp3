@@ -54,7 +54,7 @@ TextBuff::push(const char ch)
 
     if (b.size >= b.capacity)
     {
-        const isize newCap = utils::max(isize(2), b.capacity*2);
+        const isize newCap = utils::max(isize(8), b.capacity*2);
         grow(newCap);
     }
 

@@ -208,7 +208,7 @@ Mixer::onProcess()
     }
 
     auto pBuffData = pPwBuffer->buffer->datas[0];
-    auto* pDest = (f32*)pBuffData.data;
+    f32* pDest = (f32*)pBuffData.data;
 
     if (!pDest)
     {
@@ -222,7 +222,7 @@ Mixer::onProcess()
 
     if (nFramesRequested*m_nChannels > utils::size(audio::g_aDrainBuffer)) nFramesRequested = utils::size(audio::g_aDrainBuffer);
 
-    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume * (1.f/100.f), 3.0f);
+    const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume * (1.0f/100.0f), 3.0f);
     const isize nSamplesRequested = nFramesRequested * m_nChannels;
     m_ringBuff.pop({pDest, nSamplesRequested});
 

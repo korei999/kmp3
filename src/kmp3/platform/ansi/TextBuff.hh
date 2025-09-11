@@ -81,23 +81,17 @@ enum class TEXT_BUFF_STYLE : adt::u32
 };
 ADT_ENUM_BITWISE_OPERATORS(TEXT_BUFF_STYLE);
 
+/* FIXME: this is not a good approach, there are characters that can be larger in size than sizeof(wchar_t) like '/̶̢̧̠̩̠̠̪̜͚͙̏͗̏̇̑̈͛͘ͅ' (41 bytes).
+ * To represent 1 terminal cell as 1 character this has to be some kind of StringView structure. */
 struct TextBuffCell
 {
     wchar_t wc {};
     TEXT_BUFF_STYLE eStyle {};
+
+    /* */
+
+    bool operator==(const TextBuffCell&) const = default;
 };
-
-inline bool
-operator==(const TextBuffCell& l, const TextBuffCell& r)
-{
-    return (l.wc == r.wc) && (l.eStyle == r.eStyle);
-}
-
-inline bool
-operator!=(const TextBuffCell& l, const TextBuffCell& r)
-{
-    return !(l == r);
-}
 
 struct TextBuff
 {

@@ -62,7 +62,16 @@ struct StringView
 
     /* */
 
-    explicit constexpr operator bool() const { return size() > 0; }
+    explicit constexpr operator bool() const noexcept { return size() > 0; }
+
+    [[nodiscard]] inline bool operator==(const StringView& r) const noexcept;
+    [[nodiscard]] inline bool operator==(const char* r) const noexcept;
+    [[nodiscard]] inline bool operator!=(const StringView& r) const noexcept;
+    [[nodiscard]] inline bool operator<(const StringView& r) const noexcept;
+    [[nodiscard]] inline bool operator<=(const StringView& r) const noexcept;
+    [[nodiscard]] inline bool operator>(const StringView& r) const noexcept;
+    [[nodiscard]] inline bool operator>=(const StringView& r) const noexcept;
+    [[nodiscard]] inline i64 operator-(const StringView& r) const noexcept;
 
     /* */
 
@@ -114,15 +123,6 @@ protected:
     template<typename LAMBDA> StringView& trimEnd(LAMBDA clFill);
     template<typename LAMBDA> StringView& removeNLEnd(LAMBDA clFill);
 };
-
-[[nodiscard]] inline bool operator==(const StringView& l, const StringView& r);
-[[nodiscard]] inline bool operator==(const StringView& l, const char* r);
-[[nodiscard]] inline bool operator!=(const StringView& l, const StringView& r);
-[[nodiscard]] inline bool operator<(const StringView& l, const StringView& r);
-[[nodiscard]] inline bool operator<=(const StringView& l, const StringView& r);
-[[nodiscard]] inline bool operator>(const StringView& l, const StringView& r);
-[[nodiscard]] inline bool operator>=(const StringView& l, const StringView& r);
-[[nodiscard]] inline i64 operator-(const StringView& l, const StringView& r);
 
 [[nodiscard]] inline String StringCat(IAllocator* p, const StringView& l, const StringView& r);
 
@@ -178,44 +178,42 @@ struct StringFixed
 
     /* */
 
-    StringFixed() = default;
+    StringFixed() noexcept = default;
 
-    StringFixed(const StringView svName);
+    StringFixed(const StringView svName) noexcept;
 
-    StringFixed(const char* nts) : StringFixed(StringView(nts)) {}
+    StringFixed(const char* nts) noexcept : StringFixed(StringView(nts)) {}
 
-    StringFixed(const char* p, const isize size) : StringFixed(StringView {const_cast<char*>(p), size}) {}
+    StringFixed(const char* p, const isize size) noexcept : StringFixed(StringView {const_cast<char*>(p), size}) {}
 
-    StringFixed(const Span<const char> sp) : StringFixed(StringView {const_cast<char*>(sp.m_pData), sp.m_size}) {}
+    StringFixed(const Span<const char> sp) noexcept : StringFixed(StringView {const_cast<char*>(sp.m_pData), sp.m_size}) {}
 
-    StringFixed(const Span<const char> sp, isize size) : StringFixed(StringView {const_cast<char*>(sp.m_pData), size}) {}
+    StringFixed(const Span<const char> sp, isize size) noexcept : StringFixed(StringView {const_cast<char*>(sp.m_pData), size}) {}
 
-    template<int SIZE_B>
-    StringFixed(const StringFixed<SIZE_B> other);
-
-    /* */
-
-    operator adt::StringView() { return StringView(m_aBuff); };
-    operator const adt::StringView() const { return StringView(m_aBuff); };
-
-    explicit operator bool() const { return size() > 0; }
+    template<int SIZE_B> StringFixed(const StringFixed<SIZE_B> other) noexcept;
 
     /* */
 
-    bool operator==(const StringFixed& other) const;
-    bool operator==(const adt::StringView sv) const;
-    template<isize ARRAY_SIZE> bool operator==(const char (&aBuff)[ARRAY_SIZE]) const;
+    operator adt::StringView() noexcept { return StringView(m_aBuff); };
+    operator const adt::StringView() const noexcept { return StringView(m_aBuff); };
 
-    auto& data() { return m_aBuff; }
-    const auto& data() const { return m_aBuff; }
+    explicit operator bool() const noexcept { return size() > 0; }
+
+    /* */
+
+    bool operator==(const StringFixed& other) const noexcept;
+    bool operator==(const adt::StringView sv) const noexcept;
+    template<isize ARRAY_SIZE> bool operator==(const char (&aBuff)[ARRAY_SIZE]) const noexcept;
+
+    template<int SIZE_R> bool operator==(const StringFixed<SIZE_R>& r) const noexcept;
+
+    auto& data() noexcept { return m_aBuff; }
+    const auto& data() const noexcept { return m_aBuff; }
 
     isize cap() const noexcept { return CAP; }
 
     isize size() const noexcept;
     void destroy() noexcept;
 };
-
-template<int SIZE_L, int SIZE_R>
-inline bool operator==(const StringFixed<SIZE_L>& l, const StringFixed<SIZE_R>& r);
 
 } /* namespace adt */
