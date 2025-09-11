@@ -13,9 +13,10 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    if (pl.m_bSelectionChanged && m_time > m_lastResizeTime + app::g_config.imageUpdateRateLimit)
+    if (pl.m_bRedrawImage || (pl.m_bSelectionChanged && m_time > m_lastResizeTime + app::g_config.imageUpdateRateLimit))
     {
         pl.m_bSelectionChanged = false;
+        pl.m_bRedrawImage = false;
 
         const int split = pl.m_imgHeight;
 

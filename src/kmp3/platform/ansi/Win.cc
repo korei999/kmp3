@@ -128,13 +128,12 @@ void
 Win::resizeHandler()
 {
     Player& pl = app::player();
+    pl.m_bRedrawImage = true;
 
     m_termSize = getTermSize();
     LogDebug("term: {}\n", m_termSize);
 
     m_textBuff.resize(m_termSize.width, m_termSize.height);
-
-    pl.m_bSelectionChanged = true;
 
     m_bClear = true;
     m_lastResizeTime = time::nowMS();
