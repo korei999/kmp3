@@ -88,10 +88,7 @@ TextBuff::flush()
     if (m_oBuff->size > 0)
     {
         const isize n = write(STDOUT_FILENO, m_oBuff->pData, m_oBuff->size);
-
         ADT_ASSERT(n == m_oBuff->size, "n: {}, size: {}", n, m_oBuff->size);
-        LogDebug{"flushed: {} ({})\n", n, m_oBuff->size};
-
         m_oBuff->size = 0;
     }
 }
@@ -333,7 +330,8 @@ TextBuff::pushDiff()
                 if (!bMoved)
                 {
                     bMoved = true;
-                    move(0, rowI);
+                    move(nForwards, rowI);
+                    nForwards = 0;
                 }
 
                 if (nForwards > 0)
