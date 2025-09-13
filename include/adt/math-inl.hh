@@ -5,6 +5,16 @@
 #include <concepts>
 #include <limits>
 
+#if defined __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmissing-braces"
+#endif
+
+#if defined __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
 namespace adt::math
 {
 
@@ -576,3 +586,11 @@ inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::M3& x);
 inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::M4& x);
 
 } /* namespace adt::math */
+
+#if defined __clang__
+    #pragma clang diagnostic pop
+#endif
+
+#if defined __GNUC__
+    #pragma GCC diagnostic pop
+#endif

@@ -744,8 +744,16 @@ compare(const StringView& l, const StringView& r)
     const isize minLen = l.m_size < r.m_size ? l.m_size : r.m_size;
     const isize res = ::strncmp(l.m_pData, r.m_pData, minLen);
 
-    if (res == 0) return l.m_size > r.m_size;
-    else return res;
+    if (res == 0)
+    {
+        if (l.m_size == r.m_size) return 0;
+        else if (l.m_size < r.m_size) return -1;
+        else return 1;
+    }
+    else
+    {
+        return res;
+    }
 }
 
 [[nodiscard]] inline isize
@@ -754,8 +762,16 @@ compareRev(const StringView& l, const StringView& r)
     const isize minLen = l.m_size < r.m_size ? l.m_size : r.m_size;
     const isize res = ::strncmp(r.m_pData, l.m_pData, minLen);
 
-    if (res == 0) return r.m_size > l.m_size;
-    else return res;
+    if (res == 0)
+    {
+        if (r.m_size == l.m_size) return 0;
+        else if (r.m_size < l.m_size) return -1;
+        else return 1;
+    }
+    else
+    {
+        return res;
+    }
 }
 
 } /* namespace utils */

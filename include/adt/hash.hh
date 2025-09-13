@@ -26,6 +26,7 @@
 #include "assert.hh"
 #include "types.hh"
 
+#include <cstring>
 #include <nmmintrin.h>
 
 namespace adt::hash

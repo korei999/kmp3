@@ -42,7 +42,7 @@ struct Arena : IArena
 
         template<typename ...ARGS>
         Ptr(Arena* pArena, ARGS&&... args)
-            : ListNodeType{nullptr, (void**)this, (void(*)(Arena*, void**))nullptrDeleter},
+            : ListNodeType{nullptr, {(void**)this, (void(*)(Arena*, void**))nullptrDeleter}},
               m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
         {
             pArena->m_pLCurrentDeleters->insert(static_cast<ListNodeType*>(this));
@@ -50,7 +50,7 @@ struct Arena : IArena
 
         template<typename ...ARGS>
         Ptr(void (*pfn)(Arena*, Ptr*), Arena* pArena, ARGS&&... args)
-            : ListNodeType{nullptr, (void**)this, (void(*)(Arena*, void**))pfn},
+            : ListNodeType{nullptr, {(void**)this, (void(*)(Arena*, void**))pfn}},
               m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
         {
             pArena->m_pLCurrentDeleters->insert(static_cast<ListNodeType*>(this));
