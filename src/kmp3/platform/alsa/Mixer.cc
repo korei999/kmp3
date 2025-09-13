@@ -46,6 +46,7 @@ void
 Mixer::deinit()
 {
     m_atom_bRunning.store(false, atomic::ORDER::RELEASE);
+    pause(false); /* Sleeps in the loop() forever if paused. */
 
     while (m_atom_bLoopDone.load(atomic::ORDER::ACQUIRE) != true)
         m_cndLoop.signal();
