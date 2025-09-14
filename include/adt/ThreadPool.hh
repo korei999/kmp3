@@ -310,7 +310,7 @@ ThreadPool::loop()
         Task task {};
 
         {
-            LockGuard qLock {&m_mtxQ};
+            LockScope qLock {&m_mtxQ};
 
             while (m_qTasks.empty() && !m_atomBDone.load(atomic::ORDER::ACQUIRE))
                 m_cndQ.wait(&m_mtxQ);
@@ -326,7 +326,7 @@ ThreadPool::loop()
         m_atomNActiveTasks.fetchSub(1, atomic::ORDER::RELEASE);
 
         {
-            LockGuard qLock {&m_mtxQ};
+            LockScope qLock {&m_mtxQ};
 
             if (m_qTasks.empty() && m_atomNActiveTasks.load(atomic::ORDER::ACQUIRE) <= 0)
                 m_cndWait.signal();
@@ -377,7 +377,7 @@ again:
         }
     }
 
-    LockGuard qLock {&m_mtxQ};
+    LockScope qLock {&m_mtxQ};
     while (!m_qTasks.empty() || m_atomNActiveTasks.load(atomic::ORDER::RELAXED) > 0)
         m_cndWait.wait(&m_mtxQ);
 }
@@ -388,7 +388,7 @@ ThreadPool::destroy() noexcept
     wait(true);
 
     {
-        LockGuard qLock {&m_mtxQ};
+        LockScope qLock {&m_mtxQ};
         m_atomBDone.store(true, atomic::ORDER::RELEASE);
     }
 
@@ -415,7 +415,7 @@ ThreadPool::addTask(void (*pfn)(void*), void* pArg, isize argSize) noexcept
 
     isize i;
     {
-        LockGuard lock {&m_mtxQ};
+        LockScope lock {&m_mtxQ};
         i = m_qTasks.emplaceBackNoGrow(pfn, pArg, argSize);
     }
 
@@ -434,7 +434,7 @@ ThreadPool::tryStealTask() noexcept
     Task task {};
 
     {
-        LockGuard lock {&m_mtxQ};
+        LockScope lock {&m_mtxQ};
         if (!m_qTasks.empty()) task = m_qTasks.popFront();
     }
 

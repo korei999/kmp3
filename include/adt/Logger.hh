@@ -247,7 +247,7 @@ Logger::loop() noexcept
     {
         Msg msg;
         {
-            LockGuard lock {&m_mtxQ};
+            LockScope lock {&m_mtxQ};
             while (!m_bDone && m_q.empty())
                 m_cnd.wait(&m_mtxQ);
 
@@ -270,7 +270,7 @@ Logger::add(LEVEL eLevel, std::source_location loc, const StringView sv) noexcep
 {
     isize i;
     {
-        LockGuard lock {&m_mtxQ};
+        LockScope lock {&m_mtxQ};
         if (m_bDone) return ADD_STATUS::DESTROYED;
 
         i = m_q.emplaceBackNoGrow(sv.size(), eLevel, loc, sv);
@@ -322,7 +322,7 @@ Logger::destroy() noexcept
     LogDebug{"destroying logger...\n"};
 
     {
-        LockGuard lock {&m_mtxQ};
+        LockScope lock {&m_mtxQ};
         m_bDone = true;
         m_cnd.signal();
     }

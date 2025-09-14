@@ -6,10 +6,10 @@
 #include "SList.hh"
 
 #if __has_include(<sys/mman.h>)
-    #define ADT_FLAT_ARENA_MMAP
+    #define ADT_ARENA_MMAP
     #include <sys/mman.h>
 #elif defined _WIN32
-    #define ADT_FLAT_ARENA_WIN32
+    #define ADT_ARENA_WIN32
 #else
     #warning "Arena in not implemented"
 #endif
@@ -17,16 +17,18 @@
 namespace adt
 {
 
-struct ArenaStateGuard;
+struct ArenaPushScope;
 
 struct Arena : IArena
 {
-    friend ArenaStateGuard;
+    friend ArenaPushScope;
+
+    using PfnDeleter = void(*)(Arena*, void**);
 
     struct DeleterNode
     {
         void** ppObj {};
-        void (*pfnDelete)(Arena* pArena, void** ppObj) {};
+        PfnDeleter pfnDelete {};
     };
 
     using ListNodeType = SList<DeleterNode>::Node;
@@ -42,7 +44,7 @@ struct Arena : IArena
 
         template<typename ...ARGS>
         Ptr(Arena* pArena, ARGS&&... args)
-            : ListNodeType{nullptr, {(void**)this, (void(*)(Arena*, void**))nullptrDeleter}},
+            : ListNodeType{nullptr, {(void**)this, (PfnDeleter)nullptrDeleter}},
               m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
         {
             pArena->m_pLCurrentDeleters->insert(static_cast<ListNodeType*>(this));
@@ -50,7 +52,7 @@ struct Arena : IArena
 
         template<typename ...ARGS>
         Ptr(void (*pfn)(Arena*, Ptr*), Arena* pArena, ARGS&&... args)
-            : ListNodeType{nullptr, {(void**)this, (void(*)(Arena*, void**))pfn}},
+            : ListNodeType{nullptr, {(void**)this, (PfnDeleter)pfn}},
               m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
         {
             pArena->m_pLCurrentDeleters->insert(static_cast<ListNodeType*>(this));
@@ -92,7 +94,7 @@ struct Arena : IArena
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
     SList<DeleterNode> m_lDeleters {}; /* Run deleters on reset()/freeAll() or state restorations. */
-    SList<DeleterNode>* m_pLCurrentDeleters = &m_lDeleters; /* Switch and restore current list on ArenaStateGuard changes. */
+    SList<DeleterNode>* m_pLCurrentDeleters = &m_lDeleters; /* Switch and restore current list on ArenaPushScope changes. */
 
     /* */
 
@@ -140,7 +142,7 @@ struct ArenaState
     void restore(Arena* pArena) noexcept;
 };
 
-struct ArenaStateGuard
+struct ArenaPushScope
 {
     Arena* m_pArena {};
     SList<Arena::DeleterNode> m_lDeleters {};
@@ -148,8 +150,8 @@ struct ArenaStateGuard
 
     /* */
 
-    ArenaStateGuard(Arena* p) noexcept;
-    ~ArenaStateGuard() noexcept;
+    ArenaPushScope(Arena* p) noexcept;
+    ~ArenaPushScope() noexcept;
 };
 
 inline void
@@ -162,7 +164,7 @@ ArenaState::restore(Arena* pArena) noexcept
 }
 
 inline
-ArenaStateGuard::ArenaStateGuard(Arena* p) noexcept
+ArenaPushScope::ArenaPushScope(Arena* p) noexcept
     : m_pArena{p},
       m_state{
           .m_off = p->m_pos,
@@ -175,7 +177,7 @@ ArenaStateGuard::ArenaStateGuard(Arena* p) noexcept
 }
 
 inline
-ArenaStateGuard::~ArenaStateGuard() noexcept
+ArenaPushScope::~ArenaPushScope() noexcept
 {
     m_pArena->runDeleters();
     m_state.restore(m_pArena);
@@ -188,10 +190,10 @@ Arena::Arena(isize reserveSize, isize commitSize)
 
     const isize realReserved = alignUp(reserveSize, getPageSize());
 
-#ifdef ADT_FLAT_ARENA_MMAP
+#ifdef ADT_ARENA_MMAP
     void* pRes = mmap(nullptr, realReserved, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (pRes == MAP_FAILED) throw AllocException{"mmap() failed"};
-#elif defined ADT_FLAT_ARENA_WIN32
+#elif defined ADT_ARENA_WIN32
     void* pRes = VirtualAlloc(nullptr, realReserved, MEM_RESERVE, PAGE_READWRITE);
     ADT_ALLOC_EXCEPTION_FMT(pRes, "VirtualAlloc() failed to reserve: {}", realReserved);
 #else
@@ -276,10 +278,10 @@ Arena::freeAll() noexcept
 {
     runDeleters();
 
-#ifdef ADT_FLAT_ARENA_MMAP
+#ifdef ADT_ARENA_MMAP
     [[maybe_unused]] int err = munmap(m_pData, m_reserved);
     ADT_ASSERT(err != - 1, "munmap: {} ({})", err, strerror(errno));
-#elif defined ADT_FLAT_ARENA_WIN32
+#elif defined ADT_ARENA_WIN32
     VirtualFree(m_pData, 0, MEM_RELEASE);
 #else
 #endif
@@ -360,10 +362,10 @@ Arena::growIfNeeded(isize newPos)
 inline void
 Arena::commit(void* p, isize size)
 {
-#ifdef ADT_FLAT_ARENA_MMAP
+#ifdef ADT_ARENA_MMAP
     [[maybe_unused]] int err = mprotect(p, size, PROT_READ | PROT_WRITE);
     ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(err != - 1, "mprotect: r: {} ({}), size: {}", err, strerror(errno), size);
-#elif defined ADT_FLAT_ARENA_WIN32
+#elif defined ADT_ARENA_WIN32
     ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(VirtualAlloc(p, size, MEM_COMMIT, PAGE_READWRITE), "p: {}, size: {}", p, size);
 #else
 #endif
@@ -372,12 +374,12 @@ Arena::commit(void* p, isize size)
 inline void
 Arena::decommit(void* p, isize size)
 {
-#ifdef ADT_FLAT_ARENA_MMAP
+#ifdef ADT_ARENA_MMAP
         [[maybe_unused]] int err = mprotect(p, size, PROT_NONE);
         ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(err != - 1, "mprotect: {} ({})", err, strerror(errno));
         err = madvise(p, size, MADV_DONTNEED);
         ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(err != - 1, "madvise: {} ({})", err, strerror(errno));
-#elif defined ADT_FLAT_ARENA_WIN32
+#elif defined ADT_ARENA_WIN32
         ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(VirtualFree(p, size, MEM_DECOMMIT), "");
 #else
 #endif

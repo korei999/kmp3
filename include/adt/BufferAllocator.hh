@@ -62,15 +62,15 @@ struct BufferOffsets
     void restore(BufferAllocator* pAlloc) noexcept;
 };
 
-struct BufferStateGuard
+struct BufferPushScope
 {
     BufferAllocator* m_pAlloc {};
     BufferOffsets m_offsets {};
 
     /* */
 
-    BufferStateGuard(BufferAllocator* pAlloc) noexcept;
-    ~BufferStateGuard() noexcept;
+    BufferPushScope(BufferAllocator* pAlloc) noexcept;
+    ~BufferPushScope() noexcept;
 };
 
 inline void
@@ -82,11 +82,11 @@ BufferOffsets::restore(BufferAllocator* pAlloc) noexcept
 }
 
 inline
-BufferStateGuard::BufferStateGuard(BufferAllocator* pAlloc) noexcept
+BufferPushScope::BufferPushScope(BufferAllocator* pAlloc) noexcept
     : m_pAlloc{pAlloc}, m_offsets{.m_size = pAlloc->m_size, .m_pLastAlloc = pAlloc->m_pLastAlloc, .m_lastAllocSize = pAlloc->m_lastAllocSize} {}
 
 inline
-BufferStateGuard::~BufferStateGuard() noexcept
+BufferPushScope::~BufferPushScope() noexcept
 {
     m_offsets.restore(m_pAlloc);
 }

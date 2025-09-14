@@ -259,7 +259,7 @@ TextBuff::resize(isize width, isize height)
 void
 TextBuff::destroy()
 {
-    ArenaStateGuard pushed {m_pArena};
+    ArenaPushScope pushed {m_pArena};
     if (!m_oBuff) new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
 
     ADT_ASSERT(m_oBuff->pData == nullptr && m_oBuff->size == 0 && m_oBuff->capacity == 0,
@@ -293,7 +293,7 @@ TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
     new(&m_imgArena) Arena {SIZE_1G};
 #endif
 
-    ArenaStateGuard pushed {m_pArena};
+    ArenaPushScope pushed {m_pArena};
     new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
 
     push(TEXT_BUFF_ALT_SCREEN_ENABLE);

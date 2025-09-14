@@ -572,7 +572,7 @@ init()
     static bool s_bReInit = true;
     if (!s_bReInit) return;
 
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
 
     s_fdWake = eventfd(0, EFD_NONBLOCK);
 
@@ -661,7 +661,7 @@ proc()
         int r = poll(s_aPfds, utils::size(s_aPfds), -1);
         if (r < 0) return;
 
-        LockGuard lock {&g_mtx};
+        LockScope lock {&g_mtx};
 
         if (s_aPfds[0].revents & POLLIN)
         {
@@ -685,7 +685,7 @@ proc()
 void
 wakeUp() noexcept
 {
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
 
     if (s_fdMpris > 0)
     {
@@ -697,7 +697,7 @@ wakeUp() noexcept
 void
 destroy()
 {
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
 
     if (!s_pBus) return;
 
@@ -733,35 +733,35 @@ playerPropertyChanged(const char* name)
 void
 playbackStatusChanged()
 {
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
     playerPropertyChanged("PlaybackStatus");
 }
 
 void
 loopStatusChanged()
 {
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
     playerPropertyChanged("LoopStatus");
 }
 
 void
 shuffleChanged()
 {
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
     playerPropertyChanged("Shuffle");
 }
 
 void
 volumeChanged()
 {
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
     playerPropertyChanged("Volume");
 }
 
 void
 seeked()
 {
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
 
     if (!s_pBus) return;
     i64 pos = app::mixer().getCurrentMS() * 1000;
@@ -771,7 +771,7 @@ seeked()
 void
 metadataChanged()
 {
-    LockGuard lock {&g_mtx};
+    LockScope lock {&g_mtx};
 
     playerPropertyChanged("Metadata");
     seeked();

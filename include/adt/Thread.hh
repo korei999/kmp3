@@ -640,14 +640,14 @@ CallOnce::exec(void (*pfn)())
 }
 
 template<typename T>
-struct LockGuard
+struct LockScope
 {
     using LockType = T;
 
     /* */
 
-    LockGuard(T* _pMtx) : pMtx(_pMtx) { pMtx->lock(); }
-    ~LockGuard() { pMtx->unlock(); }
+    LockScope(T* _pMtx) : pMtx(_pMtx) { pMtx->lock(); }
+    ~LockScope() { pMtx->unlock(); }
 
 protected:
     T* pMtx {};
@@ -708,14 +708,14 @@ details::Future::Future(InitFlag)
 inline void
 details::Future::wait()
 {
-    LockGuard lock {&m_mtx};
+    LockScope lock {&m_mtx};
     while (!m_bDone) m_cnd.wait(&m_mtx);
 }
 
 inline void
 details::Future::signal()
 {
-    LockGuard lock {&m_mtx};
+    LockScope lock {&m_mtx};
 
     m_bDone = true;
     m_cnd.signal();

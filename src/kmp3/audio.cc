@@ -27,7 +27,7 @@ IMixer::refillRingBufferLoop()
     while (m_bRunning)
     {
         {
-            LockGuard lockRing {&m_ringBuff.m_mtx};
+            LockScope lockRing {&m_ringBuff.m_mtx};
             while (!m_ringBuff.m_bQuit && m_ringBuff.m_size >= RING_BUFFER_LOW_THRESHOLD)
                 m_ringBuff.m_cnd.wait(&m_ringBuff.m_mtx);
 
@@ -43,7 +43,7 @@ IMixer::refillRingBufferLoop()
 bool
 IMixer::playFinal(adt::StringView svPath)
 {
-    LockGuard lockDec {&app::decoder().m_mtx};
+    LockScope lockDec {&app::decoder().m_mtx};
 
     if (m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) app::decoder().close();
 
@@ -76,7 +76,7 @@ IMixer::destroy() noexcept
 {
     m_bRunning = false;
     {
-        LockGuard lockRing {&m_ringBuff.m_mtx};
+        LockScope lockRing {&m_ringBuff.m_mtx};
         m_ringBuff.m_bQuit = true;
         m_ringBuff.m_cnd.signal();
     }
@@ -87,7 +87,7 @@ IMixer::destroy() noexcept
 void
 IMixer::fillRingBuffer()
 {
-    LockGuard lockDec {&app::decoder().m_mtx};
+    LockScope lockDec {&app::decoder().m_mtx};
 
     if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
@@ -227,7 +227,7 @@ void
 IMixer::seekMS(adt::f64 ms)
 {
     {
-        LockGuard lock {&app::decoder().m_mtx};
+        LockScope lock {&app::decoder().m_mtx};
 
         if (!m_atom_bDecodes.load(atomic::ORDER::ACQUIRE)) return;
 
@@ -260,7 +260,7 @@ IMixer::getCurrentMS()
 i64
 IMixer::getTotalMS()
 {
-    LockGuard lockGuard {&app::decoder().m_mtx};
+    LockScope lock {&app::decoder().m_mtx};
     return app::decoder().getTotalMS();
 }
 
@@ -291,7 +291,7 @@ RingBuffer::destroy() noexcept
 isize
 RingBuffer::push(const Span<const f32> sp) noexcept
 {
-    LockGuard lockGuard {&m_mtx};
+    LockScope lock {&m_mtx};
 
     if (sp.size() + m_size > m_cap)
     {
@@ -321,7 +321,7 @@ RingBuffer::push(const Span<const f32> sp) noexcept
 isize
 RingBuffer::pop(Span<f32> sp) noexcept
 {
-    LockGuard lockGuard {&m_mtx};
+    LockScope lock {&m_mtx};
 
     if (sp.size() > m_cap)
     {
@@ -358,7 +358,7 @@ RingBuffer::pop(Span<f32> sp) noexcept
 void
 RingBuffer::clear() noexcept
 {
-    LockGuard lockGuard {&m_mtx};
+    LockScope lock {&m_mtx};
     m_firstI = m_lastI = m_size = 0;
 }
 

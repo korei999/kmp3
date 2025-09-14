@@ -63,7 +63,7 @@ Decoder::destroy()
     LogDebug("Decoder::destroy() ATTEMPT\n");
 
     {
-        LockGuard lockGuard {&m_mtx};
+        LockScope lockGuard {&m_mtx};
         close();
     }
     m_mtx.destroy();

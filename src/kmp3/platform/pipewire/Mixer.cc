@@ -10,13 +10,13 @@ using namespace adt;
 namespace platform::pipewire
 {
 
-struct PWLockGuard
+struct PWLockScope
 {
     pw_thread_loop* p {};
 
-    PWLockGuard() = delete;
-    PWLockGuard(pw_thread_loop* _p) : p(_p) { pw_thread_loop_lock(p); }
-    ~PWLockGuard() { pw_thread_loop_unlock(p); }
+    PWLockScope() = delete;
+    PWLockScope(pw_thread_loop* _p) : p(_p) { pw_thread_loop_lock(p); }
+    ~PWLockScope() { pw_thread_loop_unlock(p); }
 };
 
 static const pw_stream_events s_streamEvents {
@@ -132,7 +132,7 @@ void
 Mixer::deinit()
 {
     {
-        PWLockGuard tLock(m_pThrdLoop);
+        PWLockScope tLock(m_pThrdLoop);
         pw_stream_set_active(m_pStream, true);
     }
 
@@ -186,7 +186,7 @@ Mixer::setNChannels(u32 nChannels)
     const spa_pod* pParams {};
     pParams = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
 
-    PWLockGuard lock(m_pThrdLoop);
+    PWLockScope lock(m_pThrdLoop);
     pw_stream_update_params(m_pStream, &pParams, 1);
 
     /* won't apply without this */
@@ -241,7 +241,7 @@ Mixer::pause(bool bPause)
 {
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
-    PWLockGuard lock(m_pThrdLoop);
+    PWLockScope lock(m_pThrdLoop);
     pw_stream_set_active(m_pStream, !bPause);
 
     LogInfo("bPaused: {}\n", m_atom_bPaused);
@@ -268,7 +268,7 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     const spa_pod* aParams[1] {};
     aParams[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &rawInfo);
 
-    PWLockGuard lock(m_pThrdLoop);
+    PWLockScope lock(m_pThrdLoop);
     pw_stream_update_params(m_pStream, aParams, utils::size(aParams));
 
     /* update won't apply without this */

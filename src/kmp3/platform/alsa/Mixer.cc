@@ -89,7 +89,7 @@ Mixer::pause(bool bPause)
     LogInfo("bPause: {}\n", bPause);
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
-    LockGuard lock {&m_mtxLoop};
+    LockScope lock {&m_mtxLoop};
 
     if (bPause)
     {
@@ -128,7 +128,7 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
 void
 Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
-    LockGuard lock {&m_mtxLoop};
+    LockScope lock {&m_mtxLoop};
     int err = 0;
 
     if (bSaveNewConfig)
@@ -170,7 +170,7 @@ Mixer::loop()
             audio::g_aDrainBuffer[sampleI] *= vol;
 
         {
-            LockGuard lock {&m_mtxLoop};
+            LockScope lock {&m_mtxLoop};
             while (m_atom_bPaused.load(atomic::ORDER::ACQUIRE))
             {
                 m_cndLoop.wait(&m_mtxLoop);

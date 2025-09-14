@@ -101,7 +101,7 @@ Player::setDefaultIdxs(Vec<u16>* pvIdxs)
 void
 Player::subStringSearch(Arena* pArena, Span<const wchar_t> spBuff)
 {
-    ArenaStateGuard pushed {pArena};
+    ArenaPushScope pushed {pArena};
 
     if (spBuff && wcsnlen(spBuff.data(), spBuff.size()) == 0)
         return;
@@ -330,7 +330,7 @@ Player::destroy()
 void
 Player::pushErrorMsg(const Player::Msg& msg)
 {
-    LockGuard lock {&m_mtxQ};
+    LockScope lock {&m_mtxQ};
     m_qErrorMsgs.pushBack(msg);
 
     m_sfLastMessage = msg.sfMsg;
@@ -341,7 +341,7 @@ Player::Msg
 Player::popErrorMsg()
 {
     {
-        LockGuard lock {&m_mtxQ};
+        LockScope lock {&m_mtxQ};
         if (!m_qErrorMsgs.empty()) return m_qErrorMsgs.popFront();
     }
 

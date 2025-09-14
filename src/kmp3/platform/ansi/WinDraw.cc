@@ -44,7 +44,7 @@ Win::coverImage()
 void
 Win::tooSmall(int width, int height)
 {
-    ArenaStateGuard pushed {m_pArena};
+    ArenaPushScope pushed {m_pArena};
 
     using STYLE = TEXT_BUFF_STYLE;
 
@@ -119,7 +119,7 @@ Win::volume()
     const f32 vol = app::mixer().getVolume();
     const bool bMuted = app::mixer().isMuted();
 
-    ArenaStateGuard pushed {m_pArena};
+    ArenaPushScope pushed {m_pArena};
     Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
     const isize n = print::toSpan(sp, "volume: {:>3}", app::mixer().getVolume());
@@ -167,7 +167,7 @@ Win::volume()
 void
 Win::time()
 {
-    ArenaStateGuard pushed {m_pArena};
+    ArenaPushScope pushed {m_pArena};
 
     const auto width = m_termSize.width;
     const int off = m_prevImgWidth + 2;
@@ -277,6 +277,8 @@ Win::scrollBar()
 void
 Win::bottomLine()
 {
+    ArenaPushScope pushed {m_pArena};
+
     namespace c = common;
 
     const auto& pl = app::player();
@@ -285,7 +287,6 @@ Win::bottomLine()
 
     /* selected / focused */
     {
-        ArenaStateGuard pushed {m_pArena};
         Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
         isize n = print::toSpan(sp, "{} / {}", pl.m_selectedI, pl.m_vShortSongs.size() - 1);
@@ -377,13 +378,13 @@ Win::errorMsg()
 void
 Win::update()
 {
-    LockGuard lock {&m_mtxUpdate};
+    LockScope lock {&m_mtxUpdate};
 
     m_time = time::nowMS();
 
     if (!app::g_vol_bRunning) return;
 
-    ArenaStateGuard pushed {m_pArena};
+    ArenaPushScope pushed {m_pArena};
 
     if (m_bNeedsResize)
     {

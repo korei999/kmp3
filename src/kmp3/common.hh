@@ -17,7 +17,7 @@ subStringSearch(
     DRAW_LAMBDA clDraw
 )
 {
-    adt::ArenaStateGuard pushed {pArena};
+    adt::ArenaPushScope pushed {pArena};
 
     auto& pl = *app::g_pPlayer;
 

@@ -13,7 +13,7 @@ static constexpr isize N_BUF_FRAMES = 1024;
 void
 Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
-    LockGuard lock {&m_mtxLoop};
+    LockScope lock {&m_mtxLoop};
 
     if (bSaveNewConfig)
     {
@@ -60,7 +60,7 @@ Mixer::loop()
         }
 
         {
-            LockGuard lock {&m_mtxLoop};
+            LockScope lock {&m_mtxLoop};
             while (m_atom_bPaused.load(atomic::ORDER::ACQUIRE))
             {
                 m_cndLoop.wait(&m_mtxLoop);
@@ -172,7 +172,7 @@ Mixer::pause(bool bPause)
 
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
-    LockGuard lock {&m_mtxLoop};
+    LockScope lock {&m_mtxLoop};
 
     if (bPause)
     {
