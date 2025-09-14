@@ -156,8 +156,6 @@ Mixer::loop()
 {
     defer( m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE) );
 
-    StdAllocator stdAl;
-
     constexpr isize NFRAMES = 2048;
     isize nSamplesRequested = 0;
 

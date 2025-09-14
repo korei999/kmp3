@@ -3,6 +3,7 @@
 #include "String-inl.hh"
 #include "enum.hh"
 
+#include <limits>
 #include <type_traits>
 #include <cstdio>
 
@@ -26,7 +27,7 @@ struct FormatArgs
 
     /* */
 
-    u16 maxLen = NPOS16;
+    isize maxLen = std::numeric_limits<isize>::max();
     u8 maxFloatLen = NPOS8;
     BASE eBase = BASE::TEN;
     FLAGS eFmtFlags {};

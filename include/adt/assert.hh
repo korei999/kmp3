@@ -1,7 +1,12 @@
 #pragma once
 
 #include "types.hh"
-#include "print-inl.hh" /* IWYU pragma: keep */
+
+#ifdef ADT_ASSERT_USE_LOGGER
+    #include "Logger-inl.hh"
+#else
+    #include "print-inl.hh"
+#endif
 
 #if __has_include(<unistd.h>)
     #include <unistd.h>
@@ -43,6 +48,17 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
         "[{}, {}: {}()] assertion( {} ) failed.\n(msg) \"{}\"\n",
         file, line, func, cnd, msg
     );
+
+#ifdef ADT_ASSERT_USE_LOGGER
+    {
+        ILogger* pLog = ILogger::inst();
+        if (pLog)
+        {
+            pLog->add(ILogger::LEVEL::ERR, std::source_location::current(), {aBuff, n});
+            pLog->destroy();
+        }
+    }
+#endif
 
 #if __has_include(<windows.h>)
     MessageBoxA(

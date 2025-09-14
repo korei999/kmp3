@@ -390,7 +390,7 @@ copyBackToContext(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
         const isize nSpaces = fmtArgs.maxLen - sv.size();
         isize j = 0;
 
-        if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i && nSpaces > 0)
+        if (fmtArgs.maxLen != std::numeric_limits<isize>::max() && fmtArgs.maxLen > i && nSpaces > 0)
         {
             if (pCtx->pBuilder->pushN(filler, nSpaces) != -1)
                 j += nSpaces;
@@ -404,7 +404,7 @@ copyBackToContext(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
     {
         clCopySpan();
 
-        if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen > i)
+        if (fmtArgs.maxLen != std::numeric_limits<isize>::max() && fmtArgs.maxLen > i)
         {
             if (pCtx->pBuilder->pushN(filler, fmtArgs.maxLen - i) != -1)
                 i += fmtArgs.maxLen;
@@ -622,11 +622,11 @@ formatVariadicStacked(Context* pCtx, FormatArgs fmtArgs, const T& first, const A
     return n + details::formatVariadicStacked(pCtx, fmtArgs, args...);
 }
 
-template<typename T>
+template<typename T> requires std::is_floating_point_v<T>
 inline isize
 formatFloat(Context* pCtx, FormatArgs fmtArgs, const T x)
 {
-    char aBuff[64] {};
+    char aBuff[32] {};
     std::to_chars_result res {};
     if (fmtArgs.maxFloatLen == NPOS8)
         res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x);
@@ -673,7 +673,7 @@ format(Context* pCtx, FormatArgs fmtArgs, const T x)
 {
     char aBuff[64] {};
     const isize n = intToBuffer(x, {aBuff}, fmtArgs);
-    if (fmtArgs.maxLen != NPOS16 && fmtArgs.maxLen < utils::size(aBuff) - 1)
+    if (fmtArgs.maxLen != std::numeric_limits<isize>::max() && fmtArgs.maxLen < utils::size(aBuff) - 1)
         aBuff[fmtArgs.maxLen] = '\0';
 
     return copyBackToContext(pCtx, fmtArgs, {aBuff, n});

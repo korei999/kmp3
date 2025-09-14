@@ -165,385 +165,357 @@ IV2_F24_8(const V2 v)
 }
 
 inline V2
-operator-(const V2& s)
+V2::operator-()
 {
-    return {.x = -s.x, .y = -s.y};
+    return {.x = -x, .y = -y};
 }
 
 inline V2
-operator+(const V2& l, const V2& r)
+V2::operator+(const V2& r) const
 {
     return {
-        .x = l.x + r.x,
-        .y = l.y + r.y
+        .x = x + r.x,
+        .y = y + r.y
     };
 }
 
 inline V2
-operator-(const V2& l, const V2& r)
+V2::operator-(const V2& r) const
 {
     return {
-        .x = l.x - r.x,
-        .y = l.y - r.y
+        .x = x - r.x,
+        .y = y - r.y
     };
 }
 
 inline IV2
-operator-(const IV2& l, const IV2& r)
+IV2::operator-(const IV2& r) const
 {
     return {
-        .x = l.x - r.x,
-        .y = l.y - r.y
+        .x = x - r.x,
+        .y = y - r.y
     };
 }
 
 inline IV2&
-operator+=(IV2& l, const IV2& r)
+IV2::operator+=(const IV2& r)
 {
-    l.x += r.x;
-    l.y += r.y;
+    x += r.x;
+    y += r.y;
 
-    return l;
+    return *this;
 }
 
 inline IV2&
-operator-=(IV2& l, const IV2& r)
+IV2::operator-=(const IV2& r)
 {
-    l.x -= r.x;
-    l.y -= r.y;
+    x -= r.x;
+    y -= r.y;
 
-    return l;
+    return *this;
 }
 
 inline V2
-operator*(const V2& v, f32 s)
+V2::operator*(f32 s) const
 {
     return {
-        .x = v.x * s,
-        .y = v.y * s
-    };
-}
-
-inline V2
-operator*(f32 s, const V2& v)
-{
-    return {
-        .x = v.x * s,
-        .y = v.y * s
+        .x = x * s,
+        .y = y * s
     };
 }
 
 inline V2
-operator*(const V2& l, const V2& r)
+V2::operator*(const V2& r) const
 {
     return {
-        l.x * r.x,
-        l.y * r.y
+        x * r.x,
+        y * r.y
     };
 }
 
 inline V2&
-operator*=(V2& l, const V2& r)
+V2::operator*=(const V2& r)
 {
-    return l = l * r;
+    return *this = *this * r;
 }
 
 inline V2
-operator/(const V2& v, f32 s)
+V2::operator/(f32 s) const
 {
     return {
-        .x = v.x / s,
-        .y = v.y / s
+        .x = x / s,
+        .y = y / s
     };
 }
 
 inline V2&
-operator+=(V2& l, const V2& r)
+V2::operator+=(const V2& r)
 {
-    return l = l + r;
+    return *this = *this + r;
 }
 
 inline V2&
-operator-=(V2& l, const V2& r)
+V2::operator-=(const V2& r)
 {
-    return l = l - r;
+    return *this = *this - r;
 }
 
 inline V2&
-operator*=(V2& l, f32 r)
+V2::operator*=(f32 r)
 {
-    return l = l * r;
+    return *this = *this * r;
 }
 
 inline V2&
-operator/=(V2& l, f32 r)
+V2::operator/=(f32 r)
 {
-    return l = l / r;
+    return *this = *this / r;
 }
 
 inline V3
-operator+(const V3& l, const V3& r)
+V3::operator+(const V3& r) const
 {
     return {
-        .x = l.x + r.x,
-        .y = l.y + r.y,
-        .z = l.z + r.z
+        .x = x + r.x,
+        .y = y + r.y,
+        .z = z + r.z
     };
 }
 
 inline V3
-operator-(const V3& l, const V3& r)
+V3::operator-(const V3& r) const
 {
     return {
-        .x = l.x - r.x,
-        .y = l.y - r.y,
-        .z = l.z - r.z
+        .x = x - r.x,
+        .y = y - r.y,
+        .z = z - r.z
     };
 }
 
 inline V3
-operator-(const V3& v)
+V3::operator-() const
 {
     return {
-        -v.x, -v.y, -v.z
+        -x, -y, -z
     };
 }
 
 inline V3
-operator*(const V3& v, f32 s)
+V3::operator*(f32 s) const
 {
     return {
-        .x = v.x * s,
-        .y = v.y * s,
-        .z = v.z * s
+        .x = x * s,
+        .y = y * s,
+        .z = z * s
     };
 }
 
 inline V3
-operator*(f32 s, const V3& v)
-{
-    return v * s;
-}
-
-inline V3
-operator*(const V3& l, const V3& r)
+V3::operator*(const V3& r) const
 {
     return {
-        l.x * r.x,
-        l.y * r.y,
-        l.z * r.z
+        x * r.x,
+        y * r.y,
+        z * r.z
     };
 }
 
 inline V3
-operator/(const V3& v, f32 s)
+V3::operator/(f32 s) const
 {
     return {
-        .x = v.x / s,
-        .y = v.y / s,
-        .z = v.z / s
+        x / s,
+        y / s,
+        z / s
     };
 }
 
 inline V3
-operator+(V3 a, f32 b)
+V3::operator+(f32 b) const
 {
-    a.x += b;
-    a.y += b;
-    a.z += b;
-    return a;
+    return {
+        x + b,
+        y + b,
+        z + b,
+    };
 }
 
 inline V3&
-operator+=(V3& a, f32 b)
+V3::operator+=(f32 b)
 {
-    return a = a + b;
+    return *this = *this + b;
 }
 
 inline V3&
-operator+=(V3& l, const V3& r)
+V3::operator+=(const V3& r)
 {
-    return l = l + r;
+    return *this = *this + r;
 }
 
 inline V3&
-operator-=(V3& l, const V3& r)
+V3::operator-=(const V3& r)
 {
-    return l = l - r;
+    return *this = *this - r;
 }
 
 inline V3&
-operator*=(V3& v, f32 s)
+V3::operator*=(f32 s)
 {
-    return v = v * s;
+    return *this = *this * s;
 }
 
 inline V3&
-operator/=(V3& v, f32 s)
+V3::operator/=(f32 s)
 {
-    return v = v / s;
+    return *this = *this / s;
 }
 
 inline V4
-operator+(const V4& l, const V4& r)
+V4::operator+(const V4& r) const
 {
 #ifdef ADT_SSE4_2
 
     return V4(
-        simd::f32x4(l) + simd::f32x4(r)
+        simd::f32x4(*this) + simd::f32x4(r)
     );
 
 #else
 
     return {
-        .x = l.x + r.x,
-        .y = l.y + r.y,
-        .z = l.z + r.z,
-        .w = l.w + r.w
+        .x = x + r.x,
+        .y = y + r.y,
+        .z = z + r.z,
+        .w = w + r.w
     };
 
 #endif
 }
 
 inline V4
-operator-(const V4& l)
+V4::operator-() const
 {
 #ifdef ADT_SSE4_2
 
-    return V4(-simd::f32x4(l));
+    return V4(-simd::f32x4(*this));
 
 #else
 
     V4 res;
-
-    res.x = -l.x;
-    res.y = -l.y;
-    res.z = -l.z;
-    res.w = -l.w;
-
+    res.x = -x;
+    res.y = -y;
+    res.z = -z;
+    res.w = -w;
     return res;
 
 #endif
 }
 
 inline V4
-operator-(const V4& l, const V4& r)
+V4::operator-(const V4& r) const
 {
 #ifdef ADT_SSE4_2
 
-    return V4(simd::f32x4(l) - simd::f32x4(r));
+    return V4(simd::f32x4(*this) - simd::f32x4(r));
 
 #else
 
     return {
-        .x = l.x - r.x,
-        .y = l.y - r.y,
-        .z = l.z - r.z,
-        .w = l.w - r.w
+        .x = x - r.x,
+        .y = y - r.y,
+        .z = z - r.z,
+        .w = w - r.w
     };
 
 #endif
 }
 
 inline V4
-operator*(const V4& l, f32 r)
+V4::operator*(f32 r) const
 {
 #ifdef ADT_SSE4_2
 
-    return V4(simd::f32x4(l) * r);
+    return V4(simd::f32x4(*this) * r);
 
 #else
 
     return {
-        .x = l.x * r,
-        .y = l.y * r,
-        .z = l.z * r,
-        .w = l.w * r
+        .x = x * r,
+        .y = y * r,
+        .z = z * r,
+        .w = w * r
     };
 
 #endif
 }
 
 inline V4
-operator*(f32 l, const V4& r)
-{
-    return r * l;
-}
-
-inline V4
-operator*(const V4& l, const V4& r)
+V4::operator*(const V4& r) const
 {
 #ifdef ADT_SSE4_2
 
-    return V4(simd::f32x4Load(l.e) * simd::f32x4Load(r.e));
+    return V4(simd::f32x4Load(this->e) * simd::f32x4Load(r.e));
 
 #else
 
     return {
-        .x = l.x * r.x,
-        .y = l.y * r.y,
-        .z = l.z * r.z,
-        .w = l.w * r.w
+        .x = x * r.x,
+        .y = y * r.y,
+        .z = z * r.z,
+        .w = w * r.w
     };
 
 #endif
 }
 
 inline V4&
-operator*=(V4& l, const V4& r)
+V4::operator*=(const V4& r)
 {
-    return l = l * r;
+    return *this = *this * r;
 }
 
 inline V4
-operator/(const V4& l, f32 r)
+V4::operator/(f32 r) const
 {
 #ifdef ADT_SSE4_2
 
     return V4(
-        simd::f32x4(l) / r
+        simd::f32x4(*this) / simd::f32x4{r}
     );
 
 #else
 
     return {
-        .x = l.x / r,
-        .y = l.y / r,
-        .z = l.z / r,
-        .w = l.w / r
+        .x = x / r,
+        .y = y / r,
+        .z = z / r,
+        .w = w / r
     };
 
 #endif
 }
 
-inline V4
-operator/(f32 l, const V4& r)
+inline V4&
+V4::operator+=(const V4& r)
 {
-    return r * l;
+    return *this = *this + r;
 }
 
 inline V4&
-operator+=(V4& l, const V4& r)
+V4::operator-=(const V4& r)
 {
-    return l = l + r;
+    return *this = *this - r;
 }
 
 inline V4&
-operator-=(V4& l, const V4& r)
+V4::operator*=(f32 r)
 {
-    return l = l - r;
+    return *this = *this * r;
 }
 
 inline V4&
-operator*=(V4& l, f32 r)
+V4::operator/=(f32 r)
 {
-    return l = l * r;
-}
-
-inline V4&
-operator/=(V4& l, f32 r)
-{
-    return l = l / r;
+    return *this = *this / r;
 }
 
 constexpr M2
@@ -739,62 +711,43 @@ M4Adj(const M4& s)
 }
 
 inline M3
-operator*(const M3& l, const f32 r)
+M3::operator*(const f32 r) const
 {
     M3 m;
 
     for (int i = 0; i < 9; ++i)
-        m.d[i] = l.d[i] * r;
+        m.d[i] = d[i] * r;
 
     return m;
 }
 
 inline M4
-operator*(const M4& l, const f32 r)
+M4::operator*(const f32 r) const
 {
     M4 m;
 
     for (int i = 0; i < 16; ++i)
-        m.d[i] = l.d[i] * r;
+        m.d[i] = d[i] * r;
 
     return m;
 }
 
 inline M3&
-operator*=(M3& l, const f32 r)
+M3::operator*=(const f32 r)
 {
     for (int i = 0; i < 9; ++i)
-        l.d[i] *= r;
+        d[i] *= r;
 
-    return l;
+    return *this;
 }
 
 inline M4&
-operator*=(M4& l, const f32 r)
+M4::operator*=(const f32 r)
 {
     for (int i = 0; i < 16; ++i)
-        l.d[i] *= r;
+        d[i] *= r;
 
-    return l;
-}
-
-inline M4&
-operator*=(M4& a, bool)
-{
-    ADT_ASSERT(false, "mul with bool is no good");
-    return a;
-}
-
-inline M3
-operator*(const f32 l, const M3& r)
-{
-    return r * l;
-}
-
-inline M4
-operator*(const f32 l, const M4& r)
-{
-    return r * l;
+    return *this;
 }
 
 inline M3
@@ -816,102 +769,102 @@ M3Normal(const M3& m)
 }
 
 inline V3
-operator*(const M3& l, const V3& r)
+M3::operator*(const V3& r) const
 {
-    return l.v[0] * r.x + l.v[1] * r.y + l.v[2] * r.z;
+    return v[0] * r.x + v[1] * r.y + v[2] * r.z;
 }
 
 inline V4
-operator*(const M4& l, const V4& r)
+M4::operator*(const V4& r) const
 {
 #ifdef ADT_AVX2
 
-    auto x3 = l.v[3] * r.w;
-    auto x2 = simd::fma(l.v[2], r.z, x3);
-    auto x1 = simd::fma(l.v[1], r.y, x2);
-    auto x0 = simd::fma(l.v[0], r.x, x1);
+    auto x3 = v[3] * r.w;
+    auto x2 = simd::fma(v[2], r.z, x3);
+    auto x1 = simd::fma(v[1], r.y, x2);
+    auto x0 = simd::fma(v[0], r.x, x1);
 
     return V4(x0);
 
 #else
 
-    return l.v[0] * r.x + l.v[1] * r.y + l.v[2] * r.z + l.v[3] * r.w;
+    return v[0] * r.x + v[1] * r.y + v[2] * r.z + v[3] * r.w;
 
 #endif
 }
 
 inline M3
-operator*(const M3& l, const M3& r)
+M3::operator*(const M3& r) const
 {
     M3 m;
 
-    m.v[0] = l * r.v[0];
-    m.v[1] = l * r.v[1];
-    m.v[2] = l * r.v[2];
+    m.v[0] = *this * r.v[0];
+    m.v[1] = *this * r.v[1];
+    m.v[2] = *this * r.v[2];
 
     return m;
 }
 
 inline M3&
-operator*=(M3& l, const M3& r)
+M3::operator*=(const M3& r)
 {
-    return l = l * r;
+    return *this = *this * r;
 }
 
 inline M4
-operator*(const M4& l, const M4& r)
+M4::operator*(const M4& r) const
 {
     M4 m {};
 
-    m.v[0] = l * r.v[0];
-    m.v[1] = l * r.v[1];
-    m.v[2] = l * r.v[2];
-    m.v[3] = l * r.v[3];
+    m.v[0] = *this * r.v[0];
+    m.v[1] = *this * r.v[1];
+    m.v[2] = *this * r.v[2];
+    m.v[3] = *this * r.v[3];
 
     return m;
 }
 
 inline M4&
-operator*=(M4& l, const M4& r)
+M4::operator*=(const M4& r)
 {
-    return l = l * r;
+    return *this = *this * r;
 }
 
 inline bool
-operator==(const V3& l, const V3& r)
+V3::operator==(const V3& r) const
 {
     for (int i = 0; i < 3; ++i)
-        if (!eq(l.e[i], r.e[i]))
+        if (!eq(e[i], r.e[i]))
             return false;
 
     return true;
 }
 
 inline bool
-operator==(const V4& l, const V4& r)
+V4::operator==(const V4& r) const
 {
     for (int i = 0; i < 4; ++i)
-        if (!eq(l.e[i], r.e[i]))
+        if (!eq(e[i], r.e[i]))
             return false;
 
     return true;
 }
 
 inline bool
-operator==(const M3& l, const M3& r)
+M3::operator==(const M3& r) const
 {
     for (int i = 0; i < 9; ++i)
-        if (!eq(l.d[i], r.d[i]))
+        if (!eq(d[i], r.d[i]))
             return false;
 
     return true;
 }
 
 inline bool
-operator==(const M4& l, const M4& r)
+M4::operator==(const M4& r) const
 {
     for (int i = 0; i < 16; ++i)
-        if (!eq(l.d[i], r.d[i]))
+        if (!eq(d[i], r.d[i]))
             return false;
 
     return true;
@@ -1343,16 +1296,18 @@ QtConj(const Qt& q)
 }
 
 inline Qt
-operator-(const Qt& l)
+Qt::operator-() const
 {
     Qt res;
-    res.base = -l.base;
+    res.base = -base;
     return res;
 }
 
 inline Qt
-operator*(const Qt& l, const Qt& r)
+Qt::operator*(const Qt& r) const
 {
+    auto& l = *this;
+
     return {
         l.w*r.x + l.x*r.w + l.y*r.z - l.z*r.y,
         l.w*r.y - l.x*r.z + l.y*r.w + l.z*r.x,
@@ -1362,27 +1317,27 @@ operator*(const Qt& l, const Qt& r)
 }
 
 inline Qt
-operator*(const Qt& l, const V4& r)
+Qt::operator*(const V4& r) const
 {
-    return l * ((Qt&)r);
+    return *this * ((Qt&)r);
 }
 
 inline Qt
-operator*=(Qt& l, const Qt& r)
+Qt::operator*=(const Qt& r)
 {
-    return l = l * r;
+    return *this = *this * r;
 }
 
 inline Qt
-operator*=(Qt& l, const V4& r)
+Qt::operator*=(const V4& r)
 {
-    return l = l * r;
+    return *this = *this * r;
 }
 
 inline bool
-operator==(const Qt& a, const Qt& b)
+Qt::operator==(const Qt& b) const
 {
-    return a.base == b.base;
+    return base == b.base;
 }
 
 inline Qt
