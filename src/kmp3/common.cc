@@ -9,7 +9,7 @@ namespace common
 
 InputBuff g_input {};
 
-StringView
+const StringView
 readModeToString(WINDOW_READ_MODE e) noexcept
 {
     constexpr adt::StringView map[] {"", "searching: ", "time: "};

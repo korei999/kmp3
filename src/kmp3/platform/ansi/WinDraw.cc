@@ -58,15 +58,15 @@ Win::tooSmall(int width, int height)
     }
 
     {
-        const StringView svMinWidth = print::toBuilder(&builder, "min ({}, {})", width, height);
+        const StringView svMinWidth = builder.print("min ({}, {})", width, height);
         m_textBuff.string((m_termSize.width - svMinWidth.size()) / 2, y + 1, STYLE::NORM, svMinWidth);
     }
 
     builder.reset();
     constexpr StringView svWidth = "width: ";
     constexpr StringView svHeight = "height: ";
-    const StringView svWidthVal = print::toBuilder(&builder, "{}", m_termSize.width);
-    const StringView svHeightVal = print::toBuilder(&builder, "{}", m_termSize.height);
+    const StringView svWidthVal = builder.print("{}", m_termSize.width);
+    const StringView svHeightVal = builder.print("{}", m_termSize.height);
 
     STYLE eWidthStyle = STYLE::GREEN;
     if (m_termSize.width < width)
@@ -287,19 +287,17 @@ Win::bottomLine()
 
     /* selected / focused */
     {
-        Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
-
-        isize n = print::toSpan(sp, "{} / {}", pl.m_selectedI, pl.m_vShortSongs.size() - 1);
+        print::Builder builder {m_pArena, width + 1};
+        builder.print("{} / {}", pl.m_selectedI, pl.m_vShortSongs.size() - 1);
         if (pl.m_eRepeatMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
             if (pl.m_eRepeatMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";
             else if (pl.m_eRepeatMethod == PLAYER_REPEAT_METHOD::PLAYLIST) sArg = "playlist";
 
-            n += print::toSpan({sp.data() + n, sp.size() - 1 - n}, " (repeat {})", sArg);
+            builder.print(" (repeat {})", sArg);
         }
-
-        m_textBuff.string(width - n - 1, height - 1, {}, {sp.data(), sp.size() - 1});
+        m_textBuff.string(width - builder.size() - 1, height - 1, {}, StringView{builder});
     }
 
     if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||
@@ -307,17 +305,14 @@ Win::bottomLine()
          wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff)) > 0)
     )
     {
-        const StringView svReadMode = c::readModeToString(c::g_input.m_eLastUsedMode);
+        print::Builder builder {m_pArena, width + 1};
+        const StringView sv = builder.print("{}{}{}",
+            c::readModeToString(c::g_input.m_eLastUsedMode),
+            c::g_input.m_aBuff,
+            c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ? common::CURSOR_BLOCK : L'\0'
+        );
 
-        m_textBuff.string(1, height - 1, {}, svReadMode);
-        m_textBuff.wideString(svReadMode.size() + 1, height - 1, {}, c::g_input.span());
-
-        if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE)
-        {
-            /* just append the cursor character */
-            Span spCursor {const_cast<wchar_t*>(common::CURSOR_BLOCK), 3};
-            m_textBuff.wideString(svReadMode.size() + c::g_input.m_idx + 1, height - 1, {}, spCursor);
-        }
+        m_textBuff.string(1, height - 1, {}, sv);
     }
 }
 

@@ -115,7 +115,6 @@ struct TextBuff
     adt::isize m_newTHeight {};
 
     bool m_bResize {};
-    bool m_bChanged {};
     bool m_bErase {};
 
     adt::VecM<TextBuffCell> m_vFront {}; /* what to show */

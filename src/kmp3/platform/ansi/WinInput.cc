@@ -452,28 +452,21 @@ Win::readWChar()
     namespace c = common;
 
     Input in = readFromStdin(app::g_config.updateRate);
-
     int wc = in.key;
+
+    /* TODO: this should probably be in common::subStringSearch(). */
     if (in.eType == Input::TYPE::TIMEOUT)
     {
         return c::READ_STATUS::TIMEOUT;
     }
-    else if (wc == 0 || wc == keys::CTRL_C || wc == keys::ESC)
-    {
-        c::g_input.zeroOut();
-        return c::READ_STATUS::DONE;
-    }
-    else if (wc == keys::ENTER)
+    else if (wc == 0 || wc == keys::CTRL_C || wc == keys::ESC || wc == keys::ENTER)
     {
         return c::READ_STATUS::DONE;
     }
     else if (wc == keys::CTRL_W)
     {
         if (c::g_input.m_idx > 0)
-        {
-            c::g_input.m_idx = 0;
             c::g_input.zeroOut();
-        }
     }
     else if (wc == keys::BACKSPACE)
     {
@@ -487,7 +480,7 @@ Win::readWChar()
             c::g_input.m_aBuff[c::g_input.m_idx++] = wc;
     }
 
-    return c::READ_STATUS::OK_;
+    return c::READ_STATUS::GOOD;
 }
 
 void

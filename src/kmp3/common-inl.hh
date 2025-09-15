@@ -15,7 +15,7 @@ constexpr adt::u32 CHAR_L = L'┃';
 constexpr adt::u32 CHAR_R = L'┃';
 constexpr adt::u32 CHAR_VOL = L'▯';
 constexpr adt::u32 CHAR_VOL_MUTED = L'▮';
-constexpr wchar_t CURSOR_BLOCK[] {L'█', L'\0'};
+constexpr wchar_t CURSOR_BLOCK = L'█';
 
 struct InputBuff
 {
@@ -26,15 +26,15 @@ struct InputBuff
 
     /* */
 
-    void zeroOut() noexcept { memset(m_aBuff, 0, sizeof(m_aBuff)); }
+    void zeroOut() noexcept { memset(m_aBuff, 0, sizeof(m_aBuff)); m_idx = 0; }
     adt::Span<wchar_t> span() noexcept { return adt::Span {m_aBuff}; }
 };
 
 extern InputBuff g_input;
 
-enum class READ_STATUS : adt::u8 { OK_, DONE, BACKSPACE, TIMEOUT };
+enum class READ_STATUS : adt::u8 { GOOD, DONE, BACKSPACE, TIMEOUT };
 
-[[nodiscard]] adt::StringView
+[[nodiscard]] const adt::StringView
 readModeToString(WINDOW_READ_MODE e) noexcept;
 
 [[nodiscard]] adt::StringView allocTimeString(adt::IArena* pArena, int width);

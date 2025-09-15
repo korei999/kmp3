@@ -22,10 +22,7 @@ subStringSearch(
     auto& pl = *app::g_pPlayer;
 
     g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEARCH;
-    defer( g_input.m_eCurrMode = WINDOW_READ_MODE::NONE );
-
     g_input.zeroOut();
-    g_input.m_idx = 0;
 
     auto savedFirst = *pFirstIdx;
     int nSearches = 0;
@@ -49,6 +46,8 @@ subStringSearch(
         ++nSearches;
     }
     while (eRead != READ_STATUS::DONE);
+
+    g_input.m_eCurrMode = WINDOW_READ_MODE::NONE;
 
     pl.copySearchToSongIdxs();
 

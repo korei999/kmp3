@@ -208,7 +208,6 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
         return 0;
 
     Span2D bb = backBufferSpan();
-    Span2D fb = frontBufferSpan();
 
     int max = 0;
 
@@ -219,8 +218,6 @@ TextBuff::stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, 
         /* Zero width joiners and other non printable unicode stuff goes to hell. */
         int colWidth;
         if ((u32)wc == 0x200d || (colWidth = wcWidth(wc)) <= 0) continue;
-
-        if (fb[x, y] != TextBuffCell {wc, eStyle}) m_bChanged = true;
 
         bb[x, y].wc = wc;
         bb[x, y].eStyle = eStyle;
@@ -312,9 +309,6 @@ TextBuff::pushDiff()
 {
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE::NORM;
 
-    /* won't hurt */
-    ADT_DEFER( push(TEXT_BUFF_NORM) );
-
     for (isize rowI = 0; rowI < m_tHeight; ++rowI)
     {
         bool bMoved = false;
@@ -360,6 +354,8 @@ TextBuff::pushDiff()
             }
         }
     }
+
+    if (m_oBuff->size > 0) push(TEXT_BUFF_NORM);
 }
 
 #ifdef OPT_CHAFA
@@ -450,17 +446,13 @@ TextBuff::present()
         clearTerm();
     }
 
-    if (m_bChanged)
-    {
-        m_bChanged = false;
-        pushDiff();
+    pushDiff();
 
 #ifdef OPT_CHAFA
-        showImages();
+    showImages();
 #endif
 
-        utils::swap(&m_vFront, &m_vBack);
-    }
+    utils::swap(&m_vFront, &m_vBack);
 
     flush();
 }
