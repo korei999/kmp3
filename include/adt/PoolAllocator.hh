@@ -44,7 +44,7 @@ struct PoolAllocator : public IArena
 
 #endif
     ) noexcept(false)
-        : m_blockCap {alignUp(blockSize, chunkSize + sizeof(Node))},
+        : m_blockCap {alignUpPO2(blockSize, chunkSize + sizeof(Node))},
           m_chunkSize {chunkSize + sizeof(Node)},
           m_pBackAlloc(pBackAlloc),
 #if !defined NDEBUG && defined ADT_DBG_MEMORY

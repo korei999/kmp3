@@ -17,10 +17,12 @@
 namespace adt
 {
 
-inline constexpr usize alignUp(usize x, usize to) { return ((x) + to - 1) & (~(to - 1)); }
-inline constexpr usize alignDown(usize x, usize to) { return x & ~usize(to - 1); }
-inline constexpr usize alignUp8(usize x) { return alignUp(x, 8); }
+inline constexpr usize alignUpPO2(usize x, usize to) { return (x + to - 1) & (~(to - 1)); }
+inline constexpr usize alignDownPO2(usize x, usize to) { return x & ~usize(to - 1); }
+inline constexpr usize alignUp8(usize x) { return alignUpPO2(x, 8); }
 inline constexpr usize alignDown8(usize x) { return x & ~usize(7); }
+
+inline constexpr usize alignUp(usize x, usize to) { return ((x + to - 1) / to) * to; }
 
 constexpr isize SIZE_MIN = 2;
 constexpr isize SIZE_1K = 1024;
@@ -51,7 +53,7 @@ getPageSize() noexcept
 #define ADT_WARN_USE_AFTER_FREE [[deprecated("warning: use after free")]]
 
 template<typename BASE>
-struct AllocatorHelperCRTP /* FIXME: mixed size types (usize/isize) in IAllocator and CRTP helper. */
+struct AllocatorHelperCRTP
 {
     template<typename T, typename ...ARGS> requires(std::is_constructible_v<T, ARGS...>)
     [[nodiscard]] constexpr T*
@@ -64,28 +66,28 @@ struct AllocatorHelperCRTP /* FIXME: mixed size types (usize/isize) in IAllocato
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    mallocV(isize mCount) noexcept(false) /* AllocException */
+    mallocV(usize mCount) noexcept(false) /* AllocException */
     {
         return static_cast<T*>(static_cast<BASE*>(this)->malloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    zallocV(isize mCount) noexcept(false) /* AllocException */
+    zallocV(usize mCount) noexcept(false) /* AllocException */
     {
         return static_cast<T*>(static_cast<BASE*>(this)->zalloc(mCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    reallocV(T* ptr, isize oldCount, isize newCount) noexcept(false) /* AllocException */
+    reallocV(T* ptr, usize oldCount, usize newCount) noexcept(false) /* AllocException */
     {
         return static_cast<T*>(static_cast<BASE*>(this)->realloc(ptr, oldCount, newCount, sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
-    relocate(T* p, isize oldCount, isize newCount) noexcept(false) /* AllocException */
+    relocate(T* p, usize oldCount, usize newCount) noexcept(false) /* AllocException */
     {
         /* NOTE: Just never use self referential types and we good. */
         if constexpr (std::is_trivially_destructible_v<T>)
@@ -97,7 +99,7 @@ struct AllocatorHelperCRTP /* FIXME: mixed size types (usize/isize) in IAllocato
             T* pNew = mallocV<T>(newCount);
             if (!p) return pNew;
 
-            for (isize i = 0; i < oldCount; ++i)
+            for (usize i = 0; i < oldCount; ++i)
             {
                 new(pNew + i) T {std::move(p[i])};
                 p[i].~T();
@@ -110,10 +112,10 @@ struct AllocatorHelperCRTP /* FIXME: mixed size types (usize/isize) in IAllocato
 
     template<typename T>
     constexpr void
-    dealloc(T* p, isize size)
+    dealloc(T* p, usize size)
     {
         if constexpr (!std::is_trivially_destructible_v<T>)
-            for (isize i = 0; i < size; ++i)
+            for (usize i = 0; i < size; ++i)
                 p[i].~T();
 
         static_cast<BASE*>(this)->free(p);

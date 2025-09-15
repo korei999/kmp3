@@ -188,7 +188,7 @@ Arena::Arena(isize reserveSize, isize commitSize)
 {
     [[maybe_unused]] int err = 0;
 
-    const isize realReserved = alignUp(reserveSize, getPageSize());
+    const isize realReserved = alignUpPO2(reserveSize, getPageSize());
 
 #ifdef ADT_ARENA_MMAP
     void* pRes = mmap(nullptr, realReserved, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -205,7 +205,7 @@ Arena::Arena(isize reserveSize, isize commitSize)
 
     if (commitSize > 0)
     {
-        const isize realCommit = alignUp(commitSize, getPageSize());
+        const isize realCommit = alignUpPO2(commitSize, getPageSize());
         commit(m_pData, realCommit);
         m_commited = realCommit;
     }
@@ -350,7 +350,7 @@ Arena::growIfNeeded(isize newPos)
 {
     if (newPos > m_commited)
     {
-        const isize newCommited = utils::max((isize)alignUp(newPos, getPageSize()), m_commited * 2);
+        const isize newCommited = utils::max((isize)alignUpPO2(newPos, getPageSize()), m_commited * 2);
         ADT_ALLOC_EXCEPTION_UNLIKELY_FMT(newCommited <= m_reserved, "out of reserved memory, newPos: {}, m_reserved: {}", newCommited, m_reserved);
         commit((u8*)m_pData + m_commited, newCommited - m_commited);
         m_commited = newCommited;

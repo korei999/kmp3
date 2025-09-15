@@ -3,7 +3,7 @@
 #include "IWindow.hh"
 #include "TextBuff.hh"
 #include "TermSize.hh"
-#include "common.inc"
+#include "common-inl.hh"
 
 #include <termios.h>
 

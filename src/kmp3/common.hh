@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.inc"
+#include "common-inl.hh"
 
 #include "app.hh"
 
@@ -17,7 +17,7 @@ subStringSearch(
     DRAW_LAMBDA clDraw
 )
 {
-    adt::ArenaPushScope pushed {pArena};
+    adt::ArenaPushScope arenaScope {pArena};
 
     auto& pl = *app::g_pPlayer;
 

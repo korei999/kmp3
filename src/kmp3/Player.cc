@@ -101,7 +101,7 @@ Player::setDefaultIdxs(Vec<u16>* pvIdxs)
 void
 Player::subStringSearch(Arena* pArena, Span<const wchar_t> spBuff)
 {
-    ArenaPushScope pushed {pArena};
+    ArenaPushScope arenaScope {pArena};
 
     if (spBuff && wcsnlen(spBuff.data(), spBuff.size()) == 0)
         return;
