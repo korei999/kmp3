@@ -203,6 +203,8 @@ Arena::Arena(isize reserveSize, isize commitSize)
     m_reserved = realReserved;
     m_pLastAlloc = (void*)INVALID_PTR;
 
+    ADT_ASAN_POISON(m_pData, realReserved);
+
     if (commitSize > 0)
     {
         const isize realCommit = alignUpPO2(commitSize, getPageSize());
@@ -287,12 +289,15 @@ Arena::freeAll() noexcept
 #endif
 
     *this = {};
+    ADT_ASAN_UNPOISON(m_pData, m_reserved);
 }
 
 inline void
 Arena::reset() noexcept
 {
     runDeleters();
+
+    ADT_ASAN_POISON(m_pData, m_pos);
 
     m_pos = 0;
     m_pLastAlloc = (void*)INVALID_PTR;
@@ -305,6 +310,8 @@ Arena::resetDecommit()
     runDeleters();
 
     decommit(m_pData, m_commited);
+
+    ADT_ASAN_POISON(m_pData, m_pos);
 
     m_pos = 0;
     m_commited = 0;
@@ -323,6 +330,8 @@ Arena::resetToFirstPage()
         decommit((u8*)m_pData + pageSize, m_commited - pageSize);
     else if (m_commited < getPageSize())
         commit((u8*)m_pData + m_commited, pageSize - m_commited);
+
+    ADT_ASAN_POISON(m_pData, m_pos);
 
     m_pos = 0;
     m_commited = pageSize;
@@ -357,6 +366,7 @@ Arena::growIfNeeded(isize newPos)
     }
 
     m_pos = newPos;
+    ADT_ASAN_UNPOISON(m_pData, m_pos);
 }
 
 inline void

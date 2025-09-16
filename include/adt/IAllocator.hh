@@ -14,6 +14,15 @@
 #elif defined _WIN32
 #endif
 
+#ifdef ADT_ASAN
+    #include "sanitizer/asan_interface.h"
+    #define ADT_ASAN_POISON ASAN_POISON_MEMORY_REGION
+    #define ADT_ASAN_UNPOISON ASAN_UNPOISON_MEMORY_REGION
+#else
+    #define ADT_ASAN_POISON(...) (void)0
+    #define ADT_ASAN_UNPOISON(...) (void)0
+#endif
+
 namespace adt
 {
 

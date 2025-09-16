@@ -125,6 +125,7 @@ endif()
 if (CMAKE_BUILD_TYPE MATCHES "Asan")
     set(CMAKE_BUILD_TYPE "Debug")
     add_definitions("-DMI_TRACK_ASAN=ON")
+    add_definitions("-DADT_ASAN")
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         add_compile_options(-fsanitize=address)
