@@ -206,7 +206,6 @@ parseArgs(int argc, char** argv)
     }
     else if (eResult == ArgvParser::RESULT::QUIT_NICELY ||
         eResult == ArgvParser::RESULT::SHOW_USAGE ||
-        eResult == ArgvParser::RESULT::SHOW_EXTRA ||
         eResult == ArgvParser::RESULT::SHOW_ALL_USAGE
     )
     {

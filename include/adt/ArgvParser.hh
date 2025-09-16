@@ -8,7 +8,7 @@ namespace adt
 
 struct ArgvParser
 {
-    enum class RESULT : u8 { GOOD, FAILED, QUIT_NICELY, QUIT_BADLY, SHOW_EXTRA, SHOW_USAGE, SHOW_ALL_USAGE };
+    enum class RESULT : u8 { GOOD, FAILED, QUIT_NICELY, QUIT_BADLY, SHOW_USAGE, SHOW_ALL_USAGE };
 
     template<typename STRING>
     struct Arg
@@ -17,7 +17,6 @@ struct ArgvParser
         STRING sOneDash {}; /* May be empty. */
         STRING sTwoDashes {}; /* May be empty (but not both). */
         STRING sUsage {};
-        STRING sExtra {};
         RESULT (*pfn)(
             ArgvParser* pSelf,
             void* pAny,
@@ -86,7 +85,6 @@ ArgvParser::ArgvParser(IAllocator* pAlloc, FILE* pFile, const StringView svUsage
             .sOneDash = {m_pAlloc, e.sOneDash},
             .sTwoDashes = {m_pAlloc, e.sTwoDashes},
             .sUsage = {m_pAlloc, e.sUsage},
-            .sExtra = {m_pAlloc, e.sExtra},
             .pfn = e.pfn
         });
 
@@ -277,8 +275,6 @@ done:
         print::toFILE(m_pAlloc, m_pFile, "failed to parse '{}' argument (usage: '{}')\n", svKey, parser.sUsage);
     else if (eResult == RESULT::SHOW_USAGE)
         print::toFILE(m_pAlloc, m_pFile, "{}\n", parser.sUsage);
-    else if (eResult == RESULT::SHOW_EXTRA)
-        print::toFILE(m_pAlloc, m_pFile, "{}\n", parser.sExtra);
     else if (eResult == RESULT::SHOW_ALL_USAGE)
         printFullUsage(m_pAlloc);
 

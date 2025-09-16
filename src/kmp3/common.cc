@@ -12,7 +12,7 @@ InputBuff g_input {};
 const StringView
 readModeToString(WINDOW_READ_MODE e) noexcept
 {
-    constexpr adt::StringView map[] {"", "searching: ", "time: "};
+    constexpr StringView map[] {"", "searching: ", "time: "};
     return map[int(e)];
 }
 
@@ -50,7 +50,7 @@ fixFirstIdx(u16 listHeight, i16* pFirstIdx)
     const Player& pl = app::player();
 
     const long focused = pl.m_focusedI;
-    adt::i16 first = *pFirstIdx;
+    i16 first = *pFirstIdx;
 
     defer( *pFirstIdx = first );
 
