@@ -218,7 +218,7 @@ include_directories("include")
 
 add_executable(${projName})
 
-if (CMAKE_BUILD_TYPE MATCHES "Release")
+if (CMAKE_BUILD_TYPE MATCHES "Release" AND NOT CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_options(${projName} PRIVATE -s)
     if (OPT_ADT_LOGGER_DISABLE)
         add_definitions("-DADT_LOGGER_DISABLE")

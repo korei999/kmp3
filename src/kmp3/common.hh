@@ -17,15 +17,14 @@ subStringSearch(
     DRAW_LAMBDA clDraw
 )
 {
-    adt::ArenaPushScope arenaScope {pArena};
+    using namespace adt;
+    ArenaPushScope arenaScope {pArena};
 
     auto& pl = *app::g_pPlayer;
 
     g_input.m_eLastUsedMode = g_input.m_eCurrMode = WINDOW_READ_MODE::SEARCH;
     g_input.zeroOut();
 
-    auto savedFirst = *pFirstIdx;
-    int nSearches = 0;
     READ_STATUS eRead {};
 
     if (pl.m_vSearchIdxs.empty())
@@ -34,11 +33,10 @@ subStringSearch(
         pl.copySearchToSongIdxs();
     }
 
+    clDraw();
     do
     {
-        *pFirstIdx = 0;
-        pl.subStringSearch(pArena, g_input.span());
-        clDraw();
+        isize prevSearchSize = pl.m_vSearchIdxs.size();
 
         eRead = clRead();
         if (eRead == READ_STATUS::BACKSPACE)
@@ -49,15 +47,24 @@ subStringSearch(
                 pl.copySearchToSongIdxs();
             }
         }
-        ++nSearches;
+
+        if (eRead != READ_STATUS::TIMEOUT && eRead != READ_STATUS::DONE)
+        {
+            pl.subStringSearch(pArena, g_input.span());
+            if (prevSearchSize != pl.m_vSearchIdxs.size())
+            {
+                *pFirstIdx = 0;
+                pl.m_focusedI = 0;
+            }
+        }
+
+        clDraw();
     }
     while (eRead != READ_STATUS::DONE);
 
     g_input.m_eCurrMode = WINDOW_READ_MODE::NONE;
 
     pl.copySearchToSongIdxs();
-
-    if (nSearches == 1) *pFirstIdx = savedFirst;
 
     /* fix focused if it ends up out of the list range */
     if (pl.m_focusedI >= pl.m_vSongIdxs.size())
