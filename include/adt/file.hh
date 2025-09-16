@@ -257,8 +257,8 @@ namespace adt::print
 inline isize
 format(Context* pCtx, FormatArgs fArgs, file::TYPE e)
 {
-    static const char* map[] { "UNHANDLED", "FILE", "DIRECTORY" };
-    ADT_ASSERT((int)e >= 0 && (int)e < (int)file::TYPE::ESIZE, "{}", (int)e);
+    static const char* map[] { "UNHANDLED", "FILE", "DIRECTORY", "ESIZE" };
+    ADT_ASSERT((int)e <= (int)file::TYPE::ESIZE, "{}", (int)e);
     return format(pCtx, fArgs, map[(int)e]);
 }
 

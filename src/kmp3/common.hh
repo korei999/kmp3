@@ -28,6 +28,12 @@ subStringSearch(
     int nSearches = 0;
     READ_STATUS eRead {};
 
+    if (pl.m_vSearchIdxs.empty())
+    {
+        pl.setDefaultSearchIdxs();
+        pl.copySearchToSongIdxs();
+    }
+
     do
     {
         *pFirstIdx = 0;
