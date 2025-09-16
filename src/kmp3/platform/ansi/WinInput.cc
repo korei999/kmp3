@@ -467,6 +467,8 @@ Win::readWChar()
     {
         if (c::g_input.m_idx > 0)
             c::g_input.zeroOut();
+        else if (c::g_input.m_idx <= 0)
+            return c::READ_STATUS::BACKSPACE;
     }
     else if (wc == keys::BACKSPACE)
     {
