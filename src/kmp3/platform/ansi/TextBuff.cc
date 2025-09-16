@@ -287,7 +287,7 @@ TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
 {
     m_pArena = pArena;
 #ifdef OPT_CHAFA
-    new(&m_imgArena) Arena {SIZE_1G};
+    new(&m_imgArena) Arena {SIZE_1M * 128};
 #endif
 
     ArenaPushScope arenaScope {m_pArena};
