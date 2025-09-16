@@ -104,6 +104,7 @@ Mixer::init()
     );
 
     AudioUnitInitialize(m_unit);
+    m_atom_bPaused.store(true, atomic::ORDER::RELAXED);
 
     return *this;
 }

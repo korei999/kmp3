@@ -122,7 +122,6 @@ Mixer::init()
         aParams,
         utils::size(aParams)
     );
-
     pw_thread_loop_start(m_pThrdLoop);
 
     return *this;
