@@ -45,7 +45,7 @@ struct RingBuffer
 /* Platrform abstracted audio interface */
 struct IMixer
 {
-    adt::atomic::Bool m_atom_bPaused {false};
+    adt::atomic::Bool m_atom_bPaused {true};
     adt::atomic::Bool m_atom_bSongEnd {false};
     adt::atomic::Bool m_atom_bDecodes {false};
 

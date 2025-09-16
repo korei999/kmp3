@@ -104,7 +104,6 @@ Mixer::init()
     );
 
     AudioUnitInitialize(m_unit);
-    AudioOutputUnitStart(m_unit);
 
     return *this;
 }
