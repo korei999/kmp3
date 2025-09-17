@@ -10,7 +10,10 @@ if (CHAFA_FOUND AND SWSCALE_FOUND)
     endif()
 
     allPackageFlags(TARGET ${subProj} NAME CHAFA)
-    allPackageFlags(TARGET ${subProj} NAME SWSCALE)
+    # allPackageFlags(TARGET ${subProj} NAME SWSCALE)
+
+    target_include_directories(${subProj} PRIVATE ${SWSCALE_INCLUDE_DIRS})
+    target_compile_options(${subProj} PRIVATE ${SWSCALE_CFLAGS})
 
     target_compile_definitions(${subProj} PRIVATE "-DOPT_CHAFA")
     target_sources(${subProj} PRIVATE
