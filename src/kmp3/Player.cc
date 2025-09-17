@@ -106,27 +106,26 @@ Player::subStringSearch(Arena* pArena, Span<const wchar_t> spBuff)
     if (spBuff && wcsnlen(spBuff.data(), spBuff.size()) == 0)
         return;
 
-    Vec<wchar_t> vUpperRight {pArena, spBuff.size() + 1};
-    vUpperRight.setSize(pArena, vUpperRight.cap());
+    /* Convert both to upper case. */
+    Vec<wchar_t> vNeedle {pArena, spBuff.size() + 1};
+    vNeedle.setSize(pArena, vNeedle.cap());
 
     for (isize i = 0; i < spBuff.size() && spBuff[i]; ++i)
-        vUpperRight[i] = (wchar_t)towupper(spBuff[i]);
+        vNeedle[i] = towupper(spBuff[i]);
 
-    Vec<wchar_t> vSongToUpper(pArena, m_longestString + 1);
-    vSongToUpper.setSize(pArena, vSongToUpper.cap());
+    Vec<wchar_t> vHaystack(pArena, m_longestString + 1);
+    vHaystack.setSize(pArena, vHaystack.cap());
 
     m_vSearchIdxs.setSize(m_pAlloc, 0);
     for (const u16 songIdx : m_vSongIdxs)
     {
         const StringView song = m_vShortSongs[songIdx];
 
-        vSongToUpper.zeroOut();
-        mbstowcs(vSongToUpper.data(), song.data(), song.size());
+        vHaystack.zeroOut();
+        mbstowcs(vHaystack.data(), song.data(), song.size());
+        for (auto& wc : vHaystack) wc = towupper(wc);
 
-        for (auto& wc : vSongToUpper)
-            wc = towupper(wc);
-
-        if (wcsstr(vSongToUpper.data(), vUpperRight.data()) != nullptr)
+        if (wcsstr(vHaystack.data(), vNeedle.data()) != nullptr)
             m_vSearchIdxs.push(m_pAlloc, songIdx);
     }
 }
