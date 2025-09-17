@@ -85,7 +85,11 @@ loadSO()
     } while (0)
 
     {
+#ifdef __APPLE__
+        s_pLibavformat = dlopen("/usr/local/lib/libavformat.dylib", RTLD_NOW | RTLD_LOCAL);
+#else
         s_pLibavformat = dlopen("libavformat.so", RTLD_NOW | RTLD_LOCAL);
+#endif
         if (!s_pLibavformat) return false;
 
         SYM(s_pLibavformat, avformat_close_input);
@@ -130,7 +134,12 @@ loadSO()
 
     {
 #ifdef OPT_CHAFA
+
+#ifdef __APPLE__
+        s_pLiblibswscale = dlopen("/usr/local/lib/libswscale.dylib", RTLD_NOW | RTLD_LOCAL);
+#else
         s_pLiblibswscale = dlopen("libswscale.so", RTLD_NOW | RTLD_LOCAL);
+#endif
         if (!s_pLiblibswscale) return false;
 
         SYM(s_pLiblibswscale, sws_getContext);
