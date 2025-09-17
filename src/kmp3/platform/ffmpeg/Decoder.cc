@@ -216,6 +216,8 @@ Decoder::open(StringView svPath)
     String sPathNullTerm = String(StdAllocator::inst(), svPath); /* with null char */
     defer( sPathNullTerm.destroy(StdAllocator::inst()) );
 
+    av_log_set_level(AV_LOG_QUIET);
+
     int err = 0;
     defer( if (err < 0) close() );
 

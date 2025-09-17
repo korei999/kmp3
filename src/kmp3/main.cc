@@ -305,13 +305,7 @@ startup(int argc, char** argv)
 #endif
 
         app::g_vol_bRunning = true;
-
-        /* Hide mpg123 and other spam. */
-        if (app::g_eLogLevel == ILogger::LEVEL::NONE)
-            ADT_ASSERT_ALWAYS(freopen("/dev/null", "w", stderr), "");
-
         ADT_RUNTIME_EXCEPTION_FMT(freopen("/dev/tty", "r", stdin), "{}", strerror(errno));
-
         frame::run();
     }
     else
