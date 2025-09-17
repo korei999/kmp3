@@ -34,6 +34,10 @@ Decoder::close()
     if (m_pImgPacket) av_packet_free(&m_pImgPacket);
     if (m_pImgFrame) av_frame_free(&m_pImgFrame);
 
+    if (m_pTmpPacket) av_packet_free(&m_pTmpPacket);
+    if (m_pTmpFrame) av_frame_free(&m_pTmpFrame);
+    if (m_pCvtFrame) av_frame_free(&m_pCvtFrame);
+
 #ifdef OPT_CHAFA
     if (m_pConverted) av_frame_free(&m_pConverted);
     if (m_pSwsCtx) sws_freeContext(m_pSwsCtx), m_pSwsCtx = {};
@@ -254,6 +258,10 @@ Decoder::open(StringView svPath)
 
     getAttachedPicture();
 
+    m_pTmpPacket = av_packet_alloc();
+    m_pTmpFrame = av_frame_alloc();
+    m_pCvtFrame = av_frame_alloc();
+
     return audio::ERROR::OK_;
 }
 
@@ -273,47 +281,46 @@ Decoder::writeToRingBuffer(
 
     *pSamplesWritten = 0;
 
-    AVPacket packet {};
-    while (av_read_frame(m_pFormatCtx, &packet) == 0)
+    AVPacket* pPacket = m_pTmpPacket;
+    while (av_read_frame(m_pFormatCtx, pPacket) == 0)
     {
-        defer(av_packet_unref(&packet));
+        defer( av_packet_unref(pPacket) );
 
-        if (packet.stream_index != m_pStream->index)
-            continue;
-        err = avcodec_send_packet(m_pCodecCtx, &packet);
+        if (pPacket->stream_index != m_pStream->index) continue;
+
+        err = avcodec_send_packet(m_pCodecCtx, pPacket);
         if (err != 0 && err != AVERROR(EAGAIN))
-            LogDebug("!EAGAIN\n");
+            LogWarn("!EAGAIN\n");
 
-        AVFrame frame {};
-        while ((err = avcodec_receive_frame(m_pCodecCtx, &frame)) == 0)
+        AVFrame* pFrame = m_pTmpFrame;
+        while ((err = avcodec_receive_frame(m_pCodecCtx, pFrame)) == 0)
         {
-            defer(av_frame_unref(&frame));
+            defer(av_frame_unref(pFrame));
 
-            f64 currentTimeInSeconds = av_q2d(m_pStream->time_base) * (frame.best_effort_timestamp + frame.nb_samples);
+            f64 currentTimeInSeconds = av_q2d(m_pStream->time_base) * (pFrame->best_effort_timestamp + pFrame->nb_samples);
             m_currentMS = currentTimeInSeconds * 1000.0;
-            long pcmPos = currentTimeInSeconds * frame.ch_layout.nb_channels * frame.sample_rate;
+            long pcmPos = currentTimeInSeconds * pFrame->ch_layout.nb_channels * pFrame->sample_rate;
             m_currentSamplePos = pcmPos;
             *pPcmPos = pcmPos;
 
-            AVFrame res {};
             /* NOTE: not changing sample rate here, but on the mixer side instead. */
-            res.sample_rate = frame.sample_rate;
-            res.ch_layout = frame.ch_layout;
-            res.format = AV_SAMPLE_FMT_FLT;
-            defer(av_frame_unref(&res));
+            AVFrame* pRes = m_pCvtFrame;
+            pRes->sample_rate = pFrame->sample_rate;
+            pRes->ch_layout = pFrame->ch_layout;
+            pRes->format = AV_SAMPLE_FMT_FLT;
 
-            swr_config_frame(m_pSwr, &res, &frame);
-            err = swr_convert_frame(m_pSwr, &res, &frame);
+            swr_config_frame(m_pSwr, pRes, pFrame);
+            err = swr_convert_frame(m_pSwr, pRes, pFrame);
+            defer( av_frame_unref(pRes) );
 
             if (err < 0)
             {
-                LogDebug("swr_convert_frame(): {}\n", av_err2str(err));
+                LogError("swr_convert_frame(): {}\n", av_err2str(err));
                 continue;
             }
 
-            const int nFrameSamples = res.nb_samples * res.ch_layout.nb_channels;
-
-            const isize ringSize = pRingBuff->push(Span{reinterpret_cast<f32*>(res.data[0]), nFrameSamples});
+            const int nFrameSamples = pRes->nb_samples * pRes->ch_layout.nb_channels;
+            const isize ringSize = pRingBuff->push(Span{reinterpret_cast<f32*>(pRes->data[0]), nFrameSamples});
             nWrites += nFrameSamples;
 
             if (ringSize >= audio::RING_BUFFER_HIGH_THRESHOLD)

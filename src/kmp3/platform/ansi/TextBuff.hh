@@ -183,7 +183,7 @@ protected:
     void resizeBuffers(adt::isize width, adt::isize height);
 
     template<typename STRING_T>
-    adt::isize stringHelper(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, int maxSvLen = 99999);
+    adt::isize stringFinal(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, int maxSvLen = 99999);
 
 #ifdef OPT_CHAFA
     void showImages();

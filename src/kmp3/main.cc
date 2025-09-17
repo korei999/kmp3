@@ -334,7 +334,7 @@ main(int argc, char** argv)
     {
         startup(argc, argv);
     }
-    catch (IException& ex)
+    catch (const IException& ex)
     {
         ex.printErrorMsg(stdout);
     }

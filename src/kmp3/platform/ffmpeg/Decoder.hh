@@ -62,6 +62,13 @@ struct Decoder : audio::IDecoder
     AVFrame* m_pConverted {};
 #endif
 
+
+    AVPacket* m_pTmpPacket {};
+    AVFrame* m_pTmpFrame {};
+    AVFrame* m_pCvtFrame {};
+
+    /* */
+
     void getAttachedPicture();
 };
 
