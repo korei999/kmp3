@@ -120,7 +120,7 @@ struct Arena : IArena
 
     void reset() noexcept;
     void resetDecommit();
-    void resetToFirstPage();
+    void resetToPage(isize nthPage);
     isize memoryUsed() noexcept;
 
 protected:
@@ -320,21 +320,22 @@ Arena::resetDecommit()
 }
 
 inline void
-Arena::resetToFirstPage()
+Arena::resetToPage(isize nthPage)
 {
+    const isize commitSize = getPageSize() * nthPage;
+    ADT_ALLOC_EXCEPTION_FMT(commitSize <= m_reserved, "commitSize: {}, m_reserved: {}", commitSize, m_reserved);
+
     runDeleters();
 
-    const isize pageSize = getPageSize();
+    if (m_commited > commitSize)
+        decommit((u8*)m_pData + commitSize, m_commited - commitSize);
+    else if (m_commited < commitSize)
+        commit((u8*)m_pData + m_commited, commitSize - m_commited);
 
-    if (m_commited > pageSize)
-        decommit((u8*)m_pData + pageSize, m_commited - pageSize);
-    else if (m_commited < getPageSize())
-        commit((u8*)m_pData + m_commited, pageSize - m_commited);
-
-    ADT_ASAN_POISON(m_pData, m_pos);
+    ADT_ASAN_POISON(m_pData, m_reserved);
 
     m_pos = 0;
-    m_commited = pageSize;
+    m_commited = commitSize;
     m_pLastAlloc = (void*)INVALID_PTR;
     m_lastAllocSize = 0;
 }

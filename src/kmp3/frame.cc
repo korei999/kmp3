@@ -46,9 +46,16 @@ run()
 
     do
     {
-        app::player().nextSongIfPrevEnded();
-        app::window().draw();
-        app::window().procEvents();
+        try
+        {
+            app::player().nextSongIfPrevEnded();
+            app::window().draw();
+            app::window().procEvents();
+        }
+        catch (const AllocException& ex)
+        {
+            LogError{ex.getMsg()};
+        }
 
         arena.reset();
     }
