@@ -16,6 +16,7 @@ namespace platform::ffmpeg::pfn
 {
 
 bool loadSO();
+void unloadSO();
 
 extern void (*avformat_close_input)(AVFormatContext** s);
 extern void (*avcodec_free_context)(AVCodecContext** avctx);

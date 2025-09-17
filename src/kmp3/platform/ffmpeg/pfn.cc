@@ -66,6 +66,9 @@ void (*sws_freeContext)(struct SwsContext* swsContext);
 
 #endif /* OPT_CHAFA */
 
+static void* s_pLibavformat;
+static void* s_pLiblibswscale;
+
 bool
 loadSO()
 {
@@ -76,68 +79,78 @@ loadSO()
         if (!name)                                                                                                     \
         {                                                                                                              \
             LogDebug {"failed to load: '{}'\n", #name};                                                                \
+            dlclose(lib);                                                                                              \
             return false;                                                                                              \
         }                                                                                                              \
-    } while (0)\
+    } while (0)
 
     {
-        void* pLibavformat = dlopen("libavformat.so", RTLD_NOW | RTLD_LOCAL);
-        if (!pLibavformat) return false;
+        s_pLibavformat = dlopen("libavformat.so", RTLD_NOW | RTLD_LOCAL);
+        if (!s_pLibavformat) return false;
 
-        SYM(pLibavformat, avformat_close_input);
-        SYM(pLibavformat, av_packet_free);
-        SYM(pLibavformat, av_frame_free);
-        SYM(pLibavformat, av_dict_get);
+        SYM(s_pLibavformat, avformat_close_input);
+        SYM(s_pLibavformat, av_packet_free);
+        SYM(s_pLibavformat, av_frame_free);
+        SYM(s_pLibavformat, av_dict_get);
 
-        SYM(pLibavformat, avcodec_free_context);
-        SYM(pLibavformat, avcodec_find_decoder);
-        SYM(pLibavformat, avcodec_alloc_context3);
+        SYM(s_pLibavformat, avcodec_free_context);
+        SYM(s_pLibavformat, avcodec_find_decoder);
+        SYM(s_pLibavformat, avcodec_alloc_context3);
 
-        SYM(pLibavformat, avcodec_parameters_to_context);
-        SYM(pLibavformat, avcodec_open2);
+        SYM(s_pLibavformat, avcodec_parameters_to_context);
+        SYM(s_pLibavformat, avcodec_open2);
 
-        SYM(pLibavformat, av_packet_alloc);
-        SYM(pLibavformat, av_frame_alloc);
-        SYM(pLibavformat, av_read_frame);
-        SYM(pLibavformat, avcodec_send_packet);
-        SYM(pLibavformat, avcodec_receive_frame);
+        SYM(s_pLibavformat, av_packet_alloc);
+        SYM(s_pLibavformat, av_frame_alloc);
+        SYM(s_pLibavformat, av_read_frame);
+        SYM(s_pLibavformat, avcodec_send_packet);
+        SYM(s_pLibavformat, avcodec_receive_frame);
 
-        SYM(pLibavformat, swr_alloc_set_opts2);
-        SYM(pLibavformat, swr_config_frame);
-        SYM(pLibavformat, swr_free);
-        SYM(pLibavformat, swr_convert_frame);
+        SYM(s_pLibavformat, swr_alloc_set_opts2);
+        SYM(s_pLibavformat, swr_config_frame);
+        SYM(s_pLibavformat, swr_free);
+        SYM(s_pLibavformat, swr_convert_frame);
 
-        SYM(pLibavformat, av_image_fill_linesizes);
-        SYM(pLibavformat, av_frame_get_buffer);
+        SYM(s_pLibavformat, av_image_fill_linesizes);
+        SYM(s_pLibavformat, av_frame_get_buffer);
 
-        SYM(pLibavformat, av_log_set_level);
-        SYM(pLibavformat, avformat_open_input);
-        SYM(pLibavformat, avformat_find_stream_info);
-        SYM(pLibavformat, av_find_best_stream);
+        SYM(s_pLibavformat, av_log_set_level);
+        SYM(s_pLibavformat, avformat_open_input);
+        SYM(s_pLibavformat, avformat_find_stream_info);
+        SYM(s_pLibavformat, av_find_best_stream);
 
-        SYM(pLibavformat, avcodec_flush_buffers);
-        SYM(pLibavformat, av_rescale_q);
-        SYM(pLibavformat, av_seek_frame);
-        SYM(pLibavformat, av_packet_unref);
+        SYM(s_pLibavformat, avcodec_flush_buffers);
+        SYM(s_pLibavformat, av_rescale_q);
+        SYM(s_pLibavformat, av_seek_frame);
+        SYM(s_pLibavformat, av_packet_unref);
 
-        SYM(pLibavformat, av_frame_unref);
-        SYM(pLibavformat, av_strerror);
+        SYM(s_pLibavformat, av_frame_unref);
+        SYM(s_pLibavformat, av_strerror);
     }
 
     {
 #ifdef OPT_CHAFA
-        void* pLiblibswscale = dlopen("libswscale.so", RTLD_NOW | RTLD_LOCAL);
-        if (!pLiblibswscale) return false;
+        s_pLiblibswscale = dlopen("libswscale.so", RTLD_NOW | RTLD_LOCAL);
+        if (!s_pLiblibswscale) return false;
 
-        SYM(pLiblibswscale, sws_getContext);
-        SYM(pLiblibswscale, sws_scale_frame);
-        SYM(pLiblibswscale, sws_freeContext);
+        SYM(s_pLiblibswscale, sws_getContext);
+        SYM(s_pLiblibswscale, sws_scale_frame);
+        SYM(s_pLiblibswscale, sws_freeContext);
 #endif
     }
 
     return true;
 
 #undef SYM
+}
+
+void
+unloadSO()
+{
+    if (s_pLibavformat) dlclose(s_pLibavformat);
+#ifdef OPT_CHAFA
+    if (s_pLiblibswscale) dlclose(s_pLiblibswscale);
+#endif
 }
 
 } /* namespace platform::ffmpeg::pfn */
