@@ -64,13 +64,12 @@ Decoder::init()
 void
 Decoder::destroy()
 {
-    LogDebug("Decoder::destroy() ATTEMPT\n");
-
     {
         LockScope lockGuard {&m_mtx};
         close();
     }
     m_mtx.destroy();
+    pfn::unloadSO();
 
     LogDebug("Decoder::destroy()\n");
 }

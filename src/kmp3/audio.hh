@@ -143,7 +143,7 @@ struct IDecoder
         isize* pPcmPos
     ) = 0;
 
-    virtual IDecoder& init() = 0;
+    virtual IDecoder& init() noexcept(false) = 0; /* RuntimeException */
     virtual void destroy() = 0;
     [[nodiscard]] virtual u32 getSampleRate() = 0;
     virtual void seekMS(f64 ms) = 0;

@@ -29,7 +29,7 @@ struct Decoder : audio::IDecoder
         isize* pPcmPos
     ) override final;
 
-    virtual Decoder& init() override final;
+    virtual Decoder& init() noexcept(false) override final; /* RuntimeException */
     virtual void destroy() override final;
     [[nodiscard]] virtual u32 getSampleRate() override final;
     virtual void seekMS(f64 ms) override final;
