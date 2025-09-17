@@ -16,7 +16,9 @@
 #include "Span.hh" /* IWYU pragma: keep */
 #include "math-inl.hh"
 
-#include <nmmintrin.h>
+#ifdef ADT_SSE4_2
+    #include <nmmintrin.h>
+#endif
 
 #if defined ADT_AVX2
     #include <immintrin.h>
