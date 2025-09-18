@@ -334,7 +334,7 @@ Win::procMouse(MouseInput in)
                 pl.focus(target);
 
                 if (target == m_lastMouseSelection &&
-                    m_timerLastMouseSelection.msElapsed(time) >= app::g_config.doubleClickDelay
+                    m_timerLastMouseSelection.msElapsed(time) < app::g_config.doubleClickDelay
                 )
                 {
                     pl.selectFocused();
