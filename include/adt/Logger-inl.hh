@@ -3,6 +3,7 @@
 #include "print-inl.hh"
 
 #include <source_location>
+#include <utility>
 
 #define ADT_LOGGER_COL_NORM  "\x1b[0m"
 #define ADT_LOGGER_COL_RED  "\x1b[31m"
@@ -58,5 +59,54 @@ namespace print
 inline isize format(Context* ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x);
 
 } /* namespace print */
+
+template<isize SIZE = 512, typename ...ARGS>
+struct Log
+{
+    Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_location& loc = std::source_location::current());
+};
+
+template<isize SIZE = 512, typename ...ARGS>
+struct LogError : Log<SIZE, ARGS...>
+{
+    LogError(ARGS&&... args, const std::source_location& loc = std::source_location::current())
+        : Log<SIZE, ARGS...>{ILogger::LEVEL::ERR, std::forward<ARGS>(args)..., loc} {}
+};
+
+template<isize SIZE = 512, typename ...ARGS>
+struct LogWarn : Log<SIZE, ARGS...>
+{
+    LogWarn(ARGS&&... args, const std::source_location& loc = std::source_location::current())
+        : Log<SIZE, ARGS...>{ILogger::LEVEL::WARN, std::forward<ARGS>(args)..., loc} {}
+};
+
+template<isize SIZE = 512, typename ...ARGS>
+struct LogInfo : Log<SIZE, ARGS...>
+{
+    LogInfo(ARGS&&... args, const std::source_location& loc = std::source_location::current())
+        : Log<SIZE, ARGS...>{ILogger::LEVEL::INFO, std::forward<ARGS>(args)..., loc} {}
+};
+
+template<isize SIZE = 512, typename ...ARGS>
+struct LogDebug : Log<SIZE, ARGS...>
+{
+    LogDebug(ARGS&&... args, const std::source_location& loc = std::source_location::current())
+        : Log<SIZE, ARGS...>{ILogger::LEVEL::DEBUG, std::forward<ARGS>(args)..., loc} {}
+};
+
+template<isize SIZE = 512, typename ...ARGS>
+Log(ILogger::LEVEL eLevel, ARGS&&...) -> Log<SIZE, ARGS...>;
+
+template<isize SIZE = 512, typename ...ARGS>
+LogError(ARGS&&...) -> LogError<SIZE, ARGS...>;
+
+template<isize SIZE = 512, typename ...ARGS>
+LogWarn(ARGS&&...) -> LogWarn<SIZE, ARGS...>;
+
+template<isize SIZE = 512, typename ...ARGS>
+LogInfo(ARGS&&...) -> LogInfo<SIZE, ARGS...>;
+
+template<isize SIZE = 512, typename ...ARGS>
+LogDebug(ARGS&&...) -> LogDebug<SIZE, ARGS...>;
 
 } /* namespace adt */

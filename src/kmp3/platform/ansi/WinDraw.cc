@@ -13,8 +13,9 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    if ((pl.m_bRedrawImage || pl.m_bSelectionChanged) && m_time > m_lastResizeTime + app::g_config.imageUpdateRateLimit)
+    if ((pl.m_bRedrawImage || pl.m_bSelectionChanged) && m_timerResize.msElapsed(m_time) >= app::g_config.imageUpdateRateLimit)
     {
+        m_timerResize.reset(m_time);
         pl.m_bSelectionChanged = false;
         pl.m_bRedrawImage = false;
 
@@ -323,7 +324,7 @@ Win::errorMsg()
     int height = m_termSize.height;
 
     static Player::Msg s_msg;
-    static f64 s_time;
+    static u64 s_time;
 
     if (!s_msg || s_msg.time == Player::Msg::UNTIL_NEXT)
     {
@@ -338,9 +339,9 @@ Win::errorMsg()
 
     if (common::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE && s_msg && s_msg.time != 0.0)
     {
-        if (s_time + s_msg.time < m_time)
+        if (Timer{s_time}.msElapsed(m_time) >= s_msg.time)
         {
-            LogDebug("killing: '{}'\n", s_msg.sfMsg);
+            LogDebug{"killing: '{}'\n", s_msg.sfMsg};
             s_msg.sfMsg.destroy();
             return;
         }
@@ -375,7 +376,7 @@ Win::update()
 {
     LockScope lock {&m_mtxUpdate};
 
-    m_time = time::nowMS();
+    m_time = Timer::getTime();
 
     if (!app::g_vol_bRunning) return;
 

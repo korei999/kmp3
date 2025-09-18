@@ -58,7 +58,8 @@ struct Player
     adt::Mutex m_mtxQ {};
     adt::QueueArray<Msg, 16> m_qErrorMsgs {};
     Msg::String64 m_sfLastMessage {};
-    adt::f64 m_lastPushedMessageTime {};
+    // adt::u64 m_lastPushedMessageTime {};
+    adt::Timer m_messageTimer {};
 
     /* */
 

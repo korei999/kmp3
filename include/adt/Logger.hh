@@ -56,73 +56,28 @@ ILogger::inst() noexcept
     return ILogger::g_pInstance;
 }
 
-template<isize SIZE = 512, typename ...ARGS>
-struct Log
-{    
+template<isize SIZE, typename ...ARGS>
+Log<SIZE, ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_location& loc)
+{
 #ifndef ADT_LOGGER_DISABLE
-    Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_location& loc = std::source_location::current())
-    {
-        ADT_ASSERT(eLevel >= ILogger::LEVEL::NONE && eLevel <= ILogger::LEVEL::DEBUG,
-            "eLevel: {}, (min: {}, max: {})", (int)eLevel, (int)ILogger::LEVEL::NONE, (int)ILogger::LEVEL::DEBUG
-        );
+    ADT_ASSERT(eLevel >= ILogger::LEVEL::NONE && eLevel <= ILogger::LEVEL::DEBUG,
+        "eLevel: {}, (min: {}, max: {})", (int)eLevel, (int)ILogger::LEVEL::NONE, (int)ILogger::LEVEL::DEBUG
+    );
 
-        ILogger* pLogger = ILogger::inst();
+    ILogger* pLogger = ILogger::inst();
 
-        if (!pLogger || eLevel > pLogger->m_eLevel) return;
+    if (!pLogger || eLevel > pLogger->m_eLevel) return;
 
-        StringFixed<SIZE> msg;
-        isize n = print::toSpan(msg.data(), std::forward<ARGS>(args)...);
-        while (pLogger->add(eLevel, loc, StringView{msg.data(), n}) == ILogger::ADD_STATUS::FAILED)
-            ;
-    }
+    StringFixed<SIZE> msg;
+    isize n = print::toSpan(msg.data(), std::forward<ARGS>(args)...);
+    while (pLogger->add(eLevel, loc, StringView{msg.data(), n}) == ILogger::ADD_STATUS::FAILED)
+        ;
 #else
-    Log(ILogger::LEVEL, ARGS&&..., [[maybe_unused]] const std::source_location& loc = std::source_location::current())
-    {}
+    (void)eLevel;
+    ((void)args, ...);
+    (void)loc;
 #endif
-};
-
-template<isize SIZE = 512, typename ...ARGS>
-struct LogError : Log<SIZE, ARGS...>
-{
-    LogError(ARGS&&... args, const std::source_location& loc = std::source_location::current())
-        : Log<SIZE, ARGS...>{ILogger::LEVEL::ERR, std::forward<ARGS>(args)..., loc} {}
-};
-
-template<isize SIZE = 512, typename ...ARGS>
-struct LogWarn : Log<SIZE, ARGS...>
-{
-    LogWarn(ARGS&&... args, const std::source_location& loc = std::source_location::current())
-        : Log<SIZE, ARGS...>{ILogger::LEVEL::WARN, std::forward<ARGS>(args)..., loc} {}
-};
-
-template<isize SIZE = 512, typename ...ARGS>
-struct LogInfo : Log<SIZE, ARGS...>
-{
-    LogInfo(ARGS&&... args, const std::source_location& loc = std::source_location::current())
-        : Log<SIZE, ARGS...>{ILogger::LEVEL::INFO, std::forward<ARGS>(args)..., loc} {}
-};
-
-template<isize SIZE = 512, typename ...ARGS>
-struct LogDebug : Log<SIZE, ARGS...>
-{
-    LogDebug(ARGS&&... args, const std::source_location& loc = std::source_location::current())
-        : Log<SIZE, ARGS...>{ILogger::LEVEL::DEBUG, std::forward<ARGS>(args)..., loc} {}
-};
-
-template<isize SIZE = 512, typename ...ARGS>
-Log(ILogger::LEVEL eLevel, ARGS&&...) -> Log<SIZE, ARGS...>;
-
-template<isize SIZE = 512, typename ...ARGS>
-LogError(ARGS&&...) -> LogError<SIZE, ARGS...>;
-
-template<isize SIZE = 512, typename ...ARGS>
-LogWarn(ARGS&&...) -> LogWarn<SIZE, ARGS...>;
-
-template<isize SIZE = 512, typename ...ARGS>
-LogInfo(ARGS&&...) -> LogInfo<SIZE, ARGS...>;
-
-template<isize SIZE = 512, typename ...ARGS>
-LogDebug(ARGS&&...) -> LogDebug<SIZE, ARGS...>;
+}
 
 inline void
 ILogger::setGlobal(ILogger* pInst, std::source_location loc) noexcept
@@ -313,7 +268,9 @@ Logger::formatHeader(LEVEL eLevel, std::source_location loc, Span<char> spBuff) 
         svCol1 = ADT_LOGGER_COL_NORM;
     }
 
-    return print::toSpan(spBuff, "({}{}{}: {}, {}): ", svCol0, eLevel, svCol1, print::shorterSourcePath(loc.file_name()), loc.line());
+    if (loc.line() != 0)
+        return print::toSpan(spBuff, "({}{}{}: {}, {}): ", svCol0, eLevel, svCol1, print::shorterSourcePath(loc.file_name()), loc.line());
+    else return print::toSpan(spBuff, "({}{}{}): ", svCol0, eLevel, svCol1);
 }
 
 inline void

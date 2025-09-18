@@ -314,4 +314,17 @@ cycleBackwardPowerOf2(const T& i, isize size)
     return (i - 1) & (size - 1);
 }
 
+inline constexpr void
+addNSToTimespec(timespec* const pTs, const isize nsec)
+{
+    constexpr isize nSecMax = 1000000000;
+    /* overflow check */
+    if (pTs->tv_nsec + nsec >= nSecMax)
+    {
+        pTs->tv_sec += 1;
+        pTs->tv_nsec = (pTs->tv_nsec + nsec) - nSecMax;
+    }
+    else pTs->tv_nsec += nsec;
+}
+
 } /* namespace adt::utils */

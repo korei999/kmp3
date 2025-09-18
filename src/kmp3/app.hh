@@ -83,4 +83,15 @@ inline void subStringSearch() { g_pWin->subStringSearch(); }
 inline void increaseImageSize(long i) { player().setImgSize(player().m_imgHeight + i); }
 inline void restoreImageSize() { player().setImgSize(g_config.imageHeight); }
 
+inline void
+testMsg()
+{
+    int i = rand() % 3;
+    player().pushErrorMsg({
+        .sfMsg = "TEST MESSAGE",
+        .time = 3000.0,
+        .eType = Player::Msg::TYPE(i)
+    });
+}
+
 } /* namespace app */

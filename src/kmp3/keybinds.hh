@@ -81,6 +81,9 @@ inline const Key inl_aKeys[] {
     {{},               L'i',  (void*)app::increaseImageSize,     {LONG, {.l = 1}}               },
     {{},               L'I',  (void*)app::increaseImageSize,     {LONG, {.l = -1}}              },
     {{},               L'o',  (void*)app::restoreImageSize,      NONE                           },
+#ifndef NDEBUG
+    {{},               L'b',  (void*)app::testMsg,               NONE                           },
+#endif
 };
 
 ADT_NO_UB inline void /* triggers ubsan */

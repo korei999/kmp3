@@ -54,7 +54,7 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
         ILogger* pLog = ILogger::inst();
         if (pLog)
         {
-            pLog->add(ILogger::LEVEL::ERR, std::source_location::current(), {aBuff, n});
+            pLog->add(ILogger::LEVEL::ERR, {}, {aBuff, n});
             pLog->destroy();
         }
     }

@@ -52,11 +52,11 @@ protected:
     TermSize m_termSize {};
     int m_prevImgWidth = 0;
     adt::Mutex m_mtxUpdate {};
-    adt::f64 m_time {};
-    adt::f64 m_lastResizeTime {};
+    adt::u64 m_time {};
+    adt::Timer m_timerResize {};
     Input m_lastInput {};
     int m_lastMouseSelection {};
-    adt::f64 m_lastMouseSelectionTime {};
+    adt::Timer m_timerLastMouseSelection {};
     bool m_bNeedsResize {};
 
     /* */
