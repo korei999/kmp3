@@ -30,31 +30,31 @@ namespace adt
 
 struct Timer
 {
-    u64 m_start {};
+    i64 m_start {};
 
     /* */
 
     Timer() = default;
     Timer(InitFlag) noexcept : m_start{getTime()} {}
-    Timer(u64 time) noexcept : m_start{time} {}
+    Timer(i64 time) noexcept : m_start{time} {}
 
     /* */
 
     void start() noexcept;
-    void reset(u64 newTime) noexcept;
+    void reset(i64 newTime) noexcept;
 
     f64 sElapsed() noexcept;
-    f64 sElapsed(u64 time) noexcept;
+    f64 sElapsed(i64 time) noexcept;
 
-    f64 msElapsed(u64 time) noexcept;
+    f64 msElapsed(i64 time) noexcept;
     f64 msElapsed() noexcept;
 
-    u64 elapsed() noexcept;
+    i64 elapsed() noexcept;
 
     /* */
 
-    static u64 frequency() noexcept;
-    static u64 getTime() noexcept;
+    static i64 frequency() noexcept;
+    static i64 getTime() noexcept;
 };
 
 inline void
@@ -75,31 +75,31 @@ Timer::msElapsed() noexcept
     return sElapsed() * 1000.0;
 }
 
-[[nodiscard]] inline u64
+[[nodiscard]] inline i64
 Timer::elapsed() noexcept
 {
     return getTime() - m_start;
 }
 
 inline void
-Timer::reset(u64 newTime) noexcept
+Timer::reset(i64 newTime) noexcept
 {
     m_start = newTime;
 }
 
 inline f64
-Timer::sElapsed(u64 time) noexcept
+Timer::sElapsed(i64 time) noexcept
 {
     return (f64)(time - m_start) / (f64)frequency();
 }
 
 inline f64
-Timer::msElapsed(u64 time) noexcept
+Timer::msElapsed(i64 time) noexcept
 {
     return sElapsed(time) * 1000.0;
 }
 
-inline u64
+inline i64
 Timer::frequency() noexcept
 {
 #ifdef _MSC_VER
@@ -119,7 +119,7 @@ Timer::frequency() noexcept
 #endif
 }
 
-inline u64
+inline i64
 Timer::getTime() noexcept
 {
 #ifdef _MSC_VER
@@ -132,7 +132,7 @@ Timer::getTime() noexcept
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ((u64)ts.tv_sec * 1000000000ull) + (u64)ts.tv_nsec;
+    return ((i64)ts.tv_sec * 1000000000ull) + (i64)ts.tv_nsec;
 
 #endif
 }

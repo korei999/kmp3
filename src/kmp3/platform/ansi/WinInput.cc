@@ -328,7 +328,7 @@ Win::procMouse(MouseInput in)
             if (s_bPressed) return;
             else s_bPressed = true;
 
-            const u64 time = Timer::getTime();
+            const i64 time = Timer::getTime();
 
             {
                 pl.focus(target);

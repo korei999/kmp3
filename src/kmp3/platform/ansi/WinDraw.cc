@@ -13,7 +13,7 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    if ((pl.m_bRedrawImage || pl.m_bSelectionChanged) && m_timerResize.msElapsed(m_time) >= app::g_config.imageUpdateRateLimit)
+    if (pl.m_bSelectionChanged || (pl.m_bRedrawImage && m_timerResize.msElapsed(m_time) >= app::g_config.imageUpdateRateLimit))
     {
         m_timerResize.reset(m_time);
         pl.m_bSelectionChanged = false;
@@ -324,7 +324,7 @@ Win::errorMsg()
     int height = m_termSize.height;
 
     static Player::Msg s_msg;
-    static u64 s_time;
+    static i64 s_time;
 
     if (!s_msg || s_msg.time == Player::Msg::UNTIL_NEXT)
     {
