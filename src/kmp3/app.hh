@@ -89,7 +89,7 @@ testMsg()
     int i = rand() % 3;
     player().pushErrorMsg({
         .sfMsg = "TEST MESSAGE",
-        .time = 3000.0,
+        .timeMS = 3000,
         .eType = Player::Msg::TYPE(i)
     });
 }

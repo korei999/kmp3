@@ -24,7 +24,7 @@ struct Player
         /* */
 
         String64 sfMsg {};
-        adt::f64 time {};
+        adt::i64 timeMS {};
         TYPE eType {};
 
         /* */

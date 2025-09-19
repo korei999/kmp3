@@ -191,12 +191,12 @@ Player::selectFinal(long selI)
         }
 
         Msg msg {
-            .time = 5000.0,
+            .timeMS = 5000,
             .eType = Msg::TYPE::ERROR,
         };
         print::toSpan(msg.sfMsg.data(), "failed to open \"{}\"", file::getPathEnding(m_vSongs[selI]));
 
-        if ((msg.sfMsg != m_sfLastMessage) || (m_messageTimer.msElapsed() >= msg.time))
+        if ((msg.sfMsg != m_sfLastMessage) || (m_messageTimer.elapsed() >= msg.timeMS * Timer::MSEC))
             pushErrorMsg(msg);
 
         selI = nextSelectionI(selI); /* Might set g_bRunning. */

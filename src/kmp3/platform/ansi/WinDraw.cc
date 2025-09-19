@@ -325,7 +325,7 @@ Win::errorMsg()
     static Player::Msg s_msg;
     static i64 s_time;
 
-    if (!s_msg || s_msg.time == Player::Msg::UNTIL_NEXT)
+    if (!s_msg || s_msg.timeMS == Player::Msg::UNTIL_NEXT)
     {
         Player::Msg newMsg = pl.popErrorMsg();
         if (newMsg)
@@ -336,9 +336,9 @@ Win::errorMsg()
         }
     }
 
-    if (common::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE && s_msg && s_msg.time != 0.0)
+    if (common::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE && s_msg && s_msg.timeMS > 0)
     {
-        if (Timer{s_time}.msElapsed(m_time) >= s_msg.time)
+        if (Timer{s_time}.elapsed(m_time) >= s_msg.timeMS * Timer::MSEC)
         {
             LogDebug{"killing: '{}'\n", s_msg.sfMsg};
             s_msg.sfMsg.destroy();
