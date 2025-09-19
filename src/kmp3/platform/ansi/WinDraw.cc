@@ -13,9 +13,8 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    if (pl.m_bSelectionChanged ||
-        (pl.m_bRedrawImage && (m_timerImageRedraw.elapsed(m_timerResize.value()) >= Timer::MSEC * app::g_config.imageUpdateRateLimit ||
-                               m_timerImageRedraw.elapsed(m_time) >= Timer::MSEC * app::g_config.imageUpdateRateLimit))
+    const i64 since = utils::max(m_timerResize.value(), m_time);
+    if (pl.m_bSelectionChanged || (pl.m_bRedrawImage && (m_timerImageRedraw.elapsed(since) >= Timer::MSEC * app::g_config.imageUpdateRateLimit))
         /* Prevent to redraw too often it window is getting resized too aggressively. */
     )
     {

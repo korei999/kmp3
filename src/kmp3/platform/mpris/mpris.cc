@@ -623,7 +623,7 @@ init()
         if ((i >= nTries - 1) && (res < 0))
         {
             app::player().pushErrorMsg({
-                "failed to create mpris media player instance", 5000.0, Player::Msg::TYPE::ERROR
+                "failed to create mpris media player instance", 5000, Player::Msg::TYPE::ERROR
             });
             s_bReInit = false;
         }
