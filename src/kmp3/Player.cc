@@ -333,7 +333,7 @@ Player::pushErrorMsg(const Player::Msg& msg)
     m_qErrorMsgs.pushBack(msg);
 
     m_sfLastMessage = msg.sfMsg;
-    m_messageTimer.start();
+    m_messageTimer.reset();
 }
 
 Player::Msg

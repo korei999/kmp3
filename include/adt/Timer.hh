@@ -40,7 +40,7 @@ struct Timer
 
     /* */
 
-    void start() noexcept;
+    void reset() noexcept;
     void reset(i64 newTime) noexcept;
 
     f64 sElapsed() noexcept;
@@ -58,7 +58,7 @@ struct Timer
 };
 
 inline void
-Timer::start() noexcept
+Timer::reset() noexcept
 {
     m_start = getTime();
 }
@@ -72,7 +72,8 @@ Timer::sElapsed() noexcept
 [[nodiscard]] inline f64
 Timer::msElapsed() noexcept
 {
-    return sElapsed() * 1000.0;
+    const i64 diff = getTime() - m_start;
+    return ((f64)(diff) * 1000.0) / (f64)frequency();
 }
 
 [[nodiscard]] inline i64
@@ -96,7 +97,8 @@ Timer::sElapsed(i64 time) noexcept
 inline f64
 Timer::msElapsed(i64 time) noexcept
 {
-    return sElapsed(time) * 1000.0;
+    const i64 diff = getTime() - time;
+    return ((f64)(diff) * 1000.0) / (f64)frequency();
 }
 
 inline i64
@@ -114,7 +116,7 @@ Timer::frequency() noexcept
 
 #elif __has_include(<unistd.h>)
 
-    return 1000000000ull;
+    return 1000000000ll;
 
 #endif
 }
@@ -132,7 +134,7 @@ Timer::getTime() noexcept
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ((i64)ts.tv_sec * 1000000000ull) + (i64)ts.tv_nsec;
+    return ((i64)ts.tv_sec * 1000000000ll) + (i64)ts.tv_nsec;
 
 #endif
 }
