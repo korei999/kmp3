@@ -134,6 +134,7 @@ Win::resizeHandler()
     LogDebug("term: {}\n", m_termSize);
 
     m_textBuff.resize(m_termSize.width, m_termSize.height);
+    m_timerResize.reset();
 
     m_bClear = true;
 

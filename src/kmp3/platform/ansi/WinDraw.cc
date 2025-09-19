@@ -13,10 +13,22 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    if (pl.m_bSelectionChanged || pl.m_bRedrawImage)
+    bool what = pl.m_bRedrawImage && (m_timerImageRedraw.elapsed(m_timerResize.value()) >= Timer::MSEC*100);
+    LogDebug{"what: {}, (redraw: {}), (elapsed: {}, ({}))\n",
+        what, pl.m_bRedrawImage,
+        m_timerImageRedraw.elapsed(m_timerResize.value()),
+        Timer::MSEC*100
+    };
+
+    if (pl.m_bSelectionChanged ||
+        (pl.m_bRedrawImage && (m_timerImageRedraw.elapsed(m_timerResize.value()) >= Timer::MSEC * app::g_config.imageUpdateRateLimit ||
+                               m_timerImageRedraw.elapsed(m_time) >= Timer::MSEC * app::g_config.imageUpdateRateLimit))
+        /* Prevent to redraw too often it window is getting resized too aggressively. */
+    )
     {
-        pl.m_bSelectionChanged = false;
         pl.m_bRedrawImage = false;
+        pl.m_bSelectionChanged = false;
+        defer( m_timerImageRedraw.reset(m_time) );
 
         const int split = pl.m_imgHeight;
 

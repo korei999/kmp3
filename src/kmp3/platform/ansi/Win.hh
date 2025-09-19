@@ -56,6 +56,8 @@ protected:
     Input m_lastInput {};
     int m_lastMouseSelection {};
     adt::Timer m_timerLastMouseSelection {};
+    adt::Timer m_timerImageRedraw {};
+    adt::Timer m_timerResize {};
     bool m_bNeedsResize {};
     bool m_bImageJustRedrawn {};
 

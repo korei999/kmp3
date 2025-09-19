@@ -9,6 +9,7 @@ constexpr Config CONFIG {
     .maxVolume = 150, /* (0, 100], > 100 might cause distortions. */
     .volume = 40, /* Startup volume. */
     .updateRate = 500, /* Ui update rate (ms). */
+    .imageUpdateRateLimit = 100, /* (ms). */
     .minSampleRate = 1000,
     .maxSampleRate = 9999999,
     .fontAspectRatio = 1.0 / 2.0, /* Typical monospaced font is 1/2 or 3/5 (width/height). */
