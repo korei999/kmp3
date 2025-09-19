@@ -13,13 +13,6 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    bool what = pl.m_bRedrawImage && (m_timerImageRedraw.elapsed(m_timerResize.value()) >= Timer::MSEC*100);
-    LogDebug{"what: {}, (redraw: {}), (elapsed: {}, ({}))\n",
-        what, pl.m_bRedrawImage,
-        m_timerImageRedraw.elapsed(m_timerResize.value()),
-        Timer::MSEC*100
-    };
-
     if (pl.m_bSelectionChanged ||
         (pl.m_bRedrawImage && (m_timerImageRedraw.elapsed(m_timerResize.value()) >= Timer::MSEC * app::g_config.imageUpdateRateLimit ||
                                m_timerImageRedraw.elapsed(m_time) >= Timer::MSEC * app::g_config.imageUpdateRateLimit))
