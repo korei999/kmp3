@@ -4,6 +4,7 @@
 
 #if __has_include(<unistd.h>)
     #include <unistd.h>
+    #include <ctime>
 #elif _WIN32
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN 1
@@ -22,8 +23,6 @@
     #undef MAX
     #include <sysinfoapi.h>
 #endif
-
-#include <ctime>
 
 namespace adt
 {
