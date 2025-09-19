@@ -320,7 +320,6 @@ main(int argc, char** argv)
 {
     static_assert(defaults::CONFIG.maxVolume != 0.0f);
     static_assert(defaults::CONFIG.updateRate > 0);
-    static_assert(defaults::CONFIG.imageUpdateRateLimit > 0);
     static_assert(defaults::CONFIG.fontAspectRatio > 0.0);
     static_assert(defaults::CONFIG.frameArenaReserveVirtualSpace >= SIZE_1K*4);
 

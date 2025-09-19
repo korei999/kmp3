@@ -13,9 +13,8 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    if (pl.m_bSelectionChanged || (pl.m_bRedrawImage && m_timerResize.msElapsed(m_time) >= app::g_config.imageUpdateRateLimit))
+    if (pl.m_bSelectionChanged || pl.m_bRedrawImage)
     {
-        m_timerResize.reset(m_time);
         pl.m_bSelectionChanged = false;
         pl.m_bRedrawImage = false;
 

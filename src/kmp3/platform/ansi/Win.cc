@@ -136,7 +136,6 @@ Win::resizeHandler()
     m_textBuff.resize(m_termSize.width, m_termSize.height);
 
     m_bClear = true;
-    m_timerResize.reset();
 
     adjustListHeight();
     common::fixFirstIdx(m_listHeight - 2, &m_firstIdx);

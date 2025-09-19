@@ -53,11 +53,11 @@ protected:
     int m_prevImgWidth = 0;
     adt::Mutex m_mtxUpdate {};
     adt::i64 m_time {};
-    adt::Timer m_timerResize {};
     Input m_lastInput {};
     int m_lastMouseSelection {};
     adt::Timer m_timerLastMouseSelection {};
     bool m_bNeedsResize {};
+    bool m_bImageJustRedrawn {};
 
     /* */
 
