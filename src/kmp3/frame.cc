@@ -18,10 +18,9 @@ run()
     platform::ansi::Win ansiWindow {};
     app::g_pWin = &ansiWindow;
 
-    Arena arena {app::g_config.frameArenaReserveVirtualSpace};
-    defer( arena.freeAll() );
+    Arena* pArena = IThreadPool::inst()->arena();
 
-    if (app::window().start(&arena) == false)
+    if (app::window().start(pArena) == false)
     {
         print::out("failed to start window\n");
         return;
@@ -57,7 +56,7 @@ run()
             LogError{ex.getMsg()};
         }
 
-        arena.reset();
+        pArena->reset();
     }
     while (app::g_vol_bRunning);
 }

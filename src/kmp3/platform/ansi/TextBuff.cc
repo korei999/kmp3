@@ -258,7 +258,7 @@ void
 TextBuff::destroy()
 {
     ArenaPushScope arenaScope {m_pArena};
-    if (!m_oBuff) new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
+    if (!m_oBuff) m_pArena->initPtr(&m_oBuff);
 
     ADT_ASSERT(m_oBuff->pData == nullptr && m_oBuff->size == 0 && m_oBuff->capacity == 0,
         "m_oBuff->pData: {}, m_oBuff->size {}, m_oBuff->capacity {}",
@@ -292,7 +292,7 @@ TextBuff::start(Arena* pArena, isize termWidth, isize termHeight)
 #endif
 
     ArenaPushScope arenaScope {m_pArena};
-    new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
+    m_pArena->initPtr(&m_oBuff);
 
     push(TEXT_BUFF_ALT_SCREEN_ENABLE);
     push(TEXT_BUFF_KEYPAD_ENABLE);
@@ -417,7 +417,7 @@ TextBuff::resetBuffers()
 void
 TextBuff::clean()
 {
-    if (!m_oBuff) new(&m_oBuff) Arena::Ptr<Buffer> {m_pArena};
+    if (!m_oBuff) m_pArena->initPtr(&m_oBuff);
 
     if (m_bErase)
     {

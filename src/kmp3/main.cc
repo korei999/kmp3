@@ -241,10 +241,14 @@ startup(int argc, char** argv)
 #endif
 
 #ifndef ADT_LOGGER_DISABLE
-    new(&s_logger) Logger{stderr, app::g_eLogLevel, 512, app::g_bForceLoggerColors};
+    new(&s_logger) Logger{stderr, app::g_eLogLevel, 1 << 12, app::g_bForceLoggerColors};
     ILogger::setGlobal(&s_logger);
     defer( s_logger.destroy() );
 #endif
+
+    ThreadPool zeroThreadPool {SIZE_1M * 64};
+    IThreadPool::setGlobal(&zeroThreadPool);
+    defer( zeroThreadPool.destroy() );
 
     setlocale(LC_ALL, "");
 

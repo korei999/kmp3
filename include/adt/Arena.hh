@@ -34,7 +34,7 @@ struct Arena : IArena
     using ListNodeType = SList<DeleterNode>::Node;
 
     template<typename T>
-    struct Ptr : ListNodeType
+    struct Ptr : protected ListNodeType
     {
         T* m_pData {};
 
@@ -104,24 +104,23 @@ struct Arena : IArena
     /* */
 
     [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override; /* AllocException */
-
     [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override; /* AllocException */
-
     [[nodiscard]] virtual void* realloc(void* p, usize oldCount, usize newCount, usize mSize) noexcept(false) override; /* AllocException */
-
     virtual void free(void* ptr) noexcept override;
-
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override;
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override;
-
     virtual void freeAll() noexcept override;
 
     /* */
 
+    template<typename T, typename ...ARGS> void initPtr(Ptr<T>* pPtr, ARGS&&... args);
+
     void reset() noexcept;
     void resetDecommit();
     void resetToPage(isize nthPage);
-    isize memoryUsed() noexcept;
+    isize memoryUsed() const noexcept { return m_pos; }
+    isize memoryReserved() const noexcept { return m_reserved; }
+    isize memoryCommited() const noexcept { return m_commited; }
 
 protected:
     ADT_NO_UB void runDeleters() noexcept; /* Type casting function pointers here. */
@@ -292,6 +291,13 @@ Arena::freeAll() noexcept
     ADT_ASAN_UNPOISON(m_pData, m_reserved);
 }
 
+template<typename T, typename ...ARGS>
+inline void
+Arena::initPtr(Ptr<T>* pPtr, ARGS&&... args)
+{
+    new(pPtr) Arena::Ptr<T>(this, std::forward<ARGS>(args)...);
+}
+
 inline void
 Arena::reset() noexcept
 {
@@ -338,12 +344,6 @@ Arena::resetToPage(isize nthPage)
     m_commited = commitSize;
     m_pLastAlloc = (void*)INVALID_PTR;
     m_lastAllocSize = 0;
-}
-
-inline isize
-Arena::memoryUsed() noexcept
-{
-    return m_pos;
 }
 
 inline void

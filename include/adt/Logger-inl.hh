@@ -50,7 +50,7 @@ struct ILogger
 
     static bool isTTY(FILE* pFile) noexcept;
     static ILogger* inst() noexcept;
-    static void setGlobal(ILogger* pInst, std::source_location = std::source_location::current()) noexcept;
+    static void setGlobal(ILogger* pLogger, std::source_location = std::source_location::current()) noexcept;
 };
 
 namespace print
@@ -60,53 +60,53 @@ inline isize format(Context* ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x);
 
 } /* namespace print */
 
-template<isize SIZE = 512, typename ...ARGS>
+template<typename ...ARGS>
 struct Log
 {
     Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_location& loc = std::source_location::current());
 };
 
-template<isize SIZE = 512, typename ...ARGS>
-struct LogError : Log<SIZE, ARGS...>
+template<typename ...ARGS>
+struct LogError : Log<ARGS...>
 {
     LogError(ARGS&&... args, const std::source_location& loc = std::source_location::current())
-        : Log<SIZE, ARGS...>{ILogger::LEVEL::ERR, std::forward<ARGS>(args)..., loc} {}
+        : Log<ARGS...>{ILogger::LEVEL::ERR, std::forward<ARGS>(args)..., loc} {}
 };
 
-template<isize SIZE = 512, typename ...ARGS>
-struct LogWarn : Log<SIZE, ARGS...>
+template<typename ...ARGS>
+struct LogWarn : Log<ARGS...>
 {
     LogWarn(ARGS&&... args, const std::source_location& loc = std::source_location::current())
-        : Log<SIZE, ARGS...>{ILogger::LEVEL::WARN, std::forward<ARGS>(args)..., loc} {}
+        : Log<ARGS...>{ILogger::LEVEL::WARN, std::forward<ARGS>(args)..., loc} {}
 };
 
-template<isize SIZE = 512, typename ...ARGS>
-struct LogInfo : Log<SIZE, ARGS...>
+template<typename ...ARGS>
+struct LogInfo : Log<ARGS...>
 {
     LogInfo(ARGS&&... args, const std::source_location& loc = std::source_location::current())
-        : Log<SIZE, ARGS...>{ILogger::LEVEL::INFO, std::forward<ARGS>(args)..., loc} {}
+        : Log<ARGS...>{ILogger::LEVEL::INFO, std::forward<ARGS>(args)..., loc} {}
 };
 
-template<isize SIZE = 512, typename ...ARGS>
-struct LogDebug : Log<SIZE, ARGS...>
+template<typename ...ARGS>
+struct LogDebug : Log<ARGS...>
 {
     LogDebug(ARGS&&... args, const std::source_location& loc = std::source_location::current())
-        : Log<SIZE, ARGS...>{ILogger::LEVEL::DEBUG, std::forward<ARGS>(args)..., loc} {}
+        : Log<ARGS...>{ILogger::LEVEL::DEBUG, std::forward<ARGS>(args)..., loc} {}
 };
 
-template<isize SIZE = 512, typename ...ARGS>
-Log(ILogger::LEVEL eLevel, ARGS&&...) -> Log<SIZE, ARGS...>;
+template<typename ...ARGS>
+Log(ILogger::LEVEL eLevel, ARGS&&...) -> Log<ARGS...>;
 
-template<isize SIZE = 512, typename ...ARGS>
-LogError(ARGS&&...) -> LogError<SIZE, ARGS...>;
+template<typename ...ARGS>
+LogError(ARGS&&...) -> LogError<ARGS...>;
 
-template<isize SIZE = 512, typename ...ARGS>
-LogWarn(ARGS&&...) -> LogWarn<SIZE, ARGS...>;
+template<typename ...ARGS>
+LogWarn(ARGS&&...) -> LogWarn<ARGS...>;
 
-template<isize SIZE = 512, typename ...ARGS>
-LogInfo(ARGS&&...) -> LogInfo<SIZE, ARGS...>;
+template<typename ...ARGS>
+LogInfo(ARGS&&...) -> LogInfo<ARGS...>;
 
-template<isize SIZE = 512, typename ...ARGS>
-LogDebug(ARGS&&...) -> LogDebug<SIZE, ARGS...>;
+template<typename ...ARGS>
+LogDebug(ARGS&&...) -> LogDebug<ARGS...>;
 
 } /* namespace adt */
