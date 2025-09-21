@@ -114,6 +114,7 @@ struct Arena : IArena
     /* */
 
     template<typename T, typename ...ARGS> void initPtr(Ptr<T>* pPtr, ARGS&&... args);
+    template<typename T, typename ...ARGS> void initPtr(Ptr<T>* pPtr, void (*pfn)(Arena*, Ptr<T>*), ARGS&&... args);
 
     void reset() noexcept;
     void resetDecommit();
@@ -295,7 +296,14 @@ template<typename T, typename ...ARGS>
 inline void
 Arena::initPtr(Ptr<T>* pPtr, ARGS&&... args)
 {
-    new(pPtr) Arena::Ptr<T>(this, std::forward<ARGS>(args)...);
+    new(pPtr) Arena::Ptr<T> {this, std::forward<ARGS>(args)...};
+}
+
+template<typename T, typename ...ARGS>
+inline void
+Arena::initPtr(Ptr<T>* pPtr, void (*pfn)(Arena*, Ptr<T>*), ARGS&&... args)
+{
+    new(pPtr) Arena::Ptr<T> {this, pfn, std::forward<ARGS>(args)...};
 }
 
 inline void

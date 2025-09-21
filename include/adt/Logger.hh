@@ -60,7 +60,7 @@ ILogger::inst() noexcept
 template<typename ...ARGS>
 Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_location& loc)
 {
-#ifndef ADT_LOGGER_DISABLE
+#if !defined ADT_LOGGER_DISABLE
     ADT_ASSERT(eLevel >= ILogger::LEVEL::NONE && eLevel <= ILogger::LEVEL::DEBUG,
         "eLevel: {}, (min: {}, max: {})", (int)eLevel, (int)ILogger::LEVEL::NONE, (int)ILogger::LEVEL::DEBUG
     );
@@ -84,11 +84,12 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
     else
     {
 fallbackToFixedBuffer:
-        StringFixed<512> msg;
+        StringFixed<256> msg;
         isize n = print::toSpan(msg.data(), std::forward<ARGS>(args)...);
         while (pLogger->add(eLevel, loc, StringView{msg.data(), n}) == ILogger::ADD_STATUS::FAILED)
             ;
     }
+
 #else
     (void)eLevel;
     ((void)args, ...);
@@ -286,7 +287,7 @@ Logger::formatHeader(LEVEL eLevel, std::source_location loc, Span<char> spBuff) 
             break;
 
             case LEVEL::DEBUG:
-            svCol0 = ADT_LOGGER_COL_GREEN;
+            svCol0 = ADT_LOGGER_COL_CYAN;
             break;
         }
         svCol1 = ADT_LOGGER_COL_NORM;
