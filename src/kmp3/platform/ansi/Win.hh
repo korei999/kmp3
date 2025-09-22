@@ -5,8 +5,11 @@
 #include "TermSize.hh"
 #include "common-inl.hh"
 
-#include <sys/eventfd.h>
 #include <termios.h>
+
+#ifdef OPT_MPRIS
+    #include <sys/eventfd.h>
+#endif
 
 namespace platform::ansi
 {
@@ -61,7 +64,10 @@ protected:
     adt::Timer m_timerResize {};
     bool m_bNeedsResize {};
     bool m_bImageJustRedrawn {};
+
+#ifdef OPT_MPRIS
     eventfd_t m_fdWakeUp {};
+#endif
 
     /* */
 

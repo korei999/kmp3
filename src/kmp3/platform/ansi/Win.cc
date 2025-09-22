@@ -54,7 +54,9 @@ Win::start(Arena* pArena)
     m_pArena = pArena;
     m_termSize = getTermSize();
 
+#ifdef OPT_MPRIS
     m_fdWakeUp = eventfd(0, EFD_NONBLOCK);
+#endif
 
     new(&m_mtxUpdate) Mutex(Mutex::TYPE::PLAIN);
 
@@ -121,7 +123,9 @@ Win::subStringSearch()
 void
 Win::wakeUp()
 {
+#ifdef OPT_MPRIS
     eventfd_write(m_fdWakeUp, 1);
+#endif
 }
 
 void
