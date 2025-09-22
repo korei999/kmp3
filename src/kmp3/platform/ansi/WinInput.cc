@@ -407,7 +407,7 @@ Win::readFromStdin(const int timeoutMS)
         pollfd{.fd = m_fdWakeUp, .events = POLLIN, .revents {}},
     };
 
-    const int pollStatus = poll(aPollFds, utils::size(aPollFds), timeoutMS);
+    poll(aPollFds, utils::size(aPollFds), timeoutMS);
     ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
 
     if (aPollFds[1].revents & POLLIN)
