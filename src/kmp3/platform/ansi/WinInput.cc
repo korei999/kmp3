@@ -2,6 +2,7 @@
 
 #include "keybinds.hh"
 
+#include <sys/poll.h>
 #include <sys/select.h>
 
 using namespace adt;
@@ -400,15 +401,20 @@ Win::Input
 Win::readFromStdin(const int timeoutMS)
 {
     char aBuff[128] {};
-    fd_set fds {};
-    FD_SET(STDIN_FILENO, &fds);
 
-    timeval tv;
-    tv.tv_sec = timeoutMS / 1000;
-    tv.tv_usec = (timeoutMS - (tv.tv_sec * 1000)) * 1000;
+    pollfd aPollFds[2] {
+        pollfd{.fd = STDIN_FILENO, .events = POLLIN, .revents {}},
+        pollfd{.fd = m_fdWakeUp, .events = POLLIN, .revents {}},
+    };
 
-    select(1, &fds, {}, {}, &tv);
+    const int pollStatus = poll(aPollFds, utils::size(aPollFds), timeoutMS);
     ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
+
+    if (aPollFds[1].revents & POLLIN)
+    {
+        eventfd_t t = 0;
+        eventfd_read(m_fdWakeUp, &t);
+    }
 
     if (nRead == 0)
     {

@@ -5,6 +5,7 @@
 #include "TermSize.hh"
 #include "common-inl.hh"
 
+#include <sys/eventfd.h>
 #include <termios.h>
 
 namespace platform::ansi
@@ -60,6 +61,7 @@ protected:
     adt::Timer m_timerResize {};
     bool m_bNeedsResize {};
     bool m_bImageJustRedrawn {};
+    eventfd_t m_fdWakeUp {};
 
     /* */
 
@@ -70,6 +72,7 @@ public:
     virtual void procEvents() final;
     virtual void seekFromInput() final;
     virtual void subStringSearch() final;
+    virtual void wakeUp() final;
 
     /* */
 

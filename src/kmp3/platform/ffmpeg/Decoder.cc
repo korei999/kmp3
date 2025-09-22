@@ -57,9 +57,7 @@ Decoder::close()
 Decoder&
 Decoder::init()
 {
-    /* NOTE: Recursive Because audio::fillRingBuffer() (locks) -> pause() -> mpris::playbackStatusChanged() -> window.draw() (locks again). *
-     * Yeah its a mess but i need to redraw immediately whenever mpris does something. */
-    new(&m_mtx) Mutex {Mutex::TYPE::RECURSIVE};
+    new(&m_mtx) Mutex {Mutex::TYPE::PLAIN};
     return *this;
 }
 

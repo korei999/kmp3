@@ -15,6 +15,7 @@ struct IWindow
     virtual void procEvents() = 0;
     virtual void seekFromInput() = 0;
     virtual void subStringSearch() = 0;
+    virtual void wakeUp() = 0;
 };
 
 struct DummyWindow : IWindow
@@ -25,4 +26,5 @@ struct DummyWindow : IWindow
     virtual void procEvents() final {};
     virtual void seekFromInput() final {};
     virtual void subStringSearch() final {};
+    virtual void wakeUp() final {};
 };

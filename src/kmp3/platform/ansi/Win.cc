@@ -54,6 +54,8 @@ Win::start(Arena* pArena)
     m_pArena = pArena;
     m_termSize = getTermSize();
 
+    m_fdWakeUp = eventfd(0, EFD_NONBLOCK);
+
     new(&m_mtxUpdate) Mutex(Mutex::TYPE::PLAIN);
 
     enableRawMode();
@@ -114,6 +116,12 @@ Win::subStringSearch()
         [&] { return readWChar(); },
         [&] { update(); }
     );
+}
+
+void
+Win::wakeUp()
+{
+    eventfd_write(m_fdWakeUp, 1);
 }
 
 void
