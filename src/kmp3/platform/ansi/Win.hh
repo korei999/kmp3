@@ -66,7 +66,7 @@ protected:
     bool m_bImageJustRedrawn {};
 
 #ifdef OPT_MPRIS
-    eventfd_t m_fdWakeUp {};
+    int m_fdWakeUp {};
 #endif
 
     /* */
