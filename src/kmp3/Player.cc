@@ -161,12 +161,11 @@ Player::nextSelectionI(long selI)
 void
 Player::updateInfo() noexcept
 {
-    m_info.sfTitle = app::decoder().getMetadata("title");
-    m_info.sfAlbum = app::decoder().getMetadata("album");
-    m_info.sfArtist = app::decoder().getMetadata("artist");
+    m_info.sTitle.reallocWith(m_pAlloc, app::decoder().getMetadata("title"));
+    m_info.sAlbum.reallocWith(m_pAlloc, app::decoder().getMetadata("album"));
+    m_info.sArtist.reallocWith(m_pAlloc, app::decoder().getMetadata("artist"));
 
-    if (m_info.sfTitle.size() == 0)
-        m_info.sfTitle = m_vShortSongs[m_selectedI];
+    if (m_info.sTitle.empty()) m_info.sTitle.reallocWith(m_pAlloc, m_vShortSongs[m_selectedI]);
 
     m_bSelectionChanged = true;
 }
@@ -320,6 +319,10 @@ Player::adjustImgWidth() noexcept
 void
 Player::destroy()
 {
+    m_info.sTitle.destroy(m_pAlloc);
+    m_info.sAlbum.destroy(m_pAlloc);
+    m_info.sArtist.destroy(m_pAlloc);
+
     m_vSongs.destroy(m_pAlloc);
     m_vShortSongs.destroy(m_pAlloc);
     m_vSongIdxs.destroy(m_pAlloc);

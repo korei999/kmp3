@@ -2,7 +2,7 @@
 
 #include "types.hh"
 
-#include "Logger-inl.hh"
+#include "ILogger.hh"
 
 #if __has_include(<unistd.h>)
     #include <unistd.h>
@@ -49,7 +49,7 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
         ILogger* pLog = ILogger::inst();
         if (pLog)
         {
-            pLog->add(ILogger::LEVEL::ERR, {}, {aBuff, n});
+            pLog->add(ILogger::LEVEL::ERR, {}, nullptr, {aBuff, n});
             pLog->destroy();
         }
     }

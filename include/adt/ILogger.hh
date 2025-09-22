@@ -33,8 +33,8 @@ struct ILogger
 
     /* */
 
-    virtual ADD_STATUS add(LEVEL eLevel, std::source_location loc, const StringView sv) noexcept = 0;
-    virtual isize formatHeader(LEVEL eLevel, std::source_location loc, Span<char> spBuff) noexcept = 0;
+    virtual ADD_STATUS add(LEVEL eLevel, std::source_location loc, void* pExtra, const StringView sv) noexcept = 0;
+    virtual isize formatHeader(LEVEL eLevel, std::source_location loc, void* pExtra, Span<char> spBuff) noexcept = 0;
     virtual void destroy() noexcept = 0;
 
     /* */

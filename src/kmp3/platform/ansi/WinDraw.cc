@@ -110,9 +110,9 @@ Win::info()
             m_textBuff.string(hOff + n, y, eStyle, svLine);
     };
 
-    clDrawLine(1, "title: ", pl.m_info.sfTitle, STYLE::BOLD | STYLE::ITALIC | STYLE::YELLOW);
-    clDrawLine(2, "album: ", pl.m_info.sfAlbum, STYLE::BOLD);
-    clDrawLine(3, "artist: ", pl.m_info.sfArtist, STYLE::BOLD);
+    clDrawLine(1, "title: ", pl.m_info.sTitle, STYLE::BOLD | STYLE::ITALIC | STYLE::YELLOW);
+    clDrawLine(2, "album: ", pl.m_info.sAlbum, STYLE::BOLD);
+    clDrawLine(3, "artist: ", pl.m_info.sArtist, STYLE::BOLD);
 }
 
 void

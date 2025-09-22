@@ -61,10 +61,17 @@ protected:
 };
 
 inline
-ArgvParser::ArgvParser(IAllocator* pAlloc, FILE* pFile, const StringView svUsage, int argc, char** argv, std::initializer_list<Arg<StringView>> lParsers)
+ArgvParser::ArgvParser(
+    IAllocator* pAlloc,
+    FILE* pFile,
+    const StringView svUsage,
+    int argc,
+    char** argv,
+    std::initializer_list<Arg<StringView>> lParsers
+)
     : m_pAlloc{pAlloc},
       m_pFile{pFile},
-      m_vArgParsers{pAlloc, argc},
+      m_vArgParsers{pAlloc, (isize)lParsers.size()},
       m_mStringToArgI{pAlloc, argc},
       m_sUsage{pAlloc, svUsage},
       m_argc{argc},
@@ -72,7 +79,6 @@ ArgvParser::ArgvParser(IAllocator* pAlloc, FILE* pFile, const StringView svUsage
 {
     if (argc > 0) m_sFirst = {pAlloc, argv[0]};
 
-    m_vArgParsers.setCap(m_pAlloc, lParsers.size());
     for (auto& e : lParsers)
     {
         ADT_ASSERT(!e.sOneDash.empty() || !e.sTwoDashes.empty(),

@@ -17,7 +17,6 @@
 
 using namespace adt;
 
-static Logger s_logger;
 static ArgvParser s_cmdParser;
 
 static void
@@ -240,15 +239,15 @@ startup(int argc, char** argv)
     app::g_eLogLevel = ILogger::LEVEL::DEBUG;
 #endif
 
-#ifndef ADT_LOGGER_DISABLE
-    new(&s_logger) Logger{stderr, app::g_eLogLevel, 1 << 12, app::g_bForceLoggerColors};
-    ILogger::setGlobal(&s_logger);
-    defer( s_logger.destroy() );
-#endif
-
     ThreadPool zeroThreadPool {SIZE_1M * 64};
     IThreadPool::setGlobal(&zeroThreadPool);
     defer( zeroThreadPool.destroy() );
+
+#ifndef ADT_LOGGER_DISABLE
+    Logger logger {stderr, app::g_eLogLevel, 1 << 12, app::g_bForceLoggerColors};
+    ILogger::setGlobal(&logger);
+    defer( logger.destroy() );
+#endif
 
     setlocale(LC_ALL, "");
 

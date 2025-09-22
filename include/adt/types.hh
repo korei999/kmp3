@@ -180,7 +180,7 @@ nextPowerOf2(i32 x)
     return ++x;
 }
 
-inline constexpr isize
+inline constexpr i64
 nextPowerOf2(i64 x)
 {
     --x;

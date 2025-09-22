@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Logger-inl.hh"
+#include "ILogger.hh"
 #include "String.hh" /* IWYU pragma: keep */
 
 #define ADT_LOGGER_COL_NORM  "\x1b[0m"
@@ -78,7 +78,7 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
         ArenaPushScope arenaScope {pArena};
         print::Builder pb {pArena, 512};
         StringView sv = pb.print(std::forward<ARGS>(args)...);
-        while (pLogger->add(eLevel, loc, sv) == ILogger::ADD_STATUS::FAILED)
+        while (pLogger->add(eLevel, loc, nullptr, sv) == ILogger::ADD_STATUS::FAILED)
             ;
     }
     else
@@ -86,7 +86,7 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
 fallbackToFixedBuffer:
         StringFixed<256> msg;
         isize n = print::toSpan(msg.data(), std::forward<ARGS>(args)...);
-        while (pLogger->add(eLevel, loc, StringView{msg.data(), n}) == ILogger::ADD_STATUS::FAILED)
+        while (pLogger->add(eLevel, loc, nullptr, StringView{msg.data(), n}) == ILogger::ADD_STATUS::FAILED)
             ;
     }
 
@@ -136,17 +136,33 @@ struct Logger : ILogger
 
     /* */
 
-    virtual ADD_STATUS add(LEVEL eLevel, std::source_location loc, const StringView sv) noexcept override;
-    virtual isize formatHeader(LEVEL eLevel, std::source_location loc, Span<char> spBuff) noexcept override;
+    virtual ADD_STATUS add(LEVEL eLevel, std::source_location loc, void* pExtra, const StringView sv) noexcept override;
+    virtual isize formatHeader(LEVEL eLevel, std::source_location loc, void* pExtra, Span<char> spBuff) noexcept override;
     virtual void destroy() noexcept override;
 
     /* */
 
     struct MsgHeader
     {
-        LEVEL eLevel {};
+        struct LevelSize
+        {
+            isize m_levelSize {};
+
+            /* */
+
+            LevelSize() = default;
+            LevelSize(LEVEL eLevel, isize size);
+
+            /* */
+
+            isize size() noexcept;
+            LEVEL level() noexcept;
+        };
+
+        /* */
+
+        LevelSize levelSize {}; /* Fuse msg size and level. (Total size of a msg is size() + sizeof(MsgHeader)). */
         std::source_location loc {};
-        isize size {}; /* Bytes after this header, so that the total msg size is sizeof(MsgHeader) + size. */
     };
 
     struct RingBuffer
@@ -194,12 +210,32 @@ protected:
     THREAD_STATUS loop() noexcept;
 };
 
+inline
+Logger::MsgHeader::LevelSize::LevelSize(LEVEL eLevel, isize size)
+    : m_levelSize{size}
+{
+    ADT_ASSERT(size >= 0, "{}", size);
+    m_levelSize |= ((isize)(eLevel) << 56ll);
+}
+
+inline isize
+Logger::MsgHeader::LevelSize::size() noexcept
+{
+    return m_levelSize & ~(255ll << 56ll);
+}
+
+inline ILogger::LEVEL
+Logger::MsgHeader::LevelSize::level() noexcept
+{
+    return (ILogger::LEVEL)(m_levelSize >> 56ll);
+}
+
 struct LoggerNoSource : Logger
 {
     using Logger::Logger;
 
     virtual isize
-    formatHeader(LEVEL eLevel, std::source_location, Span<char> spBuff) noexcept override
+    formatHeader(LEVEL eLevel, std::source_location, void* pExtra, Span<char> spBuff) noexcept override
     {
         if (eLevel == LEVEL::NONE) return 0;
 
@@ -247,7 +283,7 @@ Logger::Logger(FILE* pFile, ILogger::LEVEL eLevel, isize ringBufferSize, bool bF
 }
 
 inline ILogger::ADD_STATUS
-Logger::add(LEVEL eLevel, std::source_location loc, const StringView sv) noexcept
+Logger::add(LEVEL eLevel, std::source_location loc, void*, const StringView sv) noexcept
 {
     ADD_STATUS eStatus;
     {
@@ -260,7 +296,7 @@ Logger::add(LEVEL eLevel, std::source_location loc, const StringView sv) noexcep
 }
 
 inline isize
-Logger::formatHeader(LEVEL eLevel, std::source_location loc, Span<char> spBuff) noexcept
+Logger::formatHeader(LEVEL eLevel, std::source_location loc, void*, Span<char> spBuff) noexcept
 {
     if (eLevel == LEVEL::NONE) return 0;
 
@@ -345,7 +381,7 @@ Logger::loop() noexcept
             if (p.sv1) ::memcpy(m_pDrainBuff + p.sv0.size(), p.sv1.data(), p.sv1.size());
         }
 
-        const isize n = formatHeader(p.eLevel, p.loc, aHeaderBuff);
+        const isize n = formatHeader(p.eLevel, p.loc, nullptr, aHeaderBuff);
         fwrite(aHeaderBuff, n, 1, m_pFile);
         fwrite(m_pDrainBuff, p.sv0.m_size + p.sv1.m_size, 1, m_pFile);
     }
@@ -363,7 +399,7 @@ Logger::RingBuffer::RingBuffer(isize cap)
 inline ILogger::ADD_STATUS
 Logger::RingBuffer::push(LEVEL eLevel, std::source_location loc, const StringView sv) noexcept
 {
-    MsgHeader msg {.eLevel = eLevel, .loc = loc, .size = sv.size()};
+    MsgHeader msg {.levelSize {eLevel, sv.size()}, .loc = loc};
     const isize payloadSize = sizeof(msg) + sv.size();
 
     if (m_size + payloadSize > m_cap) return ILogger::ADD_STATUS::FAILED;
@@ -417,7 +453,7 @@ Logger::RingBuffer::pop() noexcept
             ::memcpy(((u8*)&msg) + nUntilEnd, m_pData, sizeof(msg) - nUntilEnd);
 
             p.sv0.m_pData = (char*)(m_pData + sizeof(msg) - nUntilEnd);
-            p.sv0.m_size = msg.size;
+            p.sv0.m_size = msg.levelSize.size();
         }
         else
         {
@@ -426,20 +462,20 @@ Logger::RingBuffer::pop() noexcept
             p.sv0.m_size = nUntilEnd - sizeof(msg);
 
             p.sv1 = (char*)m_pData;
-            p.sv1.m_size = msg.size - p.sv0.m_size;
+            p.sv1.m_size = msg.levelSize.size() - p.sv0.m_size;
         }
     }
     else
     {
         ::memcpy(&msg, m_pData + m_firstI, sizeof(msg));
         p.sv0.m_pData = (char*)(m_pData + m_firstI + sizeof(msg));
-        p.sv0.m_size = msg.size;
+        p.sv0.m_size = msg.levelSize.size();
     }
 
-    p.eLevel = msg.eLevel;
+    p.eLevel = msg.levelSize.level();
     p.loc = msg.loc;
 
-    const isize msgSize = sizeof(msg) + msg.size;
+    const isize msgSize = sizeof(msg) + msg.levelSize.size();
     m_firstI = (m_firstI + msgSize) & (m_cap - 1);
     m_size -= msgSize;
     ADT_ASSERT(m_size >= 0, "m_size: {}", m_size);

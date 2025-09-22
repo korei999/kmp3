@@ -18,12 +18,12 @@ struct Player
     struct Msg
     {
         enum class TYPE : adt::u8 { NOTIFY, WARNING, ERROR };
-        using String64 = adt::StringFixed<128>;
+        using String128 = adt::StringFixed<128>;
         static constexpr adt::f64 UNTIL_NEXT = std::numeric_limits<adt::f64>::max();
 
         /* */
 
-        String64 sfMsg {};
+        String128 sfMsg {};
         adt::i64 timeMS {};
         TYPE eType {};
 
@@ -37,9 +37,9 @@ struct Player
     adt::IAllocator* m_pAlloc {};
 
     struct {
-        adt::StringFixed<128> sfTitle {};
-        adt::StringFixed<128> sfAlbum {};
-        adt::StringFixed<128> sfArtist {};
+        adt::VString sTitle {};
+        adt::VString sAlbum {};
+        adt::VString sArtist {};
     } m_info {};
 
     adt::u8 m_imgHeight {};
@@ -57,7 +57,7 @@ struct Player
     bool m_bRedrawImage {};
     adt::Mutex m_mtxQ {};
     adt::QueueArray<Msg, 16> m_qErrorMsgs {};
-    Msg::String64 m_sfLastMessage {};
+    Msg::String128 m_sfLastMessage {};
     // adt::u64 m_lastPushedMessageTime {};
     adt::Timer m_messageTimer {};
 
