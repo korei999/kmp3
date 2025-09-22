@@ -80,6 +80,10 @@ Win::destroy()
 
     m_textBuff.destroy();
 
+#ifdef OPT_MPRIS
+    close(m_fdWakeUp);
+#endif
+
     LogDebug("ansi::WinDestroy()\n");
 }
 
