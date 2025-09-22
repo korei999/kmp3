@@ -405,7 +405,7 @@ Win::readFromStdin(const int timeoutMS)
     pollfd aPollFds[2] {
         pollfd{.fd = STDIN_FILENO, .events = POLLIN, .revents {}},
 #ifdef OPT_MPRIS
-        pollfd{.fd = (int)m_fdWakeUp, .events = POLLIN, .revents {}},
+        pollfd{.fd = m_fdWakeUp, .events = POLLIN, .revents {}},
 #endif
     };
 
