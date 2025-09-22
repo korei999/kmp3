@@ -728,6 +728,8 @@ playerPropertyChanged(const char* name)
         );
         sd_bus_flush(s_pBus);
     }
+
+    if (app::g_pWin) app::window().draw();
 }
 
 void
@@ -766,6 +768,8 @@ seeked()
     if (!s_pBus) return;
     i64 pos = app::mixer().getCurrentMS() * 1000;
     sd_bus_emit_signal(s_pBus, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", "Seeked", "x", pos);
+
+    if (app::g_pWin) app::window().draw();
 }
 
 void
