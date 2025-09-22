@@ -404,17 +404,21 @@ Win::readFromStdin(const int timeoutMS)
 
     pollfd aPollFds[2] {
         pollfd{.fd = STDIN_FILENO, .events = POLLIN, .revents {}},
+#ifdef OPT_MPRIS
         pollfd{.fd = m_fdWakeUp, .events = POLLIN, .revents {}},
+#endif
     };
 
     poll(aPollFds, utils::size(aPollFds), timeoutMS);
     ssize_t nRead = read(STDIN_FILENO, aBuff, sizeof(aBuff));
 
+#ifdef OPT_MPRIS
     if (aPollFds[1].revents & POLLIN)
     {
         eventfd_t t = 0;
         eventfd_read(m_fdWakeUp, &t);
     }
+#endif
 
     if (nRead == 0)
     {
