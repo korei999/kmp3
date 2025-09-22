@@ -5,7 +5,6 @@
 
 #include <csignal>
 #include <unistd.h>
-#include <sys/ioctl.h>
 
 using namespace adt;
 
@@ -54,9 +53,11 @@ Win::start(Arena* pArena)
     m_pArena = pArena;
     m_termSize = getTermSize();
 
-#ifdef OPT_MPRIS
-    m_fdWakeUp = eventfd(0, EFD_NONBLOCK);
-#endif
+    {
+        ADT_RUNTIME_EXCEPTION_FMT(pipe(m_aFdsWakeUp) >= 0, "{}", strerror(errno));
+        int flags = fcntl(m_aFdsWakeUp[0], F_GETFL, 0);
+        fcntl(m_aFdsWakeUp[0], F_SETFL, flags | O_NONBLOCK);
+    }
 
     new(&m_mtxUpdate) Mutex(Mutex::TYPE::PLAIN);
 
@@ -80,9 +81,8 @@ Win::destroy()
 
     m_textBuff.destroy();
 
-#ifdef OPT_MPRIS
-    close(m_fdWakeUp);
-#endif
+    close(m_aFdsWakeUp[0]);
+    close(m_aFdsWakeUp[1]);
 
     LogDebug("ansi::WinDestroy()\n");
 }
@@ -127,9 +127,8 @@ Win::subStringSearch()
 void
 Win::wakeUp()
 {
-#ifdef OPT_MPRIS
-    eventfd_write(m_fdWakeUp, 1);
-#endif
+    u64 t = 1;
+    write(m_aFdsWakeUp[1], &t, sizeof(t));
 }
 
 void

@@ -3,7 +3,6 @@
 #include "keybinds.hh"
 
 #include <sys/poll.h>
-#include <sys/select.h>
 
 using namespace adt;
 
@@ -404,9 +403,7 @@ Win::readFromStdin(const int timeoutMS)
 
     pollfd aPollFds[2] {
         pollfd{.fd = STDIN_FILENO, .events = POLLIN, .revents {}},
-#ifdef OPT_MPRIS
-        pollfd{.fd = m_fdWakeUp, .events = POLLIN, .revents {}},
-#endif
+        pollfd{.fd = m_aFdsWakeUp[0], .events = POLLIN, .revents {}},
     };
 
     poll(aPollFds, utils::size(aPollFds), timeoutMS);
@@ -415,8 +412,8 @@ Win::readFromStdin(const int timeoutMS)
 #ifdef OPT_MPRIS
     if (aPollFds[1].revents & POLLIN)
     {
-        eventfd_t t = 0;
-        eventfd_read(m_fdWakeUp, &t);
+        u64 t = 0;
+        read(m_aFdsWakeUp[0], &t, 8);
     }
 #endif
 

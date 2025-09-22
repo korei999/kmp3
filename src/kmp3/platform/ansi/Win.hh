@@ -7,10 +7,6 @@
 
 #include <termios.h>
 
-#ifdef OPT_MPRIS
-    #include <sys/eventfd.h>
-#endif
-
 namespace platform::ansi
 {
 
@@ -65,9 +61,7 @@ protected:
     bool m_bNeedsResize {};
     bool m_bImageJustRedrawn {};
 
-#ifdef OPT_MPRIS
-    int m_fdWakeUp {};
-#endif
+    int m_aFdsWakeUp[2] {};
 
     /* */
 
