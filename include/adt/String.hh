@@ -874,8 +874,6 @@ VString::reallocWith(IAllocator* pAlloc, const StringView sv)
 {
     ADT_ASSERT(m_cap >= 16, "{}", m_cap);
 
-    if (sv.empty()) return;
-
     if (m_cap <= 16)
     {
         const isize firstSize = ::strnlen(m_aBuff, 16);
