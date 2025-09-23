@@ -346,6 +346,7 @@ setLoopStatus(
             eMethod = PLAYER_REPEAT_METHOD(i);
 
     app::g_pPlayer->m_eRepeatMethod = eMethod;
+    app::window().wakeUp();
     return sd_bus_reply_method_return(value, "");
 }
 
