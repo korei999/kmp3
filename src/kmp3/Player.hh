@@ -53,13 +53,13 @@ struct Player
     long m_selectedI {};
     adt::isize m_longestString {};
     PLAYER_REPEAT_METHOD m_eRepeatMethod {};
-    bool m_bSelectionChanged {};
-    bool m_bRedrawImage {};
     adt::Mutex m_mtxQ {};
     adt::QueueArray<Msg, 16> m_qErrorMsgs {};
     Msg::String128 m_sfLastMessage {};
-    // adt::u64 m_lastPushedMessageTime {};
     adt::Timer m_messageTimer {};
+    bool m_bSelectionChanged {};
+    bool m_bRedrawImage {};
+    bool m_bQuitOnSongEnd {};
 
     /* */
 

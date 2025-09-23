@@ -44,8 +44,9 @@ struct Key
 
 /* match key OR char (mods are ignored) */
 inline const Key inl_aKeys[] {
-    /*  key                char   function                          arg */
+    /* key             char   function                           arg */
     {keys::CTRL_C,     L'q',  (void*)app::quit,                  NONE                           },
+    {{},               L'Q',  (void*)app::quitOnSongEnd,         NONE                           },
     {keys::CTRL_L,     {},    (void*)app::cleanRedraw,           NONE                           },
     {{},               L'/',  (void*)app::subStringSearch,       NONE                           },
     {keys::ARROWDOWN,  L'j',  (void*)app::focusNext,             NONE                           },

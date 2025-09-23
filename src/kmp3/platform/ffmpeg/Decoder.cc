@@ -349,8 +349,8 @@ Decoder::seekMS(f64 ms)
 {
     if (!m_pCodecCtx) return;
 
-	avcodec_flush_buffers(m_pCodecCtx);
-	i64 pts = av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
+    avcodec_flush_buffers(m_pCodecCtx);
+    i64 pts = av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
     av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);
 }
 

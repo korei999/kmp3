@@ -293,7 +293,12 @@ Win::bottomLine()
     {
         print::Builder builder {m_pArena, width + 1};
         builder.print("{} / {}", pl.m_selectedI, pl.m_vShortSongs.size() - 1);
-        if (pl.m_eRepeatMethod != PLAYER_REPEAT_METHOD::NONE)
+
+        if (pl.m_bQuitOnSongEnd)
+        {
+            builder.print(" (quit after current)");
+        }
+        else if (pl.m_eRepeatMethod != PLAYER_REPEAT_METHOD::NONE)
         {
             const char* sArg {};
             if (pl.m_eRepeatMethod == PLAYER_REPEAT_METHOD::TRACK) sArg = "track";

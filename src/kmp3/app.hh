@@ -74,7 +74,7 @@ inline void changeSampleRateDown(adt::u64 ms, bool bSave) { g_pMixer->changeSamp
 inline void changeSampleRateUp(adt::u64 ms, bool bSave) { g_pMixer->changeSampleRateUp(ms, bSave); }
 inline void restoreSampleRate() { g_pMixer->restoreSampleRate(); }
 inline void seekOff(adt::f64 ms) { g_pMixer->seekOff(ms); }
-inline PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward) { return player().cycleRepeatMethods(bForward); }
+inline PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward) { player().m_bQuitOnSongEnd = false; return player().cycleRepeatMethods(bForward); }
 inline void selectPrev() { player().selectPrev(); }
 inline void selectNext() { player().selectNext(); }
 inline void toggleMute() { g_pMixer->toggleMute(); }
@@ -83,6 +83,7 @@ inline void subStringSearch() { g_pWin->subStringSearch(); }
 inline void increaseImageSize(long i) { player().setImgSize(player().m_imgHeight + i); }
 inline void restoreImageSize() { player().setImgSize(g_config.imageHeight); }
 inline void cleanRedraw() { window().m_bClear = true; player().m_bRedrawImage = true; }
+inline void quitOnSongEnd() { player().m_bQuitOnSongEnd = !player().m_bQuitOnSongEnd; }
 
 inline void
 testMsg()

@@ -235,6 +235,7 @@ Player::nextSongIfPrevEnded()
         )
     )
     {
+        if (m_bQuitOnSongEnd) app::quit();
         selectFinal(nextSelectionI(m_selectedI));
     }
 }
