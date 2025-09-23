@@ -128,7 +128,7 @@ void
 Win::wakeUp()
 {
     u64 t = 1;
-    std::ignore = write(m_aFdsWakeUp[1], &t, sizeof(t));
+    [[maybe_unused]] auto _ = write(m_aFdsWakeUp[1], &t, sizeof(t));
 }
 
 void

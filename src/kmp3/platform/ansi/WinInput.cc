@@ -412,7 +412,7 @@ Win::readFromStdin(const int timeoutMS)
     if (aPollFds[1].revents & POLLIN)
     {
         u64 t = 0;
-        std::ignore = read(m_aFdsWakeUp[0], &t, 8);
+        [[maybe_unused]] auto _ = read(m_aFdsWakeUp[0], &t, 8);
     }
 
     if (nRead == 0)
