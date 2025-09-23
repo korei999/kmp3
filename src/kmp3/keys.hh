@@ -105,6 +105,7 @@ enum : int
     CTRL_D = 4,
     CTRL_U = 21,
     CTRL_W = 23,
+    CTRL_L = 12,
 
     PGDN = 338,
     PGUP = 339,

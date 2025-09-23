@@ -82,6 +82,7 @@ inline void seekFromInput() { g_pWin->seekFromInput(); }
 inline void subStringSearch() { g_pWin->subStringSearch(); }
 inline void increaseImageSize(long i) { player().setImgSize(player().m_imgHeight + i); }
 inline void restoreImageSize() { player().setImgSize(g_config.imageHeight); }
+inline void cleanRedraw() { window().m_bClear = true; player().m_bRedrawImage = true; }
 
 inline void
 testMsg()

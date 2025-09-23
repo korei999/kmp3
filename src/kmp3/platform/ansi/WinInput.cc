@@ -501,10 +501,9 @@ Win::procInput()
     {
         case Input::TYPE::KB:
         {
-            int wc = in.key;
             for (const auto& k : keybinds::inl_aKeys)
             {
-                if ((k.key > 0 && k.key == wc) || (k.ch > 0 && k.ch == u32(wc)))
+                if ((k.key > 0 && k.key == in.key) || (k.ch > 0 && k.ch == (u32)in.key))
                     keybinds::exec(k.pfn, k.arg);
             }
         }

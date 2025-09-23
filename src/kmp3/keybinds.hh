@@ -46,6 +46,7 @@ struct Key
 inline const Key inl_aKeys[] {
     /*  key                char   function                          arg */
     {keys::CTRL_C,     L'q',  (void*)app::quit,                  NONE                           },
+    {keys::CTRL_L,     {},    (void*)app::cleanRedraw,           NONE                           },
     {{},               L'/',  (void*)app::subStringSearch,       NONE                           },
     {keys::ARROWDOWN,  L'j',  (void*)app::focusNext,             NONE                           },
     {keys::ARROWUP,    L'k',  (void*)app::focusPrev,             NONE                           },
