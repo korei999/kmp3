@@ -128,7 +128,7 @@ void
 Win::wakeUp()
 {
     u64 t = 1;
-    write(m_aFdsWakeUp[1], &t, sizeof(t));
+    (void)write(m_aFdsWakeUp[1], &t, sizeof(t));
 }
 
 void
