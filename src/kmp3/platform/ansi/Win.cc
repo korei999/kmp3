@@ -84,6 +84,8 @@ Win::destroy()
     close(m_aFdsWakeUp[0]);
     close(m_aFdsWakeUp[1]);
 
+    m_sTitle.destroy();
+
     LogDebug("ansi::WinDestroy()\n");
 }
 

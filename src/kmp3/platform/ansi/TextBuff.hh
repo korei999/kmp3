@@ -150,6 +150,7 @@ struct TextBuff
     void hideCursor(bool bHide);
     void pushWChar(wchar_t wc);
     void clearKittyImages();
+    void setTitle(const adt::StringView svTitle);
     /* */
 
     /* main api (more efficient using damage tracking) */

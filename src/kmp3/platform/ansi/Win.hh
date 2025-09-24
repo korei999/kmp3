@@ -60,6 +60,7 @@ protected:
     adt::Timer m_timerResize {};
     bool m_bNeedsResize {};
     bool m_bImageJustRedrawn {};
+    adt::VStringM m_sTitle {};
 
     int m_aFdsWakeUp[2] {};
 
@@ -99,6 +100,7 @@ private:
 #ifdef OPT_CHAFA
     void coverImage();
 #endif
+    void updateTitle();
     void tooSmall(int width, int height);
     void info();
     void volume();

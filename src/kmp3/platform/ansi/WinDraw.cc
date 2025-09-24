@@ -46,6 +46,17 @@ Win::coverImage()
 #endif
 
 void
+Win::updateTitle()
+{
+    if (StringView(m_sTitle) != app::player().m_info.sTitle)
+    {
+        m_sTitle.reallocWith(app::player().m_info.sTitle);
+        m_textBuff.setTitle(m_sTitle);
+        LogDebug{"new title '{}'\n", m_sTitle};
+    }
+}
+
+void
 Win::tooSmall(int width, int height)
 {
     ArenaPushScope arenaScope {m_pArena};
@@ -415,6 +426,7 @@ Win::update()
 #ifdef OPT_CHAFA
         if (!app::g_bNoImage) coverImage();
 #endif
+        updateTitle();
         time();
         timeSlider();
         volume();

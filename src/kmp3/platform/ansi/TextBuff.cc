@@ -189,6 +189,14 @@ TextBuff::clearKittyImages()
 }
 
 void
+TextBuff::setTitle(const StringView svTitle)
+{
+    push("\x1b]0;");
+    push(svTitle);
+    push("\a");
+}
+
+void
 TextBuff::resizeBuffers(isize width, isize height)
 {
     m_vBack.setSize(width * height);
