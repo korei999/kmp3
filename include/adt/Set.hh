@@ -157,7 +157,7 @@ Set<T, FN_HASH>::emplace(IAllocator* p, ARGS&&... args)
         return res;
     }
 
-    utils::moveDestruct(&rBucket.key, std::move(tmpVal));
+    utils::destructiveMove(&rBucket.key, std::move(tmpVal));
 
     ++Base::m_nOccupied;
 

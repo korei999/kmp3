@@ -426,7 +426,7 @@ Vec<T>::growIfNeeded(IAllocator* p)
 {
     if (m_size >= m_capacity)
     {
-        isize newCap = utils::max(decltype(m_capacity)(SIZE_MIN), m_capacity * 2);
+        isize newCap = (m_capacity+1) * 2;
         ADT_ASSERT(newCap > m_capacity, "can't grow (capacity overflow), newCap: {}, m_capacity: {}", newCap, m_capacity);
         grow(p, newCap);
     }
@@ -441,7 +441,7 @@ Vec<T>::growOnSpanPush(IAllocator* p, const isize spanSize)
 
     if (m_size + spanSize > m_capacity)
     {
-        const isize newSize = utils::max(isize(8), nextPowerOf2(m_size + spanSize));
+        const isize newSize = (m_size + spanSize + 1) * 2;
         ADT_ASSERT(newSize > m_size, "overflow");
         grow(p, newSize);
     }

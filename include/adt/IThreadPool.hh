@@ -35,12 +35,12 @@ struct IThreadPool
         decltype(auto) waitData() noexcept; /* decltype(auto) for the <void> case. */
     };
 
-    static inline IThreadPool* g_threadPool;
+    static inline IThreadPool* g_pThreadPool;
 
     /* */
 
-    static void setGlobal(IThreadPool* pThreadPool) noexcept { g_threadPool = pThreadPool; }
-    static IThreadPool* inst() noexcept { return g_threadPool; }
+    static void setGlobal(IThreadPool* pThreadPool) noexcept { g_pThreadPool = pThreadPool; }
+    static IThreadPool* inst() noexcept { return g_pThreadPool; }
 
     static int optimalThreadCount() noexcept;
 

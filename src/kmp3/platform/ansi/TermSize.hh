@@ -72,8 +72,9 @@ getTermSize()
 namespace adt::print
 {
 
-inline u32
-format(Context* pCtx, FormatArgs fmtArgs, const platform::ansi::TermSize x)
+template<>
+inline isize
+format(Context* pCtx, FormatArgs fmtArgs, const platform::ansi::TermSize& x)
 {
     return formatVariadicStacked(pCtx, fmtArgs,
         "(width: ", x.width,

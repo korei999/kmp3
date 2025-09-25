@@ -73,7 +73,7 @@ Builder::print(const StringView fmt, const ARGS_T&... args)
     catch (const AllocException& ex)
     {
 #ifdef ADT_DBG_MEMORY
-        ex.printErrorMsg(stderr);
+        LogError{"{}\n", ex.what()};
 #endif
         if (m_size > 0) m_pData[--m_size] = '\0';
         else return {};
@@ -96,7 +96,7 @@ Builder::push(char c)
     {
         if (!m_pAlloc) return -1;
 
-        grow(utils::max(isize(8), m_cap * 2));
+        grow((m_cap+1) * 2);
     }
 
     m_pData[m_size++] = c;
@@ -112,7 +112,7 @@ Builder::push(const Span<const char> sp)
     {
         if (!m_pAlloc) return -1;
 
-        grow(utils::max(isize(8), nextPowerOf2(m_cap + sp.size())));
+        grow(2 * (m_cap + sp.size() + 1));
     }
 
     ::memcpy(m_pData + m_size, sp.data(), sp.size());
@@ -135,7 +135,7 @@ Builder::pushN(const char c, const isize nTimes)
     {
         if (!m_pAlloc) return -1;
 
-        grow(utils::max(isize(8), nextPowerOf2(m_cap + nTimes)));
+        grow(utils::max(isize(8), 2 * (m_cap + nTimes)));
     }
 
     ::memset(m_pData + m_size, c, nTimes);
@@ -146,13 +146,14 @@ Builder::pushN(const char c, const isize nTimes)
 inline void
 Builder::grow(isize newCap)
 {
+    ADT_ASSERT(newCap > 0, "{}", newCap);
     char* pNewData {};
 
     if (!m_bDataAllocated)
     {
         pNewData = m_pAlloc->zallocV<char>(newCap);
         m_bDataAllocated = true;
-        memcpy(pNewData, m_pData, m_size);
+        if (m_size > 0) ::memcpy(pNewData, m_pData, m_size);
     }
     else
     {
@@ -398,7 +399,7 @@ intToBuffer(T x, Span<char> spBuff, FormatArgs fmtArgs) noexcept
 }
 
 inline isize
-copyBackToContext(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
+pushUsingFmtArgs(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
 {
     isize i = 0;
     const char filler = fmtArgs.filler ? fmtArgs.filler : ' ';
@@ -443,7 +444,7 @@ copyBackToContext(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
 inline isize
 format(Context* pCtx, FormatArgs fmtArgs, const StringView sv)
 {
-    return copyBackToContext(pCtx, fmtArgs, sv);
+    return pushUsingFmtArgs(pCtx, fmtArgs, sv);
 }
 
 template<typename STRING_T>
@@ -452,7 +453,7 @@ inline isize
 format(Context* pCtx, FormatArgs fmtArgs, const STRING_T& str)
 {
     const isize realLen = strnlen(str.data(), str.size());
-    return copyBackToContext(pCtx, fmtArgs, {const_cast<char*>(str.data()), realLen});
+    return pushUsingFmtArgs(pCtx, fmtArgs, {const_cast<char*>(str.data()), realLen});
 }
 
 inline isize
@@ -503,7 +504,7 @@ format(Context* pCtx, FormatArgs fmtArgs, const wchar_t x)
     const isize n = snprintf(aBuff, utils::size(aBuff) - 1, "%lc", x);
 #endif
 
-    return copyBackToContext(pCtx, fmtArgs, {aBuff, n});
+    return pushUsingFmtArgs(pCtx, fmtArgs, {aBuff, n});
 }
 
 inline isize
@@ -518,7 +519,7 @@ format(Context* pCtx, FormatArgs fmtArgs, const char x)
     char aBuff[4] {};
     const isize n = snprintf(aBuff, utils::size(aBuff), "%c", x);
 
-    return copyBackToContext(pCtx, fmtArgs, {aBuff, n});
+    return pushUsingFmtArgs(pCtx, fmtArgs, {aBuff, n});
 }
 
 inline isize
@@ -677,8 +678,8 @@ formatFloat(Context* pCtx, FormatArgs fmtArgs, const T x)
         res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x);
     else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), x, std::chars_format::fixed, fmtArgs.maxFloatLen);
 
-    if (res.ptr) return copyBackToContext(pCtx, fmtArgs, {aBuff, res.ptr - aBuff});
-    else return copyBackToContext(pCtx, fmtArgs, {aBuff});
+    if (res.ptr) return pushUsingFmtArgs(pCtx, fmtArgs, {aBuff, res.ptr - aBuff});
+    else return pushUsingFmtArgs(pCtx, fmtArgs, {aBuff});
 }
 
 template<bool B_OPEN>
@@ -721,7 +722,7 @@ format(Context* pCtx, FormatArgs fmtArgs, const T x)
     if (fmtArgs.maxLen != std::numeric_limits<isize>::max() && fmtArgs.maxLen < utils::size(aBuff) - 1)
         aBuff[fmtArgs.maxLen] = '\0';
 
-    return copyBackToContext(pCtx, fmtArgs, {aBuff, n});
+    return pushUsingFmtArgs(pCtx, fmtArgs, {aBuff, n});
 }
 
 inline isize
@@ -782,7 +783,7 @@ toFILE(IAllocator* pAlloc, FILE* fp, const StringView fmt, const ARGS_T&... tArg
     catch (const AllocException& ex)
     {
 #ifdef ADT_DBG_MEMORY
-        ex.printErrorMsg(stderr);
+        LogError{"{}\n", ex.what()};
 #endif
     }
 
@@ -837,7 +838,7 @@ toString(IAllocator* pAlloc, isize prealloc, const StringView fmt, const ARGS_T&
     catch (const AllocException& ex)
     {
 #ifdef ADT_DBG_MEMORY
-        ex.printErrorMsg(stderr);
+        LogError{"{}\n", ex.what()};
 #endif
         if (builder.m_size > 0) builder.m_pData[--builder.m_size] = '\0';
         else return {};
@@ -892,7 +893,7 @@ formatExpSize(Context* pCtx, FormatArgs fmtArgs, const auto& x, const isize cont
 inline isize
 formatUntilEnd(Context* pCtx, FormatArgs fmtArgs, const auto& x)
 {
-    if (!x.data()) return copyBackToContext(pCtx, fmtArgs, "[]");
+    if (!x.data()) return pushUsingFmtArgs(pCtx, fmtArgs, "[]");
 
     if (pCtx->pBuilder->push('[') < 0) return 0;
     isize nWritten = 1;

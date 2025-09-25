@@ -3,25 +3,14 @@
 #include "ILogger.hh"
 #include "String.hh" /* IWYU pragma: keep */
 
-#define ADT_LOGGER_COL_NORM  "\x1b[0m"
-#define ADT_LOGGER_COL_RED  "\x1b[31m"
-#define ADT_LOGGER_COL_GREEN  "\x1b[32m"
-#define ADT_LOGGER_COL_YELLOW  "\x1b[33m"
-#define ADT_LOGGER_COL_BLUE  "\x1b[34m"
-#define ADT_LOGGER_COL_MAGENTA  "\x1b[35m"
-#define ADT_LOGGER_COL_CYAN  "\x1b[36m"
-#define ADT_LOGGER_COL_WHITE  "\x1b[37m"
-
 #ifdef _MSC_VER
     #include <io.h>
 #endif
 
-namespace adt
+namespace adt::print
 {
 
-namespace print
-{
-
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
 {
@@ -30,9 +19,7 @@ format(Context* ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
     return format(ctx, fmtArgs, mapStrings[(int)x + 1]);
 }
 
-} /* namespace print */
-
-} /* namespace adt */
+} /* namespace adt::print */
 
 #include "StdAllocator.hh"
 #include "IThreadPool.hh"
@@ -75,7 +62,7 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
         Arena* pArena = pTp->arena();
         if (pArena->memoryReserved() <= 0) goto fallbackToFixedBuffer;
 
-        ArenaPushScope arenaScope {pArena};
+        ArenaScope arenaScope {pArena};
         print::Builder pb {pArena, 512};
         StringView sv = pb.print(std::forward<ARGS>(args)...);
         while (pLogger->add(eLevel, loc, nullptr, sv) == ILogger::ADD_STATUS::FAILED)
@@ -235,7 +222,7 @@ struct LoggerNoSource : Logger
     using Logger::Logger;
 
     virtual isize
-    formatHeader(LEVEL eLevel, std::source_location, void* pExtra, Span<char> spBuff) noexcept override
+    formatHeader(LEVEL eLevel, std::source_location, void*, Span<char> spBuff) noexcept override
     {
         if (eLevel == LEVEL::NONE) return 0;
 

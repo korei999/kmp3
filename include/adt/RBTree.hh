@@ -29,8 +29,8 @@
 
 #include "IAllocator.hh"
 #include "String.hh"
-#include "logs.hh"
 #include "utils.hh"
+#include "ILogger.hh"
 
 #include <cstdio>
 
@@ -724,8 +724,8 @@ RBTree<T>::printNodes(
 {
     if (pNode)
     {
-        const StringView sCol = pNode->color() == RB_COLOR::BLACK ? ADT_LOGS_COL_BLUE : ADT_LOGS_COL_RED;
-        print::toFILE(pA, pF, "{}{} {}{}" ADT_LOGS_COL_NORM "\n", svPrefix, bLeft ? "|__" : "\\__", sCol, pNode->m_data);
+        const StringView sCol = pNode->color() == RB_COLOR::BLACK ? ADT_LOGGER_COL_BLUE : ADT_LOGGER_COL_RED;
+        print::toFILE(pA, pF, "{}{} {}{}" ADT_LOGGER_COL_NORM "\n", svPrefix, bLeft ? "|__" : "\\__", sCol, pNode->m_data);
 
         String sCat = StringCat(pA, svPrefix, bLeft ? "|   " : "    ");
         ADT_DEFER( pA->free(sCat.m_pData) );

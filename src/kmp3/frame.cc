@@ -53,7 +53,7 @@ run()
         }
         catch (const AllocException& ex)
         {
-            LogError{ex.getMsg()};
+            LogError{"{}\n", ex.what()};
         }
 
         pArena->reset();

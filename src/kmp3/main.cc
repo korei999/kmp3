@@ -22,7 +22,7 @@ static ArgvParser s_cmdParser;
 static void
 setTermEnv()
 {
-    const StringView svTerm = getenv("TERM");
+    const StringView svTerm = ::getenv("TERM");
     app::g_svTerm = svTerm;
 
     if (svTerm == "foot")
@@ -330,8 +330,8 @@ main(int argc, char** argv)
     {
         startup(argc, argv);
     }
-    catch (const IException& ex)
+    catch (const std::exception& ex)
     {
-        ex.printErrorMsg(stdout);
+        print::err("{}\n", ex.what());
     }
 }

@@ -59,7 +59,7 @@ Win::updateTitle()
 void
 Win::tooSmall(int width, int height)
 {
-    ArenaPushScope arenaScope {m_pArena};
+    ArenaScope arenaScope {m_pArena};
 
     using STYLE = TEXT_BUFF_STYLE;
 
@@ -134,7 +134,7 @@ Win::volume()
     const f32 vol = app::mixer().getVolume();
     const bool bMuted = app::mixer().isMuted();
 
-    ArenaPushScope arenaScope {m_pArena};
+    ArenaScope arenaScope {m_pArena};
     Span sp {m_pArena->zallocV<char>(width + 1), width + 1};
 
     const isize n = print::toSpan(sp, "volume: {:>3}", app::mixer().getVolume());
@@ -182,7 +182,7 @@ Win::volume()
 void
 Win::time()
 {
-    ArenaPushScope arenaScope {m_pArena};
+    ArenaScope arenaScope {m_pArena};
 
     const auto width = m_termSize.width;
     const int off = m_prevImgWidth + 2;
@@ -292,7 +292,7 @@ Win::scrollBar()
 void
 Win::bottomLine()
 {
-    ArenaPushScope arenaScope {m_pArena};
+    ArenaScope arenaScope {m_pArena};
 
     namespace c = common;
 
@@ -399,7 +399,7 @@ Win::update()
 
     if (!app::g_vol_bRunning) return;
 
-    ArenaPushScope arenaScope {m_pArena};
+    ArenaScope arenaScope {m_pArena};
 
     if (m_bNeedsResize)
     {

@@ -30,6 +30,7 @@
 #include "IAllocator.hh"
 #include "defer.hh"
 #include "print-inl.hh"
+#include "String.hh"
 
 namespace adt
 {

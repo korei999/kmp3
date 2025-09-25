@@ -1,9 +1,6 @@
 #pragma once
 
-#include "print.hh"
-
-#include <initializer_list>
-#include <new> /* IWYU pragma: keep */
+#include "utils.hh"
 
 namespace adt
 {
@@ -265,18 +262,5 @@ constexpr Array<T, CAP>::Array(const std::initializer_list<T> list)
     for (isize i = 0; i < size(); ++i)
         m_aData[i] = list.begin()[i];
 }
-
-namespace print
-{
-
-/* adapt to CON_T<T> template */
-template<typename T, isize CAP>
-inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const Array<T, CAP>& x)
-{
-    return print::format(pCtx, fmtArgs, Span(x.data(), x.size()));
-}
-
-} /* namespace print */
 
 } /* namespace adt */

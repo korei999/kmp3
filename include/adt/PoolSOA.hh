@@ -63,7 +63,7 @@ struct PoolSOA : public SOAArrayHolder<STRUCT, CAP, MEMBERS>...
             if (m_size == CAP)
             {
 #if !defined NDEBUG
-                print::err("PoolSOA::insert(): out of size, returning -1\n");
+                LogError("out of size, returning -1\n");
 #endif
                 return {.i = -1};
             }

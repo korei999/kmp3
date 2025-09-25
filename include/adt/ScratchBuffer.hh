@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Span.hh" /* IWYU pragma: keep */
-#include "IException.hh" /* IWYU pragma: keep */
+#include "Exception.hh" /* IWYU pragma: keep */
 
 #include <cstring>
 

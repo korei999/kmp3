@@ -85,7 +85,7 @@ PoolAllocator::allocBlock()
     Block* r = (Block*)m_pBackAlloc->zalloc(1, total);
 
 #if !defined NDEBUG && defined ADT_DBG_MEMORY
-    print::err("[PoolAllocator: {}, {}, {}]: new block of size: {}\n",
+    LogError("[PoolAllocator: {}, {}, {}]: new block of size: {}\n",
         print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_blockCap
     );
 #endif

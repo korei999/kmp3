@@ -822,7 +822,7 @@ VString::push(IAllocator* pAlloc, char c)
     {
         ADT_ASSERT(m_cap > 16, "{}", m_cap);
 
-        if (m_size >= m_cap) grow(pAlloc, m_cap * 2);
+        if (m_size >= m_cap) grow(pAlloc, (m_cap+1) * 2);
 
         m_pData[m_size++] = c;
         return m_size - 1;
@@ -838,7 +838,7 @@ VString::push(IAllocator* pAlloc, const StringView sv)
         const isize firstSize = ::strnlen(m_aBuff, 16);
         if (sv.m_size + firstSize + 1 > 16)
         {
-            const isize newCap = nextPowerOf2(sv.m_size + firstSize + 1);
+            const isize newCap = (sv.m_size + firstSize + 1) * 2;
             char* pNew = pAlloc->zallocV<char>(newCap);
             ::memcpy(pNew, m_aBuff, firstSize);
             ::memcpy(pNew + firstSize, sv.m_pData, sv.m_size);
@@ -860,7 +860,7 @@ VString::push(IAllocator* pAlloc, const StringView sv)
         ADT_ASSERT(m_cap > 16, "{}", m_cap);
 
         if (m_size + sv.m_size >= m_cap)
-            grow(pAlloc, nextPowerOf2(m_cap + sv.m_size));
+            grow(pAlloc, 2 * (m_cap + sv.m_size));
 
         ::memcpy(m_pData + m_size, sv.m_pData, sv.m_size);
         const isize ret = m_size;
@@ -876,12 +876,12 @@ VString::reallocWith(IAllocator* pAlloc, const StringView sv)
 
     if (m_cap <= 16)
     {
-        const isize firstSize = ::strnlen(m_aBuff, 16);
         if (sv.m_size > 15)
         {
-            const isize newCap = nextPowerOf2(sv.m_size + 1);
-            char* pNew = pAlloc->zallocV<char>(newCap);
+            const isize newCap = sv.m_size + 1;
+            char* pNew = pAlloc->mallocV<char>(newCap);
             ::memcpy(pNew, sv.m_pData, sv.m_size);
+            pNew[sv.m_size] = '\0';
             m_pData = pNew;
             m_size = sv.m_size;
             m_cap = newCap;
@@ -894,7 +894,7 @@ VString::reallocWith(IAllocator* pAlloc, const StringView sv)
     }
     else
     {
-        if (sv.m_size + 1 > m_cap) grow(pAlloc, nextPowerOf2(sv.m_size + 1));
+        if (sv.m_size + 1 > m_cap) grow(pAlloc, (sv.m_size+1) * 2);
         ::memcpy(m_pData, sv.m_pData, sv.m_size);
         m_pData[sv.m_size] = '\0';
         m_size = sv.m_size;

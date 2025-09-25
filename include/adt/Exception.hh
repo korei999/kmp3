@@ -3,6 +3,7 @@
 #include "print-inl.hh"
 
 #include <source_location>
+#include <exception>
 
 #define ADT_RUNTIME_EXCEPTION(CND)                                                                                     \
     if (!static_cast<bool>(CND))                                                                                       \
@@ -13,7 +14,10 @@
     {                                                                                                                  \
         adt::RuntimeException ex;                                                                                      \
         auto& aMsgBuff = ex.m_sfMsg.data();                                                                            \
-        adt::isize n = adt::print::toBuffer(aMsgBuff, sizeof(aMsgBuff) - 1, #CND);                                     \
+        adt::isize n = adt::print::toBuffer(                                                                           \
+            aMsgBuff, sizeof(aMsgBuff) - 1, "(RuntimeException, {}, {}): condition '" #CND "' failed",                 \
+            print::shorterSourcePath(__FILE__), __LINE__                                                               \
+        );                                                                                                             \
         n += adt::print::toBuffer(aMsgBuff + n, sizeof(aMsgBuff) - 1 - n, "\nMsg: ");                                  \
         n += adt::print::toBuffer(aMsgBuff + n, sizeof(aMsgBuff) - 1 - n, __VA_ARGS__);                                \
         throw ex;                                                                                                      \
@@ -22,46 +26,32 @@
 namespace adt
 {
 
-struct IException
-{
-    IException() = default;
-    virtual ~IException() = default;
-
-    /* */
-
-    virtual void printErrorMsg(FILE* fp) const = 0;
-    virtual StringView getMsg() const = 0;
-};
-
-struct RuntimeException : public IException
+struct RuntimeException : public std::exception
 {
     StringFixed<256> m_sfMsg {};
-    std::source_location m_loc {};
 
 
     /* */
 
-    RuntimeException(std::source_location loc = std::source_location::current()) : m_sfMsg {}, m_loc {loc} {}
-    RuntimeException(const StringView svMsg, std::source_location loc = std::source_location::current())
-        : m_sfMsg(svMsg), m_loc {loc} {}
+    RuntimeException() = default;
+    RuntimeException(const StringView svMsg, std::source_location loc = std::source_location::current()) noexcept;
 
     virtual ~RuntimeException() = default;
 
     /* */
 
-    virtual void
-    printErrorMsg(FILE* fp) const override
-    {
-        char aBuff[256] {};
-        print::toSpan(aBuff, "RuntimeException: ({}, {}): {}\n", print::shorterSourcePath(m_loc.file_name()), m_loc.line(), m_sfMsg);
-        fputs(aBuff, fp);
-    };
-
-    virtual StringView
-    getMsg() const override
-    {
-        return m_sfMsg;
-    }
+    virtual const char* what() const noexcept override { return m_sfMsg.data(); }
 };
+
+inline
+RuntimeException::RuntimeException(const StringView svMsg, std::source_location loc) noexcept
+{
+    print::toSpan(m_sfMsg.data(),
+        "(RuntimeException, {}, {}): '{}'\n",
+        print::shorterSourcePath(loc.file_name()),
+        loc.line(),
+        svMsg
+    );
+}
 
 } /* namespace adt */

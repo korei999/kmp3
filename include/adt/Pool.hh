@@ -192,7 +192,9 @@ Pool<T, CAP>::insert()
 
     if (m_aFreeSlots.empty())
     {
-        print::err("pool is empty, returning -1\n");
+#ifndef NDEBUG
+        LogError("pool is empty, returning -1\n");
+#endif
         return ret;
     }
 

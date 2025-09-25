@@ -1479,6 +1479,7 @@ transformation(const V3& translation, const V3& scale)
 namespace adt::print
 {
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::V2& x)
 {
@@ -1486,6 +1487,7 @@ format(Context* ctx, FormatArgs fmtArgs, const math::V2& x)
     return formatVariadic(ctx, fmtArgs, x.x, x.y);
 }
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::V3& x)
 {
@@ -1493,6 +1495,7 @@ format(Context* ctx, FormatArgs fmtArgs, const math::V3& x)
     return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z);
 }
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::V4& x)
 {
@@ -1500,6 +1503,7 @@ format(Context* ctx, FormatArgs fmtArgs, const math::V4& x)
     return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::IV4& x)
 {
@@ -1507,6 +1511,7 @@ format(Context* ctx, FormatArgs fmtArgs, const math::IV4& x)
     return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::IV4u16& x)
 {
@@ -1514,12 +1519,14 @@ format(Context* ctx, FormatArgs fmtArgs, const math::IV4u16& x)
     return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
 }
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::Qt& x)
 {
     return format(ctx, fmtArgs, x.base);
 }
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::M2& x)
 {
@@ -1529,6 +1536,7 @@ format(Context* ctx, FormatArgs fmtArgs, const math::M2& x)
     );
 }
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::M3& x)
 {
@@ -1539,6 +1547,7 @@ format(Context* ctx, FormatArgs fmtArgs, const math::M3& x)
     );
 }
 
+template<>
 inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::M4& x)
 {

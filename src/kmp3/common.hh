@@ -18,7 +18,7 @@ subStringSearch(
 )
 {
     using namespace adt;
-    ArenaPushScope arenaScope {pArena};
+    ArenaScope arenaScope {pArena};
 
     auto& pl = *app::g_pPlayer;
 

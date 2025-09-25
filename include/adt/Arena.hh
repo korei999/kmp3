@@ -17,13 +17,13 @@
 namespace adt
 {
 
-struct ArenaPushScope;
+struct ArenaScope;
 
 struct Arena : IArena
 {
-    friend ArenaPushScope;
+    friend ArenaScope;
 
-    using PfnDeleter = void(*)(Arena*, void**);
+    using PfnDeleter = void(*)(void**);
 
     struct DeleterNode
     {
@@ -51,7 +51,7 @@ struct Arena : IArena
         }
 
         template<typename ...ARGS>
-        Ptr(void (*pfn)(Arena*, Ptr*), Arena* pArena, ARGS&&... args)
+        Ptr(void (*pfn)(Ptr*), Arena* pArena, ARGS&&... args)
             : ListNodeType{nullptr, {(void**)this, (PfnDeleter)pfn}},
               m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
         {
@@ -61,18 +61,16 @@ struct Arena : IArena
         /* */
 
         static void
-        nullptrDeleter(Arena*, Ptr* pPtr) noexcept
+        nullptrDeleter(Ptr* pPtr) noexcept
         {
-            if constexpr (!std::is_trivially_destructible_v<T>)
-                pPtr->m_pData->~T();
+            utils::destruct(pPtr->m_pData);
             pPtr->m_pData = nullptr;
         };
 
         static void
-        simpleDeleter(Arena*, Ptr* pPtr) noexcept
+        simpleDeleter(Ptr* pPtr) noexcept
         {
-            if constexpr (!std::is_trivially_destructible_v<T>)
-                pPtr->m_pData->~T();
+            utils::destruct(pPtr->m_pData);
         };
 
         /* */
@@ -94,7 +92,7 @@ struct Arena : IArena
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
     SList<DeleterNode> m_lDeleters {}; /* Run deleters on reset()/freeAll() or state restorations. */
-    SList<DeleterNode>* m_pLCurrentDeleters = &m_lDeleters; /* Switch and restore current list on ArenaPushScope changes. */
+    SList<DeleterNode>* m_pLCurrentDeleters = &m_lDeleters; /* Switch and restore current list on ArenaScope changes. */
 
     /* */
 
@@ -124,15 +122,18 @@ struct Arena : IArena
     isize memoryCommited() const noexcept { return m_commited; }
 
 protected:
-    ADT_NO_UB void runDeleters() noexcept; /* Type casting function pointers here. */
+    /* BUG: asan sees it as stack-use-after-scope when running a deleter after variable's scope closes (its fine just ignore). */
+    ADT_NO_UB void runDeleters() noexcept;
+
     void growIfNeeded(isize newPos);
     void commit(void* p, isize size);
     void decommit(void* p, isize size);
 };
 
+/* Capture current state to restore it later with restore(). */
 struct ArenaState
 {
-    isize m_off {};
+    isize m_pos {};
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
     SList<Arena::DeleterNode>* m_pLCurrentDeleters {};
@@ -142,7 +143,7 @@ struct ArenaState
     void restore(Arena* pArena) noexcept;
 };
 
-struct ArenaPushScope
+struct ArenaScope
 {
     Arena* m_pArena {};
     SList<Arena::DeleterNode> m_lDeleters {};
@@ -150,24 +151,25 @@ struct ArenaPushScope
 
     /* */
 
-    ArenaPushScope(Arena* p) noexcept;
-    ~ArenaPushScope() noexcept;
+    ArenaScope(Arena* p) noexcept;
+    ~ArenaScope() noexcept;
 };
 
 inline void
 ArenaState::restore(Arena* pArena) noexcept
 {
-    pArena->m_pos = m_off;
+    ADT_ASAN_POISON((u8*)pArena->m_pData + pArena->m_pos, pArena->m_pos - m_pos);
+    pArena->m_pos = m_pos;
     pArena->m_pLastAlloc = m_pLastAlloc;
     pArena->m_lastAllocSize = m_lastAllocSize;
     pArena->m_pLCurrentDeleters = m_pLCurrentDeleters;
 }
 
 inline
-ArenaPushScope::ArenaPushScope(Arena* p) noexcept
+ArenaScope::ArenaScope(Arena* p) noexcept
     : m_pArena{p},
       m_state{
-          .m_off = p->m_pos,
+          .m_pos = p->m_pos,
           .m_pLastAlloc = p->m_pLastAlloc,
           .m_lastAllocSize = p->m_lastAllocSize,
           .m_pLCurrentDeleters = p->m_pLCurrentDeleters
@@ -177,7 +179,7 @@ ArenaPushScope::ArenaPushScope(Arena* p) noexcept
 }
 
 inline
-ArenaPushScope::~ArenaPushScope() noexcept
+ArenaScope::~ArenaScope() noexcept
 {
     m_pArena->runDeleters();
     m_state.restore(m_pArena);
@@ -358,7 +360,7 @@ inline void
 Arena::runDeleters() noexcept
 {
     for (auto e : *m_pLCurrentDeleters)
-        e.pfnDelete(this, e.ppObj);
+        e.pfnDelete(e.ppObj);
 
     m_pLCurrentDeleters->m_pHead = nullptr;
 }
@@ -374,8 +376,8 @@ Arena::growIfNeeded(isize newPos)
         m_commited = newCommited;
     }
 
+    ADT_ASAN_UNPOISON((u8*)m_pData + m_pos, newPos - m_pos);
     m_pos = newPos;
-    ADT_ASAN_UNPOISON(m_pData, m_pos);
 }
 
 inline void

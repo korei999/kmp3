@@ -16,7 +16,7 @@ namespace adt::utils
 
 template<typename T, typename ...ARGS>
 inline void
-moveDestruct(T* pVal, ARGS&&... args)
+destructiveMove(T* pVal, ARGS&&... args)
 {
     T tmp = T (std::forward<ARGS>(args)...);
     new(pVal) T (std::move(tmp));

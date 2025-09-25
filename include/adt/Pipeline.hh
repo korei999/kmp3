@@ -135,7 +135,7 @@ Pipeline::stageLoop(void* pStage)
     auto& pipeline = *stage.pThisPipeline;
     auto& atomBDone = pipeline.m_atomBDone;
 
-    ADT_DEFER( print::err("[Pipeline]: stage({}) done\n", stage.stageId) );
+    ADT_DEFER( LogDebug("[Pipeline]: stage({}) done\n", stage.stageId) );
 
     while (true)
     {
@@ -167,7 +167,7 @@ Pipeline::stageLoop(void* pStage)
             }
             catch (const AllocException& ex)
             {
-                ex.printErrorMsg(stderr);
+                LogError{"{}\n", ex.what()};
             }
         }
         else

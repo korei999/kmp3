@@ -292,14 +292,14 @@ Map<K, V, FN_HASH>::emplaceHashed(IAllocator* p, const K& key, const usize keyHa
     V tmpVal = V (std::forward<ARGS>(args)...);
 
     ADT_DEFER(
-        utils::moveDestruct(&bucket.val, std::move(tmpVal));
+        utils::destructiveMove(&bucket.val, std::move(tmpVal));
         bucket.eFlags = MAP_BUCKET_FLAGS::OCCUPIED;
     );
 
     if (bucket.key == key)
     {
 #ifndef NDEBUG
-        print::err("[Map::emplace]: updating value for existing key('{}'): old: '{}', new: '{}'\n",
+        LogWarn("updating value for existing key('{}'): old: '{}', new: '{}'\n",
             key, bucket.val, tmpVal
         );
 #endif
@@ -311,7 +311,7 @@ Map<K, V, FN_HASH>::emplaceHashed(IAllocator* p, const K& key, const usize keyHa
         };
     }
 
-    if constexpr (!std::is_trivially_destructible_v<K>) bucket.key.~K();
+    utils::destruct(&bucket.key);
     new(&bucket.key) K(key);
 
     ++m_nOccupied;
@@ -343,12 +343,10 @@ Map<K, V, FN_HASH>::remove(isize i)
 {
     auto& bucket = m_vBuckets[i];
 
-    if constexpr (!std::is_trivially_destructible_v<K>)
-        bucket.key.~K();
+    utils::destruct(&bucket.key);
     new(&bucket.key) K {};
 
-    if constexpr (!std::is_trivially_destructible_v<V>)
-        bucket.val.~V();
+    utils::destruct(&bucket.val);
     new(&bucket.val) V {};
 
     bucket.eFlags = MAP_BUCKET_FLAGS::DELETED;
@@ -474,7 +472,7 @@ Map<K, V, FN_HASH>::searchHashed(const K& key, usize keyHash) const
             break;
         }
 
-        idx = utils::cycleForwardPowerOf2(idx, m_vBuckets.size());
+        idx = (idx + 1) & (m_vBuckets.size() - 1);
     }
 
     return res;
@@ -499,9 +497,9 @@ Map<K, V, FN_HASH>::insertionIdx(usize hash, const K& key) const
         if (m_vBuckets[idx].key == key) break;
 
 #if !defined NDEBUG && defined ADT_DBG_COLLISIONS
-        print::err("[Map::insertionIdx]: collision at: {} (keys: '{}' and '{}'), nCollisions: {}\n", idx, key, m_vBuckets[idx].key, m_nCollisions++);
+        LogWarn("collision at: {} (keys: '{}' and '{}'), nCollisions: {}\n", idx, key, m_vBuckets[idx].key, m_nCollisions++);
 #endif
-        idx = utils::cycleForwardPowerOf2(idx, m_vBuckets.size());
+        idx = (idx + 1) & (m_vBuckets.size() - 1);
     }
 
     return idx;
@@ -513,7 +511,7 @@ Map<K, V, FN_HASH>::Map(IAllocator* pAllocator, isize prealloc, f32 loadFactor)
       m_nOccupied {},
       m_maxLoadFactor {loadFactor}
 {
-    ADT_ASSERT(isPowerOf2(m_vBuckets.cap()), "");
+    ADT_ASSERT(isPowerOf2(m_vBuckets.cap()), "{}", m_vBuckets.cap());
     m_vBuckets.setSize(pAllocator, m_vBuckets.cap());
 }
 
@@ -567,8 +565,9 @@ using MapM = MapManaged<K, V, StdAllocatorNV, FN_HASH>;
 namespace print
 {
 
+template<>
 inline isize
-format(Context* ctx, FormatArgs fmtArgs, const MAP_RESULT_STATUS eStatus)
+format(Context* ctx, FormatArgs fmtArgs, const MAP_RESULT_STATUS& eStatus)
 {
     constexpr StringView map[] {
         "NOT_FOUND", "FOUND", "INSERTED"

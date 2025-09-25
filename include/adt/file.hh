@@ -35,7 +35,7 @@ load(IAllocator* pAlloc, const char* ntsPath)
     {
 fail:
 #ifndef NDEBUG
-        print::err("[file::load]: failed to open '{}' file\n", ntsPath);
+        LogError("failed to open '{}' file\n", ntsPath);
 #endif
         return {};
     }
@@ -48,7 +48,7 @@ fail:
     if (ftellSize <= 0 || ftellSize >= std::numeric_limits<decltype(ftellSize)>::max())
     {
 #ifndef NDEBUG
-        print::err("[file::load]: bad size: '{}'\n", ftellSize);
+        LogError("bad size: '{}'\n", ftellSize);
 #endif
         goto fail;
     }
@@ -74,7 +74,7 @@ load(const char* ntsPath)
     {
 fail:
 #ifndef NDEBUG
-        print::err("[file::load]: failed to open '{}' file\n", ntsPath);
+        LogError("failed to open '{}' file\n", ntsPath);
 #endif
         return {};
     }
@@ -87,7 +87,7 @@ fail:
     if (ftellSize <= 0 || ftellSize >= std::numeric_limits<decltype(ftellSize)>::max())
     {
 #ifndef NDEBUG
-        print::err("[file::load]: bad size: '{}'\n", ftellSize);
+        LogError("bad size: '{}'\n", ftellSize);
 #endif
         goto fail;
     }
@@ -159,7 +159,7 @@ fileType(const char* ntsPath)
     if (err != 0)
     {
 #ifndef NDEBUG
-        print::err("stat(): err: {}\n", err);
+        LogError("stat(): err: {}\n", err);
 #endif
         return TYPE::UNHANDLED;
     }
@@ -212,7 +212,7 @@ map(const char* ntsPath)
     if (fd == -1)
     {
 #ifndef NDEBUG
-        print::err("[file::map]: failed to open() '{}'\n", ntsPath);
+        LogError("failed to open() '{}'\n", ntsPath);
 #endif
         return {};
     }
@@ -223,7 +223,7 @@ map(const char* ntsPath)
     if (fstat(fd, &sb) == -1)
     {
 #ifndef NDEBUG
-        print::err("[file::map]: fstat() failed\n");
+        LogError("fstat() failed\n");
 #endif
         return {};
     }
@@ -234,7 +234,7 @@ map(const char* ntsPath)
     if (pData == MAP_FAILED)
     {
 #ifndef NDEBUG
-        print::err("[file::map]: mmap() failed\n");
+        LogError("mmap() failed\n");
 #endif
         return {};
     }
@@ -254,8 +254,9 @@ map(const char* ntsPath)
 namespace adt::print
 {
 
+template<>
 inline isize
-format(Context* pCtx, FormatArgs fArgs, file::TYPE e)
+format(Context* pCtx, FormatArgs fArgs, const file::TYPE& e)
 {
     static const char* map[] { "UNHANDLED", "FILE", "DIRECTORY", "ESIZE" };
     ADT_ASSERT((int)e <= (int)file::TYPE::ESIZE, "{}", (int)e);
