@@ -3,9 +3,6 @@
 #include "print-inl.hh"
 
 #include <source_location>
-#include <cerrno>
-#include <cstdio>
-#include <cstring>
 #include <utility>
 #include <new> /* IWYU pragma: keep */
 
@@ -103,7 +100,6 @@ struct AllocatorHelperCRTP
     [[nodiscard]] constexpr T*
     relocate(T* p, usize oldCount, usize newCount) noexcept(false) /* AllocException */
     {
-        /* NOTE: Just never use self referential types and we good. */
         if constexpr (std::is_trivially_destructible_v<T>)
         {
             return reallocV<T>(p, oldCount, newCount);
@@ -116,7 +112,8 @@ struct AllocatorHelperCRTP
             for (usize i = 0; i < oldCount; ++i)
             {
                 new(pNew + i) T {std::move(p[i])};
-                p[i].~T();
+                if constexpr (!std::is_trivially_destructible_v<T>)
+                    p[i].~T();
             }
 
             static_cast<BASE*>(this)->free(p);

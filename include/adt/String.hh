@@ -6,7 +6,6 @@
 #include "IAllocator.hh"
 #include "utils.hh"
 #include "Span.hh" /* IWYU pragma: keep */
-#include "print.hh" /* IWYU pragma: keep */
 
 #ifdef _MSC_VER
     #include "wcwidth.hh"

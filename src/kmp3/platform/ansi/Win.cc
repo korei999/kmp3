@@ -4,7 +4,6 @@
 #include "common.hh"
 
 #include <csignal>
-#include <unistd.h>
 
 using namespace adt;
 

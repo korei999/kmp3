@@ -200,14 +200,7 @@ function(allPackageFlags)
     endif()
 endfunction()
 
-file(GLOB_RECURSE ADT_PRECOMPILED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/*")
-if (NOT OPT_MIMALLOC)
-    list(REMOVE_ITEM
-        ADT_PRECOMPILED_HEADERS
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/adt/MiMalloc.hh"
-    )
-endif()
-
+include(adtlib.cmake)
 add_library(ADTLIB_PCH INTERFACE)
 target_precompile_headers(ADTLIB_PCH INTERFACE
     "$<$<COMPILE_LANGUAGE:CXX>:${ADT_PRECOMPILED_HEADERS}>"
