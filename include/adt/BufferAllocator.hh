@@ -17,7 +17,7 @@ struct BufferAllocator : public IArena
     usize m_cap = 0;
     void* m_pLastAlloc = nullptr;
     usize m_lastAllocSize = 0;
-    
+
     /* */
 
     BufferAllocator() = default;

@@ -737,7 +737,7 @@ StringCat(IAllocator* p, const StringView& l, const StringView& r)
 inline void
 VString::destroy(IAllocator* pAlloc) noexcept
 {
-    if (m_cap >= 17) pAlloc->free(m_pData);
+    if (m_cap >= 17) pAlloc->free(m_allocated.pData);
     m_cap = 16;
     ::memset(m_aBuff, 0, 16);
 }
@@ -746,14 +746,14 @@ inline char*
 VString::data() noexcept
 {
     if (m_cap <= 16) return m_aBuff;
-    else return m_pData;
+    else return m_allocated.pData;
 }
 
 inline const char*
 VString::data() const noexcept
 {
     if (m_cap <= 16) return m_aBuff;
-    else return m_pData;
+    else return m_allocated.pData;
 }
 
 inline bool
@@ -766,7 +766,7 @@ inline isize
 VString::size() const noexcept
 {
     if (m_cap <= 16) return ::strnlen(m_aBuff, 16);
-    else return m_size;
+    else return m_allocated.size;
 }
 
 inline isize
@@ -785,12 +785,21 @@ VString::VString(IAllocator* pAlloc, const StringView sv)
     }
     else
     {
-        m_pData = pAlloc->mallocV<char>(sv.m_size + 1);
-        ::memcpy(m_pData, sv.m_pData, sv.m_size);
-        m_pData[sv.m_size] = '\0';
+        m_allocated.pData = pAlloc->mallocV<char>(sv.m_size + 1);
+        ::memcpy(m_allocated.pData, sv.m_pData, sv.m_size);
+        m_allocated.pData[sv.m_size] = '\0';
         m_cap = sv.m_size + 1;
-        m_size = sv.m_size;
+        m_allocated.size = sv.m_size;
     }
+}
+
+inline
+VString::VString(IAllocator* pAlloc, isize prealloc)
+{
+    const isize newCap = utils::max(17ll, prealloc);
+    m_allocated.pData = pAlloc->zallocV<char>(newCap);
+    m_allocated.size = 0;
+    m_cap = newCap;
 }
 
 inline isize
@@ -807,8 +816,8 @@ VString::push(IAllocator* pAlloc, char c)
             ::memcpy(pNew, m_aBuff, firstSize);
             pNew[firstSize] = c;
 
-            m_pData = pNew;
-            m_size = firstSize + 1;
+            m_allocated.pData = pNew;
+            m_allocated.size = firstSize + 1;
             m_cap = newCap;
 
             return firstSize;
@@ -821,10 +830,10 @@ VString::push(IAllocator* pAlloc, char c)
     {
         ADT_ASSERT(m_cap > 16, "{}", m_cap);
 
-        if (m_size >= m_cap) grow(pAlloc, (m_cap+1) * 2);
+        if (m_allocated.size >= m_cap) grow(pAlloc, (m_cap+1) * 2);
 
-        m_pData[m_size++] = c;
-        return m_size - 1;
+        m_allocated.pData[m_allocated.size++] = c;
+        return m_allocated.size - 1;
     }
 }
 
@@ -842,8 +851,8 @@ VString::push(IAllocator* pAlloc, const StringView sv)
             ::memcpy(pNew, m_aBuff, firstSize);
             ::memcpy(pNew + firstSize, sv.m_pData, sv.m_size);
 
-            m_pData = pNew;
-            m_size = firstSize + sv.m_size;
+            m_allocated.pData = pNew;
+            m_allocated.size = firstSize + sv.m_size;
             m_cap = newCap;
 
             return firstSize;
@@ -858,12 +867,12 @@ VString::push(IAllocator* pAlloc, const StringView sv)
     {
         ADT_ASSERT(m_cap > 16, "{}", m_cap);
 
-        if (m_size + sv.m_size >= m_cap)
+        if (m_allocated.size + sv.m_size >= m_cap)
             grow(pAlloc, 2 * (m_cap + sv.m_size));
 
-        ::memcpy(m_pData + m_size, sv.m_pData, sv.m_size);
-        const isize ret = m_size;
-        m_size += sv.m_size;
+        ::memcpy(m_allocated.pData + m_allocated.size, sv.m_pData, sv.m_size);
+        const isize ret = m_allocated.size;
+        m_allocated.size += sv.m_size;
         return ret;
     }
 }
@@ -881,8 +890,8 @@ VString::reallocWith(IAllocator* pAlloc, const StringView sv)
             char* pNew = pAlloc->mallocV<char>(newCap);
             ::memcpy(pNew, sv.m_pData, sv.m_size);
             pNew[sv.m_size] = '\0';
-            m_pData = pNew;
-            m_size = sv.m_size;
+            m_allocated.pData = pNew;
+            m_allocated.size = sv.m_size;
             m_cap = newCap;
 
             return;
@@ -894,9 +903,9 @@ VString::reallocWith(IAllocator* pAlloc, const StringView sv)
     else
     {
         if (sv.m_size + 1 > m_cap) grow(pAlloc, (sv.m_size+1) * 2);
-        ::memcpy(m_pData, sv.m_pData, sv.m_size);
-        m_pData[sv.m_size] = '\0';
-        m_size = sv.m_size;
+        ::memcpy(m_allocated.pData, sv.m_pData, sv.m_size);
+        m_allocated.pData[sv.m_size] = '\0';
+        m_allocated.size = sv.m_size;
     }
 }
 
@@ -915,8 +924,8 @@ VString::removeNLEnd(bool bDestructive) noexcept
     }
     else
     {
-        pData = m_pData;
-        size = m_size;
+        pData = m_allocated.pData;
+        size = m_allocated.size;
     }
 
     while (size > 0 && (pData[size - 1] == '\n' || pData[size - 1] == '\r'))
@@ -925,14 +934,14 @@ VString::removeNLEnd(bool bDestructive) noexcept
         --size;
     }
 
-    if (m_cap > 16) m_size = size;
+    if (m_cap > 16) m_allocated.size = size;
 }
 
 inline void
 VString::grow(IAllocator* pAlloc, isize newCap)
 {
     ADT_ASSERT(m_cap >= 17, "{}", m_cap);
-    m_pData = pAlloc->reallocV<char>(m_pData, m_size, newCap);
+    m_allocated.pData = pAlloc->reallocV<char>(m_allocated.pData, m_allocated.size, newCap);
     m_cap = newCap;
 }
 

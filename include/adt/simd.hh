@@ -51,8 +51,8 @@ struct i32x4
 
     /* */
 
-    i32* data() { return reinterpret_cast<i32*>(&pack); }
-    const i32* data() const { return (i32*)(&pack); }
+    decltype(auto) data() { return reinterpret_cast<i32(&)[4]>(*this); }
+    decltype(auto) data() const { return reinterpret_cast<const i32(&)[4]>(*this); }
 
     i32& operator[](int i)             { ADT_ASSERT(i >= 0 && i < 4, "out of range, should be (>= 0 && < 4)"); return data()[i]; }
     const i32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 4, "out of range, should be (>= 0 && < 4)"); return data()[i]; }
@@ -100,8 +100,8 @@ struct f32x4
 
     explicit operator i32x4() const { return i32x4{_mm_cvtps_epi32(pack)}; }
 
-    f32* data() { return reinterpret_cast<f32*>(&pack); }
-    const f32* data() const { return (f32*)(&pack); }
+    decltype(auto) data() { return reinterpret_cast<f32(&)[4]>(*this); }
+    decltype(auto) data() const { return reinterpret_cast<const f32(&)[4]>(*this); }
 
     f32& operator[](int i)             { ADT_ASSERT(i >= 0 && i < 4, "out of range, should be (>= 0 && < 4)"); return data()[i]; }
     const f32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 4, "out of range, should be (>= 0 && < 4)"); return data()[i]; }
@@ -289,7 +289,7 @@ f32x4::operator<(const f32x4& r) const
 inline i32x4
 i32x4::operator>=(const i32x4& r) const
 {
-    return i32x4{_mm_cmpgt_epi32(pack, r.pack) | _mm_cmpeq_epi32(pack, r.pack)};
+    return i32x4{_mm_cmpgt_epi32(pack, r.pack)} | i32x4{_mm_cmpeq_epi32(pack, r.pack)};
 }
 
 inline i32x4
@@ -413,8 +413,8 @@ struct i32x8
 
     /* */
 
-    i32* data() { return reinterpret_cast<i32*>(this); }
-    const i32* data() const { return (i32*)(this); }
+    decltype(auto) data() { return reinterpret_cast<i32(&)[8]>(*this); }
+    decltype(auto) data() const { return reinterpret_cast<const i32(&)[8]>(*this); }
 
     i32& operator[](int i)             { ADT_ASSERT(i >= 0 && i < 8, "out of range, should be (>= 0 && < 8) got: {}", i); return data()[i]; }
     const i32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 8, "out of range, should be (>= 0 && < 8) got: {}", i); return data()[i]; }
@@ -449,6 +449,12 @@ struct f32x8
     f32x8(i32x8 _pack) : pack {_mm256_cvtepi32_ps(_pack.pack)} {}
 
     /* */
+
+    decltype(auto) data() { return reinterpret_cast<f32(&)[8]>(*this); }
+    decltype(auto) data() const { return reinterpret_cast<const f32(&)[8]>(*this); }
+
+    f32& operator[](int i)             { ADT_ASSERT(i >= 0 && i < 8, "out of range, should be (>= 0 && < 8) got: {}", i); return data()[i]; }
+    const f32& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 8, "out of range, should be (>= 0 && < 8) got: {}", i); return data()[i]; }
 
     explicit operator __m256() const { return pack; }
 
@@ -640,7 +646,7 @@ f32x8::operator<(const f32x8& r) const
 inline i32x8
 i32x8::operator>=(const i32x8& r) const
 {
-    return i32x8{_mm256_cmpgt_epi32(pack, r.pack) | _mm256_cmpeq_epi32(pack, r.pack)};
+    return i32x8{_mm256_cmpgt_epi32(pack, r.pack)} | i32x8{_mm256_cmpeq_epi32(pack, r.pack)};
 }
 
 inline i32x8

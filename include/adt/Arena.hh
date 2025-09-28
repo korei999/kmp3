@@ -75,10 +75,13 @@ struct Arena : IArena
 
         /* */
 
-        explicit operator bool() noexcept { return m_pData != nullptr; }
+        explicit operator bool() const noexcept { return m_pData != nullptr; }
 
         T& operator*() noexcept { ADT_ASSERT(m_pData != nullptr, ""); return *m_pData; }
+        const T& operator*() const noexcept { ADT_ASSERT(m_pData != nullptr, ""); return *m_pData; }
+
         T* operator->() noexcept { ADT_ASSERT(m_pData != nullptr, ""); return m_pData; }
+        const T* operator->() const noexcept { ADT_ASSERT(m_pData != nullptr, ""); return m_pData; }
     };
 
     static constexpr u64 INVALID_PTR = ~0llu;
@@ -92,7 +95,7 @@ struct Arena : IArena
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
     SList<DeleterNode> m_lDeleters {}; /* Run deleters on reset()/freeAll() or state restorations. */
-    SList<DeleterNode>* m_pLCurrentDeleters = &m_lDeleters; /* Switch and restore current list on ArenaScope changes. */
+    SList<DeleterNode>* m_pLCurrentDeleters {}; /* Switch and restore current list on ArenaScope changes. */
 
     /* */
 
@@ -187,6 +190,7 @@ ArenaScope::~ArenaScope() noexcept
 
 inline
 Arena::Arena(isize reserveSize, isize commitSize)
+    : m_pLCurrentDeleters{&m_lDeleters}
 {
     [[maybe_unused]] int err = 0;
 
@@ -290,8 +294,8 @@ Arena::freeAll() noexcept
 #else
 #endif
 
-    *this = {};
     ADT_ASAN_UNPOISON(m_pData, m_reserved);
+    *this = {};
 }
 
 template<typename T, typename ...ARGS>
@@ -405,5 +409,18 @@ Arena::decommit(void* p, isize size)
 #else
 #endif
 }
+
+namespace print
+{
+
+template<typename T>
+inline isize
+format(Context* pCtx, FormatArgs fmtArgs, const Arena::Ptr<T>& x)
+{
+    if (x) return format(pCtx, fmtArgs, *x);
+    else return format(pCtx, fmtArgs, "null");
+}
+
+} /* namespace print */
 
 } /* namespace adt */

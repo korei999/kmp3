@@ -22,7 +22,7 @@ set(ADT_PRECOMPILED_HEADERS
     Logger.hh
     # Map.hh
     math.hh
-    # MiMalloc.hh
+    MiMalloc.hh
     Opt.hh
     # Pair.hh
     # Pipeline.hh
@@ -32,6 +32,7 @@ set(ADT_PRECOMPILED_HEADERS
     print.hh
     QueueArray.hh
     # Queue.hh
+    # QueueSPSC.hh
     # RBTree.hh
     # RefCount.hh
     # ReverseIt.hh
@@ -48,7 +49,7 @@ set(ADT_PRECOMPILED_HEADERS
     # String.hh
     # Thread.hh
     ThreadPool.hh
-    Timer.hh
+    time.hh
     # types.hh
     # utf8.hh
     # utils.hh

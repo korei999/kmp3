@@ -10,16 +10,6 @@
 #include <cmath>
 #include <concepts>
 
-#if defined __clang__
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wmissing-braces"
-#endif
-
-#if defined __GNUC__
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wmissing-braces"
-#endif
-
 namespace adt::math
 {
 
@@ -1513,14 +1503,6 @@ format(Context* ctx, FormatArgs fmtArgs, const math::IV4& x)
 
 template<>
 inline isize
-format(Context* ctx, FormatArgs fmtArgs, const math::IV4u16& x)
-{
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
-    return formatVariadic(ctx, fmtArgs, x.x, x.y, x.z, x.w);
-}
-
-template<>
-inline isize
 format(Context* ctx, FormatArgs fmtArgs, const math::Qt& x)
 {
     return format(ctx, fmtArgs, x.base);
@@ -1560,11 +1542,3 @@ format(Context* ctx, FormatArgs fmtArgs, const math::M4& x)
 }
 
 } /* namespace adt::print */
-
-#if defined __clang__
-    #pragma clang diagnostic pop
-#endif
-
-#if defined __GNUC__
-    #pragma GCC diagnostic pop
-#endif

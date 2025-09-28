@@ -55,9 +55,9 @@ protected:
     adt::i64 m_time {};
     Input m_lastInput {};
     int m_lastMouseSelection {};
-    adt::Timer m_timerLastMouseSelection {};
-    adt::Timer m_timerImageRedraw {};
-    adt::Timer m_timerResize {};
+    adt::time::Clock m_clockLastMouseSelection {};
+    adt::time::Clock m_clockImageRedraw {};
+    adt::time::Clock m_clockResize {};
     bool m_bNeedsResize {};
     bool m_bImageJustRedrawn {};
     adt::VStringM m_sTitle {};

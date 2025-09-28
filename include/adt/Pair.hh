@@ -23,7 +23,7 @@ namespace print
 {
 
 template<typename A, typename B>
-inline u32
+inline isize
 format(Context* pCtx, FormatArgs fmtArgs, const Pair<A, B>& x)
 {
     fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;

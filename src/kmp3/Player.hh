@@ -56,7 +56,7 @@ struct Player
     adt::Mutex m_mtxQ {};
     adt::QueueArray<Msg, 16> m_qErrorMsgs {};
     Msg::String128 m_sfLastMessage {};
-    adt::Timer m_messageTimer {};
+    adt::time::Clock m_messageClock {};
     bool m_bSelectionChanged {};
     bool m_bRedrawImage {};
     bool m_bQuitOnSongEnd {};

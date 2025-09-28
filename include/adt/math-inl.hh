@@ -5,16 +5,6 @@
 #include <concepts>
 #include <limits>
 
-#if defined __clang__
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wmissing-braces"
-#endif
-
-#if defined __GNUC__
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wmissing-braces"
-#endif
-
 namespace adt::math
 {
 
@@ -195,62 +185,6 @@ union IV4
 
     int& operator[](int i) { ADT_ASSERT(i >= 0 && i < 4, "i: {}", i); return e[i]; }
     const int& operator[](int i) const { ADT_ASSERT(i >= 0 && i < 4, "i: {}", i); return e[i]; }
-};
-
-union IV4u8
-{
-    u8 e[4];
-    struct { u8 x, y, z, w; };
-
-    /* */
-
-    constexpr explicit operator IV4() const
-    {
-        return {
-            static_cast<i32>(x),
-            static_cast<i32>(y),
-            static_cast<i32>(z),
-            static_cast<i32>(w)
-        };
-    }
-
-    constexpr explicit operator V4() const
-    {
-        return {
-            static_cast<f32>(x),
-            static_cast<f32>(y),
-            static_cast<f32>(z),
-            static_cast<f32>(w)
-        };
-    }
-};
-
-union IV4u16
-{
-    u16 e[4];
-    struct { u16 x, y, z, w; };
-
-    /* */
-
-    constexpr explicit operator IV4() const
-    {
-        return {
-            static_cast<i32>(x),
-            static_cast<i32>(y),
-            static_cast<i32>(z),
-            static_cast<i32>(w)
-        };
-    }
-
-    constexpr explicit operator V4() const
-    {
-        return {
-            static_cast<f32>(x),
-            static_cast<f32>(y),
-            static_cast<f32>(z),
-            static_cast<f32>(w)
-        };
-    }
 };
 
 union M2
@@ -525,18 +459,9 @@ template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::V2
 template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::V3& x);
 template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::V4& x);
 template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::IV4& x);
-template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::IV4u16& x);
 template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::Qt& x);
 template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::M2& x);
 template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::M3& x);
 template<> inline isize format(Context* pCtx, FormatArgs fmtArgs, const math::M4& x);
 
 } /* namespace adt::math */
-
-#if defined __clang__
-    #pragma clang diagnostic pop
-#endif
-
-#if defined __GNUC__
-    #pragma GCC diagnostic pop
-#endif

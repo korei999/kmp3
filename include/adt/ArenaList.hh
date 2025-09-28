@@ -113,7 +113,7 @@ ArenaList::allocBlock(usize size)
     Block* pBlock = static_cast<Block*>(m_pBackAlloc->zalloc(1, size + sizeof(*pBlock)));
 
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
-    LogError("[Arena: {}, {}, {}]: new block of size: {}\n",
+    LogDebug("[Arena: {}, {}, {}]: new block of size: {}\n",
         print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), size
     );
 #endif
@@ -142,7 +142,7 @@ ArenaList::malloc(usize mCount, usize mSize)
 
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
     if (m_defaultCapacity <= realSize)
-        LogError("[Arena: {}, {}, {}]: allocating more than defaultCapacity ({}, {})\n",
+        LogDebug("[Arena: {}, {}, {}]: allocating more than defaultCapacity ({}, {})\n",
             print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_defaultCapacity, realSize
         );
 #endif
@@ -240,7 +240,7 @@ ArenaList::shrinkToFirstBlock() noexcept
     while (it->pNext)
     {
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
-        LogError("[Arena: {}, {}, {}]: shrinking {} sized block\n",
+        LogDebug("[Arena: {}, {}, {}]: shrinking {} sized block\n",
             print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), it->size
         );
 #endif

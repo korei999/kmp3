@@ -217,9 +217,9 @@ struct VString
     union {
         char m_aBuff[16] {};
         struct {
-            char* m_pData;
-            isize m_size;
-        };
+            char* pData;
+            isize size;
+        } m_allocated;
     };
     isize m_cap = 16;
 
@@ -227,6 +227,7 @@ struct VString
 
     VString() = default;
     VString(IAllocator* pAlloc, const StringView sv);
+    VString(IAllocator* pAlloc, isize prealloc);
 
     operator StringView() noexcept { return StringView(data(), size()); }
     operator const StringView() const noexcept { return StringView(const_cast<char*>(data()), size()); }
@@ -261,6 +262,7 @@ struct VStringManaged : VString
 
     VStringManaged() = default;
     VStringManaged(const StringView sv) : Base{ALLOC_T::inst(), sv} {}
+    VStringManaged(isize prealloc) : Base{ALLOC_T::inst(), prealloc} {}
 
     /* */
 
