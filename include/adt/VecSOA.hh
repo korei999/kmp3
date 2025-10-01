@@ -26,7 +26,7 @@ namespace adt
  * };
  * 
  * Must preserve the order.
- * VecSOA<Entity, Entity::Bind, &Entity::pos, &Entity::vel, &Entity::index> vec(StdAllocator::inst());
+ * VecSOA<Entity, Entity::Bind, &Entity::pos, &Entity::vel, &Entity::index> vec(Gpa::inst());
  *
  * Using SOA.hh:
  * #define ENTITY_PP_BIND_I(TYPE, NAME) , &Entity::NAME
@@ -281,6 +281,6 @@ struct VecSOAManaged : VecSOA<STRUCT, BIND, MEMBERS...>
 };
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>
-using VecSOAM = VecSOAManaged<StdAllocatorNV, STRUCT, BIND, MEMBERS...>;
+using VecSOAM = VecSOAManaged<GpaNV, STRUCT, BIND, MEMBERS...>;
 
 } /* namespace adt */

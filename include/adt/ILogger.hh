@@ -29,7 +29,7 @@ struct ILogger
 
     /* */
 
-    FILE* m_pFile {};
+    int m_fd {};
     LEVEL m_eLevel = LEVEL::WARN;
     bool m_bTTY = false;
     bool m_bForceColor = false;
@@ -37,18 +37,19 @@ struct ILogger
     /* */
 
     ILogger() noexcept = default;
-    ILogger(FILE* pFile, LEVEL eLevel, bool bForceColor = false) noexcept
-        : m_pFile {pFile}, m_eLevel {eLevel}, m_bTTY {bForceColor || isTTY(pFile)}, m_bForceColor {bForceColor} {}
+    ILogger(int fd, LEVEL eLevel, bool bForceColor = false) noexcept
+        : m_fd {fd}, m_eLevel {eLevel}, m_bTTY {bForceColor || isTTY(fd)}, m_bForceColor {bForceColor} {}
 
     /* */
 
     virtual ADD_STATUS add(LEVEL eLevel, std::source_location loc, void* pExtra, const StringView sv) noexcept = 0;
+    virtual isize cap() noexcept = 0;
     virtual isize formatHeader(LEVEL eLevel, std::source_location loc, void* pExtra, Span<char> spBuff) noexcept = 0;
     virtual void destroy() noexcept = 0;
 
     /* */
 
-    static bool isTTY(FILE* pFile) noexcept;
+    static bool isTTY(int fd) noexcept;
     static ILogger* inst() noexcept;
     static void setGlobal(ILogger* pLogger, std::source_location = std::source_location::current()) noexcept;
 };

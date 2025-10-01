@@ -195,7 +195,7 @@ Player::selectFinal(long selI)
         };
         print::toSpan(msg.sfMsg.data(), "failed to open \"{}\"", file::getPathEnding(m_vSongs[selI]));
 
-        if ((msg.sfMsg != m_sfLastMessage) || (m_messageClock.elapsed() >= msg.timeMS * time::MSEC))
+        if ((msg.sfMsg != m_sfLastMessage) || time::diff(time::now(), m_lastMessageTime) >= msg.timeMS * time::MSEC)
             pushErrorMsg(msg);
 
         selI = nextSelectionI(selI); /* Might set g_bRunning. */
@@ -337,7 +337,7 @@ Player::pushErrorMsg(const Player::Msg& msg)
     m_qErrorMsgs.pushBack(msg);
 
     m_sfLastMessage = msg.sfMsg;
-    m_messageClock.reset();
+    m_lastMessageTime = time::now();
 }
 
 Player::Msg

@@ -5,7 +5,7 @@
 #include "Arena.hh"
 #include "FuncBuffer.hh"
 #include "Queue.hh"
-#include "StdAllocator.hh"
+#include "Gpa.hh"
 #include "Thread.hh"
 #include "Vec.hh"
 #include "atomic.hh"
@@ -120,7 +120,7 @@ ThreadPool::ThreadPool(isize arenaReserve)
 
 inline
 ThreadPool::ThreadPool(isize qSize, isize arenaReserve, int nThreads)
-    : m_spThreads(StdAllocator::inst()->zallocV<Thread>(nThreads), nThreads),
+    : m_spThreads(Gpa::inst()->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
@@ -138,7 +138,7 @@ ThreadPool::ThreadPool(
     isize arenaReserve,
     int nThreads
 )
-    : m_spThreads(StdAllocator::inst()->zallocV<Thread>(nThreads), nThreads),
+    : m_spThreads(Gpa::inst()->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
@@ -258,7 +258,7 @@ ThreadPool::destroy() noexcept
 
         ADT_ASSERT(m_atomNActiveTasks.load(atomic::ORDER::ACQUIRE) == 0, "{}", m_atomNActiveTasks.load(atomic::ORDER::RELAXED));
 
-        StdAllocator::inst()->free(m_spThreads.data());
+        Gpa::inst()->free(m_spThreads.data());
         m_qTasks.destroy();
         m_mtxQ.destroy();
         m_cndQ.destroy();

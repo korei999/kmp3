@@ -328,13 +328,13 @@ Win::procMouse(MouseInput in)
             if (s_bPressed) return;
             else s_bPressed = true;
 
-            const i64 time = time::Clock::getTime();
+            const i64 time = time::now();
 
             {
                 pl.focus(target);
 
                 if (target == m_lastMouseSelection &&
-                    m_clockLastMouseSelection.elapsed(time) < app::g_config.doubleClickDelay * time::MSEC
+                    time::diff(time, m_lastMouseSelectionTime) < app::g_config.doubleClickDelay * time::MSEC
                 )
                 {
                     pl.selectFocused();
@@ -342,7 +342,7 @@ Win::procMouse(MouseInput in)
             }
 
             m_lastMouseSelection = target;
-            m_clockLastMouseSelection.reset(time);
+            m_lastMouseSelectionTime = time;
         }
     }
     else if (in.eKey == MouseInput::KEY::WHEEL_UP)

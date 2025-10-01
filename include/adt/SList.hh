@@ -1,6 +1,6 @@
 #pragma once
 
-#include "StdAllocator.hh"
+#include "Gpa.hh"
 
 namespace adt
 {
@@ -254,7 +254,7 @@ SList<T>::release() noexcept
     return utils::exchange(this, {});
 }
 
-template<typename T, typename ALLOC_T = StdAllocatorNV>
+template<typename T, typename ALLOC_T = GpaNV>
 struct SListManaged : public SList<T>
 {
     using Base = SList<T>;
@@ -288,6 +288,6 @@ struct SListManaged : public SList<T>
 };
 
 template<typename T>
-using SListM = SListManaged<T, StdAllocatorNV>;
+using SListM = SListManaged<T, GpaNV>;
 
 } /* namespace adt */

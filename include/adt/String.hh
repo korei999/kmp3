@@ -742,6 +742,26 @@ VString::destroy(IAllocator* pAlloc) noexcept
     ::memset(m_aBuff, 0, 16);
 }
 
+inline bool
+VString::steal(String* pStr) noexcept
+{
+    if (pStr->empty()) return false;
+
+    if (pStr->size() >= 16)
+    {
+        m_allocated.pData = utils::exchange(&pStr->m_pData, nullptr);
+        m_allocated.size = utils::exchange(&pStr->m_size, 0);
+        m_cap = m_allocated.size + 1;
+    }
+    else
+    {
+        ::memcpy(m_aBuff, pStr->m_pData, pStr->m_size);
+        m_aBuff[pStr->m_size] = '\0';
+    }
+
+    return true;
+}
+
 inline char*
 VString::data() noexcept
 {

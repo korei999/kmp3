@@ -24,119 +24,58 @@
     #include <sysinfoapi.h>
 #endif
 
+/* Usage:
+ *
+ * time::Type prevTime = time::now();
+ * ...
+ * ...
+ * auto nextTime = time::now();
+ * if (time::diff(nextTime, prevTime) >= time::MSEC * 500)
+ * {
+ *     doThings();
+ *     prevTime = nextTime;
+ * }
+ *
+ ************************************/
+
 namespace adt::time
 {
 
-static constexpr i64 USEC = 1;
-static constexpr i64 MSEC = 1'000;
-static constexpr i64 SEC = 1'000'000;
-static constexpr i64 MIN = SEC * 60;
-static constexpr i64 HOUR = MIN * 60;
-static constexpr i64 DAY = HOUR * 24;
-static constexpr i64 WEEK = DAY * 7;
-static constexpr i64 YEAR = DAY * 365;
+using Type = i64;
 
-struct Clock /* In microseconds. */
+static constexpr Type USEC = 1;
+static constexpr Type MSEC = 1'000;
+static constexpr Type SEC = 1'000'000;
+static constexpr Type MIN = SEC * 60;
+static constexpr Type HOUR = MIN * 60;
+static constexpr Type DAY = HOUR * 24;
+static constexpr Type WEEK = DAY * 7;
+static constexpr Type YEAR = DAY * 365;
+
+[[nodiscard]] inline Type
+now() noexcept
 {
-    /* */
-
-    i64 m_startTime {};
-
-    /* */
-
-    Clock() = default;
-    explicit Clock(InitFlag) noexcept : m_startTime{getTime()} {}
-    explicit Clock(i64 time) noexcept : m_startTime{time} {}
-
-    /* */
-
-    i64 value() const noexcept { return m_startTime; }
-
-    void reset() noexcept;
-    void reset(i64 newTime) noexcept;
-
-    i64 elapsed() noexcept;
-    i64 elapsed(i64) noexcept;
-
-    f64 elapsedSec() noexcept;
-    f64 elapsedSec(i64 time) noexcept;
-
-    f64 elapsedMSec(i64 time) noexcept;
-    f64 elapsedMSec() noexcept;
-
-    /* */
-
-    static i64 frequency() noexcept;
-    static i64 getTime() noexcept;
-};
-
-inline void
-Clock::reset() noexcept
-{
-    m_startTime = getTime();
-}
-
-[[nodiscard]] inline f64
-Clock::elapsedSec() noexcept
-{
-    return (f64)(getTime() - m_startTime) / (f64)frequency();
-}
-
-[[nodiscard]] inline f64
-Clock::elapsedMSec() noexcept
-{
-    const i64 diff = getTime() - m_startTime;
-    return ((f64)(diff) * 1000.0) / (f64)frequency();
-}
-
-[[nodiscard]] inline i64
-Clock::elapsed() noexcept
-{
-    return elapsed(getTime());
-}
-
-[[nodiscard]] inline i64
-Clock::elapsed(i64 time) noexcept
-{
-    const i64 diff = time - m_startTime;
-
 #ifdef _MSC_VER
 
-    return diff * 1000000ll / frequency();
+    LARGE_INTEGER ret;
+    QueryPerformanceCounter(&ret);
+    return ret.QuadPart;
 
 #elif __has_include(<unistd.h>)
 
-    return diff / 1000ll;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ((Type)ts.tv_sec * 1000000000ll) + (Type)ts.tv_nsec;
 
 #endif
 }
 
-inline void
-Clock::reset(i64 newTime) noexcept
-{
-    m_startTime = newTime;
-}
-
-inline f64
-Clock::elapsedSec(i64 time) noexcept
-{
-    return (f64)(time - m_startTime) / (f64)frequency();
-}
-
-inline f64
-Clock::elapsedMSec(i64 time) noexcept
-{
-    const i64 diff = time - m_startTime;
-    return ((f64)(diff) * 1000.0) / (f64)frequency();
-}
-
-inline i64
-Clock::frequency() noexcept
+[[nodiscard]] inline Type
+frequency() noexcept
 {
 #ifdef _MSC_VER
 
-    static const LARGE_INTEGER s_freq = []
-    {
+    static const LARGE_INTEGER s_freq = [] {
         LARGE_INTEGER t;
         QueryPerformanceFrequency(&t);
         return t;
@@ -150,25 +89,35 @@ Clock::frequency() noexcept
 #endif
 }
 
-inline i64
-Clock::getTime() noexcept
+[[nodiscard]] inline Type
+diff(Type time, Type startTime) noexcept /* Unified to microseconds. */
 {
+    const Type diff = time - startTime;
+
 #ifdef _MSC_VER
 
-    LARGE_INTEGER ret;
-    QueryPerformanceCounter(&ret);
-    return ret.QuadPart;
+    return (diff * 1000000ll) / frequency();
 
 #elif __has_include(<unistd.h>)
 
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ((i64)ts.tv_sec * 1000000000ll) + (i64)ts.tv_nsec;
+    return diff / 1000ll;
 
 #endif
 }
 
-[[nodiscard]] inline adt::isize
+[[nodiscard]] inline f64
+diffSec(Type time, Type startTime) noexcept
+{
+    return (f64)(time - startTime) / (f64)frequency();
+}
+
+[[nodiscard]] inline f64
+diffMSec(Type time, Type startTime) noexcept
+{
+    return (f64)(time - startTime) * (1000.0 / (f64)frequency());
+}
+
+[[nodiscard]] inline Type
 nowUS()
 {
 #if __has_include(<unistd.h>)
@@ -193,16 +142,16 @@ nowUS()
 #endif
 }
 
-[[nodiscard]] inline adt::f64
+[[nodiscard]] inline f64
 nowMS()
 {
-    return static_cast<adt::f64>(nowUS()) / 1000.0;
+    return static_cast<f64>(nowUS()) / 1000.0;
 }
 
-[[nodiscard]] inline adt::f64
+[[nodiscard]] inline f64
 nowS()
 {
-    return static_cast<adt::f64>(nowUS()) / 1'000'000.0;
+    return static_cast<f64>(nowUS()) / 1'000'000.0;
 }
 
 } /* namespace adt::time */

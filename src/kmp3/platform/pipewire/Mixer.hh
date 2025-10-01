@@ -26,9 +26,8 @@
 namespace platform::pipewire
 {
 
-class Mixer : public audio::IMixer
+struct Mixer : public audio::IMixer
 {
-protected:
     enum spa_audio_format m_eformat {};
 
     pw_thread_loop* m_pThrdLoop {};
@@ -36,7 +35,6 @@ protected:
 
     /* */
 
-public:
     virtual Mixer& init() override final;
     virtual void deinit() override final;
     virtual bool play(adt::StringView sPath) override final;
@@ -45,11 +43,6 @@ public:
 
     /* */
 
-    static void* getOnProcessPFN() { return adt::methodPointerNonVirtual(&Mixer::onProcess); }
-
-    /* */
-
-private:
     void setNChannels(adt::u32 nChannels);
     void onProcess();
 };

@@ -7,7 +7,7 @@
 namespace adt
 {
 
-struct StdAllocatorNV;
+struct GpaNV;
 struct IAllocator;
 struct String;
 struct StringView;
@@ -144,7 +144,7 @@ struct String : public StringView
     [[nodiscard]] String release() noexcept; /* return this String resource and set to zero */
 };
 
-template<typename ALLOC_T = StdAllocatorNV>
+template<typename ALLOC_T = GpaNV>
 struct StringManaged : public String
 {
     StringManaged() = default;
@@ -235,6 +235,7 @@ struct VString
     /* */
 
     void destroy(IAllocator* pAlloc) noexcept;
+    bool steal(String* pStr) noexcept;
 
     char* data() noexcept;
     const char* data() const noexcept;
@@ -255,7 +256,7 @@ protected:
 
 static_assert(sizeof(VString) == 24);
 
-template<typename ALLOC_T = StdAllocatorNV>
+template<typename ALLOC_T = GpaNV>
 struct VStringManaged : VString
 {
     using Base = VString;

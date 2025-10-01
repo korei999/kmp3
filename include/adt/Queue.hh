@@ -1,6 +1,6 @@
 #pragma once
 
-#include "StdAllocator.hh"
+#include "Gpa.hh"
 #include "utils.hh"
 #include "assert.hh"
 #include "defer.hh"
@@ -330,7 +330,7 @@ Queue<T>::operator[](isize i) const
     return m_pData[i];
 }
 
-template<typename T, typename ALLOC_T = StdAllocatorNV>
+template<typename T, typename ALLOC_T = GpaNV>
 struct QueueManaged : public Queue<T>
 {
     using Base = Queue<T>;
@@ -361,6 +361,6 @@ struct QueueManaged : public Queue<T>
 };
 
 template<typename T>
-using QueueM = QueueManaged<T, StdAllocatorNV>;
+using QueueM = QueueManaged<T, GpaNV>;
 
 } /* namespace adt */

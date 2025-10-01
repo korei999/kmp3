@@ -447,7 +447,7 @@ Vec<T>::growOnSpanPush(IAllocator* p, const isize spanSize)
     }
 }
 
-template<typename T, typename ALLOC_T = StdAllocatorNV>
+template<typename T, typename ALLOC_T = GpaNV>
 struct VecManaged : Vec<T>
 {
     using Base = Vec<T>;

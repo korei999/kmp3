@@ -61,13 +61,9 @@ assertionFailed(const char* cnd, const char* msg, const char* file, int line, co
         "Assertion failed",
         MB_ICONWARNING | MB_OK | MB_DEFBUTTON2
     );
+#endif
 
     *(volatile int*)0 = 0; /* die */
-#else
-    write(STDERR_FILENO, aBuff, n);
-
-    abort();
-#endif
 }
 
 } /* namespace adt */

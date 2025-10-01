@@ -526,7 +526,7 @@ Map<K, V, FN_HASH>::Map(IAllocator* pAllocator, std::initializer_list<Pair<K, V>
         emplace(pAllocator, pair.first, pair.second);
 }
 
-template<typename K, typename V, typename ALLOC_T = StdAllocatorNV, usize (*FN_HASH)(const K&) = hash::func<K>>
+template<typename K, typename V, typename ALLOC_T = GpaNV, usize (*FN_HASH)(const K&) = hash::func<K>>
 struct MapManaged : public Map<K, V, FN_HASH>
 {
     using Base = Map<K, V, FN_HASH>;
@@ -560,7 +560,7 @@ struct MapManaged : public Map<K, V, FN_HASH>
 };
 
 template<typename K, typename V, usize (*FN_HASH)(const K&) = hash::func<K>>
-using MapM = MapManaged<K, V, StdAllocatorNV, FN_HASH>;
+using MapM = MapManaged<K, V, GpaNV, FN_HASH>;
 
 namespace print
 {

@@ -213,8 +213,8 @@ Decoder::getCoverImage()
 audio::ERROR
 Decoder::open(StringView svPath)
 {
-    String sPathNullTerm = String(StdAllocator::inst(), svPath); /* with null char */
-    defer( sPathNullTerm.destroy(StdAllocator::inst()) );
+    String sPathNullTerm = String(Gpa::inst(), svPath); /* with null char */
+    defer( sPathNullTerm.destroy(Gpa::inst()) );
 
     av_log_set_level(AV_LOG_QUIET);
 

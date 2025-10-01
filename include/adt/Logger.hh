@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ILogger.hh"
-#include "String.hh" /* IWYU pragma: keep */
+#include "file.hh"
 
 #ifdef _MSC_VER
     #include <io.h>
@@ -21,7 +21,7 @@ format(Context* ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
 
 } /* namespace adt::print */
 
-#include "StdAllocator.hh"
+#include "Gpa.hh"
 #include "IThreadPool.hh"
 #include "Arena.hh"
 
@@ -29,12 +29,12 @@ namespace adt
 {
 
 inline bool
-ILogger::isTTY(FILE* pFile) noexcept
+ILogger::isTTY(int fd) noexcept
 {
 #ifdef _MSC_VER
-    return _isatty(_fileno(pFile));
+    return _isatty(fd);
 #else
-    return isatty(fileno(pFile));
+    return isatty(fd);
 #endif
 }
 
@@ -65,7 +65,8 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
         ArenaScope arenaScope {pArena};
         print::Builder pb {pArena, 512};
         StringView sv = pb.print(std::forward<ARGS>(args)...);
-        while (pLogger->add(eLevel, loc, nullptr, sv) == ILogger::ADD_STATUS::FAILED)
+        const isize maxLen = utils::min(pLogger->cap(), sv.m_size);
+        while (pLogger->add(eLevel, loc, nullptr, sv.subString(0, maxLen)) == ILogger::ADD_STATUS::FAILED)
             ;
     }
     else
@@ -115,7 +116,7 @@ struct Logger : ILogger
 {
     Logger() = default;
     Logger(
-        FILE* pFile,
+        int fd,
         ILogger::LEVEL,
         isize ringBufferSize, /* Preallocated storage in bytes for the whole lifetime of the logger. */
         bool bForceColor = false /* Output ANSI colors even if FILE is not stdout or stderr. */
@@ -124,6 +125,7 @@ struct Logger : ILogger
     /* */
 
     virtual ADD_STATUS add(LEVEL eLevel, std::source_location loc, void* pExtra, const StringView sv) noexcept override;
+    virtual isize cap() noexcept override;
     virtual isize formatHeader(LEVEL eLevel, std::source_location loc, void* pExtra, Span<char> spBuff) noexcept override;
     virtual void destroy() noexcept override;
 
@@ -260,10 +262,10 @@ struct LoggerNoSource : Logger
 };
 
 inline
-Logger::Logger(FILE* pFile, ILogger::LEVEL eLevel, isize ringBufferSize, bool bForceColor)
-    : ILogger{pFile, eLevel, bForceColor},
+Logger::Logger(int fd, ILogger::LEVEL eLevel, isize ringBufferSize, bool bForceColor)
+    : ILogger{fd, eLevel, bForceColor},
       m_ring{ringBufferSize},
-      m_pDrainBuff{StdAllocator::inst()->zallocV<char>(m_ring.m_cap)},
+      m_pDrainBuff{Gpa::inst()->zallocV<char>(m_ring.m_cap)},
       m_mtxRing{INIT}, m_cndRing{INIT},
       m_thrd{(ThreadFn)methodPointerNonVirtual(&Logger::loop), this}
 {
@@ -280,6 +282,12 @@ Logger::add(LEVEL eLevel, std::source_location loc, void*, const StringView sv) 
     }
     if (eStatus == ADD_STATUS::GOOD) m_cndRing.signal();
     return eStatus;
+}
+
+inline isize
+Logger::cap() noexcept
+{
+    return m_ring.m_cap - sizeof(MsgHeader);;
 }
 
 inline isize
@@ -343,7 +351,7 @@ Logger::destroy() noexcept
     m_mtxRing.destroy();
     m_cndRing.destroy();
     m_ring.destroy();
-    StdAllocator::inst()->free(m_pDrainBuff);
+    Gpa::inst()->free(m_pDrainBuff);
 }
 
 inline THREAD_STATUS
@@ -369,8 +377,8 @@ Logger::loop() noexcept
         }
 
         const isize n = formatHeader(p.eLevel, p.loc, nullptr, aHeaderBuff);
-        fwrite(aHeaderBuff, n, 1, m_pFile);
-        fwrite(m_pDrainBuff, p.sv0.m_size + p.sv1.m_size, 1, m_pFile);
+        file::writeToFd(m_fd, aHeaderBuff, n);
+        file::writeToFd(m_fd, m_pDrainBuff, p.sv0.m_size + p.sv1.m_size);
     }
 
     return THREAD_STATUS(0);
@@ -379,7 +387,7 @@ Logger::loop() noexcept
 inline
 Logger::RingBuffer::RingBuffer(isize cap)
     : m_cap{nextPowerOf2(cap)},
-      m_pData{StdAllocator::inst()->zallocV<u8>(m_cap)}
+      m_pData{Gpa::inst()->zallocV<u8>(m_cap)}
 {
 }
 
@@ -473,7 +481,7 @@ Logger::RingBuffer::pop() noexcept
 inline void
 Logger::RingBuffer::destroy() noexcept
 {
-    StdAllocator::inst()->free(m_pData);
+    Gpa::inst()->free(m_pData);
     m_pData = nullptr;
     m_firstI = m_lastI = m_size = m_cap = 0;
 }

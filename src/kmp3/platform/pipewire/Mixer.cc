@@ -28,7 +28,7 @@ static const pw_stream_events s_streamEvents {
     .param_changed {},
     .add_buffer {},
     .remove_buffer {},
-    .process = decltype(pw_stream_events::process)(Mixer::getOnProcessPFN()),
+    .process = decltype(pw_stream_events::process)(methodPointerNonVirtual(&Mixer::onProcess)),
     .drained {},
     .command {},
     .trigger_done {},

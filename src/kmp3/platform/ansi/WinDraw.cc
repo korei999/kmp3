@@ -13,14 +13,14 @@ Win::coverImage()
 {
     auto& pl = app::player();
 
-    const i64 time = utils::max(m_clockResize.value(), m_time);
-    if (pl.m_bSelectionChanged || (pl.m_bRedrawImage && (m_clockImageRedraw.elapsed(time) >= time::MSEC * app::g_config.imageUpdateRateLimit))
+    const i64 time = utils::max(m_lastResizeTime, m_time);
+    if (pl.m_bSelectionChanged || (pl.m_bRedrawImage && (time::diff(time::now(), m_lastImageRedrawTime) >= time::MSEC * app::g_config.imageUpdateRateLimit))
         /* Prevent to redraw too often it window is getting resized too aggressively. */
     )
     {
         pl.m_bRedrawImage = false;
         pl.m_bSelectionChanged = false;
-        defer( m_clockImageRedraw.reset(m_time) );
+        defer( m_lastImageRedrawTime = time::now() );
 
         const int split = pl.m_imgHeight;
 
@@ -358,7 +358,7 @@ Win::errorMsg()
 
     if (common::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE && s_msg && s_msg.timeMS > 0)
     {
-        if (time::Clock{s_time}.elapsed(m_time) >= s_msg.timeMS * time::MSEC)
+        if (time::diff(m_time, s_time) >= s_msg.timeMS * time::MSEC)
         {
             LogDebug{"killing: '{}'\n", s_msg.sfMsg};
             s_msg.sfMsg.destroy();
@@ -395,7 +395,7 @@ Win::update()
 {
     LockScope lock {&m_mtxUpdate};
 
-    m_time = time::Clock::getTime();
+    m_time = time::now();
 
     if (!app::g_vol_bRunning) return;
 

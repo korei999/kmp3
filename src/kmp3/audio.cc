@@ -266,7 +266,7 @@ IMixer::getTotalMS()
 
 RingBuffer::RingBuffer(isize capacityPowOf2)
     : m_cap{nextPowerOf2(capacityPowOf2)},
-      m_pData{StdAllocator::inst()->zallocV<f32>(m_cap)},
+      m_pData{Gpa::inst()->zallocV<f32>(m_cap)},
       m_mtx{Mutex::TYPE::PLAIN},
       m_cnd{INIT}
 {
@@ -283,7 +283,7 @@ RingBuffer::destroy() noexcept
 
     m_mtx.destroy();
     m_cnd.destroy();
-    StdAllocator::inst()->free(m_pData);
+    Gpa::inst()->free(m_pData);
 
     *this = {};
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "StdAllocator.hh"
+#include "Gpa.hh"
 #include "utils.hh"
 
 #include <cstring>
@@ -8,7 +8,6 @@
 namespace adt
 {
 
-/* fast region based allocator, only freeAll() free's memory, free() does nothing */
 struct ArenaList : public IArena
 {
     struct Block
@@ -36,7 +35,7 @@ struct ArenaList : public IArena
 
     ArenaList(
         usize capacity,
-        IAllocator* pBackingAlloc = StdAllocator::inst()
+        IAllocator* pBackingAlloc = Gpa::inst()
 #ifndef NDEBUG
         , std::source_location _DONT_USE_loc = std::source_location::current()
 #endif

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "StdAllocator.hh"
+#include "Gpa.hh"
 #include "print.hh" /* IWYU pragma: keep */
 
 #include <cstring>
@@ -38,7 +38,7 @@ struct PoolAllocator : public IArena
     /* */
 
     PoolAllocator() = default;
-    PoolAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = StdAllocator::inst()
+    PoolAllocator(usize chunkSize, usize blockSize, IAllocator* pBackAlloc = Gpa::inst()
 #if !defined NDEBUG && defined ADT_DBG_MEMORY
         , std::source_location _DBG_loc = std::source_location::current()
 

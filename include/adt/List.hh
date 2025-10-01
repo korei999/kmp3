@@ -1,6 +1,6 @@
 #pragma once
 
-#include "StdAllocator.hh"
+#include "Gpa.hh"
 #include "utils.hh"
 
 #include <cstddef>
@@ -76,28 +76,28 @@ struct List
 
     struct It
     {
-        Node* s = nullptr;
+        Node* pNode = nullptr;
 
         It() = default;
-        It(Node* p) : s {p} {}
+        It(Node* p) : pNode {p} {}
 
-        T& operator*() { return s->data; }
-        T* operator->() { return &s->data; }
+        T& operator*() { return pNode->data; }
+        T* operator->() { return &pNode->data; }
 
-        It operator++() { return s = s->pNext; }
-        It operator++(int) { T* tmp = s++; return tmp; }
+        It operator++() { return pNode = pNode->pNext; }
+        It operator++(int) { T* tmp = pNode++; return tmp; }
 
-        It operator--() { return s = s->pPrev; }
-        It operator--(int) { T* tmp = s--; return tmp; }
+        It operator--() { return pNode = pNode->pPrev; }
+        It operator--(int) { T* tmp = pNode--; return tmp; }
 
-        It current() noexcept { return s; }
-        const It current() const noexcept { return s; }
+        It current() noexcept { return pNode; }
+        const It current() const noexcept { return pNode; }
 
-        It next() noexcept { return s->pNext; }
-        const It next() const noexcept { return s->pNext; }
+        It next() noexcept { return pNode->pNext; }
+        const It next() const noexcept { return pNode->pNext; }
 
-        friend constexpr bool operator==(const It l, const It r) { return l.s == r.s; }
-        friend constexpr bool operator!=(const It l, const It r) { return l.s != r.s; }
+        friend constexpr bool operator==(const It l, const It r) { return l.pNode == r.pNode; }
+        friend constexpr bool operator!=(const It l, const It r) { return l.pNode != r.pNode; }
     };
 
     It begin() { return {m_pFirst}; }
@@ -407,7 +407,7 @@ List<T>::sort()
     m_pLast = tail;
 }
 
-template<typename T, typename ALLOC_T = StdAllocatorNV>
+template<typename T, typename ALLOC_T = GpaNV>
 struct ListManaged : public List<T>
 {
     using Base = List<T>;

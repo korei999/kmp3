@@ -64,7 +64,7 @@ setTermEnv()
 static void
 parseArgs(int argc, char** argv)
 {
-    new(&s_cmdParser) ArgvParser{StdAllocator::inst(), stderr, "[option]... [file]...", argc, argv, {
+    new(&s_cmdParser) ArgvParser{Gpa::inst(), stderr, "[option]... [file]...", argc, argv, {
         {
             .bNeedsValue = false,
             .sOneDash = "h",
@@ -200,7 +200,7 @@ parseArgs(int argc, char** argv)
     const ArgvParser::RESULT eResult = s_cmdParser.parse();
     if (eResult == ArgvParser::RESULT::FAILED)
     {
-        s_cmdParser.printFullUsage(StdAllocator::inst());
+        s_cmdParser.printFullUsage(Gpa::inst());
         exit(1);
     }
     else if (eResult == ArgvParser::RESULT::QUIT_NICELY ||
@@ -219,7 +219,7 @@ parseArgs(int argc, char** argv)
 static void
 startup(int argc, char** argv)
 {
-    StdAllocator alloc;
+    Gpa alloc;
 
     app::g_eUIFrontend = app::UI::ANSI;
 #if OPT_PIPEWIRE
@@ -244,7 +244,7 @@ startup(int argc, char** argv)
     defer( zeroThreadPool.destroy() );
 
 #ifndef ADT_LOGGER_DISABLE
-    Logger logger {stderr, app::g_eLogLevel, 1 << 12, app::g_bForceLoggerColors};
+    Logger logger {STDERR_FILENO, app::g_eLogLevel, 1 << 12, app::g_bForceLoggerColors};
     ILogger::setGlobal(&logger);
     defer( logger.destroy() );
 #endif
@@ -314,7 +314,7 @@ startup(int argc, char** argv)
     else
     {
         print::err("No accepted input provided\n");
-        s_cmdParser.printUsage(StdAllocator::inst());
+        s_cmdParser.printUsage(Gpa::inst());
     }
 }
 

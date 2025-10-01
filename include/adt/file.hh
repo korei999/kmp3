@@ -19,6 +19,7 @@
     #define ADT_USE_WIN32_STAT
 
     #include <sys/stat.h>
+    #include <io.h>
 
 #endif
 
@@ -245,6 +246,34 @@ map(const char* ntsPath)
 
     ADT_ASSERT(false, "not implemented");
     return {};
+
+#endif
+}
+
+inline int
+descriptor(FILE* pFile) noexcept
+{
+#if __has_include(<unistd.h>)
+
+    return fileno(pFile);
+
+#elif defined _WIN32
+
+    return _fileno(pFile);
+
+#endif
+}
+
+inline isize
+writeToFd(int fd, void* pBuff, isize buffSize) noexcept
+{
+#if __has_include(<unistd.h>)
+
+    return write(fd, pBuff, buffSize);
+
+#elif defined _WIN32
+
+    return _write(fd, pBuff, buffSize);
 
 #endif
 }
