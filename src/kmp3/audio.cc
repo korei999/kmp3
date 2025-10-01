@@ -39,7 +39,7 @@ IMixer::refillRingBufferLoop()
 }
 
 bool
-IMixer::playFinal(adt::StringView svPath)
+IMixer::playFinal(StringView svPath)
 {
     LockScope lockDec {&app::decoder().m_mtx};
 
@@ -222,7 +222,7 @@ IMixer::restoreSampleRate()
 }
 
 void
-IMixer::seekMS(adt::f64 ms)
+IMixer::seekMS(f64 ms)
 {
     {
         LockScope lock {&app::decoder().m_mtx};
@@ -243,7 +243,7 @@ IMixer::seekMS(adt::f64 ms)
 }
 
 void
-IMixer::seekOff(adt::f64 offset)
+IMixer::seekOff(f64 offset)
 {
     f64 time = app::decoder().getCurrentMS() + offset;
     seekMS(time);

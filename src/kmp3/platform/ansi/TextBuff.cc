@@ -533,7 +533,7 @@ TextBuff::wideStrings(int x, int y, std::initializer_list<Pair<TEXT_BUFF_STYLE, 
 }
 
 isize
-TextBuff::styleToBuffer(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle)
+TextBuff::styleToBuffer(Span<char> spFill, TEXT_BUFF_STYLE eStyle)
 {
     const isize size = spFill.size();
     isize n = 0;

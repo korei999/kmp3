@@ -6,7 +6,7 @@ namespace platform::coreaudio
 {
 
 void
-Mixer::setConfig(adt::f64 sampleRate, int nChannels, bool bSaveNewConfig)
+Mixer::setConfig(f64 sampleRate, int nChannels, bool bSaveNewConfig)
 {
     sampleRate = utils::clamp(sampleRate, f64(app::g_config.minSampleRate), f64(app::g_config.maxSampleRate));
 

@@ -271,7 +271,7 @@ Decoder::writeToRingBuffer(
     [[maybe_unused]] const int nChannels,
     [[maybe_unused]] const audio::PCM_TYPE ePcmType,
     long* pSamplesWritten,
-    adt::isize* pPcmPos
+    isize* pPcmPos
 )
 {
     if (!m_pStream) return audio::ERROR::END_OF_FILE;

@@ -15,7 +15,7 @@ class Win : public IWindow
 protected:
     struct MouseInput
     {
-        enum class KEY : adt::u8 { NONE, WHEEL_UP, WHEEL_DOWN, LEFT, MIDDLE, RIGHT, RELEASE };
+        enum class KEY : u8 { NONE, WHEEL_UP, WHEEL_DOWN, LEFT, MIDDLE, RIGHT, RELEASE };
 
         /* */
 
@@ -33,7 +33,7 @@ protected:
 
     struct Input
     {
-        enum class TYPE : adt::u8 { KB, MOUSE, TIMEOUT };
+        enum class TYPE : u8 { KB, MOUSE, TIMEOUT };
 
         /* */
 
@@ -46,28 +46,28 @@ protected:
 
     /* */
 
-    adt::Arena* m_pArena {};
+    Arena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
     TermSize m_termSize {};
     int m_prevImgWidth = 0;
-    adt::Mutex m_mtxUpdate {};
-    adt::i64 m_time {};
+    Mutex m_mtxUpdate {};
+    i64 m_time {};
     Input m_lastInput {};
     int m_lastMouseSelection {};
-    adt::time::Type m_lastMouseSelectionTime {};
-    adt::time::Type m_lastImageRedrawTime {};
-    adt::time::Type m_lastResizeTime {};
+    time::Type m_lastMouseSelectionTime {};
+    time::Type m_lastImageRedrawTime {};
+    time::Type m_lastResizeTime {};
     bool m_bNeedsResize {};
     bool m_bImageJustRedrawn {};
-    adt::VStringM m_sTitle {};
+    VStringM m_sTitle {};
 
     int m_aFdsWakeUp[2] {};
 
     /* */
 
 public:
-    virtual bool start(adt::Arena* pArena) final;
+    virtual bool start(Arena* pArena) final;
     virtual void destroy() final;
     virtual void draw() final;
     virtual void procEvents() final;
@@ -91,8 +91,8 @@ protected:
     friend void sigwinchHandler(int sig);
 
     Input readFromStdin(const int timeoutMS);
-    [[nodiscard]] ADT_NO_UB int parseSeq(adt::Span<char> spBuff, ssize_t nRead);
-    [[nodiscard]] ADT_NO_UB MouseInput parseMouse(adt::Span<char> spBuff, ssize_t nRead);
+    [[nodiscard]] ADT_NO_UB int parseSeq(Span<char> spBuff, ssize_t nRead);
+    [[nodiscard]] ADT_NO_UB MouseInput parseMouse(Span<char> spBuff, ssize_t nRead);
     void procMouse(MouseInput in);
 
 private:
