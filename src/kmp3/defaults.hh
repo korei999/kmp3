@@ -21,7 +21,7 @@ constexpr Config CONFIG {
     .ntsMprisName = "a_kmp3", /* Using 'a' to top kmp3 instance in playerctl. */
     .minWidth = 35,
     .minHeight = 17,
-    .frameArenaReserveVirtualSpace = adt::SIZE_1M * 64,
+    .frameArenaReserveVirtualSpace = SIZE_1M * 64,
 };
 
 } /* namespace defaults */

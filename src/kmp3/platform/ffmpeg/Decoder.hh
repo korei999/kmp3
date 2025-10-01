@@ -26,21 +26,21 @@ struct Decoder : audio::IDecoder
         const int nChannels,
         const audio::PCM_TYPE ePcmType,
         long* pSamplesWritten,
-        adt::isize* pPcmPos
+        isize* pPcmPos
     ) override final;
 
     virtual Decoder& init() override final;
     virtual void destroy() override final;
-    [[nodiscard]] virtual adt::u32 getSampleRate() override final;
-    virtual void seekMS(adt::f64 ms) override final;
-    [[nodiscard]] virtual adt::i64 getCurrentSamplePos() override final;
-    [[nodiscard]] virtual adt::i64 getCurrentMS() override final;
-    [[nodiscard]] virtual adt::i64 getTotalMS() override final;
-    [[nodiscard]] virtual adt::i64 getTotalSamplesCount() override final;
+    [[nodiscard]] virtual u32 getSampleRate() override final;
+    virtual void seekMS(f64 ms) override final;
+    [[nodiscard]] virtual i64 getCurrentSamplePos() override final;
+    [[nodiscard]] virtual i64 getCurrentMS() override final;
+    [[nodiscard]] virtual i64 getTotalMS() override final;
+    [[nodiscard]] virtual i64 getTotalSamplesCount() override final;
     [[nodiscard]] virtual int getChannelsCount() override final;
-    [[nodiscard]] virtual adt::StringView getMetadata(const adt::StringView svKey) override final;
+    [[nodiscard]] virtual StringView getMetadata(const StringView svKey) override final;
     [[nodiscard]] virtual Image getCoverImage() override final;
-    [[nodiscard]] virtual audio::ERROR open(adt::StringView sPath) override final;
+    [[nodiscard]] virtual audio::ERROR open(StringView sPath) override final;
     virtual void close() override final;
 
     /* */
@@ -50,8 +50,8 @@ struct Decoder : audio::IDecoder
     AVCodecContext* m_pCodecCtx {};
     SwrContext* m_pSwr {};
     int m_audioStreamIdx {};
-    adt::u64 m_currentSamplePos {};
-    adt::f64 m_currentMS {};
+    u64 m_currentSamplePos {};
+    f64 m_currentMS {};
 
     AVPacket* m_pImgPacket {};
     AVFrame* m_pImgFrame {};

@@ -15,25 +15,25 @@ struct Mixer : public audio::IMixer
 
     virtual Mixer& init() override;
     virtual void deinit() override;
-    virtual bool play(adt::StringView svPath) override;
+    virtual bool play(StringView svPath) override;
     virtual void pause(bool bPause) override;
-    virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override;
+    virtual void changeSampleRate(u64 sampleRate, bool bSave) override;
 
     /* */
 
-    void setConfig(adt::f64 sampleRate, int nChannels, bool bSaveNewConfig);
+    void setConfig(f64 sampleRate, int nChannels, bool bSaveNewConfig);
 
     OSStatus writeCallBack(
         AudioUnitRenderActionFlags* pIOActionFlags,
         const AudioTimeStamp* pInTimeStamp,
-        adt::u32 inBusNumber,
-        adt::u32 inNumberFrames,
+        u32 inBusNumber,
+        u32 inNumberFrames,
         AudioBufferList* pIOData
     );
 
 protected:
     /* Apparently locking mutex in the callback is a bad idea, tho it seems to be working just fine. https://lists.apple.com/archives/coreaudio-api/2009/May/msg00031.html?utm_source=chatgpt.com */
-    void writeFramesNonLocked(adt::Span<adt::f32> spBuff, adt::u32 nFrames, long* pSamplesWritten, adt::i64* pPcmPos);
+    void writeFramesNonLocked(Span<f32> spBuff, u32 nFrames, long* pSamplesWritten, i64* pPcmPos);
 };
 
 } /* namespace platform::apple */

@@ -210,3 +210,7 @@ concept IsIndexable = requires(const T& c)
 { c[0]; };
 
 } /* namespace adt */
+
+#if defined ADT_USING_NAMESPACE
+    using namespace adt;
+#endif

@@ -11,13 +11,13 @@
 namespace app
 {
 
-enum class UI : adt::u8
+enum class UI : u8
 {
     DUMMY,
     ANSI,
 };
 
-enum class MIXER : adt::u8
+enum class MIXER : u8
 {
     DUMMY,
 
@@ -27,15 +27,15 @@ enum class MIXER : adt::u8
     SNDIO,
 };
 
-enum class TERM : adt::u8 { ELSE, XTERM, XTERM_256COLOR, KITTY, FOOT, GHOSTTY, ALACRITTY };
+enum class TERM : u8 { ELSE, XTERM, XTERM_256COLOR, KITTY, FOOT, GHOSTTY, ALACRITTY };
 
 
-extern adt::ILogger::LEVEL g_eLogLevel;
+extern ILogger::LEVEL g_eLogLevel;
 extern bool g_bForceLoggerColors;
 
 extern UI g_eUIFrontend;
 extern MIXER g_eMixer;
-extern adt::StringView g_svTerm;
+extern StringView g_svTerm;
 extern TERM g_eTerm;
 extern volatile bool g_vol_bRunning;
 extern bool g_bNoImage;
@@ -53,8 +53,8 @@ inline audio::IMixer& mixer() { return *g_pMixer; }
 inline platform::ffmpeg::Decoder& decoder() { return g_decoder; }
 inline platform::ansi::Win& window() { return *g_pWin; }
 
-IWindow* allocWindow(adt::IAllocator* pArena);
-audio::IMixer* allocMixer(adt::IAllocator* pAlloc);
+IWindow* allocWindow(IAllocator* pArena);
+audio::IMixer* allocMixer(IAllocator* pAlloc);
 
 inline void quit() { g_vol_bRunning = false; }
 inline void focusNext() { player().focusNext(); }
@@ -70,10 +70,10 @@ inline void focusSelectedAtCenter() { player().focusSelectedAtCenter(); }
 inline void togglePause() { player().togglePause(); }
 inline void volumeDown(const long step) { g_pMixer->volumeDown(step); }
 inline void volumeUp(const long step) { g_pMixer->volumeUp(step); }
-inline void changeSampleRateDown(adt::u64 ms, bool bSave) { g_pMixer->changeSampleRateDown(ms, bSave); }
-inline void changeSampleRateUp(adt::u64 ms, bool bSave) { g_pMixer->changeSampleRateUp(ms, bSave); }
+inline void changeSampleRateDown(u64 ms, bool bSave) { g_pMixer->changeSampleRateDown(ms, bSave); }
+inline void changeSampleRateUp(u64 ms, bool bSave) { g_pMixer->changeSampleRateUp(ms, bSave); }
 inline void restoreSampleRate() { g_pMixer->restoreSampleRate(); }
-inline void seekOff(adt::f64 ms) { g_pMixer->seekOff(ms); }
+inline void seekOff(f64 ms) { g_pMixer->seekOff(ms); }
 inline PLAYER_REPEAT_METHOD cycleRepeatMethods(bool bForward) { player().m_bQuitOnSongEnd = false; return player().cycleRepeatMethods(bForward); }
 inline void selectPrev() { player().selectPrev(); }
 inline void selectNext() { player().selectNext(); }

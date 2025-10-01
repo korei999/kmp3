@@ -4,8 +4,6 @@
 
 #include <sys/poll.h>
 
-using namespace adt;
-
 namespace platform::ansi
 {
 

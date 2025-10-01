@@ -5,8 +5,6 @@
 
 #include <csignal>
 
-using namespace adt;
-
 namespace platform::ansi
 {
 

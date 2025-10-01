@@ -3,8 +3,6 @@
 #include "app.hh"
 #include "platform/mpris/mpris.hh"
 
-using namespace adt;
-
 namespace audio
 {
 

@@ -19,8 +19,6 @@
     #include "platform/sndio/Mixer.hh"
 #endif
 
-using namespace adt;
-
 namespace app
 {
 

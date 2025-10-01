@@ -97,6 +97,7 @@ message(STATUS "CMAKE_C_COMPILER_ID: '${CMAKE_C_COMPILER_ID}'")
 message(STATUS "CMAKE_CXX_COMPILER_ID: '${CMAKE_CXX_COMPILER_ID}'")
 message(STATUS "CMAKE_CXX_STANDARD: '${CMAKE_CXX_STANDARD}'")
 
+add_definitions("-DADT_USING_NAMESPACE")
 add_definitions("-DADT_DEFER_LESS_TYPING")
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -145,7 +146,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(/wd4146 /wd4200 /wd4312)
     add_compile_options(/utf-8)
 else()
-    add_compile_options(-Wall -Wextra -fms-extensions -Wno-missing-braces)
+    add_compile_options(-Wall -Wextra)
 endif()
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")

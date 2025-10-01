@@ -2,12 +2,12 @@
 
 #include <limits>
 
-enum class PLAYER_REPEAT_METHOD: adt::u8 { NONE, TRACK, PLAYLIST, ESIZE };
+enum class PLAYER_REPEAT_METHOD: u8 { NONE, TRACK, PLAYLIST, ESIZE };
 ADT_ENUM_BITWISE_OPERATORS(PLAYER_REPEAT_METHOD);
 
-constexpr adt::StringView mapPlayerRepeatMethodStrings[] {"None", "Track", "Playlist"};
+constexpr StringView mapPlayerRepeatMethodStrings[] {"None", "Track", "Playlist"};
 
-constexpr adt::StringView
+constexpr StringView
 repeatMethodToString(PLAYER_REPEAT_METHOD e)
 {
     return mapPlayerRepeatMethodStrings[int(e)];
@@ -17,14 +17,14 @@ struct Player
 {
     struct Msg
     {
-        enum class TYPE : adt::u8 { NOTIFY, WARNING, ERROR };
-        using String128 = adt::StringFixed<128>;
-        static constexpr adt::f64 UNTIL_NEXT = std::numeric_limits<adt::f64>::max();
+        enum class TYPE : u8 { NOTIFY, WARNING, ERROR };
+        using String128 = StringFixed<128>;
+        static constexpr f64 UNTIL_NEXT = std::numeric_limits<f64>::max();
 
         /* */
 
         String128 sfMsg {};
-        adt::i64 timeMS {};
+        i64 timeMS {};
         TYPE eType {};
 
         /* */
@@ -34,29 +34,29 @@ struct Player
 
     /* */
 
-    adt::IAllocator* m_pAlloc {};
+    IAllocator* m_pAlloc {};
 
     struct {
-        adt::VString sTitle {};
-        adt::VString sAlbum {};
-        adt::VString sArtist {};
+        VString sTitle {};
+        VString sAlbum {};
+        VString sArtist {};
     } m_info {};
 
-    adt::u8 m_imgHeight {};
-    adt::u8 m_imgWidth {};
-    adt::Vec<adt::StringView> m_vSongs {}; /* full path */
-    adt::Vec<adt::StringView> m_vShortSongs {}; /* file name only */
+    u8 m_imgHeight {};
+    u8 m_imgWidth {};
+    Vec<StringView> m_vSongs {}; /* full path */
+    Vec<StringView> m_vShortSongs {}; /* file name only */
     /* two index buffers for recursive filtering */
-    adt::Vec<adt::u16> m_vSongIdxs {}; /* index buffer */
-    adt::Vec<adt::u16> m_vSearchIdxs {}; /* search index buffer */
+    Vec<u16> m_vSongIdxs {}; /* index buffer */
+    Vec<u16> m_vSearchIdxs {}; /* search index buffer */
     long m_focusedI {};
     long m_selectedI {};
-    adt::isize m_longestString {};
+    isize m_longestString {};
     PLAYER_REPEAT_METHOD m_eRepeatMethod {};
-    adt::Mutex m_mtxQ {};
-    adt::QueueArray<Msg, 16> m_qErrorMsgs {};
+    Mutex m_mtxQ {};
+    QueueArray<Msg, 16> m_qErrorMsgs {};
     Msg::String128 m_sfLastMessage {};
-    adt::time::Type m_lastMessageTime {};
+    time::Type m_lastMessageTime {};
     bool m_bSelectionChanged {};
     bool m_bRedrawImage {};
     bool m_bQuitOnSongEnd {};
@@ -64,11 +64,11 @@ struct Player
     /* */
 
     Player() = default;
-    Player(adt::IAllocator* p, int nArgs, char** ppArgs);
+    Player(IAllocator* p, int nArgs, char** ppArgs);
 
     /* */
 
-    static bool acceptedFormat(const adt::StringView s) noexcept;
+    static bool acceptedFormat(const StringView s) noexcept;
 
     /* */
 
@@ -83,7 +83,7 @@ struct Player
     long findSongI(long selI);
     void focusSelected();
     void focusSelectedAtCenter();
-    void subStringSearch(adt::Arena* pAlloc, adt::Span<const wchar_t> pBuff);
+    void subStringSearch(Arena* pAlloc, Span<const wchar_t> pBuff);
     void selectFocused(); /* starts playing focused song */
     void pause(bool bPause);
     void togglePause();
@@ -105,5 +105,5 @@ protected:
     long nextSelectionI(long selI);
     void updateInfo() noexcept;
     void selectFinal(long selI);
-    void setDefaultIdxs(adt::Vec<adt::u16>* pIdxs);
+    void setDefaultIdxs(Vec<u16>* pIdxs);
 };

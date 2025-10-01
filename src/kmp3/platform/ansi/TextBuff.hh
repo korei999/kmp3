@@ -46,12 +46,12 @@ enum class TEXT_BUFF_STYLE_CODE : int
     BG_WHITE = 47,
 };
 
-enum class TEXT_BUFF_ARG : adt::u8
+enum class TEXT_BUFF_ARG : u8
 {
     TO_END, TO_BEGINNING, EVERYTHING
 };
 
-enum class TEXT_BUFF_STYLE : adt::u32
+enum class TEXT_BUFF_STYLE : u32
 {
     NORM = 0,
     BOLD = 1,
@@ -98,34 +98,34 @@ struct TextBuff
     struct Buffer
     {
         char* pData {};
-        adt::isize size {};
-        adt::isize capacity {};
+        isize size {};
+        isize capacity {};
     };
 
     /* */
 
-    adt::Arena* m_pArena {};
+    Arena* m_pArena {};
 
-    adt::Arena::Ptr<Buffer> m_oBuff {};
+    Arena::Ptr<Buffer> m_oBuff {};
 
-    adt::isize m_tWidth {};
-    adt::isize m_tHeight {};
+    isize m_tWidth {};
+    isize m_tHeight {};
 
-    adt::isize m_newTWidth {};
-    adt::isize m_newTHeight {};
+    isize m_newTWidth {};
+    isize m_newTHeight {};
 
     bool m_bResize {};
     bool m_bErase {};
 
-    adt::VecM<TextBuffCell> m_vFront {}; /* what to show */
-    adt::VecM<TextBuffCell> m_vBack {}; /* where to write */
+    VecM<TextBuffCell> m_vFront {}; /* what to show */
+    VecM<TextBuffCell> m_vBack {}; /* where to write */
 
 #ifdef OPT_CHAFA
     /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
      * the image might be forceClean()'d and gone by the next iteration.
      * A separate arena just for the image vector will be sufficient. */
-    adt::Arena m_imgArena {};
-    adt::Vec<TextBuffImage> m_vImages {};
+    Arena m_imgArena {};
+    Vec<TextBuffImage> m_vImages {};
 #endif
 
     /* */
@@ -134,8 +134,8 @@ struct TextBuff
 
     /* direct write api (cpu heavy) */
     void push(const char ch);
-    void push(const char* pBuff, const adt::isize buffSize);
-    void push(const adt::StringView svBuff);
+    void push(const char* pBuff, const isize buffSize);
+    void push(const StringView svBuff);
     void flush();
     void moveTopLeft();
     void up(int steps);
@@ -150,22 +150,22 @@ struct TextBuff
     void hideCursor(bool bHide);
     void pushWChar(wchar_t wc);
     void clearKittyImages();
-    void setTitle(const adt::StringView svTitle);
+    void setTitle(const StringView svTitle);
     /* */
 
     /* main api (more efficient using damage tracking) */
-    void start(adt::Arena* pArena, adt::isize termWidth, adt::isize termHeight);
+    void start(Arena* pArena, isize termWidth, isize termHeight);
     void destroy();
     void clean();
     void present();
     void erase();
-    void resize(adt::isize width, adt::isize height);
+    void resize(isize width, isize height);
 
-    adt::isize string(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::StringView sv, int maxSvLen = 99999);
-    adt::isize wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const adt::Span<const wchar_t> sp, int maxSvLen = 99999);
+    isize string(int x, int y, TEXT_BUFF_STYLE eStyle, const StringView sv, int maxSvLen = 99999);
+    isize wideString(int x, int y, TEXT_BUFF_STYLE eStyle, const Span<const wchar_t> sp, int maxSvLen = 99999);
 
-    adt::isize strings(int x, int y, std::initializer_list<adt::Pair<TEXT_BUFF_STYLE, const adt::StringView>> lStrings, int maxSvLen = 99999);
-    adt::isize wideStrings(int x, int y, std::initializer_list<adt::Pair<TEXT_BUFF_STYLE, adt::Span<const wchar_t>>> lStrings, int maxSvLen = 99999);
+    isize strings(int x, int y, std::initializer_list<Pair<TEXT_BUFF_STYLE, const StringView>> lStrings, int maxSvLen = 99999);
+    isize wideStrings(int x, int y, std::initializer_list<Pair<TEXT_BUFF_STYLE, Span<const wchar_t>>> lStrings, int maxSvLen = 99999);
 
 #ifdef OPT_CHAFA
     void image(int x, int y, const platform::chafa::Image& img);
@@ -174,17 +174,17 @@ struct TextBuff
     /* */
 
 protected:
-    adt::isize styleToBuffer(adt::Span<char> spFill, TEXT_BUFF_STYLE eStyle);
-    adt::Span2D<TextBuffCell> frontBufferSpan();
-    adt::Span2D<TextBuffCell> backBufferSpan();
-    void grow(adt::isize newCap);
+    isize styleToBuffer(Span<char> spFill, TEXT_BUFF_STYLE eStyle);
+    Span2D<TextBuffCell> frontBufferSpan();
+    Span2D<TextBuffCell> backBufferSpan();
+    void grow(isize newCap);
     void clearBackBuffer();
     void pushDiff();
     void resetBuffers();
-    void resizeBuffers(adt::isize width, adt::isize height);
+    void resizeBuffers(isize width, isize height);
 
     template<typename STRING_T>
-    adt::isize stringFinal(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, int maxSvLen = 99999);
+    isize stringFinal(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, int maxSvLen = 99999);
 
 #ifdef OPT_CHAFA
     void showImages();

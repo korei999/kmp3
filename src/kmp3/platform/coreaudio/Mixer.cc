@@ -2,8 +2,6 @@
 
 #include "app.hh"
 
-using namespace adt;
-
 namespace platform::coreaudio
 {
 

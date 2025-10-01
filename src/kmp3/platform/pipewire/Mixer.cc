@@ -5,8 +5,6 @@
 
 #include <cmath>
 
-using namespace adt;
-
 namespace platform::pipewire
 {
 

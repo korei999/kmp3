@@ -7,8 +7,6 @@
 #include <cwchar>
 #include <cwctype>
 
-using namespace adt;
-
 static constexpr StringView aSvAcceptedFileEndings[] {
     ".mp2", ".mp3", ".mp4", ".m4a", ".m4b",
     ".fla", ".flac",

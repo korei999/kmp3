@@ -4,8 +4,6 @@
 
 #include <sys/ioctl.h>
 
-using namespace adt;
-
 /* https://github.com/hpjansson/chafa/blob/master/examples/adaptive.c */
 
 union StringLines

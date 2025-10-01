@@ -33,8 +33,6 @@
 #define TEXT_BUFF_BG_CYAN "\x1b[46m"
 #define TEXT_BUFF_BG_WHITE "\x1b[47m"
 
-using namespace adt;
-
 namespace platform::ansi
 {
 

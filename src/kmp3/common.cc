@@ -2,8 +2,6 @@
 
 #include <cwctype>
 
-using namespace adt;
-
 namespace common
 {
 

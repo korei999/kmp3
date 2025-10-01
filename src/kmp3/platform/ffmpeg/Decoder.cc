@@ -7,8 +7,6 @@ extern "C"
 
 }
 
-using namespace adt;
-
 namespace platform::ffmpeg
 {
 

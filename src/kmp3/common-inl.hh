@@ -5,50 +5,50 @@
 namespace common
 {
 
-constexpr adt::u32 CHAR_TL = L'┏';
-constexpr adt::u32 CHAR_TR = L'┓';
-constexpr adt::u32 CHAR_BL = L'┗';
-constexpr adt::u32 CHAR_BR = L'┛';
-constexpr adt::u32 CHAR_T = L'━';
-constexpr adt::u32 CHAR_B = L'━';
-constexpr adt::u32 CHAR_L = L'┃';
-constexpr adt::u32 CHAR_R = L'┃';
-constexpr adt::u32 CHAR_VOL = L'▯';
-constexpr adt::u32 CHAR_VOL_MUTED = L'▮';
+constexpr u32 CHAR_TL = L'┏';
+constexpr u32 CHAR_TR = L'┓';
+constexpr u32 CHAR_BL = L'┗';
+constexpr u32 CHAR_BR = L'┛';
+constexpr u32 CHAR_T = L'━';
+constexpr u32 CHAR_B = L'━';
+constexpr u32 CHAR_L = L'┃';
+constexpr u32 CHAR_R = L'┃';
+constexpr u32 CHAR_VOL = L'▯';
+constexpr u32 CHAR_VOL_MUTED = L'▮';
 constexpr wchar_t CURSOR_BLOCK = L'█';
 
 struct InputBuff
 {
     wchar_t m_aBuff[64] {};
-    adt::u32 m_idx = 0;
+    u32 m_idx = 0;
     WINDOW_READ_MODE m_eCurrMode {};
     WINDOW_READ_MODE m_eLastUsedMode {};
 
     /* */
 
     void zeroOut() noexcept { memset(m_aBuff, 0, sizeof(m_aBuff)); m_idx = 0; }
-    adt::Span<wchar_t> span() noexcept { return adt::Span {m_aBuff}; }
+    Span<wchar_t> span() noexcept { return Span {m_aBuff}; }
 };
 
 extern InputBuff g_input;
 
-enum class READ_STATUS : adt::u8 { GOOD, DONE, BACKSPACE, TIMEOUT };
+enum class READ_STATUS : u8 { GOOD, DONE, BACKSPACE, TIMEOUT };
 
-[[nodiscard]] const adt::StringView
+[[nodiscard]] const StringView
 readModeToString(WINDOW_READ_MODE e) noexcept;
 
-[[nodiscard]] adt::StringView allocTimeString(adt::IArena* pArena, int width);
+[[nodiscard]] StringView allocTimeString(IArena* pArena, int width);
 
 /* fix song list range on new focus */
-void fixFirstIdx(adt::u16 listHeight, adt::i16* pFirstIdx);
+void fixFirstIdx(u16 listHeight, i16* pFirstIdx);
 
-void procSeekString(const adt::Span<wchar_t> spBuff);
+void procSeekString(const Span<wchar_t> spBuff);
 
 template<typename READ_LAMBDA, typename DRAW_LAMBDA>
 requires std::same_as<std::invoke_result_t<READ_LAMBDA>, READ_STATUS> && std::same_as<std::invoke_result_t<DRAW_LAMBDA>, void>
 inline void subStringSearch(
-    adt::Arena* pArena,
-    adt::i16* pFirstIdx,
+    Arena* pArena,
+    i16* pFirstIdx,
     READ_LAMBDA clRead,
     DRAW_LAMBDA clDraw
 );

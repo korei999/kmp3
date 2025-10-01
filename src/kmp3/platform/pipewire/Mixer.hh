@@ -37,13 +37,13 @@ struct Mixer : public audio::IMixer
 
     virtual Mixer& init() override final;
     virtual void deinit() override final;
-    virtual bool play(adt::StringView sPath) override final;
+    virtual bool play(StringView sPath) override final;
     virtual void pause(bool bPause) override final;
-    virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override final;
+    virtual void changeSampleRate(u64 sampleRate, bool bSave) override final;
 
     /* */
 
-    void setNChannels(adt::u32 nChannels);
+    void setNChannels(u32 nChannels);
     void onProcess();
 };
 

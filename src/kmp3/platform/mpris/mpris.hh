@@ -4,8 +4,8 @@ namespace mpris
 {
 
 extern bool g_bReady;
-extern adt::Mutex g_mtx;
-extern adt::CndVar g_cnd;
+extern Mutex g_mtx;
+extern CndVar g_cnd;
 
 #ifdef OPT_MPRIS
 
@@ -13,9 +13,9 @@ void init();
 void proc();
 void wakeUp() noexcept; /* Wake up from sd_bus_wait() */
 void destroy();
-adt::THREAD_STATUS pollLoop(void*) noexcept;
+THREAD_STATUS pollLoop(void*) noexcept;
 
-inline void initLocks() { g_mtx = adt::Mutex {adt::Mutex::TYPE::RECURSIVE}; g_cnd = adt::CndVar {adt::INIT}; }
+inline void initLocks() { g_mtx = Mutex {Mutex::TYPE::RECURSIVE}; g_cnd = CndVar {INIT}; }
 inline void destroyLocks() { g_mtx.destroy(); g_cnd.destroy(); }
 
 void playbackStatusChanged();

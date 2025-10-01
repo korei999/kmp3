@@ -11,22 +11,22 @@ struct Mixer : public audio::IMixer
 {
     snd_pcm_t *m_pHandle {};
 
-    adt::atomic::Int m_atom_bRunning {false};
-    adt::atomic::Int m_atom_bLoopDone {true};
-    adt::Thread m_thrdLoop {};
-    adt::Mutex m_mtxLoop {adt::INIT};
-    adt::CndVar m_cndLoop {adt::INIT};
+    atomic::Int m_atom_bRunning {false};
+    atomic::Int m_atom_bLoopDone {true};
+    Thread m_thrdLoop {};
+    Mutex m_mtxLoop {INIT};
+    CndVar m_cndLoop {INIT};
 
     /* */
 
     virtual Mixer& init() override;
     virtual void deinit() override;
-    virtual bool play(adt::StringView svPath) override;
+    virtual bool play(StringView svPath) override;
     virtual void pause(bool bPause) override;
-    virtual void changeSampleRate(adt::u64 sampleRate, bool bSave) override;
+    virtual void changeSampleRate(u64 sampleRate, bool bSave) override;
 
-    void setConfig(adt::u64 sampleRate, int nChannels, bool bSaveNewConfig);
-    adt::THREAD_STATUS loop();
+    void setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig);
+    THREAD_STATUS loop();
 };
 
 } /* namespace platform::alsa */

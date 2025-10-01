@@ -10,7 +10,7 @@ enum class IMAGE_PIXEL_FORMAT : int
 
 struct Image
 {
-    adt::u8* pBuff {};
+    u8* pBuff {};
     int width {};
     int height {};
     IMAGE_PIXEL_FORMAT eFormat {};

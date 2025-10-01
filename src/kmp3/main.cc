@@ -15,8 +15,6 @@
     #include "platform/chafa/chafa.hh"
 #endif
 
-using namespace adt;
-
 static ArgvParser s_cmdParser;
 
 static void
