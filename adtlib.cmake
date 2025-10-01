@@ -22,7 +22,6 @@ set(ADT_PRECOMPILED_HEADERS
     # List.hh
     Logger.hh
     # Map.hh
-    math.hh
     MiMalloc.hh
     Opt.hh
     # Pair.hh

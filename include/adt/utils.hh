@@ -311,4 +311,11 @@ addNSToTimespec(timespec* const pTs, const isize nsec)
     else pTs->tv_nsec += nsec;
 }
 
+template<std::floating_point F>
+inline bool
+floatEq(F l, F r) noexcept
+{
+    return std::abs(l - r) <= std::numeric_limits<F>::epsilon()*(std::abs(l) + std::abs(r) + (F)1.0);
+}
+
 } /* namespace adt::utils */

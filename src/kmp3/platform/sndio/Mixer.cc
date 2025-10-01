@@ -156,7 +156,7 @@ Mixer::play(StringView svPath)
 
     setConfig(app::decoder().getSampleRate(), app::decoder().getChannelsCount(), true);
 
-    if (!math::eq(prevSpeed, 1.0))
+    if (!utils::floatEq(prevSpeed, 1.0))
         changeSampleRate(f64(m_sampleRate) * prevSpeed, false);
 
     pause(false);
