@@ -35,10 +35,9 @@ Mixer::loop()
 
     defer( m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE) );
 
-    StdAllocator stdAl;
     /* sndio doesn't support f32 pcm. */
-    i16* pRenderBuffer = stdAl.zallocV<i16>(utils::size(audio::g_aDrainBuffer));
-    defer( stdAl.free(pRenderBuffer) );
+    i16* pRenderBuffer = Gpa::inst()->zallocV<i16>(utils::size(audio::g_aDrainBuffer));
+    defer( Gpa::inst()->free(pRenderBuffer) );
 
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
