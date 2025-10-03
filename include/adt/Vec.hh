@@ -426,7 +426,7 @@ Vec<T>::growIfNeeded(IAllocator* p)
 {
     if (m_size >= m_capacity)
     {
-        isize newCap = (m_capacity+1) * 2;
+        isize newCap = utils::max(SIZE_MIN, m_capacity * 2);
         ADT_ASSERT(newCap > m_capacity, "can't grow (capacity overflow), newCap: {}, m_capacity: {}", newCap, m_capacity);
         grow(p, newCap);
     }

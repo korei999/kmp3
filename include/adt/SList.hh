@@ -177,7 +177,7 @@ inline void
 SList<T>::remove(IAllocator* pAlloc, Node* pNode)
 {
     remove(pNode);
-    pAlloc->free(pNode);
+    pAlloc->free(pNode, sizeof(Node));
 }
 
 template<typename T>
@@ -202,7 +202,7 @@ inline void
 SList<T>::remove(IAllocator* pAlloc, Node* pPrev, Node* pNode)
 {
     remove(pPrev, pNode);
-    pAlloc->free(pNode);
+    pAlloc->free(pNode, sizeof(Node));
 }
 
 template<typename T>

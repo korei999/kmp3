@@ -145,7 +145,7 @@ List<T>::destroy(IAllocator* pA, CL_DELETER cl) noexcept
     ADT_LIST_FOREACH_SAFE(this, it, tmp)
     {
         cl(&it->data);
-        pA->free(it);
+        pA->free(it, sizeof(Node));
     }
 
     *this = {};
@@ -287,7 +287,7 @@ List<T>::remove(IAllocator* pAlloc, T* p)
 {
     Node* pNode = (Node*)((u8*)(p) - offsetof(Node, data));
     remove(pNode);
-    pAlloc->free(pNode);
+    pAlloc->free(pNode, sizeof(Node));
 }
 
 template<typename T>
@@ -426,7 +426,7 @@ struct ListManaged : public List<T>
     constexpr Node* pushFront(const T& x) { return Base::pushFront(allocator(), x); }
     constexpr Node* pushBack(const T& x) { return Base::pushBack(allocator(), x); }
 
-    constexpr void remove(Node* p) { Base::remove(p); allocator()->free(p); }
+    constexpr void remove(Node* p) { Base::remove(p); allocator()->free(p, sizeof(Node)); }
 
     constexpr void destroy() { Base::destroy(allocator()); }
 

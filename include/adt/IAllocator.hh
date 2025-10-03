@@ -35,6 +35,8 @@ inline constexpr usize alignDown8(usize x) { return x & ~usize(7); }
 
 inline constexpr usize alignUp(usize x, usize to) { return ((x + to - 1) / to) * to; }
 
+inline constexpr usize sizeClass8(usize x) { return (x + 7) >> 3; }
+
 constexpr isize SIZE_MIN = 2;
 constexpr isize SIZE_1K = 1024;
 constexpr isize SIZE_8K = SIZE_1K * 8;
@@ -79,27 +81,28 @@ struct AllocatorHelperCRTP
     [[nodiscard]] constexpr T*
     mallocV(usize mCount) noexcept(false) /* AllocException */
     {
-        return static_cast<T*>(static_cast<BASE*>(this)->malloc(mCount, sizeof(T)));
+        return static_cast<T*>(static_cast<BASE*>(this)->malloc(mCount * sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     zallocV(usize mCount) noexcept(false) /* AllocException */
     {
-        return static_cast<T*>(static_cast<BASE*>(this)->zalloc(mCount, sizeof(T)));
+        return static_cast<T*>(static_cast<BASE*>(this)->zalloc(mCount * sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     reallocV(T* ptr, usize oldCount, usize newCount) noexcept(false) /* AllocException */
     {
-        return static_cast<T*>(static_cast<BASE*>(this)->realloc(ptr, oldCount, newCount, sizeof(T)));
+        return static_cast<T*>(static_cast<BASE*>(this)->realloc(ptr, oldCount * sizeof(T), newCount * sizeof(T)));
     }
 
     template<typename T>
     [[nodiscard]] constexpr T*
     relocate(T* p, usize oldCount, usize newCount) noexcept(false) /* AllocException */
     {
+        /* NOTE: violates the standard, but we'll be careful with members pointing to `this` for greater speed. */
         if constexpr (std::is_trivially_destructible_v<T>)
         {
             return reallocV<T>(p, oldCount, newCount);
@@ -107,16 +110,14 @@ struct AllocatorHelperCRTP
         else
         {
             T* pNew = mallocV<T>(newCount);
-            if (!p) return pNew;
 
             for (usize i = 0; i < oldCount; ++i)
             {
                 new(pNew + i) T {std::move(p[i])};
-                if constexpr (!std::is_trivially_destructible_v<T>)
-                    p[i].~T();
+                p[i].~T();
             }
 
-            static_cast<BASE*>(this)->free(p);
+            static_cast<BASE*>(this)->free(p, oldCount * sizeof(T));
             return pNew;
         }
     }
@@ -129,7 +130,7 @@ struct AllocatorHelperCRTP
             for (usize i = 0; i < size; ++i)
                 p[i].~T();
 
-        static_cast<BASE*>(this)->free(p);
+        static_cast<BASE*>(this)->free(p, size * sizeof(T));
     }
 
     template<typename T>
@@ -139,20 +140,20 @@ struct AllocatorHelperCRTP
         if constexpr (!std::is_trivially_destructible_v<T>)
             p->~T();
 
-        static_cast<BASE*>(this)->free(p);
+        static_cast<BASE*>(this)->free(p, sizeof(T));
     }
 };
 
 struct IAllocator : AllocatorHelperCRTP<IAllocator>
 {
-    [[nodiscard]] virtual constexpr void* malloc(usize mCount, usize mSize) noexcept(false) = 0; /* AllocException */
+    [[nodiscard]] virtual constexpr void* malloc(usize nBytes) noexcept(false) = 0; /* AllocException */
 
-    [[nodiscard]] virtual constexpr void* zalloc(usize mCount, usize mSize) noexcept(false) = 0; /* AllocException */
+    [[nodiscard]] virtual constexpr void* zalloc(usize nBytes) noexcept(false) = 0; /* AllocException */
 
     /* pass oldCount to simpilify memcpy range */
-    [[nodiscard]] virtual constexpr void* realloc(void* p, usize oldCount, usize newCount, usize mSize) noexcept(false) = 0; /* AllocException */
+    [[nodiscard]] virtual constexpr void* realloc(void* p, usize oldNBytes, usize newNBytes) noexcept(false) = 0; /* AllocException */
 
-    virtual constexpr void free(void* ptr) noexcept = 0;
+    virtual constexpr void free(void* ptr, usize nBytes) noexcept = 0;
 
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept = 0;
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept = 0;

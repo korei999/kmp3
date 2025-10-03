@@ -308,7 +308,7 @@ SplayTree<T>::print(
         print::toFILE(pAlloc, pF, "{}{} {}\n", svPrefix, bLeft ? "├──" : "└──", pNode->m_data);
 
         String sCat = StringCat(pAlloc, svPrefix, bHasRightSibling && bLeft ? "│   " : "    ");
-        ADT_DEFER( pAlloc->free(sCat.m_pData) );
+        ADT_DEFER( sCat.destroy(pAlloc) );
 
         print(pAlloc, pF, pNode->m_pLeft, sCat, true, pNode->m_pRight);
         print(pAlloc, pF, pNode->m_pRight, sCat, false, false);

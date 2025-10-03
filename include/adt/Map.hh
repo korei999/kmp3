@@ -412,7 +412,7 @@ Map<K, V, FN_HASH>::destroy(IAllocator* p) noexcept
         for (auto& e : *this)
             e.~KeyVal<K, V>();
 
-    p->free(m_vBuckets.m_pData);
+    p->free(m_vBuckets.m_pData, m_vBuckets.m_capacity);
     *this = {};
 }
 

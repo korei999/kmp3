@@ -11,20 +11,21 @@
 namespace adt
 {
 
-/* default os allocator (aka malloc() / calloc() / realloc() / free()).
- * freeAll() method is not supported. */
+/* Libc allocator (aka malloc() / calloc() / realloc() / free()). */
 struct Gpa : IAllocator
 {
     [[nodiscard]] static Gpa* inst(); /* nonnull */
 
     /* virtual */
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    void virtual free(void* ptr) noexcept override final;
+    [[nodiscard]] virtual void* malloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
+    void virtual free(void* ptr, usize nBytes) noexcept override final;
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
     /* virtual end */
+
+    static void free(void* ptr) noexcept;
 };
 
 /* non virtual */
@@ -32,14 +33,17 @@ struct GpaNV : AllocatorHelperCRTP<GpaNV>
 {
     [[nodiscard]] static Gpa* inst() noexcept { return Gpa::inst(); }
 
-    [[nodiscard]] static void* malloc(usize mCount, usize mSize) noexcept(false)
-    { return Gpa::inst()->malloc(mCount, mSize); }
+    [[nodiscard]] static void* malloc(usize nBytes) noexcept(false)
+    { return Gpa::inst()->malloc(nBytes); }
 
-    [[nodiscard]] static void* zalloc(usize mCount, usize mSize) noexcept(false)
-    { return Gpa::inst()->zalloc(mCount, mSize); }
+    [[nodiscard]] static void* zalloc(usize nBytes) noexcept(false)
+    { return Gpa::inst()->zalloc(nBytes); }
 
-    [[nodiscard]] static void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false)
-    { return Gpa::inst()->realloc(ptr, oldCount, newCount, mSize); }
+    [[nodiscard]] static void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false)
+    { return Gpa::inst()->realloc(ptr, oldNBytes, newNBytes); }
+
+    static void free(void* ptr, usize nBytes) noexcept
+    { Gpa::inst()->free(ptr, nBytes); }
 
     static void free(void* ptr) noexcept
     { Gpa::inst()->free(ptr); }
@@ -55,12 +59,12 @@ Gpa::inst()
 }
 
 inline void*
-Gpa::malloc(usize mCount, usize mSize)
+Gpa::malloc(usize nBytes)
 {
 #ifdef ADT_USE_MIMALLOC
-    auto* r = ::mi_malloc(mCount * mSize);
+    auto* r = ::mi_malloc(nBytes);
 #else
-    auto* r = ::malloc(mCount * mSize);
+    auto* r = ::malloc(nBytes);
 #endif
 
     if (!r) [[unlikely]] throw AllocException("Gpa::malloc()");
@@ -69,12 +73,12 @@ Gpa::malloc(usize mCount, usize mSize)
 }
 
 inline void*
-Gpa::zalloc(usize mCount, usize mSize)
+Gpa::zalloc(usize nBytes)
 {
 #ifdef ADT_USE_MIMALLOC
-    auto* r = ::mi_zalloc(mCount * mSize);
+    auto* r = ::mi_zalloc(nBytes);
 #else
-    auto* r = ::calloc(mCount, mSize);
+    auto* r = ::calloc(1, nBytes);
 #endif
 
     if (!r) [[unlikely]] throw AllocException("Gpa::zalloc()");
@@ -83,17 +87,27 @@ Gpa::zalloc(usize mCount, usize mSize)
 }
 
 inline void*
-Gpa::realloc(void* p, usize, usize newCount, usize mSize)
+Gpa::realloc(void* p, usize, usize newNBytes)
 {
 #ifdef ADT_USE_MIMALLOC
-    auto* r = ::mi_realloc(p, newCount * mSize);
+    auto* r = ::mi_realloc(p, newNBytes);
 #else
-    auto* r = ::realloc(p, newCount * mSize);
+    auto* r = ::realloc(p, newNBytes);
 #endif
 
     if (!r) [[unlikely]] throw AllocException("Gpa::realloc()");
 
     return r;
+}
+
+inline void
+Gpa::free(void* p, usize) noexcept
+{
+#ifdef ADT_USE_MIMALLOC
+    ::mi_free(p);
+#else
+    ::free(p);
+#endif
 }
 
 inline void

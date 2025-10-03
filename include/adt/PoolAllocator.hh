@@ -55,22 +55,15 @@ struct PoolAllocator : public IArena
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    ADT_WARN_IMPOSSIBLE_OPERATION virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    void virtual free(void* ptr) noexcept override final;
+    [[nodiscard]] virtual void* malloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
+    ADT_WARN_IMPOSSIBLE_OPERATION virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
+    void virtual free(void* ptr, usize nBytes) noexcept override final;
     void virtual freeAll() noexcept override final;
     [[nodiscard]] virtual bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual bool doesRealloc() const noexcept override final { return false; }
 
     /* */
-
-    template<typename T>
-    ADT_WARN_IMPOSSIBLE_OPERATION T*
-    reallocV(T*, isize, isize)
-    {
-        ADT_ASSERT_ALWAYS(false, "can't realloc"); return nullptr;
-    };
 
 private:
     [[nodiscard]] Block* allocBlock();
@@ -82,7 +75,7 @@ PoolAllocator::allocBlock()
     ADT_ASSERT(m_pBackAlloc, "uninitialized: m_pBackAlloc == nullptr");
 
     usize total = m_blockCap + sizeof(Block);
-    Block* r = (Block*)m_pBackAlloc->zalloc(1, total);
+    Block* r = (Block*)m_pBackAlloc->zalloc(total);
 
 #if !defined NDEBUG && defined ADT_DBG_MEMORY
     LogError("[PoolAllocator: {}, {}, {}]: new block of size: {}\n",
@@ -107,7 +100,7 @@ PoolAllocator::allocBlock()
 }
 
 inline void*
-PoolAllocator::malloc(usize, usize)
+PoolAllocator::malloc(usize)
 {
     Block* pBlock = m_pBlocks;
     Block* pPrev = nullptr;
@@ -135,15 +128,15 @@ PoolAllocator::malloc(usize, usize)
 }
 
 inline void*
-PoolAllocator::zalloc(usize, usize)
+PoolAllocator::zalloc(usize)
 {
-    void* p = malloc(0, 0);
+    void* p = malloc(0);
     memset(p, 0, m_chunkSize - sizeof(Node));
     return p;
 }
 
 inline void*
-PoolAllocator::realloc(void*, usize, usize, usize)
+PoolAllocator::realloc(void*, usize, usize)
 {
     ADT_ASSERT_ALWAYS(false, "realloc() is not supported");
     throw AllocException("PoolAllocator: realloc() is not supported");
@@ -152,7 +145,7 @@ PoolAllocator::realloc(void*, usize, usize, usize)
 }
 
 inline void
-PoolAllocator::free(void* p) noexcept
+PoolAllocator::free(void* p, usize) noexcept
 {
     if (!p) return;
 
@@ -181,7 +174,7 @@ PoolAllocator::freeAll() noexcept
     while (p)
     {
         next = p->next;
-        m_pBackAlloc->free(p);
+        m_pBackAlloc->free(p, m_blockCap + sizeof(Block));
         p = next;
     }
     m_pBlocks = nullptr;

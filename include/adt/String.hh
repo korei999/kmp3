@@ -625,7 +625,7 @@ String::removeNLEnd(bool bPadWithZeros)
 inline void
 String::destroy(IAllocator* pAlloc) noexcept
 {
-    pAlloc->free(m_pData);
+    pAlloc->free(m_pData, m_size + 1);
     *this = {};
 }
 
@@ -737,7 +737,7 @@ StringCat(IAllocator* p, const StringView& l, const StringView& r)
 inline void
 VString::destroy(IAllocator* pAlloc) noexcept
 {
-    if (m_cap >= 17) pAlloc->free(m_allocated.pData);
+    if (m_cap >= 17) pAlloc->free(m_allocated.pData, m_cap);
     m_cap = 16;
     ::memset(m_aBuff, 0, 16);
 }

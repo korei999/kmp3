@@ -223,9 +223,9 @@ VecSOA<STRUCT, BIND, MEMBERS...>::grow(IAllocator* p, isize newCapacity)
         m_pData, pNewData, m_capacity, newCapacity
     );
 
-    m_capacity = newCapacity;
-    p->free(m_pData);
+    p->free(m_pData, m_capacity);
     m_pData = pNewData;
+    m_capacity = newCapacity;
 }
 
 template<typename STRUCT, typename BIND, auto ...MEMBERS>

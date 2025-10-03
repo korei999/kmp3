@@ -12,27 +12,32 @@ struct MiMalloc : IAllocator
     static MiMalloc* inst();
 
     /* virtual */
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    void virtual free(void* ptr) noexcept override final;
+    [[nodiscard]] virtual void* malloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
+    void virtual free(void* ptr, usize nBytes) noexcept override final;
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
     /* virtual end */
+
+    static void free(void* ptr) noexcept;
 };
 
 struct MiMallocNV : AllocatorHelperCRTP<MiMallocNV>
 {
     [[nodiscard]] static MiMalloc* inst() noexcept { return MiMalloc::inst(); }
 
-    [[nodiscard]] static void* malloc(usize mCount, usize mSize) noexcept(false)
-    { return MiMalloc::inst()->malloc(mCount, mSize); }
+    [[nodiscard]] static void* malloc(usize nBytes) noexcept(false)
+    { return MiMalloc::inst()->malloc(nBytes); }
 
-    [[nodiscard]] static void* zalloc(usize mCount, usize mSize) noexcept(false)
-    { return MiMalloc::inst()->zalloc(mCount, mSize); }
+    [[nodiscard]] static void* zalloc(usize nBytes) noexcept(false)
+    { return MiMalloc::inst()->zalloc(nBytes); }
 
-    [[nodiscard]] static void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false)
-    { return MiMalloc::inst()->realloc(ptr, oldCount, newCount, mSize); }
+    [[nodiscard]] static void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false)
+    { return MiMalloc::inst()->realloc(ptr, oldNBytes, newNBytes); }
+
+    static void free(void* ptr, usize nBytes) noexcept
+    { MiMalloc::inst()->free(ptr, nBytes); }
 
     static void free(void* ptr) noexcept
     { MiMalloc::inst()->free(ptr); }
@@ -48,36 +53,42 @@ MiMalloc::inst()
 }
 
 inline void*
-MiMalloc::malloc(usize mCount, usize mSize)
+MiMalloc::malloc(usize nBytes)
 {
-    auto* r = ::mi_malloc(mCount * mSize);
+    auto* r = ::mi_malloc(nBytes);
     if (!r) [[unlikely]] throw AllocException("MiMalloc::malloc()");
 
     return r;
 }
 
 inline void*
-MiMalloc::zalloc(usize mCount, usize mSize)
+MiMalloc::zalloc(usize nBytes)
 {
-    auto* r = ::mi_calloc(mCount, mSize);
+    auto* r = ::mi_zalloc(nBytes);
     if (!r) [[unlikely]] throw AllocException("MiMalloc::zalloc()");
 
     return r;
 }
 
 inline void*
-MiMalloc::realloc(void* p, usize, usize newCount, usize mSize)
+MiMalloc::realloc(void* p, usize, usize newNBytes)
 {
-    auto* r = ::mi_reallocn(p, newCount, mSize);
+    auto* r = ::mi_realloc(p, newNBytes);
     if (!r) [[unlikely]] throw AllocException("MiMalloc::realloc()");
 
     return r;
 }
 
 inline void
-MiMalloc::free(void* p) noexcept
+MiMalloc::free(void* p, usize) noexcept
 {
     ::mi_free(p);
+}
+
+inline void
+MiMalloc::free(void* ptr) noexcept
+{
+    ::mi_free(ptr);
 }
 
 /* very fast general purpose, non thread safe, allocator. freeAll() is supported. */
@@ -94,10 +105,10 @@ struct MiHeap : IArena
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    void virtual free(void* ptr) noexcept override final;
+    [[nodiscard]] virtual void* malloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
+    void virtual free(void* ptr, usize nBytes) noexcept override final;
     void virtual freeAll() noexcept override final;
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
@@ -105,33 +116,43 @@ struct MiHeap : IArena
     /* */
 
     void reset() noexcept;
+
+    /* */
+
+    static void free(void* ptr) noexcept;
 };
 
 inline void*
-MiHeap::malloc(usize mCount, usize mSize)
+MiHeap::malloc(usize nBytes)
 {
-    auto* r = ::mi_heap_mallocn(m_pHeap, mCount, mSize);
+    auto* r = ::mi_heap_malloc(m_pHeap, nBytes);
     if (!r) [[unlikely]] throw AllocException("MiHeap::malloc()");
 
     return r;
 }
 
 inline void*
-MiHeap::zalloc(usize mCount, usize mSize)
+MiHeap::zalloc(usize nBytes)
 {
-    auto* r = ::mi_heap_zalloc(m_pHeap, mCount * mSize);
+    auto* r = ::mi_heap_zalloc(m_pHeap, nBytes);
     if (!r) [[unlikely]] throw AllocException("MiHeap::zalloc()");
 
     return r;
 }
 
 inline void*
-MiHeap::realloc(void* p, usize, usize newCount, usize mSize)
+MiHeap::realloc(void* p, usize, usize newNBytes)
 {
-    auto* r = ::mi_reallocn(p, newCount, mSize);
+    auto* r = ::mi_realloc(p, newNBytes);
     if (!r) [[unlikely]] throw AllocException("MiHeap::realloc()");
 
     return r;
+}
+
+inline void
+MiHeap::free(void* ptr, usize) noexcept
+{
+    ::mi_free(ptr);
 }
 
 inline void

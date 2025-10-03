@@ -36,9 +36,9 @@ For image support: `chafa glib-2.0 libswscale`.
 
 ### Build
 ```
-cmake -S . -B build/
-cmake --build build/ -j
-sudo cmake --install build/
+cmake -B build
+cmake --build build -j
+sudo cmake --install build
 ```
 
 ### Uninstall

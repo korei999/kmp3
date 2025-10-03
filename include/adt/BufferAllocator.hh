@@ -1,17 +1,17 @@
 #pragma once
 
-#include "IAllocator.hh"
-#include "Span.hh" /* IWYU pragma: keep */
-#include "print.hh" /* IWYU pragma: keep */
-
-#include <cstring>
+#include "ArenaDeleterCRTP.hh"
 
 namespace adt
 {
 
 /* Bump allocator, using fixed size memory buffer. */
-struct BufferAllocator : public IArena
+struct BufferAllocator : public IArena, public ArenaDeleterCRTP<BufferAllocator>
 {
+    using Deleter = ArenaDeleterCRTP<BufferAllocator>;
+
+    /* */
+
     u8* m_pMemBuffer = nullptr;
     usize m_size = 0;
     usize m_cap = 0;
@@ -23,24 +23,29 @@ struct BufferAllocator : public IArena
     BufferAllocator() = default;
 
     BufferAllocator(u8* pMemory, usize capacity) noexcept
-        : m_pMemBuffer {pMemory},
-          m_cap {capacity} {}
+        : Deleter{INIT},
+          m_pMemBuffer{pMemory},
+          m_cap{capacity}
+    {}
 
-    template<typename T, isize N>
+    template<typename T, usize N>
     BufferAllocator(T (&aMem)[N]) noexcept
-        : m_pMemBuffer {reinterpret_cast<u8*>(aMem)},
-          m_cap {N * sizeof(T)} {}
+        : Deleter{INIT},
+          m_pMemBuffer{reinterpret_cast<u8*>(aMem)},
+          m_cap{N * sizeof(T)}
+    {}
 
     template<typename T>
     BufferAllocator(Span<T> sp) noexcept
-        : BufferAllocator {reinterpret_cast<u8*>(sp.data()), sp.size() * sizeof(T)} {}
+        : BufferAllocator{reinterpret_cast<u8*>(sp.data()), sp.size() * sizeof(T)}
+    {}
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override final;
-    [[nodiscard]] virtual void* realloc(void* ptr, usize oldCount, usize newCount, usize mSize) noexcept(false) override final;
-    [[deprecated("noop")]] virtual void free(void*) noexcept override final { /* noop */ }
+    [[nodiscard]] virtual void* malloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
+    [[nodiscard]] virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
+    [[deprecated("noop")]] virtual void free(void*, usize) noexcept override final { /* noop */ }
     virtual void freeAll() noexcept override final; /* same as reset */
     [[nodiscard]] virtual bool doesFree() const noexcept override final { return false; }
     [[nodiscard]] virtual bool doesRealloc() const noexcept override final { return true; }
@@ -48,10 +53,11 @@ struct BufferAllocator : public IArena
     /* */
 
     void reset() noexcept;
-    isize realCap() const noexcept;
+    usize realCap() const noexcept;
+    usize memoryUsed() const noexcept;
 };
 
-struct BufferOffsets
+struct BufferAllocatorState
 {
     usize m_size {};
     void* m_pLastAlloc {};
@@ -62,39 +68,41 @@ struct BufferOffsets
     void restore(BufferAllocator* pAlloc) noexcept;
 };
 
-struct BufferPushScope
+struct BufferAllocatorScope
 {
     BufferAllocator* m_pAlloc {};
-    BufferOffsets m_offsets {};
+    BufferAllocatorState m_offsets {};
 
     /* */
 
-    BufferPushScope(BufferAllocator* pAlloc) noexcept;
-    ~BufferPushScope() noexcept;
+    BufferAllocatorScope(BufferAllocator* pAlloc) noexcept;
+    ~BufferAllocatorScope() noexcept;
 };
 
 inline void
-BufferOffsets::restore(BufferAllocator* pAlloc) noexcept
+BufferAllocatorState::restore(BufferAllocator* pAlloc) noexcept
 {
+    pAlloc->runDeleters();
+
     pAlloc->m_size = m_size;
     pAlloc->m_pLastAlloc = m_pLastAlloc;
     pAlloc->m_lastAllocSize = m_lastAllocSize;
 }
 
 inline
-BufferPushScope::BufferPushScope(BufferAllocator* pAlloc) noexcept
+BufferAllocatorScope::BufferAllocatorScope(BufferAllocator* pAlloc) noexcept
     : m_pAlloc{pAlloc}, m_offsets{.m_size = pAlloc->m_size, .m_pLastAlloc = pAlloc->m_pLastAlloc, .m_lastAllocSize = pAlloc->m_lastAllocSize} {}
 
 inline
-BufferPushScope::~BufferPushScope() noexcept
+BufferAllocatorScope::~BufferAllocatorScope() noexcept
 {
     m_offsets.restore(m_pAlloc);
 }
 
 inline void*
-BufferAllocator::malloc(usize mCount, usize mSize)
+BufferAllocator::malloc(usize nBytes)
 {
-    usize realSize = alignUp8(mCount * mSize);
+    usize realSize = alignUp8(nBytes);
 
     if (m_size + realSize > m_cap)
     {
@@ -111,21 +119,21 @@ BufferAllocator::malloc(usize mCount, usize mSize)
 }
 
 inline void*
-BufferAllocator::zalloc(usize mCount, usize mSize)
+BufferAllocator::zalloc(usize nBytes)
 {
-    auto* p = malloc(mCount, mSize);
-    memset(p, 0, mCount*mSize);
+    auto* p = malloc(nBytes);
+    memset(p, 0, nBytes);
     return p;
 }
 
 inline void*
-BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
+BufferAllocator::realloc(void* p, usize oldNBytes, usize newNBytes)
 {
-    if (!p) return malloc(newCount, mSize);
+    if (!p) return malloc(newNBytes);
 
     ADT_ASSERT(p >= m_pMemBuffer && p < m_pMemBuffer + m_cap, "invalid pointer");
 
-    const usize realSize = alignUp8(newCount * mSize);
+    const usize realSize = alignUp8(newNBytes);
 
     if ((m_size + realSize - m_lastAllocSize) > m_cap)
     {
@@ -143,10 +151,10 @@ BufferAllocator::realloc(void* p, usize oldCount, usize newCount, usize mSize)
     }
     else
     {
-        if (newCount <= oldCount) return p;
+        if (newNBytes <= oldNBytes) return p;
 
-        auto* ret = malloc(newCount, mSize);
-        memcpy(ret, p, oldCount);
+        auto* ret = malloc(newNBytes);
+        memcpy(ret, p, oldNBytes);
 
         return ret;
     }
@@ -161,14 +169,34 @@ BufferAllocator::freeAll() noexcept
 inline void
 BufferAllocator::reset() noexcept
 {
+    runDeleters();
     m_size = 0;
     m_pLastAlloc = nullptr;
 }
 
-inline isize
+inline usize
 BufferAllocator::realCap() const noexcept
 {
     return alignDown8(m_cap);
 }
+
+inline usize
+BufferAllocator::memoryUsed() const noexcept
+{
+    return m_size;
+}
+
+namespace print
+{
+
+template<typename T>
+inline isize
+format(Context* pCtx, FormatArgs fmtArgs, const BufferAllocator::Ptr<T>& x)
+{
+    if (x) return format(pCtx, fmtArgs, *x);
+    else return format(pCtx, fmtArgs, "null");
+}
+
+} /* namespace print */
 
 } /* namespace adt */

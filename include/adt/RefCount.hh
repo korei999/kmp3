@@ -255,7 +255,7 @@ RefCountedPtr<T>::alloc(ARGS&&... args)
 {
     using DeleterType = details::RefCounterOneAlloc<T>;
 
-    void* pBoth = Gpa::inst()->malloc(1, sizeof(DeleterType) + sizeof(T));
+    void* pBoth = Gpa::inst()->malloc(sizeof(DeleterType) + sizeof(T));
 
     RefCountedPtr rcp {UNINIT};
     rcp.m_pRC = static_cast<DeleterType*>(pBoth);
@@ -274,7 +274,7 @@ RefCountedPtr<T>::allocWithDeleter(CL_DELETER clDeleter, ARGS&&... args)
 {
     using DeleterType = details::RefCounterOneAllocCustom<T, CL_DELETER>;
 
-    void* pBoth = Gpa::inst()->malloc(1, sizeof(DeleterType) + sizeof(T));
+    void* pBoth = Gpa::inst()->malloc(sizeof(DeleterType) + sizeof(T));
 
     RefCountedPtr rcp {UNINIT};
     rcp.m_pRC = static_cast<DeleterType*>(pBoth);

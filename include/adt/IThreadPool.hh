@@ -56,7 +56,7 @@ struct IThreadPool
 
     virtual Task tryStealTask() noexcept = 0;
 
-    virtual int threadId() noexcept = 0;
+    virtual usize threadId() noexcept = 0;
 
     virtual Arena* arena() noexcept = 0;
 

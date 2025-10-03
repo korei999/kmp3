@@ -1,9 +1,6 @@
 #pragma once
 
-#include "IAllocator.hh"
-#include "assert.hh"
-#include "utils.hh"
-#include "SList.hh"
+#include "ArenaDeleterCRTP.hh"
 
 #if __has_include(<sys/mman.h>)
     #define ADT_ARENA_MMAP
@@ -11,7 +8,7 @@
 #elif defined _WIN32
     #define ADT_ARENA_WIN32
 #else
-    #warning "Arena in not implemented"
+    #warning "Arena is not implemented"
 #endif
 
 namespace adt
@@ -19,70 +16,10 @@ namespace adt
 
 struct ArenaScope;
 
-struct Arena : IArena
+/* Reserve/commit style linear allocator. */
+struct Arena : IArena, public ArenaDeleterCRTP<Arena>
 {
-    friend ArenaScope;
-
-    using PfnDeleter = void(*)(void**);
-
-    struct DeleterNode
-    {
-        void** ppObj {};
-        PfnDeleter pfnDelete {};
-    };
-
-    using ListNodeType = SList<DeleterNode>::Node;
-
-    template<typename T>
-    struct Ptr : protected ListNodeType
-    {
-        T* m_pData {};
-
-        /* */
-
-        Ptr() noexcept = default;
-
-        template<typename ...ARGS>
-        Ptr(Arena* pArena, ARGS&&... args)
-            : ListNodeType{nullptr, {(void**)this, (PfnDeleter)nullptrDeleter}},
-              m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
-        {
-            pArena->m_pLCurrentDeleters->insert(static_cast<ListNodeType*>(this));
-        }
-
-        template<typename ...ARGS>
-        Ptr(void (*pfn)(Ptr*), Arena* pArena, ARGS&&... args)
-            : ListNodeType{nullptr, {(void**)this, (PfnDeleter)pfn}},
-              m_pData {pArena->alloc<T>(std::forward<ARGS>(args)...)}
-        {
-            pArena->m_pLCurrentDeleters->insert(static_cast<ListNodeType*>(this));
-        }
-
-        /* */
-
-        static void
-        nullptrDeleter(Ptr* pPtr) noexcept
-        {
-            utils::destruct(pPtr->m_pData);
-            pPtr->m_pData = nullptr;
-        };
-
-        static void
-        simpleDeleter(Ptr* pPtr) noexcept
-        {
-            utils::destruct(pPtr->m_pData);
-        };
-
-        /* */
-
-        explicit operator bool() const noexcept { return m_pData != nullptr; }
-
-        T& operator*() noexcept { ADT_ASSERT(m_pData != nullptr, ""); return *m_pData; }
-        const T& operator*() const noexcept { ADT_ASSERT(m_pData != nullptr, ""); return *m_pData; }
-
-        T* operator->() noexcept { ADT_ASSERT(m_pData != nullptr, ""); return m_pData; }
-        const T* operator->() const noexcept { ADT_ASSERT(m_pData != nullptr, ""); return m_pData; }
-    };
+    using Deleter = ArenaDeleterCRTP<Arena>;
 
     static constexpr u64 INVALID_PTR = ~0llu;
 
@@ -94,8 +31,6 @@ struct Arena : IArena
     isize m_commited {};
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
-    SList<DeleterNode> m_lDeleters {}; /* Run deleters on reset()/freeAll() or state restorations. */
-    SList<DeleterNode>* m_pLCurrentDeleters {}; /* Switch and restore current list on ArenaScope changes. */
 
     /* */
 
@@ -104,12 +39,12 @@ struct Arena : IArena
 
     /* */
 
-    [[nodiscard]] virtual void* malloc(usize mCount, usize mSize) noexcept(false) override; /* AllocException */
-    [[nodiscard]] virtual void* zalloc(usize mCount, usize mSize) noexcept(false) override; /* AllocException */
-    [[nodiscard]] virtual void* realloc(void* p, usize oldCount, usize newCount, usize mSize) noexcept(false) override; /* AllocException */
-    virtual void free(void* ptr) noexcept override;
-    [[nodiscard]] virtual constexpr bool doesFree() const noexcept override;
-    [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override;
+    [[nodiscard]] virtual void* malloc(usize nBytes) noexcept(false) override; /* AllocException */
+    [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override; /* AllocException */
+    [[nodiscard]] virtual void* realloc(void* p, usize oldNBytes, usize newNBytes) noexcept(false) override; /* AllocException */
+    virtual void free(void* ptr, usize nBytes) noexcept override;
+    [[nodiscard]] virtual constexpr bool doesFree() const noexcept override { return false; }
+    [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override { return true; }
     virtual void freeAll() noexcept override;
 
     /* */
@@ -125,9 +60,6 @@ struct Arena : IArena
     isize memoryCommited() const noexcept { return m_commited; }
 
 protected:
-    /* BUG: asan sees it as stack-use-after-scope when running a deleter after variable's scope closes (its fine just ignore). */
-    ADT_NO_UB void runDeleters() noexcept;
-
     void growIfNeeded(isize newPos);
     void commit(void* p, isize size);
     void decommit(void* p, isize size);
@@ -139,6 +71,7 @@ struct ArenaState
     isize m_pos {};
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
+    ArenaScope* m_pCurrentScope {};
     SList<Arena::DeleterNode>* m_pLCurrentDeleters {};
 
     /* */
@@ -155,6 +88,7 @@ struct ArenaScope
     /* */
 
     ArenaScope(Arena* p) noexcept;
+
     ~ArenaScope() noexcept;
 };
 
@@ -190,7 +124,7 @@ ArenaScope::~ArenaScope() noexcept
 
 inline
 Arena::Arena(isize reserveSize, isize commitSize)
-    : m_pLCurrentDeleters{&m_lDeleters}
+    : Deleter{INIT}
 {
     [[maybe_unused]] int err = 0;
 
@@ -220,9 +154,9 @@ Arena::Arena(isize reserveSize, isize commitSize)
 }
 
 inline void*
-Arena::malloc(usize mCount, usize mSize)
+Arena::malloc(usize nBytes)
 {
-    const isize realSize = alignUp8(mCount * mSize);
+    const isize realSize = alignUp8(nBytes);
     void* pRet = (void*)((u8*)m_pData + m_pos);
 
     growIfNeeded(m_pos + realSize);
@@ -234,51 +168,39 @@ Arena::malloc(usize mCount, usize mSize)
 }
 
 inline void*
-Arena::zalloc(usize mCount, usize mSize)
+Arena::zalloc(usize nBytes)
 {
-    void* pMem = malloc(mCount, mSize);
-    ::memset(pMem, 0, mCount * mSize);
+    void* pMem = malloc(nBytes);
+    ::memset(pMem, 0, nBytes);
     return pMem;
 }
 
 inline void*
-Arena::realloc(void* p, usize oldCount, usize newCount, usize mSize)
+Arena::realloc(void* p, usize oldNBytes, usize newNBytes)
 {
-    if (!p) return malloc(newCount, mSize);
+    if (!p) return malloc(newNBytes);
 
     /* bump case */
     if (p == m_pLastAlloc)
     {
-        const isize realSize = alignUp8(newCount * mSize);
+        const isize realSize = alignUp8(newNBytes);
         const isize newPos = (m_pos - m_lastAllocSize) + realSize;
         growIfNeeded(newPos);
         m_lastAllocSize = realSize;
         return p;
     }
 
-    if (newCount <= oldCount) return p;
+    if (newNBytes <= oldNBytes) return p;
 
-    void* pMem = malloc(newCount, mSize);
-    if (p) ::memcpy(pMem, p, oldCount * mSize);
+    void* pMem = malloc(newNBytes);
+    if (p) ::memcpy(pMem, p, oldNBytes);
     return pMem;
 }
 
 inline void
-Arena::free(void*) noexcept
+Arena::free(void*, usize) noexcept
 {
     /* noop */
-}
-
-inline constexpr bool
-Arena::doesFree() const noexcept
-{
-    return false;
-}
-
-inline constexpr bool
-Arena::doesRealloc() const noexcept
-{
-    return true;
 }
 
 inline void
@@ -361,15 +283,6 @@ Arena::resetToPage(isize nthPage)
 }
 
 inline void
-Arena::runDeleters() noexcept
-{
-    for (auto e : *m_pLCurrentDeleters)
-        e.pfnDelete(e.ppObj);
-
-    m_pLCurrentDeleters->m_pHead = nullptr;
-}
-
-inline void
 Arena::growIfNeeded(isize newPos)
 {
     if (newPos > m_commited)
@@ -380,7 +293,13 @@ Arena::growIfNeeded(isize newPos)
         m_commited = newCommited;
     }
 
-    ADT_ASAN_UNPOISON((u8*)m_pData + m_pos, newPos - m_pos);
+#if ADT_ASAN
+    if (newPos > m_pos)
+        ADT_ASAN_UNPOISON((u8*)m_pData + m_pos, newPos - m_pos);
+    else if (newPos < m_pos)
+        ADT_ASAN_POISON((u8*)m_pData + newPos, m_pos - newPos);
+#endif
+
     m_pos = newPos;
 }
 

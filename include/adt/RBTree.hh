@@ -29,6 +29,7 @@
 
 #include "IAllocator.hh"
 #include "String.hh"
+#include "defer.hh"
 #include "utils.hh"
 #include "ILogger.hh"
 
@@ -496,7 +497,7 @@ template<typename T>
 inline void
 RBTree<T>::removeAndFree(IAllocator* p, Node* elm)
 {
-    p->free(remove(elm));
+    p->free(remove(elm), sizeof(Node));
 }
 
 template<typename T>
@@ -728,7 +729,7 @@ RBTree<T>::printNodes(
         print::toFILE(pA, pF, "{}{} {}{}" ADT_LOGGER_COL_NORM "\n", svPrefix, bLeft ? "|__" : "\\__", sCol, pNode->m_data);
 
         String sCat = StringCat(pA, svPrefix, bLeft ? "|   " : "    ");
-        ADT_DEFER( pA->free(sCat.m_pData) );
+        ADT_DEFER( sCat.destroy(pA) );
 
         printNodes(pA, pNode->left(), pF, sCat, true);
         printNodes(pA, pNode->right(), pF, sCat, false);
@@ -739,11 +740,10 @@ template<typename T>
 inline void
 RBTree<T>::destroy(IAllocator* pAlloc) noexcept
 {
-    traversePost(m_pRoot, [&](Node* p)
-        {
+    traversePost(m_pRoot, [&](Node* p) {
             if constexpr (!std::is_trivially_destructible_v<T>)
                 p->m_data.~T();
-            pAlloc->free(p);
+            pAlloc->free(p, sizeof(Node));
             return false;
         }
     );

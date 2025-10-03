@@ -24,7 +24,7 @@ IThreadPool::optimalThreadCount() noexcept
 template<typename T>
 inline
 IThreadPool::Future<T>::Future(IThreadPool* pPool) noexcept
-    : Base {INIT}, m_pPool {pPool}
+    : Base{INIT}, m_pPool{pPool}
 {
     ADT_ASSERT(pPool != nullptr, "");
 }
@@ -72,7 +72,7 @@ struct ThreadPool : IThreadPool
     /* */
 
     static inline thread_local int gtl_threadId {};
-    static inline thread_local Arena gtl_arena {};
+    static inline thread_local Arena* gtl_pArena {};
 
     /* */
 
@@ -99,7 +99,7 @@ struct ThreadPool : IThreadPool
     virtual bool addTask(void (*pfn)(void*), void* pArg, isize argSize) noexcept override;
     virtual int nThreads() const noexcept override { return m_spThreads.size(); }
     virtual Task tryStealTask() noexcept override;
-    virtual int threadId() noexcept override;
+    virtual usize threadId() noexcept override;
     virtual Arena* arena() noexcept override;
 
     /* */
@@ -158,8 +158,12 @@ ThreadPool::loop()
     if (m_pfnLoopStart) m_pfnLoopStart(m_pLoopStartArg);
     ADT_DEFER( if (m_pfnLoopEnd) m_pfnLoopEnd(m_pLoopEndArg) );
 
-    new(&gtl_arena) Arena {m_arenaReserved};
-    ADT_DEFER( gtl_arena.freeAll() );
+    gtl_pArena = Gpa::inst()->alloc<Arena>(m_arenaReserved);
+    ADT_DEFER(
+        gtl_pArena->freeAll();
+        Gpa::inst()->free(gtl_pArena);
+    );
+
     gtl_threadId = m_atomIdCounter.fetchAdd(1, atomic::ORDER::RELAXED);
 
     while (true)
@@ -205,7 +209,7 @@ ThreadPool::start()
         );
     }
 
-    new(&gtl_arena) Arena {m_arenaReserved};
+    gtl_pArena = Gpa::inst()->alloc<Arena>(m_arenaReserved);
 
     m_bStarted = true;
 
@@ -265,7 +269,8 @@ ThreadPool::destroy() noexcept
         m_cndWait.destroy();
     }
 
-    gtl_arena.freeAll();
+    gtl_pArena->freeAll();
+    Gpa::inst()->free(gtl_pArena);
 }
 
 inline bool
@@ -301,7 +306,7 @@ ThreadPool::tryStealTask() noexcept
     return task;
 }
 
-inline int
+inline usize
 ThreadPool::threadId() noexcept
 {
     return gtl_threadId;
@@ -310,7 +315,7 @@ ThreadPool::threadId() noexcept
 inline Arena*
 ThreadPool::arena() noexcept
 {
-    return &gtl_arena;
+    return gtl_pArena;
 }
 
 /* Usage example:
