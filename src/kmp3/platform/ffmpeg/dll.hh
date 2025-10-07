@@ -20,7 +20,7 @@ namespace platform::ffmpeg::dll
 bool loadLibs();
 void unloadLibs();
 
-#define PFN_INLINE(name) inline std::add_pointer_t<decltype(::name)> name;
+#define PFN_INLINE(name) inline decltype(::name)* name;
 
 PFN_INLINE(avformat_close_input);
 PFN_INLINE(av_packet_free);
