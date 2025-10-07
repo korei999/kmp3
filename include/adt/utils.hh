@@ -10,6 +10,7 @@
 #include <cstring>
 #include <utility>
 #include <ctime>
+#include <cmath>
 
 namespace adt::utils
 {
