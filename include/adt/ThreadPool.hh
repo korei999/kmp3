@@ -72,7 +72,7 @@ struct ThreadPool : IThreadPool
     /* */
 
     static inline thread_local int gtl_threadId {};
-    static inline thread_local Arena* gtl_pArena {};
+    static inline thread_local Arena gtl_arena {};
 
     /* */
 
@@ -100,6 +100,8 @@ struct ThreadPool : IThreadPool
     virtual int nThreads() const noexcept override { return m_spThreads.size(); }
     virtual Task tryStealTask() noexcept override;
     virtual usize threadId() noexcept override;
+    virtual Arena* createArenaForThisThread(isize reserve) noexcept override;
+    virtual void destroyArenaForThisThread() noexcept override;
     virtual Arena* arena() noexcept override;
 
     /* */
@@ -158,11 +160,8 @@ ThreadPool::loop()
     if (m_pfnLoopStart) m_pfnLoopStart(m_pLoopStartArg);
     ADT_DEFER( if (m_pfnLoopEnd) m_pfnLoopEnd(m_pLoopEndArg) );
 
-    gtl_pArena = Gpa::inst()->alloc<Arena>(m_arenaReserved);
-    ADT_DEFER(
-        gtl_pArena->freeAll();
-        Gpa::inst()->free(gtl_pArena);
-    );
+    new (&gtl_arena) Arena{m_arenaReserved};
+    ADT_DEFER( gtl_arena.freeAll() );
 
     gtl_threadId = m_atomIdCounter.fetchAdd(1, atomic::ORDER::RELAXED);
 
@@ -209,7 +208,7 @@ ThreadPool::start()
         );
     }
 
-    gtl_pArena = Gpa::inst()->alloc<Arena>(m_arenaReserved);
+    new (&gtl_arena) Arena{m_arenaReserved};
 
     m_bStarted = true;
 
@@ -220,6 +219,8 @@ ThreadPool::start()
 inline void
 ThreadPool::wait(bool bHelp) noexcept
 {
+    if (m_spThreads.size() <= 0) return;
+
     if (bHelp)
     {
 again:
@@ -269,8 +270,7 @@ ThreadPool::destroy() noexcept
         m_cndWait.destroy();
     }
 
-    gtl_pArena->freeAll();
-    Gpa::inst()->free(gtl_pArena);
+    gtl_arena.freeAll();
 }
 
 inline bool
@@ -313,9 +313,22 @@ ThreadPool::threadId() noexcept
 }
 
 inline Arena*
+ThreadPool::createArenaForThisThread(isize reserve) noexcept
+{
+    new (&gtl_arena) Arena{reserve};
+    return &gtl_arena;
+}
+
+inline void
+ThreadPool::destroyArenaForThisThread() noexcept
+{
+    gtl_arena.freeAll();
+}
+
+inline Arena*
 ThreadPool::arena() noexcept
 {
-    return gtl_pArena;
+    return &gtl_arena;
 }
 
 /* Usage example:

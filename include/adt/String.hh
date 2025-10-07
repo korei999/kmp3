@@ -734,6 +734,20 @@ StringCat(IAllocator* p, const StringView& l, const StringView& r)
     return sNew;
 }
 
+inline const char&
+VString::operator[](isize i) const noexcept
+{
+    ADT_ASSERT(i >= 0 && i < size(), "i: {}, size: {}", i, size());
+    return data()[i];
+}
+
+inline char&
+VString::operator[](isize i) noexcept
+{
+    ADT_ASSERT(i >= 0 && i < size(), "i: {}, size: {}", i, size());
+    return data()[i];
+}
+
 inline void
 VString::destroy(IAllocator* pAlloc) noexcept
 {
@@ -798,6 +812,8 @@ VString::cap() const noexcept
 inline
 VString::VString(IAllocator* pAlloc, const StringView sv)
 {
+    if (sv.empty()) return;
+
     if (sv.m_size <= 15)
     {
         ::memcpy(m_aBuff, sv.m_pData, sv.m_size);
@@ -853,6 +869,7 @@ VString::push(IAllocator* pAlloc, char c)
         if (m_allocated.size >= m_cap) grow(pAlloc, (m_cap+1) * 2);
 
         m_allocated.pData[m_allocated.size++] = c;
+        m_allocated.pData[m_allocated.size] = '\0';
         return m_allocated.size - 1;
     }
 }
@@ -893,6 +910,48 @@ VString::push(IAllocator* pAlloc, const StringView sv)
         ::memcpy(m_allocated.pData + m_allocated.size, sv.m_pData, sv.m_size);
         const isize ret = m_allocated.size;
         m_allocated.size += sv.m_size;
+        m_allocated.pData[m_allocated.size] = '\0';
+        return ret;
+    }
+}
+
+inline isize
+VString::pushN(IAllocator* pAlloc, char c, isize nTimes)
+{
+    ADT_ASSERT(m_cap >= 16, "{}", m_cap);
+    if (m_cap == 16)
+    {
+        const isize firstSize = ::strnlen(m_aBuff, 16);
+        if (nTimes + firstSize + 1 > 16)
+        {
+            const isize newCap = (nTimes + firstSize + 1) * 2;
+            char* pNew = pAlloc->zallocV<char>(newCap);
+            ::memcpy(pNew, m_aBuff, firstSize);
+            ::memset(pNew + firstSize, c, nTimes);
+
+            m_allocated.pData = pNew;
+            m_allocated.size = firstSize + nTimes;
+            m_cap = newCap;
+
+            return firstSize;
+        }
+        else
+        {
+            ::memset(m_aBuff + firstSize, c, nTimes);
+            return firstSize;
+        }
+    }
+    else
+    {
+        ADT_ASSERT(m_cap > 16, "{}", m_cap);
+
+        if (m_allocated.size + nTimes >= m_cap)
+            grow(pAlloc, 2 * (m_cap + nTimes));
+
+        ::memset(m_allocated.pData + m_allocated.size, c, nTimes);
+        const isize ret = m_allocated.size;
+        m_allocated.size += nTimes;
+        m_allocated.pData[m_allocated.size] = '\0';
         return ret;
     }
 }

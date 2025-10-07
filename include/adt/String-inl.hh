@@ -62,6 +62,8 @@ struct StringView
 
     /* */
 
+    explicit constexpr operator Span<const char>() const noexcept { return {data(), size()}; };
+    explicit constexpr operator Span<char>() noexcept { return {data(), size()}; };
     explicit constexpr operator bool() const noexcept { return size() > 0; }
 
     [[nodiscard]] inline bool operator==(const StringView& r) const noexcept;
@@ -234,6 +236,11 @@ struct VString
 
     /* */
 
+    const char& operator[](isize i) const noexcept;
+    char& operator[](isize i) noexcept;
+
+    /* */
+
     void destroy(IAllocator* pAlloc) noexcept;
     bool steal(String* pStr) noexcept;
 
@@ -246,6 +253,7 @@ struct VString
 
     isize push(IAllocator* pAlloc, char c);
     isize push(IAllocator* pAlloc, const StringView sv);
+    isize pushN(IAllocator* pAlloc, char c, isize nTimes);
 
     void reallocWith(IAllocator* pAlloc, const StringView sv);
     void removeNLEnd(bool bDestructive) noexcept;

@@ -100,7 +100,7 @@ struct IMixer
 
 protected:
     IMixer& startDecoderThread();
-    THREAD_STATUS refillRingBufferLoop();
+    THREAD_STATUS refillRingBufferLoop(this IMixer& self);
     bool playFinal(StringView svPath);
 };
 

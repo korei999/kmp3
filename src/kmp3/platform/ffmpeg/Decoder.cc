@@ -1,5 +1,5 @@
 #include "Decoder.hh"
-#include "pfn.hh"
+#include "dll.hh"
 
 extern "C"
 {
@@ -27,19 +27,19 @@ covertFormat(int format)
 void
 Decoder::close()
 {
-    if (m_pFormatCtx) pfn::avformat_close_input(&m_pFormatCtx);
-    if (m_pCodecCtx) pfn::avcodec_free_context(&m_pCodecCtx);
-    if (m_pSwr) pfn::swr_free(&m_pSwr);
-    if (m_pImgPacket) pfn::av_packet_free(&m_pImgPacket);
-    if (m_pImgFrame) pfn::av_frame_free(&m_pImgFrame);
+    if (m_pFormatCtx) dll::avformat_close_input(&m_pFormatCtx);
+    if (m_pCodecCtx) dll::avcodec_free_context(&m_pCodecCtx);
+    if (m_pSwr) dll::swr_free(&m_pSwr);
+    if (m_pImgPacket) dll::av_packet_free(&m_pImgPacket);
+    if (m_pImgFrame) dll::av_frame_free(&m_pImgFrame);
 
-    if (m_pTmpPacket) pfn::av_packet_free(&m_pTmpPacket);
-    if (m_pTmpFrame) pfn::av_frame_free(&m_pTmpFrame);
-    if (m_pCvtFrame) pfn::av_frame_free(&m_pCvtFrame);
+    if (m_pTmpPacket) dll::av_packet_free(&m_pTmpPacket);
+    if (m_pTmpFrame) dll::av_frame_free(&m_pTmpFrame);
+    if (m_pCvtFrame) dll::av_frame_free(&m_pCvtFrame);
 
 #ifdef OPT_CHAFA
-    if (m_pConverted) pfn::av_frame_free(&m_pConverted);
-    if (m_pSwsCtx) pfn::sws_freeContext(m_pSwsCtx), m_pSwsCtx = {};
+    if (m_pConverted) dll::av_frame_free(&m_pConverted);
+    if (m_pSwsCtx) dll::sws_freeContext(m_pSwsCtx), m_pSwsCtx = {};
 #endif
 
     m_pStream = {};
@@ -56,7 +56,7 @@ Decoder::close()
 Decoder&
 Decoder::init()
 {
-    if (!pfn::loadSO()) throw RuntimeException("failure while trying to load ffmpeg libraries...");
+    if (!dll::loadLibs()) throw RuntimeException("failure while trying to load ffmpeg libraries...");
     new(&m_mtx) Mutex {Mutex::TYPE::PLAIN};
     return *this;
 }
@@ -69,7 +69,7 @@ Decoder::destroy()
         close();
     }
     m_mtx.destroy();
-    pfn::unloadSO();
+    dll::unloadLibs();
 
     LogDebug("Decoder::destroy()\n");
 }
@@ -101,7 +101,7 @@ Decoder::getMetadata(const StringView svKey)
     strncpy(aBuff, svKey.data(), utils::min(svKey.size(), utils::size(aBuff) - 1));
 
     AVDictionaryEntry* pTag {};
-    pTag = pfn::av_dict_get(m_pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
+    pTag = dll::av_dict_get(m_pStream->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
 
     if (pTag)
     {
@@ -109,7 +109,7 @@ Decoder::getMetadata(const StringView svKey)
     }
     else
     {
-        pTag = pfn::av_dict_get(m_pFormatCtx->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
+        pTag = dll::av_dict_get(m_pFormatCtx->metadata, aBuff, pTag, AV_DICT_IGNORE_SUFFIX);
         if (pTag) return {pTag->value};
         else return {};
     }
@@ -135,15 +135,15 @@ Decoder::getAttachedPicture()
 
     if (!pStream) return;
 
-    const AVCodec* pCodec = pfn::avcodec_find_decoder(pStream->codecpar->codec_id);
+    const AVCodec* pCodec = dll::avcodec_find_decoder(pStream->codecpar->codec_id);
     if (!pCodec) return;
 
-    auto* pCodecCtx = pfn::avcodec_alloc_context3(pCodec);
+    auto* pCodecCtx = dll::avcodec_alloc_context3(pCodec);
     if (!pCodecCtx) return;
-    defer( pfn::avcodec_free_context(&pCodecCtx) );
+    defer( dll::avcodec_free_context(&pCodecCtx) );
 
-    pfn::avcodec_parameters_to_context(pCodecCtx, pStream->codecpar);
-    err = pfn::avcodec_open2(pCodecCtx, pCodec, {});
+    dll::avcodec_parameters_to_context(pCodecCtx, pStream->codecpar);
+    err = dll::avcodec_open2(pCodecCtx, pCodec, {});
     if (err < 0)
     {
         LogDebug("avcodec_open2()\n");
@@ -152,30 +152,30 @@ Decoder::getAttachedPicture()
 
     LogDebug("codec name: '{}'\n", pCodec->long_name);
 
-    m_pImgPacket = pfn::av_packet_alloc();
-    err = pfn::av_read_frame(m_pFormatCtx, m_pImgPacket);
+    m_pImgPacket = dll::av_packet_alloc();
+    err = dll::av_read_frame(m_pFormatCtx, m_pImgPacket);
     if (err != 0) return;
 
-    err = pfn::avcodec_send_packet(pCodecCtx, m_pImgPacket);
+    err = dll::avcodec_send_packet(pCodecCtx, m_pImgPacket);
     if (err != 0) return;
 
-    m_pImgFrame = pfn::av_frame_alloc();
-    err = pfn::avcodec_receive_frame(pCodecCtx, m_pImgFrame);
+    m_pImgFrame = dll::av_frame_alloc();
+    err = dll::avcodec_receive_frame(pCodecCtx, m_pImgFrame);
     if (err == AVERROR(EINVAL))
     {
         LogDebug("err: {}, AVERROR(EINVAL)\n", err);
         return;
     }
 
-    m_pSwsCtx = pfn::sws_getContext(
+    m_pSwsCtx = dll::sws_getContext(
         m_pImgFrame->width, m_pImgFrame->height, (AVPixelFormat)m_pImgFrame->format,
         m_pImgFrame->width, m_pImgFrame->height, AV_PIX_FMT_RGB24,
         SWS_LANCZOS,
         {}, {}, {}
     );
 
-    m_pConverted = pfn::av_frame_alloc();
-    pfn::av_image_fill_linesizes(m_pConverted->linesize, AV_PIX_FMT_RGB24, m_pImgFrame->width);
+    m_pConverted = dll::av_frame_alloc();
+    dll::av_image_fill_linesizes(m_pConverted->linesize, AV_PIX_FMT_RGB24, m_pImgFrame->width);
 
     m_pConverted->format = AV_PIX_FMT_RGB24;
     m_pConverted->width = m_pImgFrame->width;
@@ -183,14 +183,14 @@ Decoder::getAttachedPicture()
 
     LogDebug("format: {}, converted format: {}\n", m_pImgFrame->format, m_pConverted->format);
 
-    err = pfn::av_frame_get_buffer(m_pConverted, 0);
+    err = dll::av_frame_get_buffer(m_pConverted, 0);
     if (err != 0)
     {
         LogDebug("av_frame_get_buffer()\n");
         return;
     }
 
-    pfn::sws_scale_frame(m_pSwsCtx, m_pConverted, m_pImgFrame);
+    dll::sws_scale_frame(m_pSwsCtx, m_pConverted, m_pImgFrame);
 
     m_coverImg = Image {
         .pBuff = m_pConverted->data[0],
@@ -215,39 +215,39 @@ Decoder::open(StringView svPath)
     String sPathNullTerm = String(Gpa::inst(), svPath); /* with null char */
     defer( sPathNullTerm.destroy(Gpa::inst()) );
 
-    pfn::av_log_set_level(AV_LOG_QUIET);
+    dll::av_log_set_level(AV_LOG_QUIET);
 
     int err = 0;
     defer( if (err < 0) close() );
 
-    err = pfn::avformat_open_input(&m_pFormatCtx, sPathNullTerm.data(), {}, {});
+    err = dll::avformat_open_input(&m_pFormatCtx, sPathNullTerm.data(), {}, {});
     if (err != 0) return audio::ERROR::FAIL;
 
-    err = pfn::avformat_find_stream_info(m_pFormatCtx, {});
+    err = dll::avformat_find_stream_info(m_pFormatCtx, {});
     if (err != 0) return audio::ERROR::FAIL;
 
-    int idx = pfn::av_find_best_stream(m_pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
+    int idx = dll::av_find_best_stream(m_pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, {}, 0);
     if (idx < 0) return audio::ERROR::FAIL;
 
     m_audioStreamIdx = idx;
     m_pStream = m_pFormatCtx->streams[idx];
 
-    const AVCodec* pCodec = pfn::avcodec_find_decoder(m_pStream->codecpar->codec_id);
+    const AVCodec* pCodec = dll::avcodec_find_decoder(m_pStream->codecpar->codec_id);
     if (!pCodec) return audio::ERROR::FAIL;
 
-    m_pCodecCtx = pfn::avcodec_alloc_context3(pCodec);
+    m_pCodecCtx = dll::avcodec_alloc_context3(pCodec);
     if (!m_pCodecCtx) return audio::ERROR::FAIL;
 
-    pfn::avcodec_parameters_to_context(m_pCodecCtx, m_pStream->codecpar);
+    dll::avcodec_parameters_to_context(m_pCodecCtx, m_pStream->codecpar);
 
-    err = pfn::avcodec_open2(m_pCodecCtx, pCodec, {});
+    err = dll::avcodec_open2(m_pCodecCtx, pCodec, {});
     if (err < 0)
     {
         LogDebug("avcodec_open2\n");
         return audio::ERROR::FAIL;
     }
 
-    err = pfn::swr_alloc_set_opts2(&m_pSwr,
+    err = dll::swr_alloc_set_opts2(&m_pSwr,
         &m_pStream->codecpar->ch_layout, AV_SAMPLE_FMT_FLT, m_pStream->codecpar->sample_rate,
         &m_pStream->codecpar->ch_layout, (AVSampleFormat)m_pStream->codecpar->format, m_pStream->codecpar->sample_rate,
         0, {}
@@ -259,9 +259,9 @@ Decoder::open(StringView svPath)
 
     getAttachedPicture();
 
-    m_pTmpPacket = pfn::av_packet_alloc();
-    m_pTmpFrame = pfn::av_frame_alloc();
-    m_pCvtFrame = pfn::av_frame_alloc();
+    m_pTmpPacket = dll::av_packet_alloc();
+    m_pTmpFrame = dll::av_frame_alloc();
+    m_pCvtFrame = dll::av_frame_alloc();
 
     return audio::ERROR::OK_;
 }
@@ -283,20 +283,20 @@ Decoder::writeToRingBuffer(
     *pSamplesWritten = 0;
 
     AVPacket* pPacket = m_pTmpPacket;
-    while (pfn::av_read_frame(m_pFormatCtx, pPacket) == 0)
+    while (dll::av_read_frame(m_pFormatCtx, pPacket) == 0)
     {
-        defer( pfn::av_packet_unref(pPacket) );
+        defer( dll::av_packet_unref(pPacket) );
 
         if (pPacket->stream_index != m_pStream->index) continue;
 
-        err = pfn::avcodec_send_packet(m_pCodecCtx, pPacket);
+        err = dll::avcodec_send_packet(m_pCodecCtx, pPacket);
         if (err != 0 && err != AVERROR(EAGAIN))
             LogWarn("!EAGAIN\n");
 
         AVFrame* pFrame = m_pTmpFrame;
-        while ((err = pfn::avcodec_receive_frame(m_pCodecCtx, pFrame)) == 0)
+        while ((err = dll::avcodec_receive_frame(m_pCodecCtx, pFrame)) == 0)
         {
-            defer( pfn::av_frame_unref(pFrame) );
+            defer( dll::av_frame_unref(pFrame) );
 
             f64 currentTimeInSeconds = av_q2d(m_pStream->time_base) * (pFrame->best_effort_timestamp + pFrame->nb_samples);
             m_currentMS = currentTimeInSeconds * 1000.0;
@@ -310,14 +310,14 @@ Decoder::writeToRingBuffer(
             pRes->ch_layout = pFrame->ch_layout;
             pRes->format = AV_SAMPLE_FMT_FLT;
 
-            pfn::swr_config_frame(m_pSwr, pRes, pFrame);
-            err = pfn::swr_convert_frame(m_pSwr, pRes, pFrame);
-            defer( pfn::av_frame_unref(pRes) );
+            dll::swr_config_frame(m_pSwr, pRes, pFrame);
+            err = dll::swr_convert_frame(m_pSwr, pRes, pFrame);
+            defer( dll::av_frame_unref(pRes) );
 
             if (err < 0)
             {
                 char aBuff[AV_ERROR_MAX_STRING_SIZE] {};
-                const int n = pfn::av_strerror(err, aBuff, sizeof(aBuff));
+                const int n = dll::av_strerror(err, aBuff, sizeof(aBuff));
                 LogError("swr_convert_frame(): {}\n", Span{aBuff, n});
                 continue;
             }
@@ -350,9 +350,9 @@ Decoder::seekMS(f64 ms)
 {
     if (!m_pCodecCtx) return;
 
-    pfn::avcodec_flush_buffers(m_pCodecCtx);
-    i64 pts = pfn::av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
-    pfn::av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);
+    dll::avcodec_flush_buffers(m_pCodecCtx);
+    i64 pts = dll::av_rescale_q(f64(ms) / 1000.0 * AV_TIME_BASE, AV_TIME_BASE_Q, m_pStream->time_base);
+    dll::av_seek_frame(m_pFormatCtx, m_audioStreamIdx, pts, 0);
 }
 
 i64

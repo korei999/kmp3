@@ -58,6 +58,8 @@ struct IThreadPool
 
     virtual usize threadId() noexcept = 0;
 
+    virtual Arena* createArenaForThisThread(isize reserve) noexcept = 0;
+    virtual void destroyArenaForThisThread() noexcept = 0;
     virtual Arena* arena() noexcept = 0;
 
     template<typename CL>

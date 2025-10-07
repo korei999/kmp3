@@ -60,6 +60,7 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
     if (pTp)
     {
         Arena* pArena = pTp->arena();
+        ADT_ASSERT(pArena != nullptr, "");
         if (pArena->memoryReserved() <= 0) goto fallbackToFixedBuffer;
 
         ArenaScope arenaScope {pArena};
@@ -324,9 +325,21 @@ Logger::formatHeader(LEVEL eLevel, std::source_location loc, void*, Span<char> s
         svCol1 = ADT_LOGGER_COL_NORM;
     }
 
+    char aTimeBuff[64] {};
+    time_t now = ::time(nullptr);
+
+#ifdef _WIN32
+    tm* pTm = ::localtime(&now);
+#else
+    tm timeStruct {};
+    tm* pTm = ::localtime_r(&now, &timeStruct);
+#endif
+
+    const isize n = strftime(aTimeBuff, sizeof(aTimeBuff), "%Y-%m-%d %I:%M:%S%p", pTm);
+
     if (loc.line() != 0)
-        return print::toSpan(spBuff, "({}{}{}: {}, {}): ", svCol0, eLevel, svCol1, print::shorterSourcePath(loc.file_name()), loc.line());
-    else return print::toSpan(spBuff, "({}{}{}): ", svCol0, eLevel, svCol1);
+        return print::toSpan(spBuff, "({}{}{}: {}, {}, {}): ", svCol0, eLevel, svCol1, StringView{aTimeBuff, n}, print::shorterSourcePath(loc.file_name()), loc.line());
+    else return print::toSpan(spBuff, "({}{}{}: {}): ", svCol0, eLevel, svCol1, StringView{aTimeBuff, n});
 }
 
 inline void
@@ -357,7 +370,7 @@ Logger::destroy() noexcept
 inline THREAD_STATUS
 Logger::loop() noexcept
 {
-    char aHeaderBuff[256] {};
+    char aHeaderBuff[512] {};
 
     while (true)
     {

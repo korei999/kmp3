@@ -1,10 +1,10 @@
-#include "pfn.hh"
+#include "dll.hh"
 
 #include <dlfcn.h>
 
 using namespace adt;
 
-namespace platform::ffmpeg::pfn
+namespace platform::ffmpeg::dll
 {
 
 void (*avformat_close_input)(AVFormatContext** s);
@@ -69,8 +69,29 @@ void (*sws_freeContext)(struct SwsContext* swsContext);
 static void* s_pLibavformat;
 static void* s_pLiblibswscale;
 
+static void*
+tryLoad(IArena* pArena, const StringView svDLLName)
+{
+    constexpr StringView aPaths[] {
+        "",
+        "/usr/local/lib/",
+        "/usr/lib/",
+        "/opt/local/lib/",
+        "/opt/homebrew/lib/",
+    };
+
+    for (isize i = 0; i < utils::size(aPaths); ++i)
+    {
+        String s = StringCat(pArena, aPaths[i], svDLLName);
+        void* pRet = dlopen(s.data(), RTLD_NOW | RTLD_LOCAL);
+        if (pRet != nullptr) return pRet;
+    }
+
+    return nullptr;
+}
+
 bool
-loadSO()
+loadLibs()
 {
 #define SYM(lib, name)                                                                                                 \
     do                                                                                                                 \
@@ -84,11 +105,15 @@ loadSO()
         }                                                                                                              \
     } while (0)
 
+    Arena* pArena = IThreadPool::inst()->arena();
+    ArenaScope ArenaScope {pArena};
+
     {
+
 #ifdef __APPLE__
-        s_pLibavformat = dlopen("/usr/local/lib/libavformat.dylib", RTLD_NOW | RTLD_LOCAL);
+        s_pLibavformat = tryLoad(pArena, "libavformat.dylib");
 #else
-        s_pLibavformat = dlopen("libavformat.so", RTLD_NOW | RTLD_LOCAL);
+        s_pLibavformat = tryLoad(pArena, "libavformat.so");
 #endif
         if (!s_pLibavformat) return false;
 
@@ -136,9 +161,9 @@ loadSO()
 #ifdef OPT_CHAFA
 
 #ifdef __APPLE__
-        s_pLiblibswscale = dlopen("/usr/local/lib/libswscale.dylib", RTLD_NOW | RTLD_LOCAL);
+        s_pLiblibswscale = tryLoad(pArena, "libswscale.dylib");
 #else
-        s_pLiblibswscale = dlopen("libswscale.so", RTLD_NOW | RTLD_LOCAL);
+        s_pLiblibswscale = tryLoad(pArena, "libswscale.so");
 #endif
         if (!s_pLiblibswscale) return false;
 
@@ -154,12 +179,12 @@ loadSO()
 }
 
 void
-unloadSO()
+unloadLibs()
 {
-    if (s_pLibavformat) dlclose(s_pLibavformat);
+    if (s_pLibavformat) dlclose(s_pLibavformat), s_pLibavformat = nullptr;
 #ifdef OPT_CHAFA
-    if (s_pLiblibswscale) dlclose(s_pLiblibswscale);
+    if (s_pLiblibswscale) dlclose(s_pLiblibswscale), s_pLiblibswscale = nullptr;
 #endif
 }
 
-} /* namespace platform::ffmpeg::pfn */
+} /* namespace platform::ffmpeg::dll */

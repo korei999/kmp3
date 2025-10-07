@@ -30,14 +30,14 @@ namespace adt::rng
 
 struct PCG32
 {
-    u64 m_state {};
-    u64 m_inc {}; /* Must be odd. */
+    usize m_state {};
+    usize m_inc {}; /* Must be odd. */
 
     /* */
 
     PCG32() = default;
 
-    PCG32(u64 seed, u64 seq = 1) : m_inc((seq << 1u) | 1u)
+    PCG32(usize seed, usize seq = 1) : m_inc((seq << 1u) | 1u)
     {
         next();
         m_state += seed;
@@ -49,8 +49,8 @@ struct PCG32
     u32
     next()
     {
-        u64 oldState = m_state;
-        m_state = oldState * 6364136223846793005ULL + m_inc;
+        usize oldState = m_state;
+        m_state = oldState * 6364136223846793005ull + m_inc;
         u32 xorShifted = static_cast<u32>(((oldState >> 18u) ^ oldState) >> 27u);
         u32 rot = static_cast<u32>(oldState >> 59u);
         return (xorShifted >> rot) | (xorShifted << ((-rot) & 31));

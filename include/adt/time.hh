@@ -41,7 +41,7 @@
 namespace adt::time
 {
 
-using Type = i64;
+using Type = isize;
 
 static constexpr Type USEC = 1;
 static constexpr Type MSEC = 1'000;

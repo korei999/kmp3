@@ -11,28 +11,40 @@ f32 g_aDrainBuffer[DRAIN_BUFFER_SIZE] {};
 IMixer&
 IMixer::startDecoderThread()
 {
-    new(&m_ringBuff) RingBuffer {RING_BUFFER_SIZE};
-    new(&m_ringBuff.m_thrd) Thread {(ThreadFn)methodPointerNonVirtual(&IMixer::refillRingBufferLoop), this};
+    new (&m_ringBuff) RingBuffer {RING_BUFFER_SIZE};
+    new (&m_ringBuff.m_thrd) Thread {
+        [](void* p) {
+            IMixer& self = *static_cast<IMixer*>(p);
+            self.refillRingBufferLoop();
+            return THREAD_STATUS(0);
+        },
+        this
+    };
 
     return *this;
 }
 
 THREAD_STATUS
-IMixer::refillRingBufferLoop()
+IMixer::refillRingBufferLoop(this IMixer& self)
 {
-    defer( m_ringBuff.m_atom_bLoopDone.store(true, atomic::ORDER::RELAXED) );
+    IThreadPool::inst()->createArenaForThisThread(SIZE_1M);
 
-    while (m_bRunning)
+    defer(
+        self.m_ringBuff.m_atom_bLoopDone.store(true, atomic::ORDER::RELAXED);
+        IThreadPool::inst()->destroyArenaForThisThread();
+    );
+
+    while (self.m_bRunning)
     {
         {
-            LockScope lockRing {&m_ringBuff.m_mtx};
-            while (!m_ringBuff.m_bQuit && m_ringBuff.m_size >= RING_BUFFER_LOW_THRESHOLD)
-                m_ringBuff.m_cnd.wait(&m_ringBuff.m_mtx);
+            LockScope lockRing {&self.m_ringBuff.m_mtx};
+            while (!self.m_ringBuff.m_bQuit && self.m_ringBuff.m_size >= RING_BUFFER_LOW_THRESHOLD)
+                self.m_ringBuff.m_cnd.wait(&self.m_ringBuff.m_mtx);
 
-            if (m_ringBuff.m_bQuit) break;
+            if (self.m_ringBuff.m_bQuit) break;
         }
 
-        fillRingBuffer();
+        self.fillRingBuffer();
     }
 
     return THREAD_STATUS{0};

@@ -12,11 +12,11 @@ extern "C"
 #endif
 }
 
-namespace platform::ffmpeg::pfn
+namespace platform::ffmpeg::dll
 {
 
-bool loadSO();
-void unloadSO();
+bool loadLibs();
+void unloadLibs();
 
 extern void (*avformat_close_input)(AVFormatContext** s);
 extern void (*avcodec_free_context)(AVCodecContext** avctx);
@@ -76,4 +76,5 @@ extern int (*sws_scale_frame)(struct SwsContext* c, AVFrame* dst, const AVFrame*
 extern void (*sws_freeContext)(struct SwsContext* swsContext);
 
 #endif /* OPT_CHAFA */
-} /* namespace platform::ffmpeg::pfn */
+
+} /* namespace platform::ffmpeg::dll */

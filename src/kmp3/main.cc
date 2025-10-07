@@ -217,8 +217,6 @@ parseArgs(int argc, char** argv)
 static void
 startup(int argc, char** argv)
 {
-    Gpa alloc;
-
     app::g_eUIFrontend = app::UI::ANSI;
 #if OPT_PIPEWIRE
     app::g_eMixer = app::MIXER::PIPEWIRE;
@@ -237,7 +235,7 @@ startup(int argc, char** argv)
     app::g_eLogLevel = ILogger::LEVEL::DEBUG;
 #endif
 
-    ThreadPool zeroThreadPool {SIZE_1M * 64};
+    ThreadPool zeroThreadPool {SIZE_1M * 64}; /* Holds 1 arena for the main thread. */
     IThreadPool::setGlobal(&zeroThreadPool);
     defer( zeroThreadPool.destroy() );
 
@@ -254,11 +252,11 @@ startup(int argc, char** argv)
 
     i64 nBytes = 0;
     char* pInput = nullptr;
-    defer( alloc.free(pInput) );
+    defer( Gpa::inst()->free(pInput) );
 
     if (ioctl(STDIN_FILENO, FIONREAD, &nBytes) != -1 && nBytes > 0)
     {
-        pInput = alloc.zallocV<char>(nBytes + 1);
+        pInput = Gpa::inst()->zallocV<char>(nBytes + 1);
         int nRead = 0;
         ADT_RUNTIME_EXCEPTION_FMT((nRead = read(STDIN_FILENO, pInput, nBytes)) > 0, "nRead: {}", nRead);
         StringView svArgs {pInput, nBytes};
@@ -276,7 +274,7 @@ startup(int argc, char** argv)
         argv = aInput.data();
     }
 
-    Player player {&alloc, argc, argv};
+    Player player {Gpa::inst(), argc, argv};
     app::g_pPlayer = &player;
     defer( player.destroy() );
 
@@ -293,7 +291,7 @@ startup(int argc, char** argv)
         app::decoder().init();
         defer( app::decoder().destroy() );
 
-        app::g_pMixer = &app::allocMixer(&alloc)->start();
+        app::g_pMixer = &app::allocMixer(Gpa::inst())->start();
         app::mixer().setVolume(app::g_config.volume);
         defer( app::mixer().destroy() );
 

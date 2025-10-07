@@ -26,47 +26,48 @@
 #include "assert.hh"
 #include "types.hh"
 
-#include <cstring>
-#include <nmmintrin.h>
+#ifdef ADT_SSE4_2
+    #include <nmmintrin.h>
+#endif
 
 namespace adt::hash
 {
 
 struct xxh64
 {
-    static constexpr u64
-    hash(const u8* p, u64 len, u64 seed)
+    static constexpr usize
+    hash(const u8* p, usize len, usize seed)
     {
         return finalize((len >= 32 ? h32bytes(p, len, seed) : seed + PRIME5) + len, p + (len & ~0x1F), len & 0x1F);
     }
 
 private:
-    static constexpr u64 PRIME1 = 11400714785074694791ULL;
-    static constexpr u64 PRIME2 = 14029467366897019727ULL;
-    static constexpr u64 PRIME3 = 1609587929392839161ULL;
-    static constexpr u64 PRIME4 = 9650029242287828579ULL;
-    static constexpr u64 PRIME5 = 2870177450012600261ULL;
+    static constexpr usize PRIME1 = 11400714785074694791ULL;
+    static constexpr usize PRIME2 = 14029467366897019727ULL;
+    static constexpr usize PRIME3 = 1609587929392839161ULL;
+    static constexpr usize PRIME4 = 9650029242287828579ULL;
+    static constexpr usize PRIME5 = 2870177450012600261ULL;
 
-    static constexpr u64
-    rotl(u64 x, int r)
+    static constexpr usize
+    rotl(usize x, int r)
     {
         return ((x << r) | (x >> (64 - r)));
     }
 
-    static constexpr u64
-    mix1(const u64 h, const u64 prime, int rshift)
+    static constexpr usize
+    mix1(const usize h, const usize prime, int rshift)
     {
         return (h ^ (h >> rshift)) * prime;
     }
 
-    static constexpr u64
-    mix2(const u64 p, const u64 v = 0)
+    static constexpr usize
+    mix2(const usize p, const usize v = 0)
     {
         return rotl(v + p * PRIME2, 31) * PRIME1;
     }
 
-    static constexpr u64
-    mix3(const u64 h, const u64 v)
+    static constexpr usize
+    mix3(const usize h, const usize v)
     {
         return (h ^ mix2(v)) * PRIME1 + PRIME4;
     }
@@ -77,11 +78,11 @@ private:
         return u32(u8(v[3])) | (u32(u8(v[2])) << 8) | (u32(u8(v[1])) << 16) | (u32(u8(v[0])) << 24);
     }
 
-    static constexpr u64
+    static constexpr usize
     endian64(const u8* v)
     {
-        return u64(u8(v[7])) | (u64(u8(v[6])) << 8) | (u64(u8(v[5])) << 16) | (u64(u8(v[4])) << 24) |
-            (u64(u8(v[3])) << 32) | (u64(u8(v[2])) << 40) | (u64(u8(v[1])) << 48) | (u64(u8(v[0])) << 56);
+        return usize(u8(v[7])) | (usize(u8(v[6])) << 8) | (usize(u8(v[5])) << 16) | (usize(u8(v[4])) << 24) |
+            (usize(u8(v[3])) << 32) | (usize(u8(v[2])) << 40) | (usize(u8(v[1])) << 48) | (usize(u8(v[0])) << 56);
     }
 #else
     static constexpr u32
@@ -90,41 +91,41 @@ private:
         return u32(u8(v[0])) | (u32(u8(v[1])) << 8) | (u32(u8(v[2])) << 16) | (u32(u8(v[3])) << 24);
     }
 
-    static constexpr u64
+    static constexpr usize
     endian64(const u8* v)
     {
-        return u64(u8(v[0])) | (u64(u8(v[1])) << 8) | (u64(u8(v[2])) << 16) | (u64(u8(v[3])) << 24) |
-            (u64(u8(v[4])) << 32) | (u64(u8(v[5])) << 40) | (u64(u8(v[6])) << 48) | (u64(u8(v[7])) << 56);
+        return usize(u8(v[0])) | (usize(u8(v[1])) << 8) | (usize(u8(v[2])) << 16) | (usize(u8(v[3])) << 24) |
+            (usize(u8(v[4])) << 32) | (usize(u8(v[5])) << 40) | (usize(u8(v[6])) << 48) | (usize(u8(v[7])) << 56);
     }
 #endif
-    static constexpr u64
-    fetch64(const u8* p, const u64 v = 0)
+    static constexpr usize
+    fetch64(const u8* p, const usize v = 0)
     {
         return mix2(endian64(p), v);
     }
 
-    static constexpr u64
+    static constexpr usize
     fetch32(const u8* p)
     {
-        return u64(endian32(p)) * PRIME1;
+        return usize(endian32(p)) * PRIME1;
     }
 
-    static constexpr u64
+    static constexpr usize
     fetch8(const u8* p)
     {
         return u8(*p) * PRIME5;
     }
 
-    static constexpr u64
-    finalize(const u64 h, const u8* p, u64 len)
+    static constexpr usize
+    finalize(const usize h, const u8* p, usize len)
     {
         return (len >= 8) ? (finalize(rotl(h ^ fetch64(p), 27) * PRIME1 + PRIME4, p + 8, len - 8))
             : ((len >= 4) ? (finalize(rotl(h ^ fetch32(p), 23) * PRIME2 + PRIME3, p + 4, len - 4))
                 : ((len > 0) ? (finalize(rotl(h ^ fetch8(p), 11) * PRIME1, p + 1, len - 1))
                     : (mix1(mix1(mix1(h, PRIME2, 33), PRIME3, 29), 1, 32))));
     }
-    static constexpr u64
-    h32bytes(const u8* p, u64 len, const u64 v1, const u64 v2, const u64 v3, const u64 v4)
+    static constexpr usize
+    h32bytes(const u8* p, usize len, const usize v1, const usize v2, const usize v3, const usize v4)
     {
         return (len >= 32)
             ? h32bytes(
@@ -133,8 +134,8 @@ private:
             : mix3(mix3(mix3(mix3(rotl(v1, 1) + rotl(v2, 7) + rotl(v3, 12) + rotl(v4, 18), v1), v2), v3), v4);
     }
 
-    static constexpr u64
-    h32bytes(const u8* p, u64 len, const u64 seed)
+    static constexpr usize
+    h32bytes(const u8* p, usize len, const usize seed)
     {
         return h32bytes(p, len, seed + PRIME1 + PRIME2, seed + PRIME2, seed, seed - PRIME1);
     }
@@ -159,9 +160,9 @@ crc32(const u8* p, isize byteSize, usize seed = 0)
     else
     {
         for (; i + 3 < byteSize; i += 4)
-            crc = u64(_mm_crc32_u32(u32(crc), *reinterpret_cast<const u32*>(&p[i])));
+            crc = usize(_mm_crc32_u32(u32(crc), *reinterpret_cast<const u32*>(&p[i])));
         for (; i < byteSize; ++i)
-            crc = u64(_mm_crc32_u8(u32(crc), u8(p[i])));
+            crc = usize(_mm_crc32_u8(u32(crc), u8(p[i])));
     }
 
     return ~crc;

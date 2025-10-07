@@ -8,5 +8,5 @@ target_compile_options(${subProj} PRIVATE ${FFMPEG_CFLAGS})
 
 target_sources(${subProj} PRIVATE
     Decoder.cc
-    pfn.cc
+    dll.cc
 )

@@ -3,6 +3,7 @@
 #include "String.hh"
 #include "defer.hh"
 
+#include <cerrno>
 #include <limits>
 
 #if __has_include(<unistd.h>)
@@ -25,6 +26,8 @@
 
 namespace adt::file
 {
+
+/* NOTE: Avoid using 'write' since this may be a macro on some systems (like OpenBSD). */
 
 enum class TYPE : u8 { UNHANDLED, FILE, DIRECTORY, ESIZE };
 
@@ -276,6 +279,31 @@ writeToFd(int fd, void* pBuff, isize buffSize) noexcept
     return _write(fd, pBuff, buffSize);
 
 #endif
+}
+
+inline isize
+store(const StringView svData, const char* ntsPath, bool bAppend = false) noexcept
+{
+    const char* ntsMode = bAppend ? "ab" : "wb";
+    FILE* pFile = fopen(ntsPath, ntsMode);
+    if (!pFile)
+    {
+        LogError{"failed to open: '{}' with, '{}' flags, (error: '{}')\n",
+            ntsPath, ntsMode, strerror(errno)
+        };
+        return NPOS;
+    }
+    else
+    {
+        size_t r = fwrite(svData.m_pData, 1, svData.m_size, pFile);
+        if ((isize)r != svData.m_size)
+        {
+            LogError{"fwrite failed r: {}, size: {}, (error: '{}')\n",
+                r, svData.m_size, strerror(errno)
+            };
+        }
+        return r;
+    }
 }
 
 } /* namespace adt::file */
