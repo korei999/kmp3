@@ -8,7 +8,7 @@
 namespace adt
 {
 
-struct PoolAllocator : public IArena
+struct PoolAllocator : public IAllocator
 {
     /* fixed byte size (chunk) per alloc. Calling realloc() is an error */
     struct Node
@@ -59,9 +59,13 @@ struct PoolAllocator : public IArena
     [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
     ADT_WARN_IMPOSSIBLE_OPERATION virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
     void virtual free(void* ptr, usize nBytes) noexcept override final;
-    void virtual freeAll() noexcept override final;
+
     [[nodiscard]] virtual bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual bool doesRealloc() const noexcept override final { return false; }
+
+    /* */
+
+    void freeAll() noexcept;
 
     /* */
 
@@ -78,7 +82,7 @@ PoolAllocator::allocBlock()
     Block* r = (Block*)m_pBackAlloc->zalloc(total);
 
 #if !defined NDEBUG && defined ADT_DBG_MEMORY
-    LogError("[PoolAllocator: {}, {}, {}]: new block of size: {}\n",
+    LogDebug("[PoolAllocator: {}, {}, {}]: new block of size: {}\n",
         print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_blockCap
     );
 #endif

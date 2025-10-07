@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ILogger.hh"
+#include "IArena.hh"
 #include "file.hh"
 
 #ifdef _MSC_VER
@@ -23,7 +24,6 @@ format(Context* ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
 
 #include "Gpa.hh"
 #include "IThreadPool.hh"
-#include "Arena.hh"
 
 namespace adt
 {
@@ -59,11 +59,10 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
     IThreadPool* pTp = IThreadPool::inst();
     if (pTp)
     {
-        Arena* pArena = pTp->arena();
-        ADT_ASSERT(pArena != nullptr, "");
-        if (pArena->memoryReserved() <= 0) goto fallbackToFixedBuffer;
+        IArena* pArena = pTp->arena();
+        if (!pArena) goto fallbackToFixedBuffer;
 
-        ArenaScope arenaScope {pArena};
+        IArena::Scope arenaScope = pArena->restoreAfterScope();
         print::Builder pb {pArena, 512};
         StringView sv = pb.print(std::forward<ARGS>(args)...);
         const isize maxLen = utils::min(pLogger->cap(), sv.m_size);

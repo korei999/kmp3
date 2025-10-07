@@ -2,10 +2,10 @@
 
 #include "IThreadPool.hh"
 
-#include "Arena.hh"
 #include "FuncBuffer.hh"
-#include "Queue.hh"
 #include "Gpa.hh"
+#include "IArena.hh"
+#include "Queue.hh"
 #include "Thread.hh"
 #include "Vec.hh"
 #include "atomic.hh"
@@ -68,21 +68,27 @@ struct ThreadPool : IThreadPool
     bool m_bStarted {};
     QueueM<Task> m_qTasks {};
     isize m_arenaReserved {};
+    ThreadLocalArena* (*m_pfnAllocArena)(isize reserve) {};
+
 
     /* */
 
     static inline thread_local int gtl_threadId {};
-    static inline thread_local Arena gtl_arena {};
+    static inline thread_local ThreadLocalArena* gtl_pArena {};
 
     /* */
 
-    ThreadPool() = default;
+    /* NOTE: ARENA_T&& use default constructor to match templalate (like `Arena{}`). */
 
-    ThreadPool(isize arenaReserve);
+    template<typename ARENA_T>
+    ThreadPool(ARENA_T&& /* empty */, isize arenaReserve);
 
-    ThreadPool(isize qSize, isize arenaReserve, int nThreads = optimalThreadCount());
+    template<typename ARENA_T>
+    ThreadPool(ARENA_T&& /* empty */, isize qSize, isize arenaReserve, int nThreads = optimalThreadCount());
 
+    template<typename ARENA_T>
     ThreadPool(
+        ARENA_T&& /* empty */,
         void (*pfnOnLoopStart)(void*),
         void* pLoopStartArg,
         void (*pfnOnLoopEnd)(void*),
@@ -100,9 +106,9 @@ struct ThreadPool : IThreadPool
     virtual int nThreads() const noexcept override { return m_spThreads.size(); }
     virtual Task tryStealTask() noexcept override;
     virtual usize threadId() noexcept override;
-    virtual Arena* createArenaForThisThread(isize reserve) noexcept override;
+    virtual ThreadLocalArena* createArenaForThisThread(isize reserve) noexcept override;
     virtual void destroyArenaForThisThread() noexcept override;
-    virtual Arena* arena() noexcept override;
+    virtual ThreadLocalArena* arena() noexcept override;
 
     /* */
 
@@ -113,27 +119,32 @@ protected:
     THREAD_STATUS loop();
 };
 
+template<typename ARENA_T>
 inline
-ThreadPool::ThreadPool(isize arenaReserve)
-    : m_arenaReserved{arenaReserve}
+ThreadPool::ThreadPool(ARENA_T&&, isize arenaReserve)
+    : m_arenaReserved{arenaReserve},
+      m_pfnAllocArena{[](isize reserve) { return static_cast<ThreadLocalArena*>(Gpa::inst()->alloc<ARENA_T>(reserve)); }}
 {
     start();
 }
 
-inline
-ThreadPool::ThreadPool(isize qSize, isize arenaReserve, int nThreads)
+template <typename ARENA_T>
+inline ThreadPool::ThreadPool(ARENA_T&&, isize qSize, isize arenaReserve, int nThreads)
     : m_spThreads(Gpa::inst()->zallocV<Thread>(nThreads), nThreads),
       m_mtxQ(Mutex::TYPE::PLAIN),
       m_cndQ(INIT),
       m_cndWait(INIT),
       m_qTasks(qSize),
-      m_arenaReserved(arenaReserve)
+      m_arenaReserved(arenaReserve),
+      m_pfnAllocArena([](isize reserve) { return static_cast<ThreadLocalArena*>(Gpa::inst()->alloc<ARENA_T>(reserve)); })
 {
     start();
 }
 
+template<typename ARENA_T>
 inline
 ThreadPool::ThreadPool(
+    ARENA_T&&,
     void (*pfnOnLoopStart)(void*), void* pLoopStartArg,
     void (*pfnOnLoopEnd)(void*), void* pLoopEndArg,
     isize qSize,
@@ -149,7 +160,8 @@ ThreadPool::ThreadPool(
       m_pfnLoopEnd(pfnOnLoopEnd),
       m_pLoopEndArg(pLoopEndArg),
       m_qTasks(qSize),
-      m_arenaReserved(arenaReserve)
+      m_arenaReserved(arenaReserve),
+      m_pfnAllocArena([](isize reserve) { return static_cast<ThreadLocalArena*>(Gpa::inst()->alloc<ARENA_T>(reserve)); })
 {
     start();
 }
@@ -160,8 +172,13 @@ ThreadPool::loop()
     if (m_pfnLoopStart) m_pfnLoopStart(m_pLoopStartArg);
     ADT_DEFER( if (m_pfnLoopEnd) m_pfnLoopEnd(m_pLoopEndArg) );
 
-    new (&gtl_arena) Arena{m_arenaReserved};
-    ADT_DEFER( gtl_arena.freeAll() );
+    ADT_ASSERT(m_pfnAllocArena != nullptr, "");
+
+    gtl_pArena = m_pfnAllocArena(m_arenaReserved);
+    ADT_DEFER(
+        gtl_pArena->freeAll();
+        gtl_pArena = nullptr;
+    );
 
     gtl_threadId = m_atomIdCounter.fetchAdd(1, atomic::ORDER::RELAXED);
 
@@ -208,7 +225,8 @@ ThreadPool::start()
         );
     }
 
-    new (&gtl_arena) Arena{m_arenaReserved};
+    ADT_ASSERT(m_pfnAllocArena != nullptr, "");
+    gtl_pArena = m_pfnAllocArena(m_arenaReserved);
 
     m_bStarted = true;
 
@@ -270,7 +288,7 @@ ThreadPool::destroy() noexcept
         m_cndWait.destroy();
     }
 
-    gtl_arena.freeAll();
+    gtl_pArena->freeAll();
 }
 
 inline bool
@@ -312,23 +330,25 @@ ThreadPool::threadId() noexcept
     return gtl_threadId;
 }
 
-inline Arena*
+inline ThreadPool::ThreadLocalArena*
 ThreadPool::createArenaForThisThread(isize reserve) noexcept
 {
-    new (&gtl_arena) Arena{reserve};
-    return &gtl_arena;
+    ADT_ASSERT(gtl_pArena == nullptr, "arena already exists");
+    return gtl_pArena = m_pfnAllocArena(reserve);
 }
 
 inline void
 ThreadPool::destroyArenaForThisThread() noexcept
 {
-    gtl_arena.freeAll();
+    ADT_ASSERT(gtl_pArena != nullptr, "createArenaForThisThread() was not called before");
+    gtl_pArena->freeAll();
+    gtl_pArena = nullptr;
 }
 
-inline Arena*
+inline ThreadPool::ThreadLocalArena*
 ThreadPool::arena() noexcept
 {
-    return &gtl_arena;
+    return gtl_pArena;
 }
 
 /* Usage example:

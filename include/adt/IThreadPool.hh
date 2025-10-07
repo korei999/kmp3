@@ -7,11 +7,15 @@
 namespace adt
 {
 
-struct Arena;
+struct IArena;
 
 struct IThreadPool
 {
-    /* TODO: buffer size can be moved to implementation */
+    /* TODO: there barely any reason to have a polymorphic thread pool (with polymorphic arenas).
+     * Perhaps threadpool or threadpool::arena types should be controlled by the preprocessor. */
+    using ThreadLocalArena = IArena;
+
+    /* TODO: buffer size can be moved to implementation. */
     using Task = FuncBuffer<void, 56>;
     static_assert(sizeof(Task) == 64);
 
@@ -58,9 +62,9 @@ struct IThreadPool
 
     virtual usize threadId() noexcept = 0;
 
-    virtual Arena* createArenaForThisThread(isize reserve) noexcept = 0;
+    virtual ThreadLocalArena* createArenaForThisThread(isize reserve) noexcept = 0;
     virtual void destroyArenaForThisThread() noexcept = 0;
-    virtual Arena* arena() noexcept = 0;
+    virtual ThreadLocalArena* arena() noexcept = 0;
 
     template<typename CL>
     bool

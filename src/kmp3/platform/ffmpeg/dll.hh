@@ -1,15 +1,17 @@
 #pragma once
 
-
 extern "C"
 {
+
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
 #include <libswresample/swresample.h>
 
 #ifdef OPT_CHAFA
     #include <libswscale/swscale.h>
 #endif
+
 }
 
 namespace platform::ffmpeg::dll
@@ -18,63 +20,57 @@ namespace platform::ffmpeg::dll
 bool loadLibs();
 void unloadLibs();
 
-extern void (*avformat_close_input)(AVFormatContext** s);
-extern void (*avcodec_free_context)(AVCodecContext** avctx);
-extern void (*av_packet_free)(AVPacket** pkt);
-extern void (*av_frame_free)(AVFrame** frame);
+#define PFN_INLINE(name) inline std::add_pointer_t<decltype(::name)> name;
 
-extern AVDictionaryEntry* (*av_dict_get)(const AVDictionary* m, const char* key, const AVDictionaryEntry* prev, int flags);
+PFN_INLINE(avformat_close_input);
+PFN_INLINE(av_packet_free);
+PFN_INLINE(av_frame_free);
 
-extern const AVCodec* (*avcodec_find_decoder)(enum AVCodecID id);
-extern AVCodecContext* (*avcodec_alloc_context3)(const AVCodec* codec);
+PFN_INLINE(av_dict_get);
 
-extern int (*avcodec_parameters_to_context)(AVCodecContext* codec, const struct AVCodecParameters* par);
-extern int (*avcodec_open2)(AVCodecContext* avctx, const AVCodec* codec, AVDictionary** options);
+PFN_INLINE(avcodec_free_context);
+PFN_INLINE(avcodec_find_decoder);
+PFN_INLINE(avcodec_alloc_context3);
 
-extern AVPacket* (*av_packet_alloc)(void);
-extern AVFrame* (*av_frame_alloc)(void);
-extern int (*av_read_frame)(AVFormatContext* s, AVPacket* pkt);
-extern int (*avcodec_send_packet)(AVCodecContext* avctx, const AVPacket* avpkt);
-extern int (*avcodec_receive_frame)(AVCodecContext* avctx, AVFrame* frame);
+PFN_INLINE(avcodec_parameters_to_context);
+PFN_INLINE(avcodec_open2);
 
-extern int (*swr_alloc_set_opts2)(
-    struct SwrContext** ps, const AVChannelLayout* out_ch_layout, enum AVSampleFormat out_sample_fmt,
-    int out_sample_rate, const AVChannelLayout* in_ch_layout, enum AVSampleFormat in_sample_fmt, int in_sample_rate,
-    int log_offset, void* log_ctx
-);
-extern int (*swr_config_frame)(SwrContext* swr, const AVFrame* out, const AVFrame* in);
-extern void (*swr_free)(struct SwrContext** s);
-extern int (*swr_convert_frame)(SwrContext* swr, AVFrame* output, const AVFrame* input);
+PFN_INLINE(av_packet_alloc);
+PFN_INLINE(av_frame_alloc);
+PFN_INLINE(av_read_frame);
+PFN_INLINE(avcodec_send_packet);
+PFN_INLINE(avcodec_receive_frame);
 
-extern int (*av_image_fill_linesizes)(int linesizes[4], enum AVPixelFormat pix_fmt, int width);
-extern int (*av_frame_get_buffer)(AVFrame* frame, int align);
+PFN_INLINE(swr_alloc_set_opts2);
+PFN_INLINE(swr_config_frame);
+PFN_INLINE(swr_free);
+PFN_INLINE(swr_convert_frame);
 
-extern void (*av_log_set_level)(int level);
-extern int (*avformat_open_input)( AVFormatContext** ps, const char* url, const AVInputFormat* fmt, AVDictionary** options);
-extern int (*avformat_find_stream_info)(AVFormatContext* ic, AVDictionary** options);
+PFN_INLINE(av_image_fill_linesizes);
+PFN_INLINE(av_frame_get_buffer);
 
-extern int (*av_find_best_stream)(
-    AVFormatContext* ic, enum AVMediaType type, int wanted_stream_nb, int related_stream,
-    const struct AVCodec** decoder_ret, int flags
-);
+PFN_INLINE(av_log_set_level);
+PFN_INLINE(avformat_open_input);
+PFN_INLINE(avformat_find_stream_info);
 
-extern void (*avcodec_flush_buffers)(AVCodecContext* avctx);
-extern int64_t (*av_rescale_q)(int64_t a, AVRational bq, AVRational cq) av_const;
-extern int (*av_seek_frame)(AVFormatContext* s, int stream_index, int64_t timestamp, int flags);
-extern void (*av_packet_unref)(AVPacket* pkt);
+PFN_INLINE(av_find_best_stream);
 
-extern void (*av_frame_unref)(AVFrame* frame);
-extern int (*av_strerror)(int errnum, char *errbuf, size_t errbuf_size);
+PFN_INLINE(avcodec_flush_buffers);
+PFN_INLINE(av_rescale_q);
+PFN_INLINE(av_seek_frame);
+PFN_INLINE(av_packet_unref);
+
+PFN_INLINE(av_frame_unref);
+PFN_INLINE(av_strerror);
 
 #ifdef OPT_CHAFA
 
-extern struct SwsContext* (*sws_getContext)(
-    int srcW, int srcH, enum AVPixelFormat srcFormat, int dstW, int dstH, enum AVPixelFormat dstFormat, int flags,
-    SwsFilter* srcFilter, SwsFilter* dstFilter, const double* param
-);
-extern int (*sws_scale_frame)(struct SwsContext* c, AVFrame* dst, const AVFrame* src);
-extern void (*sws_freeContext)(struct SwsContext* swsContext);
+PFN_INLINE(sws_getContext);
+PFN_INLINE(sws_scale_frame);
+PFN_INLINE(sws_freeContext);
 
 #endif /* OPT_CHAFA */
+
+#undef PFN_INLINE
 
 } /* namespace platform::ffmpeg::dll */

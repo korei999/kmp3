@@ -1,15 +1,13 @@
 #pragma once
 
-#include "ArenaDeleterCRTP.hh"
+#include "IArena.hh"
 
 namespace adt
 {
 
 /* Like Arena, but uses list chained memory blocks instead of reserve/commit. */
-struct ArenaList : public IArena, public ArenaDeleterCRTP<ArenaList>
+struct ArenaList : public IArena
 {
-    using Deleter = ArenaDeleterCRTP<ArenaList>;
-
     struct Block
     {
         Block* pNext {};
@@ -39,7 +37,7 @@ struct ArenaList : public IArena, public ArenaDeleterCRTP<ArenaList>
         , std::source_location _DONT_USE_loc = std::source_location::current()
 #endif
     ) noexcept(false)
-        : Deleter{INIT},
+        : IArena{INIT},
           m_defaultCapacity(alignUp8(capacity)),
           m_pBackAlloc(pBackingAlloc),
 #ifndef NDEBUG
@@ -54,15 +52,18 @@ struct ArenaList : public IArena, public ArenaDeleterCRTP<ArenaList>
     [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override;
     virtual void free(void* ptr, usize nBytes) noexcept override;
-    virtual void freeAll() noexcept override;
+
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override { return false; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override { return true; }
+
+    virtual void freeAll() noexcept override;
+    [[nodiscard]] virtual Scope restoreAfterScope() noexcept override;
+    virtual usize memoryUsed() const noexcept override;
 
     /* */
 
     void reset() noexcept;
     void shrinkToFirstBlock() noexcept;
-    usize memoryUsed() const noexcept;
 
     /* */
 
@@ -92,16 +93,17 @@ struct ArenaListState
     void restore() noexcept;
 };
 
-struct ArenaListScope
+struct ArenaListScope : IArena::IScope
 {
     ArenaListState m_state {};
     SList<ArenaList::DeleterNode> m_lDeleters {};
 
     /* */
 
-    ArenaListScope(ArenaList* p) noexcept : m_state{p} {}
+    ArenaListScope(ArenaList* p) noexcept : m_state{p} { p->m_pLCurrentDeleters = &m_lDeleters; }
+    ArenaListScope(const ArenaListState& state) noexcept : m_state{state} { m_state.m_pArena->m_pLCurrentDeleters = &m_lDeleters; }
 
-    ~ArenaListScope() noexcept;
+    virtual ~ArenaListScope() noexcept override;
 };
 
 inline
@@ -187,8 +189,8 @@ ArenaList::allocBlock(usize size)
     Block* pBlock = static_cast<Block*>(m_pBackAlloc->zalloc(size + sizeof(*pBlock)));
 
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
-    LogDebug("[Arena: {}, {}, {}]: new block of size: {}\n",
-        print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), size
+    LogDebug("[Arena: {}, {}]: new block of size: {}\n",
+        print::shorterSourcePath(m_loc.file_name()), m_loc.line(), size
     );
 #endif
 
@@ -216,8 +218,8 @@ ArenaList::malloc(usize nBytes)
 
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
     if (m_defaultCapacity <= realSize)
-        LogDebug("[Arena: {}, {}, {}]: allocating more than defaultCapacity ({}, {})\n",
-            print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), m_defaultCapacity, realSize
+        LogDebug("[Arena: {}, {}]: allocating more than defaultCapacity ({}, {})\n",
+            print::shorterSourcePath(m_loc.file_name()), m_loc.line(), m_defaultCapacity, realSize
         );
 #endif
 
@@ -290,6 +292,13 @@ ArenaList::freeAll() noexcept
     m_pBlocks = nullptr;
 }
 
+inline IArena::Scope
+ArenaList::restoreAfterScope() noexcept
+{
+    ArenaListState state {this};
+    return alloc<ArenaListScope>(state);
+}
+
 inline void
 ArenaList::reset() noexcept
 {
@@ -313,8 +322,8 @@ ArenaList::shrinkToFirstBlock() noexcept
     while (it->pNext)
     {
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
-        LogDebug("[Arena: {}, {}, {}]: shrinking {} sized block\n",
-            print::shorterSourcePath(m_loc.file_name()), m_loc.function_name(), m_loc.line(), it->size
+        LogDebug("[Arena: {}, {}]: shrinking {} sized block\n",
+            print::shorterSourcePath(m_loc.file_name()), m_loc.line(), it->size
         );
 #endif
         auto* next = it->pNext;
@@ -337,18 +346,5 @@ ArenaList::memoryUsed() const noexcept
 
     return total;
 }
-
-namespace print
-{
-
-template<typename T>
-inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const ArenaList::Ptr<T>& x)
-{
-    if (x) return format(pCtx, fmtArgs, *x);
-    else return format(pCtx, fmtArgs, "null");
-}
-
-} /* namespace print */
 
 } /* namespace adt */

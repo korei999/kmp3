@@ -159,11 +159,6 @@ struct IAllocator : AllocatorHelperCRTP<IAllocator>
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept = 0;
 };
 
-struct IArena : IAllocator
-{
-    virtual constexpr void freeAll() noexcept = 0;
-};
-
 /* NOTE: allocator can throw on malloc/zalloc/realloc */
 struct AllocException : public std::bad_alloc
 {

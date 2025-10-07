@@ -56,7 +56,7 @@ Decoder::close()
 Decoder&
 Decoder::init()
 {
-    if (!dll::loadLibs()) throw RuntimeException("failure while trying to load ffmpeg libraries...");
+    if (!dll::loadLibs()) throw RuntimeException("Failed to load ffmpeg libraries");
     new(&m_mtx) Mutex {Mutex::TYPE::PLAIN};
     return *this;
 }

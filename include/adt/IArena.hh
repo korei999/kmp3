@@ -5,9 +5,33 @@
 namespace adt
 {
 
-template<typename ALLOC_T>
-struct ArenaDeleterCRTP
+struct IArena : IAllocator
 {
+    /* Used to capture (or partially capture) state of the arena to restore it later.
+     * Works very well for temporary allocations. */
+    struct IScope
+    {
+        virtual ~IScope() noexcept = 0;
+    };
+
+    struct Scope
+    {
+        Scope(IScope* p) noexcept : m_pScope{p} {}
+
+        ~Scope() noexcept { m_pScope->~IScope(); }
+
+    private:
+        IScope* m_pScope {};
+    };
+
+    /* */
+
+    virtual constexpr void freeAll() noexcept = 0;
+    [[nodiscard]] virtual Scope restoreAfterScope() noexcept = 0;
+    usize virtual memoryUsed() const noexcept = 0;
+
+    /* */
+
     using PfnDeleter = void(*)(void**);
 
     struct DeleterNode
@@ -30,18 +54,20 @@ struct ArenaDeleterCRTP
         Ptr() noexcept = default;
 
         template<typename ...ARGS>
-        Ptr(ALLOC_T* pArena, ARGS&&... args)
+        Ptr(IArena* pArena, ARGS&&... args)
             : ListNode{nullptr, {(void**)this, (PfnDeleter)nullptrDeleter}},
               m_pData{pArena->template alloc<T>(std::forward<ARGS>(args)...)}
         {
+            ADT_ASSERT(pArena->m_pLCurrentDeleters != nullptr, "");
             pArena->m_pLCurrentDeleters->insert(static_cast<ListNode*>(this));
         }
 
         template<typename ...ARGS>
-        Ptr(void (*pfn)(Ptr*), ALLOC_T* pArena, ARGS&&... args)
+        Ptr(void (*pfn)(Ptr*), IArena* pArena, ARGS&&... args)
             : ListNode{nullptr, {(void**)this, (PfnDeleter)pfn}},
               m_pData{pArena->template alloc<T>(std::forward<ARGS>(args)...)}
         {
+            ADT_ASSERT(pArena->m_pLCurrentDeleters != nullptr, "");
             pArena->m_pLCurrentDeleters->insert(static_cast<ListNode*>(this));
         }
 
@@ -74,10 +100,8 @@ struct ArenaDeleterCRTP
 
     /* */
 
-    ArenaDeleterCRTP() = default;
-    ArenaDeleterCRTP(InitFlag) noexcept : m_pLCurrentDeleters{&m_lDeleters} {}
-
-    /* */
+    IArena() = default;
+    IArena(InitFlag) noexcept : m_pLCurrentDeleters{&m_lDeleters} {}
 
     /* BUG: asan sees it as stack-use-after-scope when running a deleter after variable's scope closes (its fine just ignore). */
     ADT_NO_UB void
@@ -89,5 +113,7 @@ struct ArenaDeleterCRTP
         m_pLCurrentDeleters->m_pHead = nullptr;
     }
 };
+
+inline IArena::IScope::~IScope() noexcept {} /* Has to be implemented. */
 
 } /* namespace adt */

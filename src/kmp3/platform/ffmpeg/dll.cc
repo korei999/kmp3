@@ -7,70 +7,11 @@ using namespace adt;
 namespace platform::ffmpeg::dll
 {
 
-void (*avformat_close_input)(AVFormatContext** s);
-void (*av_packet_free)(AVPacket** pkt);
-void (*av_frame_free)(AVFrame** frame);
-
-AVDictionaryEntry* (*av_dict_get)(const AVDictionary* m, const char* key, const AVDictionaryEntry* prev, int flags);
-
-void (*avcodec_free_context)(AVCodecContext** avctx);
-const AVCodec* (*avcodec_find_decoder)(enum AVCodecID id);
-AVCodecContext* (*avcodec_alloc_context3)(const AVCodec* codec);
-
-int (*avcodec_parameters_to_context)(AVCodecContext* codec, const struct AVCodecParameters* par);
-int (*avcodec_open2)(AVCodecContext* avctx, const AVCodec* codec, AVDictionary** options);
-
-AVPacket* (*av_packet_alloc)(void);
-AVFrame* (*av_frame_alloc)(void);
-int (*av_read_frame)(AVFormatContext* s, AVPacket* pkt);
-int (*avcodec_send_packet)(AVCodecContext* avctx, const AVPacket* avpkt);
-int (*avcodec_receive_frame)(AVCodecContext* avctx, AVFrame* frame);
-
-int (*swr_alloc_set_opts2)(
-    struct SwrContext** ps, const AVChannelLayout* out_ch_layout, enum AVSampleFormat out_sample_fmt,
-    int out_sample_rate, const AVChannelLayout* in_ch_layout, enum AVSampleFormat in_sample_fmt, int in_sample_rate,
-    int log_offset, void* log_ctx
-);
-int (*swr_config_frame)(SwrContext* swr, const AVFrame* out, const AVFrame* in);
-void (*swr_free)(struct SwrContext** s);
-int (*swr_convert_frame)(SwrContext* swr, AVFrame* output, const AVFrame* input);
-
-int (*av_image_fill_linesizes)(int linesizes[4], enum AVPixelFormat pix_fmt, int width);
-int (*av_frame_get_buffer)(AVFrame* frame, int align);
-
-void (*av_log_set_level)(int level);
-int (*avformat_open_input)( AVFormatContext** ps, const char* url, const AVInputFormat* fmt, AVDictionary** options);
-int (*avformat_find_stream_info)(AVFormatContext* ic, AVDictionary** options);
-
-int (*av_find_best_stream)(
-    AVFormatContext* ic, enum AVMediaType type, int wanted_stream_nb, int related_stream,
-    const struct AVCodec** decoder_ret, int flags
-);
-
-void (*avcodec_flush_buffers)(AVCodecContext* avctx);
-int64_t (*av_rescale_q)(int64_t a, AVRational bq, AVRational cq) av_const;
-int (*av_seek_frame)(AVFormatContext* s, int stream_index, int64_t timestamp, int flags);
-void (*av_packet_unref)(AVPacket* pkt);
-
-void (*av_frame_unref)(AVFrame* frame);
-int (*av_strerror)(int errnum, char *errbuf, size_t errbuf_size);
-
-#ifdef OPT_CHAFA
-
-struct SwsContext* (*sws_getContext)(
-    int srcW, int srcH, enum AVPixelFormat srcFormat, int dstW, int dstH, enum AVPixelFormat dstFormat, int flags,
-    SwsFilter* srcFilter, SwsFilter* dstFilter, const double* param
-);
-int (*sws_scale_frame)(struct SwsContext* c, AVFrame* dst, const AVFrame* src);
-void (*sws_freeContext)(struct SwsContext* swsContext);
-
-#endif /* OPT_CHAFA */
-
 static void* s_pLibavformat;
 static void* s_pLiblibswscale;
 
 static void*
-tryLoad(IArena* pArena, const StringView svDLLName)
+tryLoad(const StringView svDLLName)
 {
     constexpr StringView aPaths[] {
         "",
@@ -80,8 +21,12 @@ tryLoad(IArena* pArena, const StringView svDLLName)
         "/opt/homebrew/lib/",
     };
 
+    IArena* pArena = IThreadPool::inst()->arena();
+
     for (isize i = 0; i < utils::size(aPaths); ++i)
     {
+        IArena::Scope arenaScope = pArena->restoreAfterScope();
+
         String s = StringCat(pArena, aPaths[i], svDLLName);
         void* pRet = dlopen(s.data(), RTLD_NOW | RTLD_LOCAL);
         if (pRet != nullptr) return pRet;
@@ -105,15 +50,12 @@ loadLibs()
         }                                                                                                              \
     } while (0)
 
-    Arena* pArena = IThreadPool::inst()->arena();
-    ArenaScope ArenaScope {pArena};
-
     {
 
 #ifdef __APPLE__
-        s_pLibavformat = tryLoad(pArena, "libavformat.dylib");
+        s_pLibavformat = tryLoad("libavformat.dylib");
 #else
-        s_pLibavformat = tryLoad(pArena, "libavformat.so");
+        s_pLibavformat = tryLoad("libavformat.so");
 #endif
         if (!s_pLibavformat) return false;
 
@@ -161,9 +103,9 @@ loadLibs()
 #ifdef OPT_CHAFA
 
 #ifdef __APPLE__
-        s_pLiblibswscale = tryLoad(pArena, "libswscale.dylib");
+        s_pLiblibswscale = tryLoad("libswscale.dylib");
 #else
-        s_pLiblibswscale = tryLoad(pArena, "libswscale.so");
+        s_pLiblibswscale = tryLoad("libswscale.so");
 #endif
         if (!s_pLiblibswscale) return false;
 

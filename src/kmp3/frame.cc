@@ -16,7 +16,7 @@ run()
     platform::ansi::Win ansiWindow {};
     app::g_pWin = &ansiWindow;
 
-    Arena* pArena = IThreadPool::inst()->arena();
+    Arena* pArena = dynamic_cast<Arena*>(IThreadPool::inst()->arena());
 
     if (app::window().start(pArena) == false)
     {

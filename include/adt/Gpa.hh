@@ -21,6 +21,7 @@ struct Gpa : IAllocator
     [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
     void virtual free(void* ptr, usize nBytes) noexcept override final;
+
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
     /* virtual end */

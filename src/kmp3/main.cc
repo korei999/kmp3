@@ -235,7 +235,7 @@ startup(int argc, char** argv)
     app::g_eLogLevel = ILogger::LEVEL::DEBUG;
 #endif
 
-    ThreadPool zeroThreadPool {SIZE_1M * 64}; /* Holds 1 arena for the main thread. */
+    ThreadPool zeroThreadPool {Arena{}, SIZE_1M * 64}; /* Holds 1 arena for the main thread. */
     IThreadPool::setGlobal(&zeroThreadPool);
     defer( zeroThreadPool.destroy() );
 

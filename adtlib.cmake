@@ -3,33 +3,35 @@ set(ADT_PRECOMPILED_HEADERS
     # ArenaList.hh
     ArgvParser.hh
     Array.hh
-    assert.hh
-    atomic.hh
+    # assert.hh
+    # atomic.hh
     # bin.hh
     # BufferAllocator.hh
-    defer.hh
+    # defer.hh
     # Directory.hh
-    enum.hh
+    # enum.hh
     Exception.hh
-    file.hh
+    # file.hh
     # FuncBuffer.hh
-    Gpa.hh
+    # Gpa.hh
     # hash.hh
     # Heap.hh
     # IAllocator.hh
+    # IArena.hh
     # ILogger.hh
     # IThreadPool.hh
     # List.hh
     Logger.hh
     # Map.hh
     MiMalloc.hh
-    Opt.hh
+    # Opt.hh
     # Pair.hh
     # Pipeline.hh
     # PoolAllocator.hh
     # Pool.hh
     # PoolSOA.hh
-    print.hh
+    # print.hh
+    # print-inl.hh
     QueueArray.hh
     # Queue.hh
     # QueueSPSC.hh
@@ -38,20 +40,20 @@ set(ADT_PRECOMPILED_HEADERS
     # ReverseIt.hh
     # rng.hh
     # Set.hh
-    # simd.hh
     # SList.hh
     # SOA.hh
     # sort.hh
     Span2D.hh
     # Span.hh
-    # SplayTree.hh
+    # Span-inl.hh
     # String.hh
+    # String-inl.hh
     # Thread.hh
     ThreadPool.hh
     time.hh
     # types.hh
     # utils.hh
-    Vec.hh
+    # Vec.hh
     # VecSOA.hh
     # View.hh
     # wcwidth.hh

@@ -25,26 +25,26 @@ IMixer::startDecoderThread()
 }
 
 THREAD_STATUS
-IMixer::refillRingBufferLoop(this IMixer& self)
+IMixer::refillRingBufferLoop()
 {
     IThreadPool::inst()->createArenaForThisThread(SIZE_1M);
 
     defer(
-        self.m_ringBuff.m_atom_bLoopDone.store(true, atomic::ORDER::RELAXED);
+        m_ringBuff.m_atom_bLoopDone.store(true, atomic::ORDER::RELAXED);
         IThreadPool::inst()->destroyArenaForThisThread();
     );
 
-    while (self.m_bRunning)
+    while (m_bRunning)
     {
         {
-            LockScope lockRing {&self.m_ringBuff.m_mtx};
-            while (!self.m_ringBuff.m_bQuit && self.m_ringBuff.m_size >= RING_BUFFER_LOW_THRESHOLD)
-                self.m_ringBuff.m_cnd.wait(&self.m_ringBuff.m_mtx);
+            LockScope lockRing {&m_ringBuff.m_mtx};
+            while (!m_ringBuff.m_bQuit && m_ringBuff.m_size >= RING_BUFFER_LOW_THRESHOLD)
+                m_ringBuff.m_cnd.wait(&m_ringBuff.m_mtx);
 
-            if (self.m_ringBuff.m_bQuit) break;
+            if (m_ringBuff.m_bQuit) break;
         }
 
-        self.fillRingBuffer();
+        fillRingBuffer();
     }
 
     return THREAD_STATUS{0};

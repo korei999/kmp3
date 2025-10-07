@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ArenaDeleterCRTP.hh"
+#include "IArena.hh"
 
 #if __has_include(<sys/mman.h>)
     #define ADT_ARENA_MMAP
@@ -17,10 +17,8 @@ namespace adt
 struct ArenaScope;
 
 /* Reserve/commit style linear allocator. */
-struct Arena : IArena, public ArenaDeleterCRTP<Arena>
+struct Arena : IArena
 {
-    using Deleter = ArenaDeleterCRTP<Arena>;
-
     static constexpr u64 INVALID_PTR = ~0llu;
 
     /* */
@@ -43,9 +41,13 @@ struct Arena : IArena, public ArenaDeleterCRTP<Arena>
     [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override; /* AllocException */
     [[nodiscard]] virtual void* realloc(void* p, usize oldNBytes, usize newNBytes) noexcept(false) override; /* AllocException */
     virtual void free(void* ptr, usize nBytes) noexcept override;
+
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override { return false; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override { return true; }
+
     virtual void freeAll() noexcept override;
+    [[nodiscard]] virtual Scope restoreAfterScope() noexcept override;
+    virtual usize memoryUsed() const noexcept override { return m_pos; }
 
     /* */
 
@@ -55,7 +57,6 @@ struct Arena : IArena, public ArenaDeleterCRTP<Arena>
     void reset() noexcept;
     void resetDecommit();
     void resetToPage(isize nthPage);
-    isize memoryUsed() const noexcept { return m_pos; }
     isize memoryReserved() const noexcept { return m_reserved; }
     isize memoryCommited() const noexcept { return m_commited; }
 
@@ -68,63 +69,79 @@ protected:
 /* Capture current state to restore it later with restore(). */
 struct ArenaState
 {
+    Arena* m_pArena {};
     isize m_pos {};
     void* m_pLastAlloc {};
     isize m_lastAllocSize {};
-    ArenaScope* m_pCurrentScope {};
     SList<Arena::DeleterNode>* m_pLCurrentDeleters {};
 
     /* */
 
-    void restore(Arena* pArena) noexcept;
-};
-
-struct ArenaScope
-{
-    Arena* m_pArena {};
-    SList<Arena::DeleterNode> m_lDeleters {};
-    ArenaState m_state {};
+    ArenaState() = default;
+    explicit ArenaState(Arena* p) noexcept;
 
     /* */
 
-    ArenaScope(Arena* p) noexcept;
-
-    ~ArenaScope() noexcept;
+    void restore() noexcept;
 };
 
-inline void
-ArenaState::restore(Arena* pArena) noexcept
+struct ArenaScope : IArena::IScope
 {
-    ADT_ASAN_POISON((u8*)pArena->m_pData + pArena->m_pos, pArena->m_pos - m_pos);
-    pArena->m_pos = m_pos;
-    pArena->m_pLastAlloc = m_pLastAlloc;
-    pArena->m_lastAllocSize = m_lastAllocSize;
-    pArena->m_pLCurrentDeleters = m_pLCurrentDeleters;
+    ArenaState m_state {};
+    SList<Arena::DeleterNode> m_lDeleters {};
+
+    /* */
+
+    explicit ArenaScope(const ArenaState& state) noexcept;
+    explicit ArenaScope(Arena* pArena) noexcept;
+
+    virtual ~ArenaScope() noexcept override;
+};
+
+inline
+ArenaScope::ArenaScope(const ArenaState& state) noexcept
+    : m_state{state}
+{
+    m_state.m_pArena->m_pLCurrentDeleters = &m_lDeleters;
 }
 
 inline
-ArenaScope::ArenaScope(Arena* p) noexcept
-    : m_pArena{p},
-      m_state{
-          .m_pos = p->m_pos,
-          .m_pLastAlloc = p->m_pLastAlloc,
-          .m_lastAllocSize = p->m_lastAllocSize,
-          .m_pLCurrentDeleters = p->m_pLCurrentDeleters
-      }
+ArenaScope::ArenaScope(Arena* pArena) noexcept
+    : m_state{pArena}
 {
-    m_pArena->m_pLCurrentDeleters = &m_lDeleters;
+    m_state.m_pArena->m_pLCurrentDeleters = &m_lDeleters;
+}
+
+inline void
+ArenaState::restore() noexcept
+{
+    ADT_ASAN_POISON((u8*)pArena->m_pData + pArena->m_pos, pArena->m_pos - m_pos);
+    m_pArena->m_pos = m_pos;
+    m_pArena->m_pLastAlloc = m_pLastAlloc;
+    m_pArena->m_lastAllocSize = m_lastAllocSize;
+    m_pArena->m_pLCurrentDeleters = m_pLCurrentDeleters;
+}
+
+inline
+ArenaState::ArenaState(Arena* p) noexcept
+    : m_pArena{p},
+      m_pos{p->m_pos},
+      m_pLastAlloc{p->m_pLastAlloc},
+      m_lastAllocSize{p->m_lastAllocSize},
+      m_pLCurrentDeleters{p->m_pLCurrentDeleters}
+{
 }
 
 inline
 ArenaScope::~ArenaScope() noexcept
 {
-    m_pArena->runDeleters();
-    m_state.restore(m_pArena);
+    m_state.m_pArena->runDeleters();
+    m_state.restore();
 }
 
 inline
 Arena::Arena(isize reserveSize, isize commitSize)
-    : Deleter{INIT}
+    : IArena{INIT}
 {
     [[maybe_unused]] int err = 0;
 
@@ -220,18 +237,25 @@ Arena::freeAll() noexcept
     *this = {};
 }
 
+inline IArena::Scope
+Arena::restoreAfterScope() noexcept
+{
+    ArenaState state {this};
+    return alloc<ArenaScope>(state);
+}
+
 template<typename T, typename ...ARGS>
 inline void
 Arena::initPtr(Ptr<T>* pPtr, ARGS&&... args)
 {
-    new(pPtr) Arena::Ptr<T> {this, std::forward<ARGS>(args)...};
+    new (pPtr) Arena::Ptr<T> {this, std::forward<ARGS>(args)...};
 }
 
 template<typename T, typename ...ARGS>
 inline void
 Arena::initPtr(Ptr<T>* pPtr, void (*pfn)(Arena*, Ptr<T>*), ARGS&&... args)
 {
-    new(pPtr) Arena::Ptr<T> {this, pfn, std::forward<ARGS>(args)...};
+    new (pPtr) Arena::Ptr<T> {this, pfn, std::forward<ARGS>(args)...};
 }
 
 inline void
@@ -328,18 +352,5 @@ Arena::decommit(void* p, isize size)
 #else
 #endif
 }
-
-namespace print
-{
-
-template<typename T>
-inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const Arena::Ptr<T>& x)
-{
-    if (x) return format(pCtx, fmtArgs, *x);
-    else return format(pCtx, fmtArgs, "null");
-}
-
-} /* namespace print */
 
 } /* namespace adt */

@@ -16,8 +16,10 @@ struct MiMalloc : IAllocator
     [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
     void virtual free(void* ptr, usize nBytes) noexcept override final;
+
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
+    [[nodiscard]] virtual constexpr bool doesFreeAll() const noexcept override final { return false; }
     /* virtual end */
 
     static void free(void* ptr) noexcept;
@@ -92,7 +94,7 @@ MiMalloc::free(void* ptr) noexcept
 }
 
 /* very fast general purpose, non thread safe, allocator. freeAll() is supported. */
-struct MiHeap : IArena
+struct MiHeap : IAllocator
 {
     mi_heap_t* m_pHeap {};
 
@@ -109,12 +111,14 @@ struct MiHeap : IArena
     [[nodiscard]] virtual void* zalloc(usize nBytes) noexcept(false) override final;
     [[nodiscard]] virtual void* realloc(void* ptr, usize oldNBytes, usize newNBytes) noexcept(false) override final;
     void virtual free(void* ptr, usize nBytes) noexcept override final;
-    void virtual freeAll() noexcept override final;
+
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
+    [[nodiscard]] virtual constexpr bool doesFreeAll() const noexcept override final { return true; }
 
     /* */
 
+    void freeAll() noexcept;
     void reset() noexcept;
 
     /* */
