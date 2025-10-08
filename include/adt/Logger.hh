@@ -351,11 +351,9 @@ Logger::destroy() noexcept
 
     LogDebug{"destroying logger...\n"};
     {
-        {
-            LockScope lock {&m_mtxRing};
-            m_bDead = true;
-            m_cndRing.signal();
-        }
+        LockScope lock {&m_mtxRing};
+        m_bDead = true;
+        m_cndRing.signal();
     }
 
     m_thrd.join();
