@@ -13,11 +13,11 @@ namespace adt::print
 
 template<>
 inline isize
-format(Context* ctx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
+format(Context* pCtx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
 {
     constexpr StringView mapStrings[] {"NONE", "ERROR", "WARN", "INFO", "DEBUG"};
     ADT_ASSERT((int)x + 1 >= 0 && (int)x + 1 < utils::size(mapStrings), "{}", (int)x);
-    return format(ctx, fmtArgs, mapStrings[(int)x + 1]);
+    return format(pCtx, fmtArgs, mapStrings[(int)x + 1]);
 }
 
 } /* namespace adt::print */
