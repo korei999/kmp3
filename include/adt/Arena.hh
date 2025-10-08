@@ -46,7 +46,7 @@ struct Arena : IArena
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override { return true; }
 
     virtual void freeAll() noexcept override;
-    [[nodiscard]] virtual Scope restoreAfterScope() noexcept override;
+    [[nodiscard]] virtual IScope restoreAfterScope() noexcept override;
     virtual usize memoryUsed() const noexcept override { return m_pos; }
 
     /* */
@@ -85,7 +85,7 @@ struct ArenaState
     void restore() noexcept;
 };
 
-struct ArenaScope : IArena::IScope
+struct ArenaScope : IArena::IScopeDestructor
 {
     ArenaState m_state {};
     SList<Arena::DeleterNode> m_lDeleters {};
@@ -96,6 +96,12 @@ struct ArenaScope : IArena::IScope
     explicit ArenaScope(Arena* pArena) noexcept;
 
     virtual ~ArenaScope() noexcept override;
+};
+
+template<>
+struct IArena::Scope<Arena> : ArenaScope
+{
+    using ArenaScope::ArenaScope;
 };
 
 inline
@@ -237,7 +243,7 @@ Arena::freeAll() noexcept
     *this = {};
 }
 
-inline IArena::Scope
+inline IArena::IScope
 Arena::restoreAfterScope() noexcept
 {
     ArenaState state {this};

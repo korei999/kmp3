@@ -62,7 +62,7 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
         IArena* pArena = pTp->arena();
         if (!pArena) goto fallbackToFixedBuffer;
 
-        IArena::Scope arenaScope = pArena->restoreAfterScope();
+        IArena::IScope arenaScope = pArena->restoreAfterScope();
         print::Builder pb {pArena, 512};
         StringView sv = pb.print(std::forward<ARGS>(args)...);
         const isize maxLen = utils::min(pLogger->cap(), sv.m_size);

@@ -47,7 +47,7 @@ struct BufferAllocator : public IArena
     [[nodiscard]] virtual bool doesRealloc() const noexcept override final { return true; }
 
     virtual void freeAll() noexcept override final; /* same as reset */
-    [[nodiscard]] virtual Scope restoreAfterScope() noexcept override;
+    [[nodiscard]] virtual IScope restoreAfterScope() noexcept override;
     virtual usize memoryUsed() const noexcept override;
 
     /* */
@@ -68,7 +68,7 @@ struct BufferAllocatorState
     void restore() noexcept;
 };
 
-struct BufferAllocatorScope : IArena::IScope
+struct BufferAllocatorScope : IArena::IScopeDestructor
 {
     BufferAllocatorState m_state {};
     SList<BufferAllocator::DeleterNode> m_lDeleters {};
@@ -79,6 +79,12 @@ struct BufferAllocatorScope : IArena::IScope
     BufferAllocatorScope(const BufferAllocatorState& state) noexcept;
 
     virtual ~BufferAllocatorScope() noexcept override;
+};
+
+template<>
+struct IArena::Scope<BufferAllocator> : BufferAllocatorScope
+{
+    using BufferAllocatorScope::BufferAllocatorScope;
 };
 
 inline void
@@ -183,7 +189,7 @@ BufferAllocator::freeAll() noexcept
     reset();
 }
 
-inline IArena::Scope
+inline IArena::IScope
 BufferAllocator::restoreAfterScope() noexcept
 {
     BufferAllocatorState state {this};

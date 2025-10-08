@@ -11,9 +11,11 @@ struct IArena;
 
 struct IThreadPool
 {
-    /* TODO: there's barely any reason to have a polymorphic thread pool (with polymorphic arenas).
-     * Perhaps threadpool or threadpool::arena types should be controlled by the preprocessor. */
+#if !defined ADT_THREAD_POOL_ARENA_TYPE
     using ThreadLocalArena = IArena;
+#else
+    using ThreadLocalArena = ADT_THREAD_POOL_ARENA_TYPE;
+#endif
 
     /* TODO: buffer size can be moved to implementation. */
     using Task = FuncBuffer<void, 56>;

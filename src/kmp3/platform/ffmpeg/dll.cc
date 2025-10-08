@@ -21,11 +21,11 @@ tryLoad(const StringView svDLLName)
         "/opt/homebrew/lib/",
     };
 
-    IArena* pArena = IThreadPool::inst()->arena();
+    auto* pArena = IThreadPool::inst()->arena();
 
     for (isize i = 0; i < utils::size(aPaths); ++i)
     {
-        IArena::Scope arenaScope = pArena->restoreAfterScope();
+        IArena::Scope arenaScope {pArena};
 
         String s = StringCat(pArena, aPaths[i], svDLLName);
         void* pRet = dlopen(s.data(), RTLD_NOW | RTLD_LOCAL);

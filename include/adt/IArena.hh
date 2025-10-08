@@ -9,25 +9,33 @@ struct IArena : IAllocator
 {
     /* Used to capture (or partially capture) state of the arena to restore it later.
      * Works very well for temporary allocations. */
-    struct IScope
+    struct IScopeDestructor
     {
-        virtual ~IScope() noexcept = 0;
+        virtual ~IScopeDestructor() noexcept = 0;
     };
 
-    struct Scope
+    struct IScope
     {
-        Scope(IScope* p) noexcept : m_pScope{p} {}
+        IScope(IScopeDestructor* p) noexcept : m_pScope{p} {}
 
-        ~Scope() noexcept { m_pScope->~IScope(); }
+        ~IScope() noexcept { m_pScope->~IScopeDestructor(); }
 
     private:
-        IScope* m_pScope {};
+        IScopeDestructor* m_pScope {};
+    };
+
+    /* Faster (non virtual) version. */
+    template<typename ARENA_T>
+    struct Scope
+    {
+        static_assert(false, "no overload found");
+        Scope(ARENA_T* pArena);
     };
 
     /* */
 
     virtual constexpr void freeAll() noexcept = 0;
-    [[nodiscard]] virtual Scope restoreAfterScope() noexcept = 0;
+    [[nodiscard]] virtual IScope restoreAfterScope() noexcept = 0;
     usize virtual memoryUsed() const noexcept = 0;
 
     /* */
@@ -114,6 +122,6 @@ struct IArena : IAllocator
     }
 };
 
-inline IArena::IScope::~IScope() noexcept {} /* Has to be implemented. */
+inline IArena::IScopeDestructor::~IScopeDestructor() noexcept {} /* Has to be implemented. */
 
 } /* namespace adt */

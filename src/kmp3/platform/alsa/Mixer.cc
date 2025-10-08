@@ -6,7 +6,7 @@
 namespace platform::alsa
 {
 
-static const char* s_pDevice = "default";
+constexpr auto ntsDEVICE = "default";
 
 Mixer&
 Mixer::init()
@@ -16,7 +16,7 @@ Mixer::init()
     int err = 0;
 
     ADT_RUNTIME_EXCEPTION_FMT(
-        (err = snd_pcm_open(&m_pHandle, s_pDevice, SND_PCM_STREAM_PLAYBACK, 0)) >= 0,
+        (err = snd_pcm_open(&m_pHandle, ntsDEVICE, SND_PCM_STREAM_PLAYBACK, 0)) >= 0,
         "({}): {}", err, snd_strerror(err)
     );
 
