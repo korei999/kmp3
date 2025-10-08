@@ -1,7 +1,6 @@
 #include "common.hh" /* IWYU pragma: keep */
 
 #include <cwctype>
-#include <cmath>
 
 namespace common
 {

@@ -3,7 +3,6 @@
 #include "keybinds.hh"
 
 #include <poll.h>
-#include <cmath>
 
 namespace platform::ansi
 {

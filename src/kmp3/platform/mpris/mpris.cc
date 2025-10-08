@@ -5,7 +5,7 @@
 #include "app.hh"
 
 #include <sys/eventfd.h>
-#include <sys/poll.h>
+#include <poll.h>
 
 #ifdef OPT_BASU
     #include <basu/sd-bus.h>

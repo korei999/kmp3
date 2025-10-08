@@ -2,8 +2,6 @@
 
 #include "app.hh"
 
-#include <cmath>
-
 namespace platform::coreaudio
 {
 

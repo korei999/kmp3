@@ -3,8 +3,6 @@
 #include "app.hh"
 #include "platform/mpris/mpris.hh"
 
-#include <cmath>
-
 namespace platform::pipewire
 {
 

@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <cwchar>
 #include <cwctype>
-#include <cmath>
 
 static constexpr StringView aSvAcceptedFileEndings[] {
     ".mp2", ".mp3", ".mp4", ".m4a", ".m4b",
