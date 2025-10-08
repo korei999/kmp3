@@ -21,7 +21,7 @@ tryLoad(const StringView svDLLName)
         "/opt/homebrew/lib/",
     };
 
-    auto* pArena = IThreadPool::inst()->arena();
+    IThreadPool::ArenaType* pArena = IThreadPool::inst()->arena();
 
     for (isize i = 0; i < utils::size(aPaths); ++i)
     {

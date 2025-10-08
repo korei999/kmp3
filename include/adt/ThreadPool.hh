@@ -68,13 +68,13 @@ struct ThreadPool : IThreadPool
     bool m_bStarted {};
     QueueM<Task> m_qTasks {};
     isize m_arenaReserved {};
-    ThreadLocalArena* (*m_pfnAllocArena)(isize reserve) {};
+    ArenaType* (*m_pfnAllocArena)(isize reserve) {};
 
 
     /* */
 
     static inline thread_local int gtl_threadId {};
-    static inline thread_local ThreadLocalArena* gtl_pArena {};
+    static inline thread_local ArenaType* gtl_pArena {};
 
     /* */
 
@@ -106,9 +106,9 @@ struct ThreadPool : IThreadPool
     virtual int nThreads() const noexcept override { return m_spThreads.size(); }
     virtual Task tryStealTask() noexcept override;
     virtual usize threadId() noexcept override;
-    virtual ThreadLocalArena* createArenaForThisThread(isize reserve) noexcept override;
+    virtual ArenaType* createArenaForThisThread(isize reserve) noexcept override;
     virtual void destroyArenaForThisThread() noexcept override;
-    virtual ThreadLocalArena* arena() noexcept override;
+    virtual ArenaType* arena() noexcept override;
 
     /* */
 
@@ -123,7 +123,7 @@ template<typename ARENA_T>
 inline
 ThreadPool::ThreadPool(ARENA_T&&, isize arenaReserve)
     : m_arenaReserved{arenaReserve},
-      m_pfnAllocArena{[](isize reserve) { return static_cast<ThreadLocalArena*>(Gpa::inst()->alloc<ARENA_T>(reserve)); }}
+      m_pfnAllocArena{[](isize reserve) { return static_cast<ArenaType*>(Gpa::inst()->alloc<ARENA_T>(reserve)); }}
 {
     start();
 }
@@ -136,7 +136,7 @@ inline ThreadPool::ThreadPool(ARENA_T&&, isize qSize, isize arenaReserve, int nT
       m_cndWait(INIT),
       m_qTasks(qSize),
       m_arenaReserved(arenaReserve),
-      m_pfnAllocArena([](isize reserve) { return static_cast<ThreadLocalArena*>(Gpa::inst()->alloc<ARENA_T>(reserve)); })
+      m_pfnAllocArena([](isize reserve) { return static_cast<ArenaType*>(Gpa::inst()->alloc<ARENA_T>(reserve)); })
 {
     start();
 }
@@ -161,7 +161,7 @@ ThreadPool::ThreadPool(
       m_pLoopEndArg(pLoopEndArg),
       m_qTasks(qSize),
       m_arenaReserved(arenaReserve),
-      m_pfnAllocArena([](isize reserve) { return static_cast<ThreadLocalArena*>(Gpa::inst()->alloc<ARENA_T>(reserve)); })
+      m_pfnAllocArena([](isize reserve) { return static_cast<ArenaType*>(Gpa::inst()->alloc<ARENA_T>(reserve)); })
 {
     start();
 }
@@ -332,7 +332,7 @@ ThreadPool::threadId() noexcept
     return gtl_threadId;
 }
 
-inline ThreadPool::ThreadLocalArena*
+inline ThreadPool::ArenaType*
 ThreadPool::createArenaForThisThread(isize reserve) noexcept
 {
     ADT_ASSERT(gtl_pArena == nullptr, "arena already exists");
@@ -348,7 +348,7 @@ ThreadPool::destroyArenaForThisThread() noexcept
     gtl_pArena = nullptr;
 }
 
-inline ThreadPool::ThreadLocalArena*
+inline ThreadPool::ArenaType*
 ThreadPool::arena() noexcept
 {
     return gtl_pArena;

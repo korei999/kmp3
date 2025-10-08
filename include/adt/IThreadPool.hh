@@ -12,9 +12,9 @@ struct IArena;
 struct IThreadPool
 {
 #if !defined ADT_THREAD_POOL_ARENA_TYPE
-    using ThreadLocalArena = IArena;
+    using ArenaType = IArena;
 #else
-    using ThreadLocalArena = ADT_THREAD_POOL_ARENA_TYPE;
+    using ArenaType = ADT_THREAD_POOL_ARENA_TYPE;
 #endif
 
     /* TODO: buffer size can be moved to implementation. */
@@ -64,9 +64,9 @@ struct IThreadPool
 
     virtual usize threadId() noexcept = 0;
 
-    virtual ThreadLocalArena* createArenaForThisThread(isize reserve) noexcept = 0;
+    virtual ArenaType* createArenaForThisThread(isize reserve) noexcept = 0;
     virtual void destroyArenaForThisThread() noexcept = 0;
-    virtual ThreadLocalArena* arena() noexcept = 0;
+    virtual ArenaType* arena() noexcept = 0;
 
     template<typename CL>
     bool

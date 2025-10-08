@@ -59,10 +59,10 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
     IThreadPool* pTp = IThreadPool::inst();
     if (pTp)
     {
-        IArena* pArena = pTp->arena();
+        IThreadPool::ArenaType* pArena = pTp->arena();
         if (!pArena) goto fallbackToFixedBuffer;
 
-        IArena::IScope arenaScope = pArena->restoreAfterScope();
+        IArena::Scope arenaScope {pArena};
         print::Builder pb {pArena, 512};
         StringView sv = pb.print(std::forward<ARGS>(args)...);
         const isize maxLen = utils::min(pLogger->cap(), sv.m_size);

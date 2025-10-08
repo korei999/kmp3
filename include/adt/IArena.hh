@@ -122,6 +122,15 @@ struct IArena : IAllocator
     }
 };
 
-inline IArena::IScopeDestructor::~IScopeDestructor() noexcept {} /* Has to be implemented. */
+template<>
+struct IArena::Scope<IArena>
+{
+    Scope(IArena* pArena) : m_scope{pArena->restoreAfterScope()} {}
+
+private:
+    IScope m_scope;
+};
+
+inline IArena::IScopeDestructor::~IScopeDestructor() noexcept {}
 
 } /* namespace adt */
