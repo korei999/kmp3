@@ -289,6 +289,7 @@ ThreadPool::destroy() noexcept
     }
 
     gtl_pArena->freeAll();
+    Gpa::inst()->free(gtl_pArena);
     gtl_pArena = nullptr;
 }
 
