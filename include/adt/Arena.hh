@@ -115,7 +115,7 @@ ArenaScope::ArenaScope(Arena* pArena) noexcept
 inline void
 ArenaState::restore() noexcept
 {
-    ADT_ASAN_POISON((u8*)pArena->m_pData + pArena->m_pos, pArena->m_pos - m_pos);
+    ADT_ASAN_POISON((u8*)m_pArena->m_pData + m_pArena->m_pos, m_pArena->m_pos - m_pos);
     m_pArena->m_pos = m_pos;
     m_pArena->m_pLastAlloc = m_pLastAlloc;
     m_pArena->m_lastAllocSize = m_lastAllocSize;

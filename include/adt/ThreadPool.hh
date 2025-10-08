@@ -289,6 +289,7 @@ ThreadPool::destroy() noexcept
     }
 
     gtl_pArena->freeAll();
+    gtl_pArena = nullptr;
 }
 
 inline bool

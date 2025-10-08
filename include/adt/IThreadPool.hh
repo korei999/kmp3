@@ -11,7 +11,7 @@ struct IArena;
 
 struct IThreadPool
 {
-    /* TODO: there barely any reason to have a polymorphic thread pool (with polymorphic arenas).
+    /* TODO: there's barely any reason to have a polymorphic thread pool (with polymorphic arenas).
      * Perhaps threadpool or threadpool::arena types should be controlled by the preprocessor. */
     using ThreadLocalArena = IArena;
 

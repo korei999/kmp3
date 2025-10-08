@@ -242,7 +242,9 @@ Thread::pthreadJoin()
 inline THREAD_STATUS
 Thread::pthreadDetach()
 {
-    return reinterpret_cast<THREAD_STATUS>(pthread_detach(m_thread));
+    [[maybe_unused]] int err = pthread_detach(m_thread);
+    ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+    return static_cast<THREAD_STATUS>(err);
 }
 
 inline void
@@ -269,6 +271,13 @@ Thread::start(void* (*pfn)(void*), void* pFnArg, ATTR eAttr)
 
     err = pthread_create(&m_thread, &attr, (void* (*)(void*))pfn, pFnArg);
     ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
+
+#ifndef NDEBUG
+    size_t stackSize {};
+    err = pthread_attr_getstacksize(&attr, &stackSize);
+    LogDebug{"new thread {} (stack size: {})\n", m_thread, stackSize};
+#endif
+
     err = pthread_attr_destroy(&attr);
     ADT_ASSERT(err == 0, "err: {}, ({})", err, strerror(err));
 }

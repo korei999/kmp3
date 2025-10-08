@@ -123,6 +123,7 @@ quick(auto a[], isize l, isize r, const CL_CMP clCmp)
     }
 }
 
+/* BUG: Deeply nested recursions might stack overflow (threads usually have much smaller stack size). */
 template<typename THREAD_POOL_T, typename CL_CMP>
 inline void
 quickParallel(THREAD_POOL_T* pTPool, auto a[], isize l, isize r, CL_CMP clCmp)
