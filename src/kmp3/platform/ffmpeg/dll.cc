@@ -7,8 +7,21 @@ using namespace adt;
 namespace platform::ffmpeg::dll
 {
 
+#define PLATFORM_FFMPEG_DLL_PFN(FUNC) decltype(::FUNC)* FUNC;
+
+ADT_PP_FOR_EACH(PLATFORM_FFMPEG_DLL_PFN,
+    PLATFORM_FFMPEG_DLL_CORE_PFN_LIST
+)
 static void* s_pLibavformat;
+
+#ifdef OPT_CHAFA
+
+ADT_PP_FOR_EACH(PLATFORM_FFMPEG_DLL_PFN,
+    PLATFORM_FFMPEG_DLL_CHAFA_PFN_LIST
+)
 static void* s_pLiblibswscale;
+
+#endif
 
 static void*
 tryLoad(const StringView svDLLName)
@@ -59,44 +72,9 @@ loadLibs()
 #endif
         if (!s_pLibavformat) return false;
 
-        SYM(s_pLibavformat, avformat_close_input);
-        SYM(s_pLibavformat, av_packet_free);
-        SYM(s_pLibavformat, av_frame_free);
-        SYM(s_pLibavformat, av_dict_get);
-
-        SYM(s_pLibavformat, avcodec_free_context);
-        SYM(s_pLibavformat, avcodec_find_decoder);
-        SYM(s_pLibavformat, avcodec_alloc_context3);
-
-        SYM(s_pLibavformat, avcodec_parameters_to_context);
-        SYM(s_pLibavformat, avcodec_open2);
-
-        SYM(s_pLibavformat, av_packet_alloc);
-        SYM(s_pLibavformat, av_frame_alloc);
-        SYM(s_pLibavformat, av_read_frame);
-        SYM(s_pLibavformat, avcodec_send_packet);
-        SYM(s_pLibavformat, avcodec_receive_frame);
-
-        SYM(s_pLibavformat, swr_alloc_set_opts2);
-        SYM(s_pLibavformat, swr_config_frame);
-        SYM(s_pLibavformat, swr_free);
-        SYM(s_pLibavformat, swr_convert_frame);
-
-        SYM(s_pLibavformat, av_image_fill_linesizes);
-        SYM(s_pLibavformat, av_frame_get_buffer);
-
-        SYM(s_pLibavformat, av_log_set_level);
-        SYM(s_pLibavformat, avformat_open_input);
-        SYM(s_pLibavformat, avformat_find_stream_info);
-        SYM(s_pLibavformat, av_find_best_stream);
-
-        SYM(s_pLibavformat, avcodec_flush_buffers);
-        SYM(s_pLibavformat, av_rescale_q);
-        SYM(s_pLibavformat, av_seek_frame);
-        SYM(s_pLibavformat, av_packet_unref);
-
-        SYM(s_pLibavformat, av_frame_unref);
-        SYM(s_pLibavformat, av_strerror);
+#define _SYM(FUNC) SYM(s_pLibavformat, FUNC);
+        ADT_PP_FOR_EACH(_SYM, PLATFORM_FFMPEG_DLL_CORE_PFN_LIST);
+#undef _SYM
     }
 
     {
@@ -109,15 +87,14 @@ loadLibs()
 #endif
         if (!s_pLiblibswscale) return false;
 
-        SYM(s_pLiblibswscale, sws_getContext);
-        SYM(s_pLiblibswscale, sws_scale_frame);
-        SYM(s_pLiblibswscale, sws_freeContext);
+#define _SYM(FUNC) SYM(s_pLiblibswscale, FUNC);
+        ADT_PP_FOR_EACH(_SYM, PLATFORM_FFMPEG_DLL_CHAFA_PFN_LIST);
+#undef _SYM
+
 #endif
     }
 
     return true;
-
-#undef SYM
 }
 
 void

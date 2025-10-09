@@ -14,63 +14,69 @@ extern "C"
 
 }
 
+#include "adt/SOA.hh" /* PP_FOR_EACH macros. */
+
 namespace platform::ffmpeg::dll
 {
 
 bool loadLibs();
 void unloadLibs();
 
-#define PFN_INLINE(name) inline decltype(::name)* name;
+#define PLATFORM_FFMPEG_DLL_PFN_EXTERN(FUNC) extern decltype(::FUNC)* FUNC;
 
-PFN_INLINE(avformat_close_input);
-PFN_INLINE(av_packet_free);
-PFN_INLINE(av_frame_free);
+#define PLATFORM_FFMPEG_DLL_CORE_PFN_LIST \
+    avformat_close_input,\
+    av_packet_free,\
+    av_frame_free,\
+\
+    av_dict_get,\
+\
+    avcodec_free_context,\
+    avcodec_find_decoder,\
+    avcodec_alloc_context3,\
+\
+    avcodec_parameters_to_context,\
+    avcodec_open2,\
+\
+    av_packet_alloc,\
+    av_frame_alloc,\
+    av_read_frame,\
+    avcodec_send_packet,\
+    avcodec_receive_frame,\
+\
+    swr_alloc_set_opts2,\
+    swr_config_frame,\
+    swr_free,\
+    swr_convert_frame,\
+\
+    av_image_fill_linesizes,\
+    av_frame_get_buffer,\
+\
+    av_log_set_level,\
+    avformat_open_input,\
+    avformat_find_stream_info,\
+\
+    av_find_best_stream,\
+\
+    avcodec_flush_buffers,\
+    av_rescale_q,\
+    av_seek_frame,\
+    av_packet_unref,\
+\
+    av_frame_unref,\
+    av_strerror
 
-PFN_INLINE(av_dict_get);
-
-PFN_INLINE(avcodec_free_context);
-PFN_INLINE(avcodec_find_decoder);
-PFN_INLINE(avcodec_alloc_context3);
-
-PFN_INLINE(avcodec_parameters_to_context);
-PFN_INLINE(avcodec_open2);
-
-PFN_INLINE(av_packet_alloc);
-PFN_INLINE(av_frame_alloc);
-PFN_INLINE(av_read_frame);
-PFN_INLINE(avcodec_send_packet);
-PFN_INLINE(avcodec_receive_frame);
-
-PFN_INLINE(swr_alloc_set_opts2);
-PFN_INLINE(swr_config_frame);
-PFN_INLINE(swr_free);
-PFN_INLINE(swr_convert_frame);
-
-PFN_INLINE(av_image_fill_linesizes);
-PFN_INLINE(av_frame_get_buffer);
-
-PFN_INLINE(av_log_set_level);
-PFN_INLINE(avformat_open_input);
-PFN_INLINE(avformat_find_stream_info);
-
-PFN_INLINE(av_find_best_stream);
-
-PFN_INLINE(avcodec_flush_buffers);
-PFN_INLINE(av_rescale_q);
-PFN_INLINE(av_seek_frame);
-PFN_INLINE(av_packet_unref);
-
-PFN_INLINE(av_frame_unref);
-PFN_INLINE(av_strerror);
+ADT_PP_FOR_EACH(PLATFORM_FFMPEG_DLL_PFN_EXTERN, PLATFORM_FFMPEG_DLL_CORE_PFN_LIST)
 
 #ifdef OPT_CHAFA
 
-PFN_INLINE(sws_getContext);
-PFN_INLINE(sws_scale_frame);
-PFN_INLINE(sws_freeContext);
+#define PLATFORM_FFMPEG_DLL_CHAFA_PFN_LIST \
+    sws_getContext,\
+    sws_scale_frame,\
+    sws_freeContext
 
-#endif /* OPT_CHAFA */
+ADT_PP_FOR_EACH(PLATFORM_FFMPEG_DLL_PFN_EXTERN, PLATFORM_FFMPEG_DLL_CHAFA_PFN_LIST)
 
-#undef PFN_INLINE
+#endif
 
 } /* namespace platform::ffmpeg::dll */
