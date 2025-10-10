@@ -12,7 +12,6 @@ struct BufferAllocator : public IArena
     usize m_size = 0;
     usize m_cap = 0;
     void* m_pLastAlloc = nullptr;
-    usize m_lastAllocSize = 0;
 
     /* */
 
@@ -61,7 +60,6 @@ struct BufferAllocatorState
     BufferAllocator* m_pAlloc {};
     usize m_size {};
     void* m_pLastAlloc {};
-    usize m_lastAllocSize {};
 
     /* */
 
@@ -94,7 +92,6 @@ BufferAllocatorState::restore() noexcept
 
     m_pAlloc->m_size = m_size;
     m_pAlloc->m_pLastAlloc = m_pLastAlloc;
-    m_pAlloc->m_lastAllocSize = m_lastAllocSize;
 }
 
 inline
@@ -103,7 +100,6 @@ BufferAllocatorScope::BufferAllocatorScope(BufferAllocator* pAlloc) noexcept
         .m_pAlloc = pAlloc,
         .m_size = pAlloc->m_size,
         .m_pLastAlloc = pAlloc->m_pLastAlloc,
-        .m_lastAllocSize = pAlloc->m_lastAllocSize,
     }
 {
     pAlloc->m_pLCurrentDeleters = &m_lDeleters;
@@ -136,7 +132,6 @@ BufferAllocator::malloc(usize nBytes)
     void* ret = &m_pMemBuffer[m_size];
     m_size += realSize;
     m_pLastAlloc = ret;
-    m_lastAllocSize = realSize;
 
     return ret;
 }
@@ -158,29 +153,25 @@ BufferAllocator::realloc(void* p, usize oldNBytes, usize newNBytes)
 
     const usize realSize = alignUp8(newNBytes);
 
-    if ((m_size + realSize - m_lastAllocSize) > m_cap)
-    {
-        errno = ENOBUFS;
-        throw AllocException("BufferAllocator::realloc(): out of memory");
-    }
-
     if (p == m_pLastAlloc)
     {
-        m_size -= m_lastAllocSize;
-        m_size += realSize;
-        m_lastAllocSize = realSize;
+        const usize reallocatedSize = ((u8*)m_pLastAlloc - m_pMemBuffer) + realSize;
+        if ((reallocatedSize) > m_cap)
+        {
+            errno = ENOBUFS;
+            throw AllocException("BufferAllocator::realloc(): out of memory");
+        }
 
+        m_size = reallocatedSize;
         return p;
     }
-    else
-    {
-        if (newNBytes <= oldNBytes) return p;
 
-        auto* ret = malloc(newNBytes);
-        memcpy(ret, p, oldNBytes);
+    if (newNBytes <= oldNBytes) return p;
 
-        return ret;
-    }
+    auto* ret = malloc(newNBytes);
+    memcpy(ret, p, oldNBytes);
+
+    return ret;
 }
 
 inline void

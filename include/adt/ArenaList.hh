@@ -11,10 +11,9 @@ struct ArenaList : public IArena
     struct Block
     {
         Block* pNext {};
-        usize size {}; /* excluding sizeof(ArenaBlock) */
+        usize cap {}; /* excluding sizeof(ArenaBlock) */
         usize nBytesOccupied {};
         u8* pLastAlloc {};
-        usize lastAllocSize {};
         u8 pMem[];
     };
 
@@ -81,7 +80,6 @@ struct ArenaListState
     ArenaList::Block* m_pLastBlock {};
     usize m_nBytesOccupied {};
     u8* m_pLastAlloc {};
-    usize m_lastAllocSize {};
 
     /* */
 
@@ -124,8 +122,7 @@ ArenaListState::ArenaListState(ArenaList* pArena) noexcept
     : m_pArena{pArena},
       m_pLastBlock{pArena->m_pBlocks},
       m_nBytesOccupied{m_pLastBlock->nBytesOccupied},
-      m_pLastAlloc{m_pLastBlock->pLastAlloc},
-      m_lastAllocSize{m_pLastBlock->lastAllocSize}
+      m_pLastAlloc{m_pLastBlock->pLastAlloc}
 {
 }
 
@@ -134,7 +131,6 @@ ArenaListState::restore() noexcept
 {
     m_pLastBlock->nBytesOccupied = m_nBytesOccupied;
     m_pLastBlock->pLastAlloc = m_pLastAlloc;
-    m_pLastBlock->lastAllocSize = m_lastAllocSize;
 
     auto* it = m_pArena->m_pBlocks;
     while (it != m_pLastBlock)
@@ -148,7 +144,7 @@ ArenaListState::restore() noexcept
         );
 #endif
         auto* next = it->pNext;
-        m_pArena->m_pBackAlloc->free(it, it->size + sizeof(ArenaList::Block));
+        m_pArena->m_pBackAlloc->free(it, it->cap + sizeof(ArenaList::Block));
         it = next;
     }
 
@@ -162,7 +158,7 @@ ArenaList::findBlockFromPtr(u8* ptr)
     auto* it = m_pBlocks;
     while (it)
     {
-        if (ptr >= it->pMem && ptr < &it->pMem[it->size])
+        if (ptr >= it->pMem && ptr < &it->pMem[it->cap])
             return it;
 
         it = it->pNext;
@@ -177,7 +173,7 @@ ArenaList::findFittingBlock(usize size)
     auto* it = m_pBlocks;
     while (it)
     {
-        if (size < it->size - it->nBytesOccupied)
+        if (size < it->cap - it->nBytesOccupied)
             return it;
 
         it = it->pNext;
@@ -200,7 +196,7 @@ ArenaList::allocBlock(usize size)
     );
 #endif
 
-    pBlock->size = size;
+    pBlock->cap = size;
     pBlock->pLastAlloc = pBlock->pMem;
 
     return pBlock;
@@ -232,11 +228,8 @@ ArenaList::malloc(usize nBytes)
     if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, usize(realSize*1.33)));
 
     auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
-    ADT_ASSERT(pRet == pBlock->pLastAlloc + pBlock->lastAllocSize, " ");
-
     pBlock->nBytesOccupied += realSize;
     pBlock->pLastAlloc = pRet;
-    pBlock->lastAllocSize = realSize;
 
     return pRet;
 }
@@ -259,24 +252,22 @@ ArenaList::realloc(void* ptr, usize oldNBytes, usize newNBytes)
     auto* pBlock = findBlockFromPtr(static_cast<u8*>(ptr));
     if (!pBlock) throw AllocException("pointer doesn't belong to this arena");
 
-    if (ptr == pBlock->pLastAlloc &&
-        pBlock->pLastAlloc + realSize < pBlock->pMem + pBlock->size) /* bump case */
+    if (ptr == pBlock->pLastAlloc) /* bump case */
     {
-        pBlock->nBytesOccupied -= pBlock->lastAllocSize;
-        pBlock->nBytesOccupied += realSize;
-        pBlock->lastAllocSize = realSize;
-
-        return ptr;
+        const usize reallocPos = (pBlock->pLastAlloc - pBlock->pMem) + realSize;
+        if (reallocPos <= pBlock->cap)
+        {
+            pBlock->nBytesOccupied = reallocPos;
+            return ptr;
+        }
     }
-    else
-    {
-        if (newNBytes <= oldNBytes) return ptr;
 
-        auto* pRet = malloc(newNBytes);
-        memcpy(pRet, ptr, oldNBytes);
+    if (newNBytes <= oldNBytes) return ptr;
 
-        return pRet;
-    }
+    auto* pRet = malloc(newNBytes);
+    memcpy(pRet, ptr, oldNBytes);
+
+    return pRet;
 }
 
 inline void
@@ -292,7 +283,7 @@ ArenaList::freeAll() noexcept
     while (it)
     {
         auto* next = it->pNext;
-        m_pBackAlloc->free(it, it->size + sizeof(Block));
+        m_pBackAlloc->free(it, it->cap + sizeof(Block));
         it = next;
     }
     m_pBlocks = nullptr;
@@ -312,7 +303,6 @@ ArenaList::reset() noexcept
     while (it)
     {
         it->nBytesOccupied = 0;
-        it->lastAllocSize = 0;
         it->pLastAlloc = it->pMem;
 
         it = it->pNext;
@@ -333,7 +323,7 @@ ArenaList::shrinkToFirstBlock() noexcept
         );
 #endif
         auto* next = it->pNext;
-        m_pBackAlloc->free(it, it->size + sizeof(Block));
+        m_pBackAlloc->free(it, it->cap + sizeof(Block));
         it = next;
     }
     m_pBlocks = it;

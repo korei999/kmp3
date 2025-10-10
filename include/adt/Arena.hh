@@ -28,7 +28,6 @@ struct Arena : IArena
     isize m_reserved {};
     isize m_commited {};
     void* m_pLastAlloc {};
-    isize m_lastAllocSize {};
 
     /* */
 
@@ -72,7 +71,6 @@ struct ArenaState
     Arena* m_pArena {};
     isize m_pos {};
     void* m_pLastAlloc {};
-    isize m_lastAllocSize {};
     SList<Arena::DeleterNode>* m_pLCurrentDeleters {};
 
     /* */
@@ -124,7 +122,6 @@ ArenaState::restore() noexcept
     ADT_ASAN_POISON((u8*)m_pArena->m_pData + m_pArena->m_pos, m_pArena->m_pos - m_pos);
     m_pArena->m_pos = m_pos;
     m_pArena->m_pLastAlloc = m_pLastAlloc;
-    m_pArena->m_lastAllocSize = m_lastAllocSize;
     m_pArena->m_pLCurrentDeleters = m_pLCurrentDeleters;
 }
 
@@ -133,7 +130,6 @@ ArenaState::ArenaState(Arena* p) noexcept
     : m_pArena{p},
       m_pos{p->m_pos},
       m_pLastAlloc{p->m_pLastAlloc},
-      m_lastAllocSize{p->m_lastAllocSize},
       m_pLCurrentDeleters{p->m_pLCurrentDeleters}
 {
 }
@@ -185,7 +181,6 @@ Arena::malloc(usize nBytes)
     growIfNeeded(m_pos + realSize);
 
     m_pLastAlloc = pRet;
-    m_lastAllocSize = realSize;
 
     return pRet;
 }
@@ -207,9 +202,8 @@ Arena::realloc(void* p, usize oldNBytes, usize newNBytes)
     if (p == m_pLastAlloc)
     {
         const isize realSize = alignUp8(newNBytes);
-        const isize newPos = (m_pos - m_lastAllocSize) + realSize;
+        const isize newPos = ((isize)m_pLastAlloc - (isize)m_pData) + realSize;
         growIfNeeded(newPos);
-        m_lastAllocSize = realSize;
         return p;
     }
 
@@ -273,7 +267,6 @@ Arena::reset() noexcept
 
     m_pos = 0;
     m_pLastAlloc = (void*)INVALID_PTR;
-    m_lastAllocSize = 0;
 }
 
 inline void
@@ -288,7 +281,6 @@ Arena::resetDecommit()
     m_pos = 0;
     m_commited = 0;
     m_pLastAlloc = (void*)INVALID_PTR;
-    m_lastAllocSize = 0;
 }
 
 inline void
@@ -309,7 +301,6 @@ Arena::resetToPage(isize nthPage)
     m_pos = 0;
     m_commited = commitSize;
     m_pLastAlloc = (void*)INVALID_PTR;
-    m_lastAllocSize = 0;
 }
 
 inline void
