@@ -7,7 +7,7 @@ namespace adt
 {
 
 /* Thread safe general purpose allocator. */
-struct MiMalloc : IAllocator
+struct MiMalloc final : IAllocator
 {
     static MiMalloc* inst();
 
@@ -19,13 +19,12 @@ struct MiMalloc : IAllocator
 
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
-    [[nodiscard]] virtual constexpr bool doesFreeAll() const noexcept override final { return false; }
     /* virtual end */
 
     static void free(void* ptr) noexcept;
 };
 
-struct MiMallocNV : AllocatorHelperCRTP<MiMallocNV>
+struct MiMallocNV final : AllocatorHelperCRTP<MiMallocNV>
 {
     [[nodiscard]] static MiMalloc* inst() noexcept { return MiMalloc::inst(); }
 
@@ -94,7 +93,7 @@ MiMalloc::free(void* ptr) noexcept
 }
 
 /* very fast general purpose, non thread safe, allocator. freeAll() is supported. */
-struct MiHeap : IAllocator
+struct MiHeap final : IAllocator
 {
     mi_heap_t* m_pHeap {};
 
@@ -114,7 +113,6 @@ struct MiHeap : IAllocator
 
     [[nodiscard]] virtual constexpr bool doesFree() const noexcept override final { return true; }
     [[nodiscard]] virtual constexpr bool doesRealloc() const noexcept override final { return true; }
-    [[nodiscard]] virtual constexpr bool doesFreeAll() const noexcept override final { return true; }
 
     /* */
 

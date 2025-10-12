@@ -6,7 +6,7 @@ namespace adt
 {
 
 /* Like Arena, but uses list chained memory blocks instead of reserve/commit. */
-struct ArenaList : public IArena
+struct ArenaList final : public IArena
 {
     struct Block
     {
@@ -105,7 +105,7 @@ struct ArenaListScope : IArena::IScopeDestructor
 };
 
 template<>
-struct IArena::Scope<ArenaList> : ArenaListScope
+struct IArena::Scope<ArenaList> final : ArenaListScope
 {
     using ArenaListScope::ArenaListScope;
 };
@@ -140,7 +140,7 @@ ArenaListState::restore() noexcept
             print::shorterSourcePath(m_pArena->m_loc.file_name()),
             m_pArena->m_loc.function_name(),
             m_pArena->m_loc.line(),
-            it->size
+            it->cap
         );
 #endif
         auto* next = it->pNext;
@@ -319,7 +319,7 @@ ArenaList::shrinkToFirstBlock() noexcept
     {
 #if defined ADT_DBG_MEMORY && !defined NDEBUG
         LogDebug("[Arena: {}, {}]: shrinking {} sized block\n",
-            print::shorterSourcePath(m_loc.file_name()), m_loc.line(), it->size
+            print::shorterSourcePath(m_loc.file_name()), m_loc.line(), it->cap
         );
 #endif
         auto* next = it->pNext;

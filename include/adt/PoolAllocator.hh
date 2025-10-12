@@ -8,7 +8,7 @@
 namespace adt
 {
 
-struct PoolAllocator : public IAllocator
+struct PoolAllocator final : public IAllocator
 {
     /* fixed byte size (chunk) per alloc. Calling realloc() is an error */
     struct Node

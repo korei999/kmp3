@@ -97,7 +97,7 @@ struct ArenaScope : IArena::IScopeDestructor
 };
 
 template<>
-struct IArena::Scope<Arena> : ArenaScope
+struct IArena::Scope<Arena> final : ArenaScope
 {
     using ArenaScope::ArenaScope;
 };

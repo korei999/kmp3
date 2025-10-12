@@ -12,7 +12,7 @@ namespace adt
 {
 
 /* Libc allocator (aka malloc() / calloc() / realloc() / free()). */
-struct Gpa : IAllocator
+struct Gpa final : IAllocator
 {
     [[nodiscard]] static Gpa* inst(); /* nonnull */
 
@@ -30,7 +30,7 @@ struct Gpa : IAllocator
 };
 
 /* non virtual */
-struct GpaNV : AllocatorHelperCRTP<GpaNV>
+struct GpaNV final : AllocatorHelperCRTP<GpaNV>
 {
     [[nodiscard]] static Gpa* inst() noexcept { return Gpa::inst(); }
 

@@ -52,7 +52,7 @@ IThreadPool::Future<T>::waitData() noexcept
     else return Base::waitData();
 }
 
-struct ThreadPool : IThreadPool
+struct ThreadPool final : IThreadPool
 {
     Span<Thread> m_spThreads {};
     Mutex m_mtxQ {};
