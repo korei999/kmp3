@@ -257,9 +257,9 @@ namespace print
 
 template<typename T, isize CAP>
 inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const typename Pool<T, CAP>::Handle& x)
+format(Context* pCtx, FmtArgs* pFmtArgs, const typename Pool<T, CAP>::Handle& x)
 {
-    return format(pCtx, fmtArgs, x.i);
+    return format(pCtx, pFmtArgs, x.i);
 }
 
 } /* namespace print */

@@ -47,6 +47,7 @@ struct StringView
 
     constexpr StringView() = default;
 
+    /* FIXME: problems with ambiguous conversions. */
     constexpr StringView(const char* nts);
 
     constexpr StringView(char* pStr, isize len);

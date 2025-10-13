@@ -74,13 +74,11 @@ namespace adt::print
 
 template<>
 inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const platform::ansi::TermSize& x)
+format(Context* pCtx, FmtArgs* pFmtArgs, const platform::ansi::TermSize& x)
 {
-    return formatVariadicStacked(pCtx, fmtArgs,
-        "(width: ", x.width,
-        ", height: ", x.height,
-        ", pixWidth: ", x.pixWidth,
-        ", pixHeight: ", x.pixHeight, ")"
+    return pCtx->pBuilder->pushFmt(pFmtArgs,
+        "(width: {}, height: {}, pixWidth: {}, pixHeight: {})",
+        x.width, x.height, x.pixHeight, x.pixHeight
     );
 }
 

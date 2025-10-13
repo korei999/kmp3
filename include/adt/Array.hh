@@ -9,8 +9,6 @@ namespace adt
 template<typename T, isize CAP>
 struct Array
 {
-    static_assert(CAP > 0);
-
     T m_aData[CAP];
     isize m_size {};
 

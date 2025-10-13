@@ -138,10 +138,10 @@ namespace print
 
 template<typename T>
 inline isize
-format(Context* ctx, FormatArgs fmtArgs, const IArena::Ptr<T>& x)
+format(Context* ctx, FmtArgs* pFmtArgs, const IArena::Ptr<T>& x)
 {
-    if (x) return format(ctx, fmtArgs, *x);
-    else return format(ctx, fmtArgs, "null");
+    if (x) return format(ctx, pFmtArgs, *x);
+    else return format(ctx, pFmtArgs, "null");
 }
 
 } /* namespace print */

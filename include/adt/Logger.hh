@@ -13,11 +13,11 @@ namespace adt::print
 
 template<>
 inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const ILogger::LEVEL& x)
+format(Context* pCtx, FmtArgs* pFmtArgs, const ILogger::LEVEL& x)
 {
     constexpr StringView mapStrings[] {"NONE", "ERROR", "WARN", "INFO", "DEBUG"};
     ADT_ASSERT((int)x + 1 >= 0 && (int)x + 1 < utils::size(mapStrings), "{}", (int)x);
-    return format(pCtx, fmtArgs, mapStrings[(int)x + 1]);
+    return format(pCtx, pFmtArgs, mapStrings[(int)x + 1]);
 }
 
 } /* namespace adt::print */
@@ -64,7 +64,8 @@ Log<ARGS...>::Log(ILogger::LEVEL eLevel, ARGS&&... args, const std::source_locat
 
         IArena::Scope arenaScope {pArena};
         print::Builder pb {pArena, 512};
-        StringView sv = pb.print(std::forward<ARGS>(args)...);
+        pb.pushFmt(std::forward<ARGS>(args)...);
+        StringView sv {pb};
         const isize maxLen = utils::min(pLogger->cap(), sv.m_size);
         while (pLogger->add(eLevel, loc, nullptr, sv.subString(0, maxLen)) == ILogger::ADD_STATUS::FAILED)
             ;

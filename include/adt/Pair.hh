@@ -24,10 +24,9 @@ namespace print
 
 template<typename A, typename B>
 inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const Pair<A, B>& x)
+format(Context* pCtx, FmtArgs* pFmtArgs, const Pair<A, B>& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
-    return formatVariadic(pCtx, fmtArgs, x.first, x.second);
+    return pCtx->pBuilder->pushFmt(pFmtArgs, "({}, {})", x.first, x.second);
 }
 
 } /* namespace print */

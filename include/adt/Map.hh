@@ -567,7 +567,7 @@ namespace print
 
 template<>
 inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const MAP_RESULT_STATUS& eStatus)
+format(Context* pCtx, FmtArgs* pFmtArgs, const MAP_RESULT_STATUS& eStatus)
 {
     constexpr StringView map[] {
         "NOT_FOUND", "FOUND", "INSERTED"
@@ -575,33 +575,29 @@ format(Context* pCtx, FormatArgs fmtArgs, const MAP_RESULT_STATUS& eStatus)
     auto statusIdx = std::underlying_type_t<MAP_RESULT_STATUS>(eStatus);
     ADT_ASSERT(statusIdx >= 0 && statusIdx < utils::size(map), "out of range enum");
 
-    return format(pCtx, fmtArgs, map[statusIdx]);
+    return format(pCtx, pFmtArgs, map[statusIdx]);
 }
 
 template<typename K, typename V>
 inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const MapBucket<K, V>& x)
+format(Context* pCtx, FmtArgs* pFmtArgs, const MapBucket<K, V>& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
-    return formatVariadic(pCtx, fmtArgs, x.key, x.val);
+    return pCtx->pBuilder->pushFmt(pFmtArgs, "({}, {})", x.key, x.val);
 }
 
 template<typename K, typename V>
 inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const KeyVal<K, V>& x)
+format(Context* pCtx, FmtArgs* pFmtArgs, const KeyVal<K, V>& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
-    return formatVariadic(pCtx, fmtArgs, x.key, x.val);
+    return pCtx->pBuilder->pushFmt(pFmtArgs, "({}, {})", x.key, x.val);
 }
 
 template<typename K, typename V>
 inline isize
-format(Context* pCtx, FormatArgs fmtArgs, const MapResult<K, V>& x)
+format(Context* pCtx, FmtArgs* pFmtArgs, const MapResult<K, V>& x)
 {
-    fmtArgs.eFmtFlags |= FormatArgs::FLAGS::PARENTHESES;
-
-    if (x.pData) return formatVariadic(pCtx, fmtArgs, x.data(), x.hash, x.eStatus);
-    else return formatVariadic(pCtx, fmtArgs, x.pData, x.hash, x.eStatus);
+    if (x.pData) return pCtx->pBuilder->pushFmt(pFmtArgs, "({}, {}, {})", x.data(), x.hash, x.eStatus);
+    else return pCtx->pBuilder->pushFmt(pFmtArgs, "({}, {}, {})", x.pData, x.hash, x.eStatus);
 }
 
 } /* namespace print */

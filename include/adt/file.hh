@@ -313,11 +313,11 @@ namespace adt::print
 
 template<>
 inline isize
-format(Context* pCtx, FormatArgs fArgs, const file::TYPE& e)
+format(Context* pCtx, FmtArgs* pFmtArgs, const file::TYPE& e)
 {
     static const char* map[] { "UNHANDLED", "FILE", "DIRECTORY", "ESIZE" };
     ADT_ASSERT((int)e <= (int)file::TYPE::ESIZE, "{}", (int)e);
-    return format(pCtx, fArgs, map[(int)e]);
+    return format(pCtx, pFmtArgs, map[(int)e]);
 }
 
 } /* namespace adt::print */
