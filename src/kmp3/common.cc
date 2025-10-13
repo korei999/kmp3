@@ -31,7 +31,7 @@ allocTimeString(IArena* pArena, int width)
     const u64 maxMin = totalT / 60;
     const u64 maxSec = totalT - (60 * maxMin);
 
-    const isize n = print::toBuffer(pBuff, width, "time: {}:{:>02} / {}:{:>02}", currMin, currSec, maxMin, maxSec);
+    const isize n = print::toBuffer(pBuff, width, "time: {}:{:2 > f0} / {}:{:2 > f0}", currMin, currSec, maxMin, maxSec);
     if (mix.getSampleRate() != mix.getChangedSampleRate())
     {
         print::toBuffer(pBuff + n, width - n, " ({}% speed)",
