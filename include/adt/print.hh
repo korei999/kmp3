@@ -5,7 +5,7 @@
 #include "IAllocator.hh"
 #include "defer.hh"
 #include "Array.hh"
-#include "String.hh"
+#include "String.hh" /* IWYU pragma: keep */
 
 #include <cctype>
 #include <charconv>
@@ -27,7 +27,7 @@ inline isize parseColon(Context* pCtx, FmtArgs* pFmtArgs);
 
 inline isize parseArg(Context* pCtx, FmtArgs* pFmtArgs);
 
-inline isize parseArgs(Context* pCtx, FmtArgs* pFmtArgs);
+inline isize parseArgs(Context* pCtx, const FmtArgs& fmtArgs);
 
 } /* namespace details */
 
@@ -216,7 +216,7 @@ Builder::pushFmt(FmtArgs* pFmtArgs, const StringView svFmt, const ARGS&... args)
 {
     Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = this};
-    return details::parseArgs(&ctx, pFmtArgs);
+    return details::parseArgs(&ctx, *pFmtArgs);
 }
 
 template<typename ...ARGS>
@@ -234,7 +234,7 @@ Builder::print(FmtArgs* pFmtArgs, const StringView svFmt, const ARGS&... args)
     Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = this};
     const isize startI = m_size;
-    const isize n = details::parseArgs(&ctx, pFmtArgs);
+    const isize n = details::parseArgs(&ctx, *pFmtArgs);
     return StringView{m_pData + startI, n};
 }
 
@@ -560,7 +560,7 @@ parseArg(Context* pCtx, FmtArgs* pFmtArgs)
 }
 
 inline isize
-parseArgs(Context* pCtx, FmtArgs* pFmtArgs)
+parseArgs(Context* pCtx, const FmtArgs& fmtArgs)
 {
     isize nWritten = 0;
 
@@ -585,7 +585,7 @@ parseArgs(Context* pCtx, FmtArgs* pFmtArgs)
         }
         else
         {
-            FmtArgs fmtArgs2 = *pFmtArgs;
+            FmtArgs fmtArgs2 = fmtArgs;
             nWritten += parseArg(pCtx, &fmtArgs2);
         }
     }
@@ -821,8 +821,7 @@ toSpan(Span<char> spBuff, const StringView svFmt, const ARGS&... args)
     Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
     Builder builder {spBuff};
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = &builder};
-    FmtArgs fmtArgs {};
-    return details::parseArgs(&ctx, &fmtArgs);
+    return details::parseArgs(&ctx, FmtArgs{});
 }
 
 template<typename ...ARGS>
@@ -832,8 +831,7 @@ toBuffer(char* pBuff, isize buffSize, const StringView svFmt, const ARGS&... arg
     Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
     Builder builder {Span{pBuff, buffSize}};
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = &builder};
-    FmtArgs fmtArgs {};
-    return details::parseArgs(&ctx, &fmtArgs);
+    return details::parseArgs(&ctx, FmtArgs{});
 }
 
 template<isize PREALLOC, typename ...ARGS>
@@ -853,8 +851,7 @@ toFILE(IAllocator* pAlloc, FILE* pFile, const StringView svFmt, const ARGS&... a
     ADT_DEFER( builder.destroy() );
 
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = &builder};
-    FmtArgs fmtArgs {};
-    const isize n = details::parseArgs(&ctx, &fmtArgs);
+    const isize n = details::parseArgs(&ctx, FmtArgs{});
     fwrite(builder.m_pData, builder.m_size, 1, pFile);
 
     return n;
@@ -869,8 +866,7 @@ toFILE(IAllocator* pAlloc, isize prealloc, FILE* pFile, const StringView svFmt, 
     ADT_DEFER( builder.destroy() );
 
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = &builder};
-    FmtArgs fmtArgs {};
-    const isize n = details::parseArgs(&ctx, &fmtArgs);
+    const isize n = details::parseArgs(&ctx, FmtArgs{});
     fwrite(builder.m_pData, builder.m_size, 1, pFile);
 
     return n;
