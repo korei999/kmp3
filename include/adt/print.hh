@@ -704,6 +704,40 @@ format(Context* pCtx, FmtArgs* pFmtArgs, const char* const& sv)
     return format(pCtx, pFmtArgs, StringView{sv});
 }
 
+template<>
+inline isize
+format(Context* pCtx, FmtArgs* pFmtArgs, const wchar_t& wc)
+{
+    char aBuff[16];
+    mbstate_t mbState {};
+    isize n = wcrtomb(aBuff, wc, &mbState);
+    if (n < 0) n = 0;
+
+    return format(pCtx, pFmtArgs, StringView{aBuff, n});
+}
+
+template<>
+inline isize
+format(Context* pCtx, FmtArgs* pFmtArgs, const Span<const wchar_t>& spBuff)
+{
+    isize nWritten = 0;
+    for (isize i = 0; i < spBuff.m_size && spBuff[i] != '\0'; ++i)
+    {
+        isize nn = format(pCtx, pFmtArgs, spBuff[i]);
+        if (nn <= -1) break;
+        nWritten += nn;
+    }
+
+    return nWritten;
+}
+
+template<isize N>
+inline isize
+format(Context* pCtx, FmtArgs* pFmtArgs, const wchar_t(&aBuff)[N])
+{
+    return format(pCtx, pFmtArgs, Span<const wchar_t>{aBuff, N});
+}
+
 template<typename T>
 requires (HasSizeMethod<T> && !ConvertsToStringView<T>)
 inline isize
@@ -741,7 +775,8 @@ format(Context* pCtx, FmtArgs* pFmtArgs, const T& x)
 
 template<typename T>
 requires (ConvertsToStringView<T>)
-inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const T& x)
+inline isize
+format(Context* pCtx, FmtArgs* pFmtArgs, const T& x)
 {
     if constexpr (HasSizeMethod<T>)
         return format(pCtx, pFmtArgs, StringView{const_cast<char*>(x.data()), (isize)x.size()});
