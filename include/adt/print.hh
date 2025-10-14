@@ -16,8 +16,7 @@ namespace adt::print
 namespace details
 {
 
-template<typename T>
-inline void eatFmtArg(T r, FmtArgs* pFmtArgs) noexcept;
+inline void eatFmtArg(isize r, FmtArgs* pFmtArgs) noexcept;
 
 template<typename T>
 inline TypeErasedArg createTypeErasedArg(const T& arg);
@@ -351,9 +350,8 @@ format(Context* pCtx, FmtArgs*, const T&)
 namespace details
 {
 
-template<typename T>
 inline void
-eatFmtArg(T r, FmtArgs* pFmtArgs) noexcept
+eatFmtArg(isize r, FmtArgs* pFmtArgs) noexcept
 {
     if (bool(pFmtArgs->eFlags & FmtArgs::FLAGS::FLOAT_PRECISION))
     {
@@ -390,8 +388,7 @@ createTypeErasedArg(const T& arg)
         {
             if constexpr (std::is_integral_v<T>)
             {
-                if constexpr (std::is_unsigned_v<T>) eatFmtArg((usize)r, pFmtArgs);
-                else eatFmtArg((isize)r, pFmtArgs);
+                eatFmtArg((isize)r, pFmtArgs);
                 return FMT_ARG_SET;
             }
         }
