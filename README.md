@@ -28,7 +28,7 @@ On archlinux use aur package: `yay -S kmp3-git`.\
 Or build from source using instructions below.
 
 ### Dependencies
-Build system: `clang >= 16.0` or `gcc >= 14`, `CMake >= 3.20`.\
+Build system: `clang >= 16.0` or `gcc >= 12`, `CMake >= 3.20`.\
 Main packages: `libavformat libavcodec libavutil libswresample`.\
 Audio backends: `alsa` or `libpipewire-0.3 #(linux)`, `sndio #(OpenBSD)`, `coreaudio #(Mac)`.\
 For mpris support: `libsystemd` or `basu`.\
