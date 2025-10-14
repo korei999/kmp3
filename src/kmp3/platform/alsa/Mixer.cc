@@ -9,7 +9,7 @@ namespace platform::alsa
 constexpr auto ntsDEVICE = "default";
 
 static void
-errorHandler(const char* pFile, int line, const char* pFunc, int err, const char* pFmt, ...)
+errorHandler(const char* pFile, int line, const char* pFunc, int, const char* pFmt, ...)
 {
     va_list args;
     char aBuff[256];
@@ -179,8 +179,8 @@ Mixer::init()
 
     snd_lib_error_set_handler(errorHandler);
 
-    ADT_RUNTIME_EXCEPTION_FMT(err = setHwParams(m_pHwParams, SND_PCM_ACCESS_RW_INTERLEAVED) >= 0, "{}", snd_strerror(err));
-    ADT_RUNTIME_EXCEPTION_FMT(err = setSwParams(m_pSwParams) >= 0, "{}", snd_strerror(err));
+    ADT_RUNTIME_EXCEPTION_FMT((err = setHwParams(m_pHwParams, SND_PCM_ACCESS_RW_INTERLEAVED)) >= 0, "{}", snd_strerror(err));
+    ADT_RUNTIME_EXCEPTION_FMT((err = setSwParams(m_pSwParams)) >= 0, "{}", snd_strerror(err));
 
     m_bCanPause = snd_pcm_hw_params_can_pause(m_pHwParams);
 
