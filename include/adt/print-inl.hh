@@ -149,6 +149,9 @@ inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const Span<const wchar_t>&
 template<isize N>
 inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const wchar_t(&aBuff)[N]);
 
+template<>
+inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const bool& b);
+
 template<typename T>
 requires (HasSizeMethod<T> && !ConvertsToStringView<T>)
 inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const T& x);

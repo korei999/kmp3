@@ -765,6 +765,13 @@ format(Context* pCtx, FmtArgs* pFmtArgs, const wchar_t(&aBuff)[N])
     return format(pCtx, pFmtArgs, Span<const wchar_t>{aBuff, N});
 }
 
+template<>
+inline isize
+format(Context* pCtx, FmtArgs* pFmtArgs, const bool& b)
+{
+    return format(pCtx, pFmtArgs, b ? "true" : "false");
+}
+
 template<typename T>
 requires (HasSizeMethod<T> && !ConvertsToStringView<T>)
 inline isize

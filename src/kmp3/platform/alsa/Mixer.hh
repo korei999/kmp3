@@ -17,6 +17,17 @@ struct Mixer : public audio::IMixer
     Mutex m_mtxLoop {INIT};
     CndVar m_cndLoop {INIT};
 
+    unsigned int m_bufferTime = 500000; /* ring buffer length in us */
+    unsigned int m_periodTime = 100000; /* period time in us */
+
+    snd_pcm_sframes_t m_bufferSize;
+    snd_pcm_sframes_t m_periodSize;
+
+    snd_pcm_hw_params_t *m_pHwParams;
+    snd_pcm_sw_params_t *m_pSwParams;
+
+    bool m_bCanPause {};
+
     /* */
 
     virtual Mixer& init() override;
@@ -27,6 +38,10 @@ struct Mixer : public audio::IMixer
 
     void setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig);
     THREAD_STATUS loop();
+
+protected:
+    int setHwParams(snd_pcm_hw_params_t* params, snd_pcm_access_t access);
+    int setSwParams(snd_pcm_sw_params_t* swparams);
 };
 
 } /* namespace platform::alsa */

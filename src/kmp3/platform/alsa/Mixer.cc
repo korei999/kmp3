@@ -8,6 +8,160 @@ namespace platform::alsa
 
 constexpr auto ntsDEVICE = "default";
 
+static void
+errorHandler(const char* pFile, int line, const char* pFunc, int err, const char* pFmt, ...)
+{
+    va_list args;
+    char aBuff[256];
+    va_start(args, pFmt);
+    isize n = vsnprintf(aBuff, sizeof(aBuff), pFmt, args);
+    va_end(args);
+
+    LogError{"({}, {}, {}): {}\n", pFile, line, pFunc, StringView{aBuff, n}};
+}
+
+int
+Mixer::setHwParams(snd_pcm_hw_params_t* params, snd_pcm_access_t access)
+{
+    unsigned int rrate;
+    snd_pcm_uframes_t size;
+    int err, dir;
+
+    /* choose all parameters */
+    err = snd_pcm_hw_params_any(m_pHandle, params);
+    if (err < 0)
+    {
+        LogError("Broken configuration for playback: no configurations available: {}\n", snd_strerror(err));
+        return err;
+    }
+    /* set hardware resampling */
+    err = snd_pcm_hw_params_set_rate_resample(m_pHandle, params, 1);
+    if (err < 0)
+    {
+        LogError("Resampling setup failed for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    /* set the interleaved read/write format */
+    err = snd_pcm_hw_params_set_access(m_pHandle, params, access);
+    if (err < 0)
+    {
+        LogError("Access type not available for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    /* set the sample format */
+    err = snd_pcm_hw_params_set_format(m_pHandle, params, SND_PCM_FORMAT_FLOAT);
+    if (err < 0)
+    {
+        LogError("Sample format not available for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    /* set the count of channels */
+    err = snd_pcm_hw_params_set_channels(m_pHandle, params, m_nChannels);
+    if (err < 0)
+    {
+        LogError("Channels count ({}) not available for playbacks: {}\n", m_nChannels, snd_strerror(err));
+        return err;
+    }
+    /* set the stream rate */
+    rrate = m_sampleRate;
+    err = snd_pcm_hw_params_set_rate_near(m_pHandle, params, &rrate, 0);
+    if (err < 0)
+    {
+        LogError("Rate {}Hz not available for playback: {}\n", m_sampleRate, snd_strerror(err));
+        return err;
+    }
+    if (rrate != m_sampleRate)
+    {
+        LogError("Rate doesn't match (requested {}Hz, get {}Hz)\n", m_sampleRate, err);
+        return -EINVAL;
+    }
+    /* set the buffer time */
+    err = snd_pcm_hw_params_set_buffer_time_near(m_pHandle, params, &m_bufferTime, &dir);
+    if (err < 0)
+    {
+        LogError("Unable to set buffer time {} for playback: {}\n", m_bufferTime, snd_strerror(err));
+        return err;
+    }
+    err = snd_pcm_hw_params_get_buffer_size(params, &size);
+    if (err < 0)
+    {
+        LogError("Unable to get buffer size for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    m_bufferSize = size;
+    /* set the period time */
+    err = snd_pcm_hw_params_set_period_time_near(m_pHandle, params, &m_periodTime, &dir);
+    if (err < 0)
+    {
+        LogError("Unable to set period time {} for playback: %s\n", m_periodTime, snd_strerror(err));
+        return err;
+    }
+    err = snd_pcm_hw_params_get_period_size(params, &size, &dir);
+    if (err < 0)
+    {
+        LogError("Unable to get period size for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    m_periodSize = size;
+    /* write the parameters to device */
+    err = snd_pcm_hw_params(m_pHandle, params);
+    if (err < 0)
+    {
+        LogError("Unable to set hw params for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    return 0;
+}
+
+int
+Mixer::setSwParams(snd_pcm_sw_params_t* swparams)
+{
+    int err;
+    int periodEvent = 0;                /* produce poll event after each period */
+
+    /* get the current swparams */
+    err = snd_pcm_sw_params_current(m_pHandle, swparams);
+    if (err < 0)
+    {
+        LogError("Unable to determine current swparams for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    /* start the transfer when the buffer is almost full: */
+    /* (buffer_size / avail_min) * avail_min */
+    err = snd_pcm_sw_params_set_start_threshold(m_pHandle, swparams, (m_bufferSize / m_periodSize) * m_periodSize);
+    if (err < 0)
+    {
+        LogError("Unable to set start threshold mode for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    /* allow the transfer when at least period_size samples can be processed */
+    /* or disable this mechanism when period event is enabled (aka interrupt like style processing) */
+    err = snd_pcm_sw_params_set_avail_min(m_pHandle, swparams, periodEvent ? m_bufferSize : m_periodSize);
+    if (err < 0)
+    {
+        LogError("Unable to set avail min for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    /* enable period events when requested */
+    if (periodEvent)
+    {
+        err = snd_pcm_sw_params_set_period_event(m_pHandle, swparams, 1);
+        if (err < 0)
+        {
+            LogError("Unable to set period event: {}\n", snd_strerror(err));
+            return err;
+        }
+    }
+    /* write the parameters to the playback device */
+    err = snd_pcm_sw_params(m_pHandle, swparams);
+    if (err < 0)
+    {
+        LogError("Unable to set sw params for playback: {}\n", snd_strerror(err));
+        return err;
+    }
+    return 0;
+}
+
 Mixer&
 Mixer::init()
 {
@@ -20,15 +174,15 @@ Mixer::init()
         "({}): {}", err, snd_strerror(err)
     );
 
-    ADT_RUNTIME_EXCEPTION_FMT(
-        (err = snd_pcm_set_params(
-            m_pHandle,
-            SND_PCM_FORMAT_FLOAT,
-            SND_PCM_ACCESS_RW_INTERLEAVED,
-            2, 48000, 1, 50000
-        )) >= 0,
-        "({}): {}", err, snd_strerror(err)
-    );
+    snd_pcm_hw_params_malloc(&m_pHwParams);
+    snd_pcm_sw_params_malloc(&m_pSwParams);
+
+    snd_lib_error_set_handler(errorHandler);
+
+    ADT_RUNTIME_EXCEPTION_FMT(err = setHwParams(m_pHwParams, SND_PCM_ACCESS_RW_INTERLEAVED) >= 0, "{}", snd_strerror(err));
+    ADT_RUNTIME_EXCEPTION_FMT(err = setSwParams(m_pSwParams) >= 0, "{}", snd_strerror(err));
+
+    m_bCanPause = snd_pcm_hw_params_can_pause(m_pHwParams);
 
     m_atom_bRunning.store(true, atomic::ORDER::RELEASE);
 
@@ -55,6 +209,9 @@ Mixer::deinit()
 
     // snd_pcm_drain(m_pHandle); /* Too slow. */
     snd_pcm_close(m_pHandle);
+
+    snd_pcm_hw_params_free(m_pHwParams);
+    snd_pcm_sw_params_free(m_pSwParams);
 
     LogDebug("MixerDestroy()\n");
 }
@@ -84,19 +241,22 @@ Mixer::pause(bool bPause)
     bool bCurr = m_atom_bPaused.load(atomic::ORDER::ACQUIRE);
     if (bCurr == bPause) return;
 
+    LockScope lock {&m_mtxLoop};
+
+    snd_pcm_state_t state = snd_pcm_state(m_pHandle);
+    LogDebug{"state: {}, bCanPause: {}\n", (int)state, m_bCanPause};
+
     LogInfo("bPause: {}\n", bPause);
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
-    LockScope lock {&m_mtxLoop};
-
     if (bPause)
     {
-        snd_pcm_pause(m_pHandle, true);
+        snd_pcm_drop(m_pHandle);
     }
     else
     {
         m_cndLoop.signal();
-        snd_pcm_pause(m_pHandle, false);
+        // snd_pcm_prepare(m_pHandle);
     }
 
     mpris::playbackStatusChanged();
@@ -108,16 +268,21 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
     int err = 0;
 
     pause(true);
-    ADT_RUNTIME_EXCEPTION_FMT(
-        (err = snd_pcm_set_params(
-            m_pHandle,
-            SND_PCM_FORMAT_FLOAT,
-            SND_PCM_ACCESS_RW_INTERLEAVED,
-            m_nChannels, sampleRate, 1, 50000
-        )) >= 0,
-        "({}): {}", err, snd_strerror(err)
+
+    err = snd_pcm_set_params(
+        m_pHandle,
+        SND_PCM_FORMAT_FLOAT,
+        SND_PCM_ACCESS_RW_INTERLEAVED,
+        m_nChannels, sampleRate, 1, 500000
     );
+
     pause(false);
+
+    if (err < 0)
+    {
+        LogError{"{}\n", snd_strerror(err)};
+        return;
+    }
 
     if (bSave) m_sampleRate = sampleRate;
     m_changedSampleRate = sampleRate;
@@ -154,14 +319,13 @@ Mixer::loop()
 {
     defer( m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE) );
 
-    constexpr isize NFRAMES = 2048;
-    isize nSamplesRequested = 0;
-
+    bool bPaused = true;
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
+        isize nSamplesRequested = 0;
         const f32 vol = m_bMuted ? 0.0f : std::pow(m_volume * (1.0f/100.0f), 3.0f);
 
-        nSamplesRequested = NFRAMES * m_nChannels;
+        nSamplesRequested = m_periodSize * m_nChannels;
         m_ringBuff.pop({audio::g_aDrainBuffer, nSamplesRequested});
 
         for (isize sampleI = 0; sampleI < nSamplesRequested; ++sampleI)
@@ -169,26 +333,41 @@ Mixer::loop()
 
         {
             LockScope lock {&m_mtxLoop};
+
             while (m_atom_bPaused.load(atomic::ORDER::ACQUIRE))
             {
+                bPaused = true;
                 m_cndLoop.wait(&m_mtxLoop);
 
                 if (!m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
                     goto GOTO_done;
             }
 
-            snd_pcm_sframes_t writeStatus = snd_pcm_writei(m_pHandle, audio::g_aDrainBuffer, NFRAMES);
-
-            if (writeStatus < 0)
+            if (bPaused)
             {
-                writeStatus = snd_pcm_recover(m_pHandle, writeStatus, 0);
+                bPaused = false;
+                snd_pcm_prepare(m_pHandle);
+            }
+
+            f32* ptr = audio::g_aDrainBuffer;
+            isize cptr = m_periodSize;
+            while (cptr > 0)
+            {
+                snd_pcm_sframes_t writeStatus = snd_pcm_writei(m_pHandle, ptr, cptr);
+                if (writeStatus == -EAGAIN) continue;
 
                 if (writeStatus < 0)
                 {
-                    LogError("snd_pcm_recover() failed: {}\n", snd_strerror(writeStatus));
-                    app::quit();
-                    goto GOTO_done;
+                    if (snd_pcm_recover(m_pHandle, writeStatus, 0) < 0)
+                    {
+                        LogError("snd_pcm_recover() failed: {}\n", snd_strerror(writeStatus));
+                        app::quit();
+                        goto GOTO_done;
+                    }
                 }
+
+                ptr += writeStatus * m_nChannels;
+                cptr -= writeStatus;
             }
         }
     }
