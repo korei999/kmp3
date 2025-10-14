@@ -128,6 +128,9 @@ inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const T& arg);
 template<std::floating_point T>
 inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const T& arg);
 
+template<>
+inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const char& c);
+
 template<isize N>
 inline isize format(Context* pCtx, FmtArgs* pFmtArgs, const char(&arg)[N]);
 
