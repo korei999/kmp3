@@ -63,7 +63,7 @@ fence(const ORDER eOrder)
 
 #else
 
-#warning "not implemented"
+#error "atomics are not implemented"
 
 #endif
 }

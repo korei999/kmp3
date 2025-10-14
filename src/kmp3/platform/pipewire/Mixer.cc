@@ -198,7 +198,7 @@ Mixer::onProcess()
     pw_buffer* pPwBuffer = pw_stream_dequeue_buffer(m_pStream);
     if (!pPwBuffer)
     {
-        pw_log_warn("out of buffers: %m");
+        LogError{"out of buffers: %m"};
         return;
     }
 

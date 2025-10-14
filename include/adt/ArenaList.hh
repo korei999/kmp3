@@ -14,7 +14,10 @@ struct ArenaList final : public IArena
         usize cap {}; /* excluding sizeof(ArenaBlock) */
         usize nBytesOccupied {};
         u8* pLastAlloc {};
-        u8 pMem[];
+
+        /* */
+
+        u8* pMem() noexcept { return ((u8*)this) + sizeof(*this); } /* 'Flexible array member'. */
     };
 
     /* */
@@ -158,7 +161,7 @@ ArenaList::findBlockFromPtr(u8* ptr)
     auto* it = m_pBlocks;
     while (it)
     {
-        if (ptr >= it->pMem && ptr < &it->pMem[it->cap])
+        if (ptr >= it->pMem() && ptr < &it->pMem()[it->cap])
             return it;
 
         it = it->pNext;
@@ -197,7 +200,7 @@ ArenaList::allocBlock(usize size)
 #endif
 
     pBlock->cap = size;
-    pBlock->pLastAlloc = pBlock->pMem;
+    pBlock->pLastAlloc = pBlock->pMem();
 
     return pBlock;
 }
@@ -227,7 +230,7 @@ ArenaList::malloc(usize nBytes)
 
     if (!pBlock) pBlock = prependBlock(utils::max(m_defaultCapacity, usize(realSize*1.33)));
 
-    auto* pRet = pBlock->pMem + pBlock->nBytesOccupied;
+    auto* pRet = pBlock->pMem() + pBlock->nBytesOccupied;
     pBlock->nBytesOccupied += realSize;
     pBlock->pLastAlloc = pRet;
 
@@ -254,7 +257,7 @@ ArenaList::realloc(void* ptr, usize oldNBytes, usize newNBytes)
 
     if (ptr == pBlock->pLastAlloc) /* bump case */
     {
-        const usize reallocPos = (pBlock->pLastAlloc - pBlock->pMem) + realSize;
+        const usize reallocPos = (pBlock->pLastAlloc - pBlock->pMem()) + realSize;
         if (reallocPos <= pBlock->cap)
         {
             pBlock->nBytesOccupied = reallocPos;
@@ -303,7 +306,7 @@ ArenaList::reset() noexcept
     while (it)
     {
         it->nBytesOccupied = 0;
-        it->pLastAlloc = it->pMem;
+        it->pLastAlloc = it->pMem();
 
         it = it->pNext;
     }

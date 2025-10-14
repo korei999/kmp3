@@ -21,6 +21,9 @@ inline void eatFmtArg(isize r, FmtArgs* pFmtArgs) noexcept;
 template<typename T>
 inline TypeErasedArg createTypeErasedArg(const T& arg);
 
+template<typename ...ARGS>
+inline auto createArgs(const ARGS&... args);
+
 inline isize parseNumber(Context* pCtx, FmtArgs* pFmtArgs);
 
 inline isize parseChar(Context* pCtx, FmtArgs* pFmtArgs);
@@ -216,7 +219,7 @@ template<typename ...ARGS>
 inline isize
 Builder::pushFmt(FmtArgs* pFmtArgs, const StringView svFmt, const ARGS&... args)
 {
-    Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
+    auto aArgs = details::createArgs(args...);
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = this};
     return details::parseArgs(&ctx, *pFmtArgs);
 }
@@ -233,7 +236,7 @@ template<typename ...ARGS>
 inline StringView
 Builder::print(FmtArgs* pFmtArgs, const StringView svFmt, const ARGS&... args)
 {
-    Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
+    auto aArgs = details::createArgs(args...);
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = this};
     const isize startI = m_size;
     const isize n = details::parseArgs(&ctx, *pFmtArgs);
@@ -400,6 +403,14 @@ createTypeErasedArg(const T& arg)
         .pfnFormat = pfn,
         .pArg = &arg,
     };
+}
+
+template<typename ...ARGS>
+inline auto
+createArgs(const ARGS&... args)
+{
+    if constexpr (sizeof...(args) == 0) return Span<TypeErasedArg> {};
+    else return Array<TypeErasedArg, sizeof...(args)> {createTypeErasedArg(args)...};
 }
 
 inline isize
@@ -834,7 +845,7 @@ template<typename ...ARGS>
 inline isize
 toSpan(Span<char> spBuff, const StringView svFmt, const ARGS&... args)
 {
-    Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
+    auto aArgs = details::createArgs(args...);
     Builder builder {spBuff};
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = &builder};
     return details::parseArgs(&ctx, FmtArgs{});
@@ -844,7 +855,7 @@ template<typename ...ARGS>
 inline isize
 toBuffer(char* pBuff, isize buffSize, const StringView svFmt, const ARGS&... args)
 {
-    Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
+    auto aArgs = details::createArgs(args...);
     Builder builder {Span{pBuff, buffSize}};
     Context ctx {.spArgs = aArgs, .svFmt = svFmt, .pBuilder = &builder};
     return details::parseArgs(&ctx, FmtArgs{});
@@ -861,7 +872,7 @@ template<isize PREALLOC, typename ...ARGS>
 inline isize
 toFILE(IAllocator* pAlloc, FILE* pFile, const StringView svFmt, const ARGS&... args)
 {
-    Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
+    auto aArgs = details::createArgs(args...);
     char aBuff[PREALLOC];
     Builder builder {pAlloc, Span{aBuff}};
     ADT_DEFER( builder.destroy() );
@@ -877,7 +888,7 @@ template<typename ...ARGS>
 inline isize
 toFILE(IAllocator* pAlloc, isize prealloc, FILE* pFile, const StringView svFmt, const ARGS&... args)
 {
-    Array<TypeErasedArg, sizeof...(ARGS)> aArgs {details::createTypeErasedArg(args)...};
+    auto aArgs = details::createArgs(args...);
     Builder builder {pAlloc, prealloc};
     ADT_DEFER( builder.destroy() );
 

@@ -14,7 +14,10 @@ struct PoolAllocator final : public IAllocator
     struct Node
     {
         Node* next;
-        u8 pNodeMem[];
+
+        /* */
+
+        u8* pNodeMem() noexcept { return ((u8*)this) + sizeof(*this); } /* 'Flexible array member'. */
     };
 
     struct Block
@@ -22,7 +25,10 @@ struct PoolAllocator final : public IAllocator
         Block* next = nullptr;
         Node* head = nullptr;
         usize used = 0;
-        u8 pMem[];
+
+        /* */
+
+        u8* pMem() noexcept { return ((u8*)this) + sizeof(*this); } /* 'Flexible array member'. */
     };
 
     /* */
@@ -87,7 +93,7 @@ PoolAllocator::allocBlock()
     );
 #endif
 
-    r->head = (Node*)r->pMem;
+    r->head = (Node*)r->pMem();
 
     isize chunks = m_blockCap / m_chunkSize;
 
@@ -128,7 +134,7 @@ PoolAllocator::malloc(usize)
     pBlock->head = head->next;
     pBlock->used += m_chunkSize;
 
-    return head->pNodeMem;
+    return head->pNodeMem();
 }
 
 inline void*
@@ -158,7 +164,7 @@ PoolAllocator::free(void* p, usize) noexcept
     auto* pBlock = m_pBlocks;
     while (pBlock)
     {
-        if ((u8*)p > (u8*)pBlock->pMem && ((u8*)pBlock + m_blockCap) > (u8*)p)
+        if ((u8*)p > (u8*)pBlock->pMem() && ((u8*)pBlock + m_blockCap) > (u8*)p)
             break;
 
         pBlock = pBlock->next;

@@ -35,7 +35,7 @@ concept ConvertsToStringView =
 template<isize SIZE>
 [[nodiscard]] constexpr isize charBuffStringSize(const char (&aCharBuff)[SIZE]);
 
-inline constexpr int wcWidth(wchar_t wc);
+inline int wcWidth(wchar_t wc);
 
 /* Just pointer + size, no allocations, has to be cloned into String to store safely */
 struct StringView

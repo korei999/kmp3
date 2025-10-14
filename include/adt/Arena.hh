@@ -8,7 +8,7 @@
 #elif defined _WIN32
     #define ADT_ARENA_WIN32
 #else
-    #warning "Arena is not implemented"
+    #error "Arena is not implemented"
 #endif
 
 namespace adt

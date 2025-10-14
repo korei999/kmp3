@@ -226,15 +226,15 @@ TextBuff::stringFinal(int x, int y, TEXT_BUFF_STYLE eStyle, const STRING_T& s, i
         if ((u32)wc == 0x200d || (colWidth = wcWidth(wc)) <= 0 || x + colWidth > m_tWidth)
             continue;
 
-        bb[x, y].wc = wc;
-        bb[x, y].eStyle = eStyle;
+        bb(x, y).wc = wc;
+        bb(x, y).eStyle = eStyle;
 
         for (int i = 1; i < colWidth; ++i)
         {
             if (x + i >= bb.width() || y >= bb.height())
                 return max;
 
-            auto& back = bb[x + i, y];
+            auto& back = bb(x + i, y);
             back.wc = -1;
             back.eStyle = eStyle;
         }
@@ -323,8 +323,8 @@ TextBuff::pushDiff()
 
         for (isize colI = 0; colI < m_tWidth; ++colI)
         {
-            const auto& front = frontBufferSpan()[colI, rowI];
-            const auto& back = backBufferSpan()[colI, rowI];
+            const auto& front = frontBufferSpan()(colI, rowI);
+            const auto& back = backBufferSpan()(colI, rowI);
 
             if (front != back && back.wc != -1)
             {
@@ -620,8 +620,8 @@ TextBuff::forceClean(int x, int y, int width, int height)
     {
         for (isize col = x; col < width; ++col)
         {
-            auto& front = spFront[col, row];
-            auto& back = spBack[col, row];
+            auto& front = spFront(col, row);
+            auto& back = spBack(col, row);
 
             /* trigger diff */
             front.wc = 666;

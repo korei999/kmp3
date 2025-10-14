@@ -49,7 +49,7 @@ charBuffStringSize(const char (&aCharBuff)[SIZE])
     return i;
 }
 
-inline constexpr int
+inline int
 wcWidth(wchar_t wc)
 {
 #ifdef _MSC_VER
