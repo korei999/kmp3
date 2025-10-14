@@ -28,8 +28,7 @@ struct IArena : IAllocator
     template<typename ARENA_T>
     struct Scope
     {
-        static_assert(false, "no overload found");
-        Scope(ARENA_T* pArena);
+        Scope(ARENA_T* pArena) { ADT_ASSERT(false, "no overload"); }
     };
 
     /* */
