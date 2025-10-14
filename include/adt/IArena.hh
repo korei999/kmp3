@@ -28,7 +28,7 @@ struct IArena : IAllocator
     template<typename ARENA_T>
     struct Scope
     {
-        Scope(ARENA_T* pArena) { ADT_ASSERT(false, "no overload"); }
+        Scope(ARENA_T*) { ADT_ASSERT(false, "no overload"); }
     };
 
     /* */

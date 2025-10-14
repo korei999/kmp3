@@ -217,12 +217,17 @@ struct StringFixed
 /* Vec like, small string optimized String class. */
 struct VString
 {
+    struct Allocated
+    {
+        char* pData;
+        isize size;
+    };
+
+    /* */
+
     union {
         char m_aBuff[16] {};
-        struct {
-            char* pData;
-            isize size;
-        } m_allocated;
+        Allocated m_allocated;
     };
     isize m_cap = 16;
 
