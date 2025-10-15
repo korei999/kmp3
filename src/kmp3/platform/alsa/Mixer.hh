@@ -26,8 +26,6 @@ struct Mixer : public audio::IMixer
     snd_pcm_hw_params_t *m_pHwParams;
     snd_pcm_sw_params_t *m_pSwParams;
 
-    bool m_bCanPause {};
-
     /* */
 
     virtual Mixer& init() override;
@@ -43,7 +41,8 @@ protected:
     int setHwParams(snd_pcm_hw_params_t* params, snd_pcm_access_t access);
     int setSwParams(snd_pcm_sw_params_t* swparams);
 
-    int xrunRecovery(int err);
+    void openAlsa();
+    void xrunRecovery();
 };
 
 } /* namespace platform::alsa */

@@ -103,6 +103,7 @@ Mixer::setHwParams(snd_pcm_hw_params_t* params, snd_pcm_access_t access)
         return err;
     }
     m_periodSize = size;
+    LogDebug{"pediodSize: {}\n", m_periodSize};
     /* write the parameters to device */
     err = snd_pcm_hw_params(m_pHandle, params);
     if (err < 0)
@@ -167,22 +168,7 @@ Mixer::init()
 {
     LogInfo("initializing alsa...\n");
 
-    int err = 0;
-
-    ADT_RUNTIME_EXCEPTION_FMT(
-        (err = snd_pcm_open(&m_pHandle, ntsDEVICE, SND_PCM_STREAM_PLAYBACK, 0)) >= 0,
-        "({}): {}", err, snd_strerror(err)
-    );
-
-    snd_pcm_hw_params_malloc(&m_pHwParams);
-    snd_pcm_sw_params_malloc(&m_pSwParams);
-
-    snd_lib_error_set_handler(errorHandler);
-
-    ADT_RUNTIME_EXCEPTION_FMT((err = setHwParams(m_pHwParams, SND_PCM_ACCESS_RW_INTERLEAVED)) >= 0, "{}", snd_strerror(err));
-    ADT_RUNTIME_EXCEPTION_FMT((err = setSwParams(m_pSwParams)) >= 0, "{}", snd_strerror(err));
-
-    m_bCanPause = snd_pcm_hw_params_can_pause(m_pHwParams);
+    openAlsa();
 
     m_atom_bRunning.store(true, atomic::ORDER::RELEASE);
 
@@ -309,29 +295,35 @@ Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
     );
 }
 
-int
-Mixer::xrunRecovery(int err)
+void
+Mixer::openAlsa()
 {
-    if (err == -EPIPE)
-    { /* under-run */
-        err = snd_pcm_prepare(m_pHandle);
-        if (err < 0)
-            printf("Can't recovery from underrun, prepare failed: %s\n", snd_strerror(err));
-        return 0;
-    }
-    else if (err == -ESTRPIPE)
-    {
-        while ((err = snd_pcm_resume(m_pHandle)) == -EAGAIN)
-            sleep(1); /* wait until the suspend flag is released */
-        if (err < 0)
-        {
-            err = snd_pcm_prepare(m_pHandle);
-            if (err < 0)
-                printf("Can't recovery from suspend, prepare failed: %s\n", snd_strerror(err));
-        }
-        return 0;
-    }
-    return err;
+    int err = 0;
+
+    ADT_RUNTIME_EXCEPTION_FMT(
+        (err = snd_pcm_open(&m_pHandle, ntsDEVICE, SND_PCM_STREAM_PLAYBACK, 0)) >= 0,
+        "({}): {}", err, snd_strerror(err)
+    );
+
+    snd_pcm_hw_params_malloc(&m_pHwParams);
+    snd_pcm_sw_params_malloc(&m_pSwParams);
+
+    snd_lib_error_set_handler(errorHandler);
+
+    ADT_RUNTIME_EXCEPTION_FMT((err = setHwParams(m_pHwParams, SND_PCM_ACCESS_RW_INTERLEAVED)) >= 0, "{}", snd_strerror(err));
+    ADT_RUNTIME_EXCEPTION_FMT((err = setSwParams(m_pSwParams)) >= 0, "{}", snd_strerror(err));
+}
+
+void
+Mixer::xrunRecovery()
+{
+    LogWarn{"reinitializing alsa...\n"};
+    snd_pcm_drop(m_pHandle);
+    snd_pcm_close(m_pHandle);
+    snd_pcm_hw_params_free(m_pHwParams);
+    snd_pcm_sw_params_free(m_pSwParams);
+
+    openAlsa();
 }
 
 THREAD_STATUS
@@ -342,7 +334,7 @@ Mixer::loop()
     snd_pcm_start(m_pHandle);
 
     bool bPaused = true;
-    bool bUnfuck = false;
+    bool bReinit = false;
 
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
@@ -371,16 +363,14 @@ Mixer::loop()
             if (bPaused)
             {
                 bPaused = false;
-                bUnfuck = false;
+                bReinit = false;
                 snd_pcm_prepare(m_pHandle);
             }
 
-            if (bUnfuck)
+            if (bReinit)
             {
-                bUnfuck = false;
-                snd_pcm_drop(m_pHandle);
-                usleep(10000); /* Yeah. */
-                snd_pcm_prepare(m_pHandle);
+                bReinit = false;
+                xrunRecovery();
             }
 
             f32* ptr = audio::g_aDrainBuffer;
@@ -392,13 +382,7 @@ Mixer::loop()
 
                 if (err < 0)
                 {
-                    if (snd_pcm_recover(m_pHandle, err, 0) < 0)
-                    {
-                        app::quit();
-                        goto GOTO_done;
-                    }
-
-                    bUnfuck = true;
+                    bReinit = true;
                     break;
                 }
 
