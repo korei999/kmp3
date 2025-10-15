@@ -1,7 +1,7 @@
 # src/kmp3/platform/mpris/CMakeLists.txt
 
 set(SDBusProviderNames SYSTEMD ELOGIND BASU)
-set(SDBusPkgNames libsystemd ligelogind basu)
+set(SDBusPkgNames libsystemd libelogind basu)
 set(SDBusOptDefines "" "-DOPT_ELOGIND" "-DOPT_BASU")
 
 list(LENGTH SDBusProviderNames listSize)
