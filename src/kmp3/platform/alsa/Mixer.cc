@@ -241,22 +241,17 @@ Mixer::pause(bool bPause)
     bool bCurr = m_atom_bPaused.load(atomic::ORDER::ACQUIRE);
     if (bCurr == bPause) return;
 
-    LockScope lock {&m_mtxLoop};
-
-    snd_pcm_state_t state = snd_pcm_state(m_pHandle);
-    LogDebug{"state: {}, bCanPause: {}\n", (int)state, m_bCanPause};
-
     LogInfo("bPause: {}\n", bPause);
     m_atom_bPaused.store(bPause, atomic::ORDER::RELEASE);
 
+    LockScope lock {&m_mtxLoop};
+
     if (bPause)
     {
-        snd_pcm_drop(m_pHandle);
     }
     else
     {
         m_cndLoop.signal();
-        // snd_pcm_prepare(m_pHandle);
     }
 
     mpris::playbackStatusChanged();
@@ -273,7 +268,7 @@ Mixer::changeSampleRate(u64 sampleRate, bool bSave)
         m_pHandle,
         SND_PCM_FORMAT_FLOAT,
         SND_PCM_ACCESS_RW_INTERLEAVED,
-        m_nChannels, sampleRate, 1, 500000
+        m_nChannels, sampleRate, 1, 50000
     );
 
     pause(false);
@@ -314,12 +309,41 @@ Mixer::setConfig(u64 sampleRate, int nChannels, bool bSaveNewConfig)
     );
 }
 
+int
+Mixer::xrunRecovery(int err)
+{
+    if (err == -EPIPE)
+    { /* under-run */
+        err = snd_pcm_prepare(m_pHandle);
+        if (err < 0)
+            printf("Can't recovery from underrun, prepare failed: %s\n", snd_strerror(err));
+        return 0;
+    }
+    else if (err == -ESTRPIPE)
+    {
+        while ((err = snd_pcm_resume(m_pHandle)) == -EAGAIN)
+            sleep(1); /* wait until the suspend flag is released */
+        if (err < 0)
+        {
+            err = snd_pcm_prepare(m_pHandle);
+            if (err < 0)
+                printf("Can't recovery from suspend, prepare failed: %s\n", snd_strerror(err));
+        }
+        return 0;
+    }
+    return err;
+}
+
 THREAD_STATUS
 Mixer::loop()
 {
     defer( m_atom_bLoopDone.store(true, atomic::ORDER::RELEASE) );
 
+    snd_pcm_start(m_pHandle);
+
     bool bPaused = true;
+    bool bUnfuck = false;
+
     while (m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
     {
         isize nSamplesRequested = 0;
@@ -337,6 +361,7 @@ Mixer::loop()
             while (m_atom_bPaused.load(atomic::ORDER::ACQUIRE))
             {
                 bPaused = true;
+                snd_pcm_drop(m_pHandle);
                 m_cndLoop.wait(&m_mtxLoop);
 
                 if (!m_atom_bRunning.load(atomic::ORDER::ACQUIRE))
@@ -346,6 +371,15 @@ Mixer::loop()
             if (bPaused)
             {
                 bPaused = false;
+                bUnfuck = false;
+                snd_pcm_prepare(m_pHandle);
+            }
+
+            if (bUnfuck)
+            {
+                bUnfuck = false;
+                snd_pcm_drop(m_pHandle);
+                usleep(10000); /* Yeah. */
                 snd_pcm_prepare(m_pHandle);
             }
 
@@ -353,21 +387,23 @@ Mixer::loop()
             isize cptr = m_periodSize;
             while (cptr > 0)
             {
-                snd_pcm_sframes_t writeStatus = snd_pcm_writei(m_pHandle, ptr, cptr);
-                if (writeStatus == -EAGAIN) continue;
+                snd_pcm_sframes_t err = snd_pcm_writei(m_pHandle, ptr, cptr);
+                if (err == -EAGAIN) continue;
 
-                if (writeStatus < 0)
+                if (err < 0)
                 {
-                    if (snd_pcm_recover(m_pHandle, writeStatus, 0) < 0)
+                    if (snd_pcm_recover(m_pHandle, err, 0) < 0)
                     {
-                        LogError("snd_pcm_recover() failed: {}\n", snd_strerror(writeStatus));
                         app::quit();
                         goto GOTO_done;
                     }
+
+                    bUnfuck = true;
+                    break;
                 }
 
-                ptr += writeStatus * m_nChannels;
-                cptr -= writeStatus;
+                ptr += err * m_nChannels;
+                cptr -= err;
             }
         }
     }

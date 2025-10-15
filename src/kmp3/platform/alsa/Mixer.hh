@@ -42,6 +42,8 @@ struct Mixer : public audio::IMixer
 protected:
     int setHwParams(snd_pcm_hw_params_t* params, snd_pcm_access_t access);
     int setSwParams(snd_pcm_sw_params_t* swparams);
+
+    int xrunRecovery(int err);
 };
 
 } /* namespace platform::alsa */
