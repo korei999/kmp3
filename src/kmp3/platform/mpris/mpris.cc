@@ -9,6 +9,8 @@
 
 #ifdef OPT_BASU
     #include <basu/sd-bus.h>
+#elif defined OPT_ELOGIND
+    #include <elogind/sd-bus.h>
 #else
     #include <systemd/sd-bus.h>
 #endif
