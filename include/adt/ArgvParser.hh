@@ -104,6 +104,8 @@ ArgvParser::ArgvParser(
 inline void
 ArgvParser::destroy() noexcept
 {
+    if (!m_pAlloc) return;
+
     for (auto& e : m_vArgParsers)
     {
         e.sOneDash.destroy(m_pAlloc);
