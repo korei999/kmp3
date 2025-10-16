@@ -57,7 +57,7 @@ QueueSPSC<T, CAP>::pushBack(const T& x)
 {
     int tail = m_atomTailI.load(atomic::ORDER::RELAXED);
     int nextTail = nextI(tail);
-    
+
     if (nextTail == m_atomHeadI.load(atomic::ORDER::ACQUIRE))
         return false;
 

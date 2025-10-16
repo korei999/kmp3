@@ -430,24 +430,7 @@ parseNumber(Context* pCtx, FmtArgs* pFmtArgs)
             ++pCtx->fmtI;
 
         const StringView svNum = pCtx->svFmt.subString(startI, pCtx->fmtI - startI);
-
-        if (bool(pFmtArgs->eFlags & FmtArgs::FLAGS::JUSTIFY_LEFT))
-        {
-            pFmtArgs->padding = svNum.toI64();
-        }
-        else if (bool(pFmtArgs->eFlags & FmtArgs::FLAGS::JUSTIFY_RIGHT))
-        {
-            pFmtArgs->padding = svNum.toI64();
-        }
-        else if (bool(pFmtArgs->eFlags & FmtArgs::FLAGS::FLOAT_PRECISION))
-        {
-            pFmtArgs->eFlags &= ~FmtArgs::FLAGS::FLOAT_PRECISION;
-            pFmtArgs->floatPrecision = svNum.toI64();
-        }
-        else
-        {
-            pFmtArgs->maxLen = svNum.toI64();
-        }
+        eatFmtArg(svNum.toI64(), pFmtArgs);
     }
 
     return nWritten;
@@ -532,6 +515,10 @@ parseColon(Context* pCtx, FmtArgs* pFmtArgs)
         else if (pCtx->svFmt[pCtx->fmtI] == 'x')
         {
             pFmtArgs->eBase = FmtArgs::BASE::SIXTEEN;
+        }
+        else if (pCtx->svFmt[pCtx->fmtI] == '+')
+        {
+            pFmtArgs->eFlags |= FmtArgs::FLAGS::SHOW_SIGN;
         }
 
         ++pCtx->fmtI;
@@ -673,8 +660,14 @@ format(Context* pCtx, FmtArgs* pFmtArgs, const T& arg)
         }
     }
 
-    if constexpr (!std::is_unsigned_v<T>)
-        if (arg < 0 && nWritten < (isize)sizeof(aBuff)) aBuff[nWritten++] = '-';
+    if (bool(pFmtArgs->eFlags & FmtArgs::FLAGS::SHOW_SIGN) || arg < 0)
+    {
+        if (nWritten < (isize)sizeof(aBuff))
+        {
+            if (arg < 0) aBuff[nWritten++] = '-';
+            else aBuff[nWritten++] = '+';
+        }
+    }
 
 done:
     for (isize i = 0; i < nWritten >> 1; ++i)
@@ -688,11 +681,18 @@ inline isize
 format(Context* pCtx, FmtArgs* pFmtArgs, const T& arg)
 {
     char aBuff[128] {};
+    char* pBuff = aBuff;
     std::to_chars_result res {};
 
+    if (bool(pFmtArgs->eFlags & FmtArgs::FLAGS::SHOW_SIGN) && arg >= 0)
+    {
+        aBuff[0] = '+';
+        ++pBuff;
+    }
+
     if (pFmtArgs->floatPrecision == -1)
-        res = std::to_chars(aBuff, aBuff + sizeof(aBuff), arg);
-    else res = std::to_chars(aBuff, aBuff + sizeof(aBuff), arg, std::chars_format::fixed, pFmtArgs->floatPrecision);
+        res = std::to_chars(pBuff, pBuff + sizeof(aBuff) - 1, arg);
+    else res = std::to_chars(pBuff, pBuff + sizeof(aBuff) - 1, arg, std::chars_format::fixed, pFmtArgs->floatPrecision);
 
     isize n = 0;
     if (res.ptr) n = pCtx->pBuilder->push(pFmtArgs, {aBuff, res.ptr - aBuff});
@@ -770,6 +770,20 @@ inline isize
 format(Context* pCtx, FmtArgs* pFmtArgs, const bool& b)
 {
     return format(pCtx, pFmtArgs, b ? "true" : "false");
+}
+
+template<typename T>
+inline isize
+format(Context* pCtx, FmtArgs* pFmtArgs, T* const& ptr)
+{
+    return format(pCtx, pFmtArgs, (usize)ptr);
+}
+
+template<>
+inline isize
+format(Context* pCtx, FmtArgs* pFmtArgs, const std::nullptr_t&)
+{
+    return format(pCtx, pFmtArgs, "(null)");
 }
 
 template<typename T>
