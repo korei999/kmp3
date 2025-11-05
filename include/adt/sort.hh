@@ -151,7 +151,7 @@ quickParallel(THREAD_POOL_T* pTPool, auto a[], isize l, isize r, CL_CMP clCmp)
         ADT_DEFER( fut.destroy() );
         bool bSpawned = false;
 
-        if ((j - l + 1) <= SIZE_8K)
+        if ((j - l + 1) <= SIZE_1K*8)
         {
             quick(a, l, j, clCmp);
         }

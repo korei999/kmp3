@@ -10,6 +10,10 @@
 #include <cctype>
 #include <charconv>
 
+#ifdef _WIN32
+    #include <direct.h> /* _getcwd */
+#endif
+
 namespace adt::print
 {
 
@@ -101,12 +105,12 @@ Builder::push(const StringView sv)
     {
         if (!m_pAlloc)
         {
-            const isize maxPossbile = m_cap - 1 - m_size;
-            if (maxPossbile <= 0) return -1;
-            ::memcpy(m_pData + m_size, sv.m_pData, maxPossbile);
-            m_size += maxPossbile;
-            m_pData[m_cap - 1] = '\0';
-            return maxPossbile;
+            const isize maxPossible = m_cap - 1 - m_size;
+            if (maxPossible <= 0) return -1;
+            ::memcpy(m_pData + m_size, sv.m_pData, maxPossible);
+            m_size += maxPossible;
+            m_pData[m_size] = '\0';
+            return maxPossible;
         }
 
         if (!growIfNeeded((m_size + sv.m_size + 1) * 2)) return -1;
@@ -289,7 +293,11 @@ inline const char*
 currentWorkingDirectory()
 {
     static char aBuff[300] {};
+#if defined _WIN32
+    return _getcwd(aBuff, sizeof(aBuff) - 1);
+#elif defined __unix__
     return getcwd(aBuff, sizeof(aBuff) - 1);
+#endif
 }
 
 inline const char*
@@ -602,6 +610,8 @@ parseArgs(Context* pCtx, const FmtArgs& fmtArgs)
         if (n > 0) nWritten += n;
     }
 
+    if (pCtx->pBuilder->size() < pCtx->pBuilder->cap())
+        pCtx->pBuilder->m_pData[pCtx->pBuilder->size()] = '\0';
     return nWritten;
 }
 

@@ -39,11 +39,8 @@ inline constexpr usize sizeClass8(usize x) { return (x + 7) >> 3; }
 
 constexpr isize SIZE_MIN = 2;
 constexpr isize SIZE_1K = 1024;
-constexpr isize SIZE_8K = SIZE_1K * 8;
 constexpr isize SIZE_1M = SIZE_1K * SIZE_1K;
-constexpr isize SIZE_8M = SIZE_1M * 8;
 constexpr isize SIZE_1G = SIZE_1M * SIZE_1K;
-constexpr isize SIZE_8G = SIZE_1G * 8;
 
 inline isize
 getPageSize() noexcept
