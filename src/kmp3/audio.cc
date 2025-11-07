@@ -311,16 +311,9 @@ RingBuffer::push(const Span<const f32> sp) noexcept
 
     const isize nextLastI = (m_lastI + sp.size()) & (m_cap - 1);
 
-    if (m_lastI >= m_firstI)
-    {
-        const isize nUntilEnd = utils::min(m_cap - m_lastI, sp.size());
-        utils::memCopy(m_pData + m_lastI, sp.data(), nUntilEnd);
-        utils::memCopy(m_pData, sp.data() + nUntilEnd, sp.size() - nUntilEnd);
-    }
-    else
-    {
-        utils::memCopy(m_pData + m_lastI, sp.data(), sp.size());
-    }
+    const isize nUntilEnd = utils::min(m_cap - m_lastI, sp.size());
+    utils::memCopy(m_pData + m_lastI, sp.data(), nUntilEnd);
+    utils::memCopy(m_pData, sp.data() + nUntilEnd, sp.size() - nUntilEnd);
 
     m_lastI = nextLastI;
     m_size += sp.size();
@@ -348,16 +341,9 @@ RingBuffer::pop(Span<f32> sp) noexcept
 
     const isize nextFirstI = (m_firstI + sp.size()) & (m_cap - 1);
 
-    if (m_firstI >= m_lastI)
-    {
-        const isize nUntilEnd = utils::min(m_cap - m_firstI, sp.size());
-        utils::memCopy(sp.data(), m_pData + m_firstI, nUntilEnd);
-        utils::memCopy(sp.data() + nUntilEnd, m_pData, sp.size() - nUntilEnd);
-    }
-    else
-    {
-        utils::memCopy(sp.data(), m_pData + m_firstI, sp.size());
-    }
+    const isize nUntilEnd = utils::min(m_cap - m_firstI, sp.size());
+    utils::memCopy(sp.data(), m_pData + m_firstI, nUntilEnd);
+    utils::memCopy(sp.data() + nUntilEnd, m_pData, sp.size() - nUntilEnd);
 
     m_firstI = nextFirstI;
     m_size -= sp.size();
