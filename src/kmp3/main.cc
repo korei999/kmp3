@@ -8,8 +8,6 @@
 #endif
 
 #include <clocale>
-#include <fcntl.h>
-#include <sys/ioctl.h>
 
 #ifdef OPT_CHAFA
     #include "platform/chafa/chafa.hh"
@@ -250,28 +248,48 @@ startup(int argc, char** argv)
     VecManaged<char*> aInput;
     defer( aInput.destroy() );
 
-    i64 nBytes = 0;
-    char* pInput = nullptr;
-    defer( Gpa::inst()->free(pInput) );
+    VecManaged<char> vReadBuff;
+    defer( vReadBuff.destroy() );
 
-    if (ioctl(STDIN_FILENO, FIONREAD, &nBytes) != -1 && nBytes > 0)
+    if (!isatty(STDIN_FILENO))
     {
-        pInput = Gpa::inst()->zallocV<char>(nBytes + 1);
+        char aReadBuff[SIZE_1K*4];
         int nRead = 0;
-        ADT_RUNTIME_EXCEPTION_FMT((nRead = read(STDIN_FILENO, pInput, nBytes)) > 0, "nRead: {}", nRead);
-        StringView svArgs {pInput, nBytes};
-
-        aInput.emplace(argv[0]);
-
-        for (auto sv : StringWordIt {svArgs, "\n"})
+        while (true)
         {
-            ADT_ASSERT(sv.data()[sv.size()] == '\n', "");
-            sv.data()[sv.size()] = '\0'; /* These must be null terminated. */
-            aInput.emplace(sv.data());
+            nRead = read(STDIN_FILENO, aReadBuff, sizeof(aReadBuff));
+            if (nRead < 0)
+            {
+                if (errno == EINTR) continue;
+                else break;
+            }
+            else if (nRead == 0)
+            {
+                break;
+            }
+            else if (nRead > 0)
+            {
+                vReadBuff.pushSpan(Span<const char>{aReadBuff, nRead});
+            }
         }
 
-        argc = aInput.size();
-        argv = aInput.data();
+        if (vReadBuff.size() > 0)
+        {
+            StringView svArgs {vReadBuff.data(), vReadBuff.size()};
+
+            aInput.emplace(argv[0]);
+
+            for (StringView sv : StringWordIt {svArgs, "\n"})
+            {
+                /* sv.data() to avoid range checks. */
+                ADT_ASSERT(sv.data()[sv.size()] == '\n', "");
+                sv.data()[sv.size()] = '\0'; /* These must be null terminated. */
+                aInput.emplace(sv.data());
+            }
+
+            argc = aInput.size();
+            argv = aInput.data();
+        }
     }
 
     Player player {Gpa::inst(), argc, argv};
