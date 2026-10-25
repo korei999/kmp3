@@ -226,12 +226,12 @@ startup(int argc, char** argv)
     app::g_eMixer = app::MIXER::COREAUDIO;
 #endif
 
-    parseArgs(argc, argv);
-    defer( s_cmdParser.destroy() );
-
 #ifndef NDEBUG
     app::g_eLogLevel = ILogger::LEVEL::DEBUG;
 #endif
+
+    parseArgs(argc, argv);
+    defer( s_cmdParser.destroy() );
 
     ThreadPool zeroThreadPool {Arena{}, SIZE_1M * 64}; /* Holds 1 arena for the main thread. */
     IThreadPool::setGlobal(&zeroThreadPool);

@@ -270,6 +270,7 @@ template<typename T>
 inline void
 Vec<T>::setSize(IAllocator* p, isize size)
 {
+    ADT_ASSERT(size >= 0, "negative size: {}", size);
     if (m_capacity < size) grow(p, size);
 
     m_size = size;

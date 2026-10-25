@@ -17,7 +17,7 @@ constexpr Config CONFIG {
     .imageHeight = 11, /* Terminal rows height. */
     .minImageHeight = 10,
     .maxImageHeight = 30,
-    .doubleClickDelay = 350.0,
+    .doubleClickDelay = 450.0,
     .ntsMprisName = "a_kmp3", /* Using 'a' to top kmp3 instance in playerctl. */
     .minWidth = 35,
     .minHeight = 17,

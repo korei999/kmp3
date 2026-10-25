@@ -715,9 +715,7 @@ template<>
 inline isize
 format(Context* pCtx, FmtArgs* pFmtArgs, const char& c)
 {
-    static const char s_aCharSet[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-    const isize idx = (c >= 32 && c <= 126) ? c - 32 : 0;
-    return pCtx->pBuilder->push(pFmtArgs, StringView{const_cast<char*>(s_aCharSet + idx), 1});
+    return pCtx->pBuilder->push(pFmtArgs, StringView{const_cast<char*>(&c), 1});
 }
 
 template<isize N>

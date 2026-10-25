@@ -203,7 +203,7 @@ TextBuff::resizeBuffers(isize width, isize height)
     m_tWidth = width;
     m_tHeight = height;
 
-    resetBuffers();
+    if (width * height > 0) resetBuffers();
 }
 
 template<typename STRING_T>

@@ -34,8 +34,7 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
             break;
     }
 
-    if (type == TYPE_MAX)
-        return INVALID_MOUSE;
+    if (type == TYPE_MAX) return INVALID_MOUSE;
 
     MouseInput ret = INVALID_MOUSE;
 
@@ -186,15 +185,11 @@ Win::parseMouse(Span<char> spBuff, ssize_t nRead)
 void
 Win::procMouse(MouseInput in)
 {
-    static bool s_bPressed = false;
-    static bool s_bHoldTimeSlider = false;
-    static bool s_bHoldScrollBar = false;
-
     if (in.eKey == MouseInput::KEY::RELEASE)
     {
-        s_bPressed = false;
-        s_bHoldTimeSlider = false;
-        s_bHoldScrollBar = false;
+        m_bPressed = false;
+        m_bHoldTimeSlider = false;
+        m_bHoldScrollBar = false;
         return;
     }
 
@@ -211,7 +206,7 @@ Win::procMouse(MouseInput in)
 
     auto clHoldScrollBar = [&]
     {
-        s_bHoldScrollBar = true;
+        m_bHoldScrollBar = true;
 
         const f32 listSizeFactor = m_listHeight / f32(pl.m_vSearchIdxs.size() - 0.9999f);
         const int barHeight = utils::max(1, static_cast<int>(m_listHeight * listSizeFactor));
@@ -223,7 +218,7 @@ Win::procMouse(MouseInput in)
 
     auto clHoldTimeSlider = [&]
     {
-        s_bHoldTimeSlider = true;
+        m_bHoldTimeSlider = true;
 
         f64 target = f64(in.x - xOff - 2) / f64(width - xOff - 4);
         target = utils::clamp(target, 0.0, static_cast<f64>(width - xOff - 4));
@@ -231,13 +226,13 @@ Win::procMouse(MouseInput in)
         app::mixer().seekMS(target);
     };
 
-    if (s_bHoldScrollBar)
+    if (m_bHoldScrollBar)
     {
         clHoldScrollBar();
         return;
     }
 
-    if (s_bHoldTimeSlider)
+    if (m_bHoldTimeSlider)
     {
         clHoldTimeSlider();
         return;
@@ -246,14 +241,14 @@ Win::procMouse(MouseInput in)
     /* click on time slider line */
     if (in.y == timeSliderOff && in.x >= xOff)
     {
-        defer( s_bPressed = true );
+        defer( m_bPressed = true );
 
         if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
         {
             /* click on indicator */
             if (in.x >= xOff && in.x <= xOff + 2)
             {
-                if (s_bPressed || s_bHoldTimeSlider) return;
+                if (m_bPressed || m_bHoldTimeSlider) return;
 
                 app::togglePause();
                 return;
@@ -262,7 +257,7 @@ Win::procMouse(MouseInput in)
             /* click on slider */
             if (width - xOff - 4 > 0)
             {
-                if (s_bPressed && !s_bHoldTimeSlider) return;
+                if (m_bPressed && !m_bHoldTimeSlider) return;
 
                 clHoldTimeSlider();
             }
@@ -294,9 +289,9 @@ Win::procMouse(MouseInput in)
         }
         else if (in.eKey == MouseInput::KEY::LEFT || in.eKey == MouseInput::KEY::RIGHT)
         {
-            if (s_bPressed) return;
+            if (m_bPressed) return;
 
-            s_bPressed = true;
+            m_bPressed = true;
             app::toggleMute();
         }
 
@@ -304,7 +299,13 @@ Win::procMouse(MouseInput in)
     }
 
     /* click on song list */
-    if (in.y < listOff || in.y >= height - 2) return;
+    if (in.y < listOff ||
+        in.y >= height - 2 ||
+        in.y > utils::min(static_cast<isize>(m_listHeight + yOff), pl.m_vSearchIdxs.size() + yOff)
+    )
+    {
+        return;
+    }
 
     long target = m_firstIdx + in.y - listOff;
     target = utils::clamp(
@@ -323,8 +324,8 @@ Win::procMouse(MouseInput in)
         }
         else
         {
-            if (s_bPressed) return;
-            else s_bPressed = true;
+            if (m_bPressed) return;
+            else m_bPressed = true;
 
             const i64 time = time::now();
 
@@ -495,6 +496,14 @@ Win::procInput()
 
     m_bUpdateFirstIdx = false;
 
+    /* BUG: Touchpad double clicks are two release events in the row right now. */
+    if (in.mouse.eKey == MouseInput::KEY::RELEASE && m_lastInput.mouse.eKey == MouseInput::KEY::RELEASE)
+    {
+        MouseInput mi = m_lastInput.mouse;
+        mi.eKey = MouseInput::KEY::LEFT;
+        procMouse(mi);
+    }
+
     switch (in.eType)
     {
         case Input::TYPE::KB:
@@ -514,6 +523,8 @@ Win::procInput()
         case Input::TYPE::TIMEOUT:
         break;
     }
+
+    m_lastInput = in;
 }
 
 } /* namespace platform::ansi */

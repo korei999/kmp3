@@ -12,7 +12,7 @@ namespace platform::ansi
 
 class Win : public IWindow
 {
-protected:
+public:
     struct MouseInput
     {
         enum class KEY : u8 { NONE, WHEEL_UP, WHEEL_DOWN, LEFT, MIDDLE, RIGHT, RELEASE };
@@ -46,6 +46,7 @@ protected:
 
     /* */
 
+protected:
     Arena* m_pArena {};
     TextBuff m_textBuff {};
     termios m_termOg {};
@@ -63,6 +64,10 @@ protected:
     VStringM m_sTitle {};
 
     int m_aFdsWakeUp[2] {};
+
+    bool m_bPressed = false;
+    bool m_bHoldTimeSlider = false;
+    bool m_bHoldScrollBar = false;
 
     /* */
 
@@ -115,3 +120,16 @@ private:
 };
 
 } /* namespace platform::ansi */
+
+namespace adt::print
+{
+
+template<>
+inline isize
+format(Context* pCtx, FmtArgs* pFmtArgs, const platform::ansi::Win::MouseInput::KEY& e)
+{
+    const char* map[] { "NONE", "WHEEL_UP", "WHEEL_DOWN", "LEFT", "MIDDLE", "RIGHT", "RELEASE" };
+    return format(pCtx, pFmtArgs, map[(int)e]);
+}
+
+} /* namespace adt::print */
