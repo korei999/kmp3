@@ -6,15 +6,9 @@
 
 #include "TextBuff.h"
 #include "Player.h"
+#include "input.h"
 
 #include <termios.h>
-
-typedef enum
-{
-    WINDOW_READ_MODE_NONE,
-    WINDOW_READ_MODE_SEARCH,
-    WINDOW_READ_MODE_SEEK
-} WINDOW_READ_MODE;
 
 typedef enum
 {
@@ -95,6 +89,8 @@ typedef struct
     bool bPressed;
     bool bHoldTimeSlider;
     bool bHoldScrollBar;
+
+    input_Buffer inputBuff;
 
     PlayerMsg currMsg;
     k_time_Type currMsgTime;

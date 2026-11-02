@@ -71,7 +71,7 @@ k_StringReallocWith(k_String* s, k_IAllocator* pAlloc, const k_StringView svWith
 
     memcpy(pNew, svWith.pData, svWith.size);
     pNew[svWith.size] = '\0';
-    k_IAllocatorFree(pAlloc, s->priv.ptr.pData);
+    if (s->priv.cap != K_STRING_SMALL_SIZE) k_IAllocatorFree(pAlloc, s->priv.ptr.pData);
     s->priv.ptr.pData = pNew;
     s->priv.ptr.size = svWith.size;
     s->priv.cap = newCap;

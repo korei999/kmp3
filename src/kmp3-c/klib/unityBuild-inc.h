@@ -9,6 +9,7 @@
 #include "print.c"
 #include "RingBuffer.c"
 #include "RingMPSC.c"
+#include "RingSPSC.c"
 #include "String.c"
 #include "StringView.c"
 #include "ThreadPool.c"

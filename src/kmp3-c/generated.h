@@ -1,6 +1,6 @@
 #pragma once
 
-#include "klib/StringView.h" /* IWYU pragma: keep */
+#include "klib/String.h" /* IWYU pragma: keep */
 
 #define K_NAME VecChar
 #define K_TYPE char
@@ -20,4 +20,8 @@
 
 #define K_NAME VecWChar
 #define K_TYPE wchar_t
+#include "klib/VecGen-inc.h"
+
+#define K_NAME VecString
+#define K_TYPE k_String
 #include "klib/VecGen-inc.h"

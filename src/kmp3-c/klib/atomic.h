@@ -105,6 +105,7 @@ typedef struct k_atomic_U8
 } k_atomic_U8;
 
 K_ALWAYS_INLINE static uint8_t k_atomic_U8LoadRelaxed(const k_atomic_U8* s);
+K_ALWAYS_INLINE static uint8_t k_atomic_U8LoadAcquire(const k_atomic_U8* s);
 K_ALWAYS_INLINE static void k_atomic_U8StoreRelaxed(k_atomic_U8* s, uint8_t val);
 K_ALWAYS_INLINE static void k_atomic_U8StoreRelease(k_atomic_U8* s, uint8_t val);
 K_ALWAYS_INLINE static bool k_atomic_U8CASAcquire(k_atomic_U8* s, uint8_t* pExpected, uint8_t desired);
@@ -409,6 +410,12 @@ K_ALWAYS_INLINE static uint8_t
 k_atomic_U8LoadRelaxed(const k_atomic_U8* s)
 {
     return __atomic_load_n(&s->volNum, __ATOMIC_RELAXED);
+}
+
+K_ALWAYS_INLINE static uint8_t
+k_atomic_U8LoadAcquire(const k_atomic_U8* s)
+{
+    return __atomic_load_n(&s->volNum, __ATOMIC_ACQUIRE);
 }
 
 K_ALWAYS_INLINE static void

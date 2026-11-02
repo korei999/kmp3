@@ -17,6 +17,10 @@ frame_run(void)
     }
 
     k_print_MapAddFormatter(k_CtxPrintMap(), "PTermSize", WindowTermSizePFormatter);
+    k_print_MapAddFormatter(k_CtxPrintMap(), "input_READ_MODE", input_ReadModePFormatter);
+
+    app_g_pPlayer->focusedI = 0;
+    PlayerSelectFocused(app_g_pPlayer);
 
     do
     {
@@ -24,9 +28,12 @@ frame_run(void)
         {
             win.vol_bRunning = app_g_vol_bRunning;
 
+            PlayerNextSongIfPrevEnded(app_g_pPlayer);
             WindowDraw(&win);
             WindowProcEvents(&win);
         }
     }
     while (app_g_vol_bRunning);
+
+    WindowDestroy(&win);
 }

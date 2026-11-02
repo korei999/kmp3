@@ -1,3 +1,5 @@
+#pragma once
+
 #include "audio.h"
 
 #ifdef __clang__
@@ -36,6 +38,7 @@ struct platform_pipewire_Mixer
 
     struct pw_thread_loop* pThrdLoop;
     struct pw_stream* pStream;
+    k_atomic_U8 atom_bArena;
 };
 
 platform_pipewire_Mixer platform_pipewire_MixerCreate(void);

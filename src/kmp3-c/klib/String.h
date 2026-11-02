@@ -27,6 +27,7 @@ K_NO_DISCARD k_String k_StringCreateSmallSv(const k_StringView sv);
 K_NO_DISCARD k_String k_StringCreate(k_IAllocator* pAlloc, const char* pData, ssize_t size);
 K_NO_DISCARD static inline k_String k_StringCreateNts(k_IAllocator* pAlloc, const char* nts);
 K_NO_DISCARD static inline k_String k_StringCreateSv(k_IAllocator* pAlloc, const k_StringView sv);
+K_NO_DISCARD static inline k_String k_StringCreateS(k_IAllocator* pAlloc, const k_String s);
 void k_StringDestroy(k_String* s, k_IAllocator* pAlloc);
 static inline ssize_t k_StringCap(const k_String* s);
 static inline ssize_t k_StringSize(const k_String* s);
@@ -62,6 +63,12 @@ static inline k_String
 k_StringCreateSv(k_IAllocator* pAlloc, const k_StringView sv)
 {
     return k_StringCreate(pAlloc, sv.pData, sv.size);
+}
+
+K_NO_DISCARD static inline k_String
+k_StringCreateS(k_IAllocator* pAlloc, const k_String s)
+{
+    return k_StringCreateSv(pAlloc, k_StringToSv(&s));
 }
 
 static inline ssize_t

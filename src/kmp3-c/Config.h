@@ -20,4 +20,5 @@ typedef struct
     int minWidth;
     int minHeight;
     ssize_t arenaReserveVirtualSpace;
+    int loggerLevel;
 } Config;

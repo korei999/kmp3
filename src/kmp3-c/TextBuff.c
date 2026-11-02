@@ -41,6 +41,16 @@
 #define TEXT_BUFF_BG_CYAN "\x1b[46m"
 #define TEXT_BUFF_BG_WHITE "\x1b[47m"
 
+#define K_NAME VecTextBuffImage
+#define K_TYPE TextBuffImage
+#define K_GEN_CODE
+#include "klib/VecGen-inc.h"
+
+#define K_NAME VecTextBuffCell
+#define K_TYPE TextBuffCell
+#define K_GEN_CODE
+#include "klib/VecGen-inc.h"
+
 static bool TextBuffCellEq(TextBuffCell* pLeft, TextBuffCell* pRight);
 
 static ssize_t TextBuffStyleToBuffer(TextBuff* s, char* pFillBuff, ssize_t buffSize, TEXT_BUFF_STYLE eStyle);
@@ -50,6 +60,7 @@ static void TextBuffClearBackBuffer(TextBuff* s);
 static void TextBuffPushDiff(TextBuff* s);
 static void TextBuffResetBuffers(TextBuff* s);
 static void TextBuffResizeBuffers(TextBuff* s, ssize_t width, ssize_t height);
+static void TextBuffShowImages(TextBuff* s);
 
 typedef ssize_t (*PfnDecodeStr)(const void* pStrBuff, ssize_t strSize, ssize_t off, int32_t* pCode);
 
@@ -63,7 +74,6 @@ static ssize_t TextBuffStringFinal(
     PfnDecodeStr pfnDecodeStr,
     int maxSvLen
 );
-
 ssize_t TextBuffAdvanceWString(const void* pStrBuff, ssize_t strSize, ssize_t off, int32_t* pCode);
 ssize_t TextBuffAdvanceUTF8(const void* pStrBuff, ssize_t strSize, ssize_t off, int32_t* pCode);
 
@@ -140,10 +150,6 @@ TextBuffCellEq(TextBuffCell* pLeft, TextBuffCell* pRight)
     return pLeft->eStyle == pRight->eStyle && pLeft->wc == pRight->wc;
 }
 
-#ifdef OPT_CHAFA
-void showImages();
-#endif
-
 void
 TextBuffPushChar(TextBuff* s, const char ch)
 {
@@ -168,9 +174,10 @@ TextBuffFlush(TextBuff* s)
     VecChar* pvBuff = &s->vBuff;
     if (pvBuff->size > 0)
     {
-        K_UNUSED const ssize_t n = write(STDOUT_FILENO, pvBuff->pData, pvBuff->size);
+        write(STDOUT_FILENO, pvBuff->pData, pvBuff->size);
         pvBuff->size = 0;
     }
+    s->vBuff = (VecChar){0};
 }
 
 void
@@ -281,8 +288,11 @@ TextBuffInit(TextBuff* s, k_Arena* pArena, ssize_t termWidth, ssize_t termHeight
     *s = (TextBuff){0};
 
     s->pArena = pArena;
+#ifdef OPT_CHAFA
+    k_ArenaInit(&s->imgArena, K_SIZE_1M * 128, 0);
+#endif
 
-    K_ARENA_SCOPE_DELETERS(pArena)
+    K_ARENA_SCOPE(pArena)
     {
         TextBuffPushSv(s, K_SV(TEXT_BUFF_ALT_SCREEN_ENABLE));
         TextBuffPushSv(s, K_SV(TEXT_BUFF_KEYPAD_ENABLE));
@@ -298,10 +308,8 @@ TextBuffInit(TextBuff* s, k_Arena* pArena, ssize_t termWidth, ssize_t termHeight
 void
 TextBuffDestroy(TextBuff* s)
 {
-    K_ARENA_SCOPE_DELETERS(s->pArena)
+    K_ARENA_SCOPE(s->pArena)
     {
-        // K_ASSERT(!s->oBuff.pvBuff->pData && s->oBuff.pvBuff->size == 0 && s->oBuff.pvBuff->cap == 0, "");
-
         TextBuffPresent(s);
         TextBuffHideCursor(s, false);
         TextBuffClearKittyImages(s);
@@ -315,7 +323,7 @@ TextBuffDestroy(TextBuff* s)
         VecTextBuffCellDestroy(&s->vFront, &k_GpaInst()->base);
 
 #ifdef OPT_CHAFA
-        m_imgArena.freeAll();
+        k_ArenaReset(&s->imgArena);
 #endif
     }
 }
@@ -354,14 +362,12 @@ TextBuffPresent(TextBuff* s)
     TextBuffPushDiff(s);
 
 #ifdef OPT_CHAFA
-    showImages();
+    TextBuffShowImages(s);
 #endif
 
     K_SWAP(s->vFront, s->vBack);
 
     TextBuffFlush(s);
-
-    k_ArenaRunDeleters(s->pArena);
 }
 
 void
@@ -434,6 +440,45 @@ TextBuffWideStrings(TextBuff* s, int x, int y, TextBuffStylePWCharPair* pStrings
     return xOff;
 }
 
+#ifdef OPT_CHAFA
+
+void
+TextBuffDrawImage(TextBuff* s, int x, int y, const platform_chafa_Image* pImg)
+{
+    if (pImg->width <= 0 || pImg->height <= 0) return;
+    TextBuffImage img = {.img = *pImg, .x = x, .y = y};
+    VecTextBuffImagePush(&s->vImages, &s->imgArena.base, &img);
+}
+
+void
+TextBuffForceClean(TextBuff* s, int x, int y, int width, int height)
+{
+    if (x < 0 || y < 0)
+        return;
+
+    width = K_MIN(width, s->tWidth);
+    height = K_MIN(height, s->tHeight);
+
+    k_Span2D spFront = TextBuffFrontBufferSpan(s);
+    k_Span2D spBack = TextBuffBackBufferSpan(s);
+
+    for (ssize_t row = y; row < height; ++row)
+    {
+        for (ssize_t col = x; col < width; ++col)
+        {
+            TextBuffCell* pFront = k_Span2DGet(spFront, col, row);
+            TextBuffCell* pBack = k_Span2DGet(spBack, col, row);
+
+            /* trigger diff */
+            pFront->wc = 666;
+            pBack->wc = L' ';
+        }
+    }
+
+}
+
+#endif
+
 static ssize_t
 TextBuffStyleToBuffer(TextBuff* s, char* pFillBuff, ssize_t buffSize, TEXT_BUFF_STYLE eStyle)
 {
@@ -441,57 +486,63 @@ TextBuffStyleToBuffer(TextBuff* s, char* pFillBuff, ssize_t buffSize, TEXT_BUFF_
 
     n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV("\x1b[0"));
 
+#define STYLE(name) TEXT_BUFF_STYLE_##name
+#define CODE(name) TEXT_BUFF_STYLE_CODE_##name
+
     if (eStyle)
     {
-        if (eStyle & TEXT_BUFF_STYLE_BOLD)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BOLD);
-        if (eStyle & TEXT_BUFF_STYLE_DIM)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_DIM);
-        if (eStyle & TEXT_BUFF_STYLE_ITALIC)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_ITALIC);
-        if (eStyle & TEXT_BUFF_STYLE_UNDERLINE)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_UNDERLINE);
-        if (eStyle & TEXT_BUFF_STYLE_BLINK)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BLINK);
-        if (eStyle & TEXT_BUFF_STYLE_REVERSE)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_REVERSE);
-        if (eStyle & TEXT_BUFF_STYLE_INVIS)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_INVIS);
-        if (eStyle & TEXT_BUFF_STYLE_STRIKE)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_STRIKE);
-        if (eStyle & TEXT_BUFF_STYLE_RED)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_RED);
-        if (eStyle & TEXT_BUFF_STYLE_GREEN)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_GREEN);
-        if (eStyle & TEXT_BUFF_STYLE_YELLOW)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_YELLOW);
-        if (eStyle & TEXT_BUFF_STYLE_BLUE)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BLUE);
-        if (eStyle & TEXT_BUFF_STYLE_MAGENTA)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_MAGENTA);
-        if (eStyle & TEXT_BUFF_STYLE_CYAN)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_CYAN);
-        if (eStyle & TEXT_BUFF_STYLE_WHITE)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_WHITE);
-        if (eStyle & TEXT_BUFF_STYLE_BG_RED)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BG_RED);
-        if (eStyle & TEXT_BUFF_STYLE_BG_GREEN)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BG_GREEN);
-        if (eStyle & TEXT_BUFF_STYLE_BG_YELLOW)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BG_YELLOW);
-        if (eStyle & TEXT_BUFF_STYLE_BG_BLUE)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BG_BLUE);
-        if (eStyle & TEXT_BUFF_STYLE_BG_MAGENTA)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BG_MAGENTA);
-        if (eStyle & TEXT_BUFF_STYLE_BG_CYAN)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BG_CYAN);
-        if (eStyle & TEXT_BUFF_STYLE_BG_WHITE)
-            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), TEXT_BUFF_STYLE_CODE_BG_WHITE);
+        if (eStyle & STYLE(BOLD))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BOLD));
+        if (eStyle & STYLE(DIM))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(DIM));
+        if (eStyle & STYLE(ITALIC))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(ITALIC));
+        if (eStyle & STYLE(UNDERLINE))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(UNDERLINE));
+        if (eStyle & STYLE(BLINK))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BLINK));
+        if (eStyle & STYLE(REVERSE))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(REVERSE));
+        if (eStyle & STYLE(INVIS))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(INVIS));
+        if (eStyle & STYLE(STRIKE))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(STRIKE));
+        if (eStyle & STYLE(RED))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(RED));
+        if (eStyle & STYLE(GREEN))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(GREEN));
+        if (eStyle & STYLE(YELLOW))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(YELLOW));
+        if (eStyle & STYLE(BLUE))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BLUE));
+        if (eStyle & STYLE(MAGENTA))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(MAGENTA));
+        if (eStyle & STYLE(CYAN))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(CYAN));
+        if (eStyle & STYLE(WHITE))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(WHITE));
+        if (eStyle & STYLE(BG_RED))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BG_RED));
+        if (eStyle & STYLE(BG_GREEN))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BG_GREEN));
+        if (eStyle & STYLE(BG_YELLOW))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BG_YELLOW));
+        if (eStyle & STYLE(BG_BLUE))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BG_BLUE));
+        if (eStyle & STYLE(BG_MAGENTA))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BG_MAGENTA));
+        if (eStyle & STYLE(BG_CYAN))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BG_CYAN));
+        if (eStyle & STYLE(BG_WHITE))
+            n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV(";{i}"), CODE(BG_WHITE));
     }
 
     n += k_print_toBufferSv(pFillBuff + n, buffSize - n, K_SV("m"));
 
     return n;
+
+#undef STYLE
+#undef CODE
 }
 
 static k_Span2D
@@ -611,4 +662,37 @@ TextBuffResizeBuffers(TextBuff* s, ssize_t width, ssize_t height)
     s->tHeight = height;
 
     TextBuffResetBuffers(s);
+}
+
+static void
+TextBuffShowImages(TextBuff* s)
+{
+    int nDraws = 0;
+
+    for (ssize_t imgI = 0; imgI < s->vImages.size; ++imgI)
+    {
+        ++nDraws;
+        TextBuffImage* pIm = s->vImages.pData + imgI;
+
+        if (pIm->img.eLayout == platform_chafa_IMAGE_LAYOUT_RAW)
+        {
+            TextBuffMove(s, pIm->x, pIm->y);
+            TextBuffPushSv(s, k_StringToSv(&pIm->img.uData.sRaw));
+        }
+        else
+        {
+            VecString* pVLines = &pIm->img.uData.vLines;
+            for (ssize_t lineI = 0; lineI < pVLines->size; ++lineI)
+            {
+                TextBuffMove(s, pIm->x, pIm->y + lineI);
+                TextBuffPushSv(s, k_StringToSv(pVLines->pData + lineI));
+            }
+        }
+    }
+
+    if (nDraws > 0)
+    {
+        VecTextBuffImageDestroy(&s->vImages, &s->imgArena.base);
+        k_ArenaResetDecommit(&s->imgArena);
+    }
 }

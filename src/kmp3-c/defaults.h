@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "klib/IAllocator.h"
+#include "klib/Logger.h"
 
 static const Config defaults_CONFIG = {
     .maxVolume = 150, /* (0, 100], > 100 might cause distortions. */
@@ -20,4 +21,9 @@ static const Config defaults_CONFIG = {
     .minWidth = 35,
     .minHeight = 17,
     .arenaReserveVirtualSpace = K_SIZE_1M * 64,
+#ifndef NDEBUG
+    .loggerLevel = K_LOGGER_LEVEL_DEBUG,
+#else
+    .loggerLevel = K_LOGGER_LEVEL_NONE,
+#endif
 };

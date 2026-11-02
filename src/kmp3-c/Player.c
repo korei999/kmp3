@@ -121,13 +121,12 @@ done:
 static void
 PlayerUpdateInfo(Player* s)
 {
-    // m_info.sTitle.reallocWith(m_pAlloc, app::decoder().getMetadata("title"));
-    // m_info.sAlbum.reallocWith(m_pAlloc, app::decoder().getMetadata("album"));
-    // m_info.sArtist.reallocWith(m_pAlloc, app::decoder().getMetadata("artist"));
+    k_StringReallocWith(&s->info.sTitle, s->pAlloc, ffmpeg_DecoderGetMetadata(&app_g_decoder, K_SV("title")));
+    k_StringReallocWith(&s->info.sAlbum, s->pAlloc, ffmpeg_DecoderGetMetadata(&app_g_decoder, K_SV("album")));
+    k_StringReallocWith(&s->info.sArtist, s->pAlloc, ffmpeg_DecoderGetMetadata(&app_g_decoder, K_SV("artist")));
 
-    // if (m_info.sTitle.empty()) m_info.sTitle.reallocWith(m_pAlloc, m_vShortSongs[m_selectedI]);
-
-    // m_bSelectionChanged = true;
+    if (k_StringSize(&s->info.sTitle) <= 0)
+        k_StringReallocWith(&s->info.sTitle, s->pAlloc, VecSVGet(&s->vShortSongs, s->selectedI));
 
     s->bSelectionChanged = true;
 }
@@ -178,6 +177,10 @@ void
 PlayerDestroy(Player* s)
 {
     if (!s->pAlloc) return;
+
+    k_StringDestroy(&s->info.sTitle, s->pAlloc);
+    k_StringDestroy(&s->info.sAlbum, s->pAlloc);
+    k_StringDestroy(&s->info.sArtist, s->pAlloc);
 
     VecSVDestroy(&s->vSongs, s->pAlloc);
     VecSVDestroy(&s->vShortSongs, s->pAlloc);
@@ -249,9 +252,10 @@ int64_t
 PlayerFindSongI(Player* s, int64_t selI)
 {
     if (s->vSongs.size <= 0) return 0;
+    ssize_t res;
 
 again:
-    ssize_t res = K_NPOS;
+    res = K_NPOS;
     for (ssize_t i = 0; i < s->vSongIdxs.size; ++i)
     {
         if (s->vSongIdxs.pData[i] == selI)
@@ -300,32 +304,32 @@ PlayerSubStringSearch(Player* s, const wchar_t* pBuff, ssize_t buffSize)
 
     /* Convert both to upper case. */
     VecWChar vNeedle = {0};
-    VecWCharInit(&vNeedle, &pArena->base, buffSize + 1);
-    VecWCharSetSize(&vNeedle, &pArena->base, vNeedle.cap);
+    VecWCharInit(&vNeedle, &pArena->base, buffSize + 2);
+    VecWCharSetSize(&vNeedle, &pArena->base, vNeedle.cap - 1);
+    VecWCharFillWithZeros(&vNeedle);
 
     for (ssize_t i = 0; i < buffSize && pBuff[i]; ++i)
         vNeedle.pData[i] = towupper(pBuff[i]);
 
     VecWChar vHaystack = {0};
-    VecWCharInit(&vHaystack, &pArena->base, s->longestString + 1);
-    VecWCharSetSize(&vHaystack, &pArena->base, vHaystack.cap);
+    VecWCharInit(&vHaystack, &pArena->base, s->longestString + 2);
+    VecWCharSetSize(&vHaystack, &pArena->base, vHaystack.cap - 1);
 
-    VecU16SetSize(&s->vSearchIdxs, &pArena->base, 0);
+    VecU16SetSize(&s->vSearchIdxs, s->pAlloc, 0);
 
-    for (ssize_t i = 0; i < s->vSearchIdxs.size; ++i)
+    for (ssize_t i = 0; i < s->vSongIdxs.size; ++i)
     {
-        uint16_t songIdx = VecU16Get(&s->vSongIdxs, i);
-
+        const uint16_t songIdx = VecU16Get(&s->vSongIdxs, i);
         const k_StringView song = VecSVGet(&s->vShortSongs, songIdx);
 
-        memset(&vHaystack.pData, 0, vHaystack.size * sizeof(vHaystack.pData[0]));
-
+        VecWCharFillWithZeros(&vHaystack);
         mbstowcs(vHaystack.pData, song.pData, song.size);
-        for (ssize_t i = 0; i < vHaystack.size; ++i)
-            vHaystack.pData[i] = towupper(vHaystack.pData[i]);
 
-        if (wcsstr(vHaystack.pData, vNeedle.pData) != NULL)
-            VecU16PushVal(&s->vSearchIdxs, &pArena->base, songIdx);
+        for (ssize_t hI = 0; hI < vHaystack.size; ++hI)
+            vHaystack.pData[hI] = towupper(vHaystack.pData[hI]);
+
+        if (wcsstr(vHaystack.pData, vNeedle.pData))
+            VecU16PushVal(&s->vSearchIdxs, s->pAlloc, songIdx);
     }
 
     k_ArenaStateRestore(&arenaState);
@@ -399,7 +403,7 @@ PlayerSelectNext(Player* s)
     }
 
     K_ASSERT(s->vSearchIdxs.size > 0, "size: {sz}", s->vSearchIdxs.size);
-    PlayerSelect(s, PlayerFindSongI(s, (s->selectedI + 1) % s->vSearchIdxs.size));
+    PlayerSelect(s, (PlayerFindSongI(s, s->selectedI) + 1) % s->vSearchIdxs.size);
 }
 
 void
@@ -412,7 +416,7 @@ PlayerSelectPrev(Player* s)
     }
 
     K_ASSERT(s->vSearchIdxs.size > 0, "size: {sz}", s->vSearchIdxs.size);
-    PlayerSelect(s, (PlayerFindSongI(s, (s->selectedI + (s->vSearchIdxs.size - 1)) % s->vSearchIdxs.size)));
+    PlayerSelect(s, (PlayerFindSongI(s, s->selectedI) + (s->vSearchIdxs.size - 1)) % s->vSearchIdxs.size);
 }
 
 void

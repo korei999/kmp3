@@ -180,7 +180,6 @@ static inline bool k_MutexTryLock(k_Mutex* s);
 #define K_MUTEX_LOCK_SCOPE2(s, name)                                                                                   \
     for (int name = (k_MutexLock(s), 0); !name; name = (k_MutexUnlock(s), 1))
 
-// #define K_MUTEX_LOCK_SCOPE(s) K_MUTEX_LOCK_SCOPE2((s), K_GLUE(_kMtxLockScopeVar, __COUNTER__))
 #define K_MUTEX_LOCK_SCOPE(s) K_SCOPE_BEGIN_END(k_MutexLock(s), k_MutexUnlock(s))
 
 static inline bool

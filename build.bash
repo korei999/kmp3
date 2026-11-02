@@ -14,6 +14,12 @@ PROJECT_VERSION="2.0"
 PROJECT_VERSION_MAJOR=2
 PROJECT_VERSION_MINOR=0
 
+DEFS=" -DPROJECT_COMMIT_HASH=\"$(git rev-parse --short HEAD)\""
+DEFS+=" -DPROJECT_NAME=\"${PROJECT_NAME}\""
+DEFS+=" -DPROJECT_VERSION=\"${PROJECT_VERSION}\""
+DEFS+=" -DPROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}"
+DEFS+=" -DPROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR}"
+
 if command -v gcc &>/dev/null; then
     CC="gcc"
 elif command -v clang &>/dev/null; then
@@ -26,6 +32,7 @@ fi
 MODE="release"
 
 PIPEWIRE=0
+CHAFA=0
 
 for arg in "$@"; do
     if [[ $arg == "gcc" ]]; then CC="gcc"
@@ -34,15 +41,17 @@ for arg in "$@"; do
     elif [[ $arg == "debug" ]]; then MODE="debug"
     elif [[ $arg == "asan" ]]; then MODE="asan"
     elif [[ $arg == "pipewire" ]]; then PIPEWIRE=1
+    elif [[ $arg == "chafa" ]]; then CHAFA=1
     fi
 done
 
 if [[ $MODE == "release" ]]; then
     CFLAGS+=" -O3"
+    DEFS+=" -DNDEBUG"
 elif [[ $MODE == "asan" ]]; then
     CFLAGS+=" -g -O0 -fsanitize=address"
 else
-    CFLAGS+=" -g -O0"
+    CFLAGS+=" -g -O0 -Wno-unused-but-set-variable"
 fi
 
 if [[ $CC == "clang" ]]; then
@@ -53,12 +62,6 @@ if [[ $CC == "clang" ]]; then
 
     CFLAGS+=" -Wno-microsoft-anon-tag"
 fi
-
-DEFS=" -DPROJECT_COMMIT_HASH=\"$(git rev-parse --short HEAD)\""
-DEFS+=" -DPROJECT_NAME=\"${PROJECT_NAME}\""
-DEFS+=" -DPROJECT_VERSION=\"${PROJECT_VERSION}\""
-DEFS+=" -DPROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}"
-DEFS+=" -DPROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR}"
 
 OPTS=""
 
@@ -81,6 +84,17 @@ applyPkgConfigFlags()
 if [[ $PIPEWIRE == 1 ]]; then
     applyPkgConfigFlags PIPEWIRE libpipewire-0.3 1
 fi
+
+if [[ $CHAFA == 1 ]] && pkg-config --exists libswscale; then
+    applyPkgConfigFlags CHAFA chafa 0
+    applyPkgConfigFlags CHAFA libswscale 0
+
+    if pkg-config --atleast-version 1.14 chafa; then
+        OPTS+=" -DOPT_CHAFA_SYMBOLS"
+    fi
+fi
+
+applyPkgConfigFlags FFMPEG libavformat libavcodec libavutil libswresample 1
 
 COMMAND="$CC $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o $PROJECT_NAME"
 echo ${COMMAND}

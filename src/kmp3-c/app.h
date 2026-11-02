@@ -4,6 +4,7 @@
 #include "Config.h"
 #include "Player.h"
 #include "Window.h"
+#include "ffmpeg.h"
 
 typedef enum
 {
@@ -12,7 +13,16 @@ typedef enum
     app_MIXER_PIPEWIRE,
     app_MIXER_COREAUDIO,
     app_MIXER_SNDIO,
+    app_MIXER_ESIZE
 } app_MIXER;
+
+static const char* app_s_aMixerStrings[] = {
+    "DUMMY",
+    "ALSA",
+    "PIPEWIRE",
+    "COREAUDIO",
+    "SNDIO",
+};
 
 typedef enum
 {
@@ -39,7 +49,7 @@ extern Window* app_g_pWin;
 extern Config app_g_config;
 extern Player* app_g_pPlayer;
 extern audio_IMixer* app_g_pMixer;
-// extern platform::ffmpeg::Decoder g_decoder;
+extern ffmpeg_Decoder app_g_decoder;
 
 audio_IMixer* app_allocMixer(k_IAllocator* pAlloc);
 

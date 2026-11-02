@@ -48,6 +48,7 @@ K_DECL_MOD void K_METHOD(Set)(K_NAME* s, ssize_t i, const K_TYPE* p);
 K_DECL_MOD void K_METHOD(SetVal)(K_NAME* s, ssize_t i, const K_TYPE val);
 K_DECL_MOD K_TYPE* K_METHOD(FirstP)(K_NAME* s);
 K_DECL_MOD K_TYPE* K_METHOD(LastP)(K_NAME* s);
+K_DECL_MOD void K_METHOD(FillWithZeros)(K_NAME* s);
 
 #endif /* K_GEN_DECLS */
 
@@ -247,6 +248,12 @@ K_DECL_MOD K_TYPE*
 K_METHOD(LastP)(K_NAME* s)
 {
     return K_METHOD(GetP)(s, s->size - 1);
+}
+
+K_DECL_MOD void
+K_METHOD(FillWithZeros)(K_NAME* s)
+{
+    memset(s->pData, 0, s->size * sizeof(s->pData[0]));
 }
 
 #endif /* K_GEN_CODE */

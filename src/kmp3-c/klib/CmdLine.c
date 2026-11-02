@@ -209,7 +209,7 @@ k_CmdLineParse(k_CmdLine* s, int argc, char** argv)
             eRes = parseLong(s, i, argv);
         else if (k_StringViewStartsWith(svArg, K_SV("-")))
             eRes = parseShort(s, &i, argc, argv);
-        else if (i > 0) return K_CMD_LINE_RESULT_SUCCESS;
+        else if (i > 0) break;
 
         if (eRes != K_CMD_LINE_RESULT_NEXT) goto done;
         ++i;

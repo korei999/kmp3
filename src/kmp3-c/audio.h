@@ -1,7 +1,5 @@
 #pragma once
 
-#include "klib/Arena.h"
-#include "klib/IAllocator.h"
 #include "klib/StringView.h"
 #include "klib/Thread.h"
 
@@ -12,18 +10,27 @@ static const ssize_t audio_RING_BUFFER_HIGH_THRESHOLD = audio_RING_BUFFER_SIZE *
 
 extern float audio_g_aDrainBuffer[audio_DRAIN_BUFFER_SIZE];
 
-typedef struct
+typedef struct audio_RingBuffer audio_RingBuffer;
+struct audio_RingBuffer
 {
-    _Alignas(K_CACHE_SIZE) k_atomic_U64 atomHeadI;
-    uint64_t capMinusOne;
+    ssize_t firstI;
+    ssize_t lastI;
+    ssize_t size;
+    ssize_t cap;
     float* pData;
-    _Alignas(K_CACHE_SIZE) k_atomic_U64 atomTailI;
-} audio_RingSPSC;
 
-bool audio_RingSPSCInit(audio_RingSPSC* s, k_IAllocator* pAlloc, ssize_t cap); /* False on allocation failure. */
-void audio_RingSPSCDestroy(audio_RingSPSC* s, k_IAllocator* pAlloc);
-bool audio_RingSPSCPush(audio_RingSPSC* s, const float* p, ssize_t size); /* False if atomic push failed. */
-ssize_t audio_RingSPSCPop(audio_RingSPSC* s, float* pFill, ssize_t fillBuffSize); /* Returns nFloats written. */
+    k_Mutex mtx;
+    k_CndVar cnd;
+    k_Thread thrd;
+    k_atomic_U8 atom_bLoopDone;
+    bool bQuit;
+};
+
+bool audio_RingBufferInit(audio_RingBuffer* s, ssize_t capacityPowOf2); /* capacityPowOf2 is rounded to next power of two */
+void audio_RingBufferDestroy(audio_RingBuffer* s);
+ssize_t audio_RingBufferPush(audio_RingBuffer* s, const float* pBuff, ssize_t buffSize); /* Returns size after push. */
+ssize_t audio_RingBufferPop(audio_RingBuffer* s, float* pFillBuff, ssize_t fillBuffSize);
+void audio_RingBufferClear(audio_RingBuffer* s);
 
 typedef struct audio_IMixer audio_IMixer;
 struct audio_IMixer
@@ -37,9 +44,8 @@ struct audio_IMixer
         void (*changeSampleRate)(audio_IMixer* s, uint64_t sampleRate, bool bSave);
     } vtable;
 
-    audio_RingSPSC ring;
+    audio_RingBuffer ring;
     k_Thread thread;
-    k_Arena threadArena; /* Used only by 'thread'. */
 
     k_atomic_U8 atom_bPaused;
     k_atomic_U8 atom_bSongEnd;
@@ -82,6 +88,7 @@ void audio_IMixerSeekMS(audio_IMixer* s, double ms);
 void audio_IMixerSeekOff(audio_IMixer* s, double offset);
 K_NO_DISCARD int64_t audio_IMixerGetCurrentMS(const audio_IMixer* s);
 K_NO_DISCARD int64_t audio_IMixerGetTotalMS(const audio_IMixer* s);
+bool audio_IMixerPlayFinal(audio_IMixer* s, k_StringView svPath);
 
 typedef struct audio_DummyMixer audio_DummyMixer;
 struct audio_DummyMixer

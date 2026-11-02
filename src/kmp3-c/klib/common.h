@@ -8,6 +8,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <math.h>
+#include <float.h>
 
 #if defined _WIN32
     #include <sys/types.h>
@@ -88,3 +90,15 @@ static const uint64_t K_NPOS64 = (uint64_t)-1;
     #define K_UNLIKELY(x) (x)
     #define K_LIKELY(x) (x)
 #endif
+
+static inline bool
+k_floatEq(float l, float r)
+{
+    return fabsf(l - r) <= FLT_EPSILON*(fabsf(l) + fabsf(r) + 1.0f);
+}
+
+static inline bool
+k_doubleEq(double l, double r)
+{
+    return fabs(l - r) <= DBL_EPSILON*(fabs(l) + fabs(r) + 1.0);
+}

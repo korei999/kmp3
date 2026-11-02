@@ -23,6 +23,7 @@ static void WindowFixFirstIdx(Window* s);
 static void WindowProcInput(Window* s);
 
 static WindowInput WindowReadStdin(Window* s, const int timeoutMs);
+static input_READ_STATUS WindowReadWChar(Window* s);
 static WindowMouseInput WindowParseMouse(Window* s, const char* pBuff, ssize_t buffSize, ssize_t nRead);
 static int WindowParseSeq(Window* s, const char* pBuff, ssize_t buffSize, ssize_t nRead);
 
@@ -40,6 +41,46 @@ static void WindowDrawScrollBar(Window* s);
 static void WindowDrawBottomLine(Window* s);
 static void WindowDrawErrorMsg(Window* s);
 
+#ifdef OPT_CHAFA
+void WindowDrawCoverImage(Window* s);
+#endif
+
+#ifdef OPT_CHAFA
+void
+WindowDrawCoverImage(Window* s)
+{
+    Player* pPl = app_g_pPlayer;
+
+    const k_time_Type time = K_MAX(s->lastResizeTime, s->time);
+    if (pPl->bSelectionChanged || (pPl->bRedrawImage && (k_time_diff(time, s->lastImageRedrawTime) >= K_TIME_MSEC * app_g_config.imageUpdateRateLimit))
+        /* Prevent to redraw too often if window is getting resized too aggressively. */
+    )
+    {
+        pPl->bRedrawImage = false;
+        pPl->bSelectionChanged = false;
+
+        const int split = pPl->imgHeight;
+
+        if (!app_g_bChafaSymbols) TextBuffClearKittyImages(&s->textBuff);
+        TextBuffForceClean(&s->textBuff, 1, 1, s->prevImgWidth + 1, split + 1);
+
+        Image img = ffmpeg_DecoderGetCoverImage(&app_g_decoder);
+
+        platform_chafa_IMAGE_LAYOUT eLayout = app_g_bSixelOrKitty ? platform_chafa_IMAGE_LAYOUT_RAW : platform_chafa_IMAGE_LAYOUT_LINES;
+
+        /* NOTE: using textBuff's dedicated image arena */
+        platform_chafa_Image chafaImg = platform_chafa_allocImage(
+            &s->textBuff.imgArena.base, eLayout, img, split, s->termSize.width
+        );
+
+        TextBuffDrawImage(&s->textBuff, 1, 1, &chafaImg);
+
+        s->prevImgWidth = chafaImg.width;
+        s->lastImageRedrawTime = k_time_now();
+    }
+}
+#endif
+
 static k_String
 WindowAllocTimeString(Window* s, k_Arena* pArena)
 {
@@ -47,20 +88,22 @@ WindowAllocTimeString(Window* s, k_Arena* pArena)
 
     const double sampleRateRatio = (double)pMix->sampleRate / (double)pMix->changedSampleRate;
 
-    const uint64_t t = round(pMix->currMs / 1000.0 * sampleRateRatio);
-    const uint64_t totalT = round(audio_IMixerGetTotalMS(pMix) / 1000.0 * sampleRateRatio);
+    const uint64_t t = round((pMix->currMs / 1000.0) * sampleRateRatio);
+    const uint64_t totalT = round((audio_IMixerGetTotalMS(pMix) / 1000.0) * sampleRateRatio);
 
     const uint64_t currMin = t / 60;
     const uint64_t currSec = t - (60 * currMin);
 
     const uint64_t maxMin = totalT / 60;
-    const uint64_t maxSec = maxMin != 0 ? totalT / (60 * maxMin) : 0;
+    const uint64_t maxSec = totalT - (60 * maxMin);
 
     k_print_Builder pb = {0};
     k_print_BuilderInit(&pb, (k_print_BuilderInitOpts){.pAllocOrNull = &pArena->base, .preallocOrBufferSize = s->termSize.width + 1});
     k_print_BuilderPrintSv(&pb, K_SV("time: {u64}:{:2 > f0:u64} / {u64}:{:2 > f0:u64}"), currMin, currSec, maxMin, maxSec);
     if (pMix->sampleRate != pMix->changedSampleRate)
-        k_print_BuilderPrintSv(&pb, K_SV(" ({i}% speed)"), (int)round((double)pMix->changedSampleRate / (double)pMix->sampleRate * 100.0));
+        k_print_BuilderPrintSv(&pb, K_SV(" ({i}% speed)"),
+            (int)round(((double)pMix->changedSampleRate / (double)pMix->sampleRate) * 100.0)
+        );
 
     return k_StringCreateSv(&pArena->base, k_print_BuilderToSv(&pb));
 }
@@ -116,13 +159,10 @@ WindowAdjustListHeight(Window* s)
 static int
 WindowCalcImageHeightSplit(Window* s)
 {
-    // const Image img = app::decoder().getCoverImage();
-
-    // if (img.height > 0 && img.width > 0)
-    //     return app::player().m_imgHeight + 1;
-    // else return 12; /* Default offset from the top to the start of the list. */
-
-    return 12;
+    const Image img = ffmpeg_DecoderGetCoverImage(&app_g_decoder);
+    if (img.height > 0 && img.width > 0)
+        return app_g_pPlayer->imgHeight + 1;
+    else return 12; /* Default offset from the top to the start of the list. */
 }
 
 static void
@@ -279,7 +319,7 @@ WindowUpdateTitle(Window* s)
     {
         k_StringReallocWith(&s->sTitle, &k_GpaInst()->base, k_StringToSv(&app_g_pPlayer->info.sTitle));
         TextBuffSetTitle(&s->textBuff, k_StringToSv(&s->sTitle));
-        K_CTX_LOG_DEBUG("new title: '{PSv}'", &s->sTitle);
+        K_CTX_LOG_DEBUG("new title: '{PS}'", &s->sTitle);
     }
 }
 
@@ -493,20 +533,20 @@ WindowDrawBottomLine(Window* s)
         TextBuffString(&s->textBuff, width - pb.size - 1, height - 1, TEXT_BUFF_STYLE_NORM, k_print_BuilderToSv(&pb), 9999999);
     }
 
-    // if (c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ||
-    //     (c::g_input.m_eCurrMode == WINDOW_READ_MODE::NONE &&
-    //      wcsnlen(c::g_input.m_aBuff, utils::size(c::g_input.m_aBuff)) > 0)
-    // )
-    // {
-    //     print::Builder builder {m_pArena, width + 1};
-    //     const StringView sv = builder.print("{}{}{}",
-    //         c::readModeToString(c::g_input.m_eLastUsedMode),
-    //         c::g_input.m_aBuff,
-    //         c::g_input.m_eCurrMode != WINDOW_READ_MODE::NONE ? common::CURSOR_BLOCK : L'\0'
-    //     );
+    if (s->inputBuff.eCurrMode != input_READ_MODE_NONE ||
+        (s->inputBuff.eCurrMode == input_READ_MODE_NONE && wcsnlen(s->inputBuff.aBuff, K_ASIZE(s->inputBuff.aBuff)) > 0)
+    )
+    {
+        k_print_Builder pb = {0};
+        k_print_BuilderInit(&pb, (k_print_BuilderInitOpts){.pAllocOrNull = &pArena->base, .preallocOrBufferSize = width + 1});
+        k_print_BuilderPrint(&pb, "{input_READ_MODE}{wnts}{wc}",
+            s->inputBuff.eLastUsedMode,
+            s->inputBuff.aBuff,
+            s->inputBuff.eCurrMode != input_READ_MODE_NONE ? L'█' : L'\0'
+        );
 
-    //     m_textBuff.string(1, height - 1, {}, sv);
-    // }
+        TextBuffString(&s->textBuff, 1, height - 1, TEXT_BUFF_STYLE_NORM, k_print_BuilderToSv(&pb), 99999);
+    }
 
     k_ArenaStateRestore(&arenaState);
 }
@@ -567,6 +607,43 @@ WindowReadStdin(Window* s, const int timeoutMs)
         .key = wc,
         .eType = WINDOW_INPUT_TYPE_KB,
     };
+}
+
+static input_READ_STATUS
+WindowReadWChar(Window* s)
+{
+    WindowInput in = WindowReadStdin(s, app_g_config.updateRate);
+    int wc = in.key;
+
+    /* TODO: this should probably be in common::subStringSearch(). */
+    if (in.eType == WINDOW_INPUT_TYPE_TIMEOUT)
+    {
+        return input_READ_STATUS_TIMEOUT;
+    }
+    else if (wc == 0 || wc == KEY_CTRL_C || wc == KEY_ESC || wc == KEY_ENTER)
+    {
+        return input_READ_STATUS_DONE;
+    }
+    else if (wc == KEY_CTRL_W)
+    {
+        if (s->inputBuff.idx > 0)
+            input_BufferZeroOut(&s->inputBuff);
+        else if (s->inputBuff.idx <= 0)
+            return input_READ_STATUS_BACKSPACE;
+    }
+    else if (wc == KEY_BACKSPACE)
+    {
+        if (s->inputBuff.idx > 0)
+            s->inputBuff.aBuff[--s->inputBuff.idx] = L'\0';
+        else return input_READ_STATUS_BACKSPACE;
+    }
+    else if (wc)
+    {
+        if (s->inputBuff.idx < K_ASIZE(s->inputBuff.aBuff) - 1)
+            s->inputBuff.aBuff[s->inputBuff.idx++] = wc;
+    }
+
+    return input_READ_STATUS_GOOD;
 }
 
 /* https://github.com/termbox/termbox2/blob/master/termbox2.h */
@@ -919,7 +996,7 @@ WindowDraw(Window* s)
         else
         {
 #ifdef OPT_CHAFA
-            // if (!app_g_bNoImage) coverImage();
+            if (!app_g_bNoImage) WindowDrawCoverImage(s);
 #endif
             WindowUpdateTitle(s);
             WindowDrawTime(s);
@@ -939,6 +1016,8 @@ WindowDraw(Window* s)
 void
 WindowProcEvents(Window* s)
 {
+    if (!s->vol_bRunning) return;
+
     WindowProcInput(s);
     WindowAdjustListHeight(s);
     if (s->bUpdateFirstIdx)
@@ -953,9 +1032,31 @@ WindowSeekFromInput(Window* s)
 {
 }
 
+static input_READ_STATUS
+WindowReadWCharStub(void* pArg)
+{
+    Window* s = pArg;
+    return WindowReadWChar(s);
+}
+
+static void
+WindowDrawStub(void* pArg)
+{
+    Window* s = pArg;
+    WindowDraw(s);
+}
+
 void
 WindowSubStringSearch(Window* s)
 {
+    input_BufferSubStringSearch(
+        &s->inputBuff,
+        &s->firstIdx,
+        WindowReadWCharStub,
+        s,
+        WindowDrawStub,
+        s
+    );
 }
 
 void

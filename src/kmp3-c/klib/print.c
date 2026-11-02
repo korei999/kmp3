@@ -5,6 +5,7 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <wchar.h>
 
 #define K_NAME MapSigToPfn
 #define K_KEY_T k_StringView
@@ -1045,6 +1046,24 @@ k_print_formatNts(k_print_Context* pCtx, k_print_FmtArgs* pFmtArgs, const void* 
     char* nts = (char*)arg;
     const ssize_t size = strlen(nts);
     return k_print_formatPStringView(pCtx, pFmtArgs, &(k_StringView){nts, size});
+}
+
+ssize_t
+k_print_formatWNts(k_print_Context* pCtx, k_print_FmtArgs* pFmtArgs, const void* arg)
+{
+    const wchar_t* pWNts = arg;
+    const ssize_t maxLen = pFmtArgs->maxLen == K_NPOS ? pWNts ? wcslen(pWNts) : 0 : pFmtArgs->maxLen;
+    ssize_t nn = 0;
+
+    for (ssize_t i = 0; i < maxLen; ++i)
+    {
+        wchar_t wc = pWNts[i];
+        char aBuff[8] = {0};
+        int charLen = wctomb(aBuff, wc);
+        nn += k_print_BuilderPushSv(pCtx->pBuilder, (k_StringView){aBuff, charLen});
+    }
+
+    return nn;
 }
 
 ssize_t

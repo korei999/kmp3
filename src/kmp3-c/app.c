@@ -4,6 +4,10 @@
 
 #include "defaults.h"
 
+#ifdef OPT_PIPEWIRE
+    #include "platform/pipewire/Mixer.h"
+#endif
+
 bool app_g_bForceLoggerColors;
 
 app_MIXER app_g_eMixer;
@@ -18,7 +22,7 @@ Window* app_g_pWin;
 Config app_g_config = defaults_CONFIG;
 Player* app_g_pPlayer;
 audio_IMixer* app_g_pMixer;
-// platform::ffmpeg::Decoder g_decoder {};
+ffmpeg_Decoder app_g_decoder;
 
 audio_IMixer*
 app_allocMixer(k_IAllocator* pAlloc)
@@ -27,10 +31,12 @@ app_allocMixer(k_IAllocator* pAlloc)
 
     switch (app_g_eMixer)
     {
+        default: break;
+
         case app_MIXER_DUMMY:
         {
             audio_DummyMixer* pDummy = k_IAllocatorZalloc(pAlloc, sizeof(audio_DummyMixer));
-            audio_DummyMixerInit(pDummy);
+            *pDummy = audio_DummyMixerCreate();
             pMixer = &pDummy->base;
         }
         break;
@@ -43,7 +49,11 @@ app_allocMixer(k_IAllocator* pAlloc)
 
         case app_MIXER_PIPEWIRE:
         {
-            K_ASSERT(false, "implement this");
+#ifdef OPT_PIPEWIRE
+            platform_pipewire_Mixer* pPw = k_IAllocatorZalloc(pAlloc, sizeof(*pPw));
+            *pPw = platform_pipewire_MixerCreate();
+            pMixer = &pPw->base;
+#endif
         }
         break;
 

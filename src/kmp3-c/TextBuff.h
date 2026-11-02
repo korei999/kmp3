@@ -6,6 +6,10 @@
 
 #include <wchar.h>
 
+#ifdef OPT_CHAFA
+    #include "platform/chafa/chafa.h"
+#endif
+
 /* ansi code */
 typedef enum
 {
@@ -72,6 +76,15 @@ typedef enum
     TEXT_BUFF_STYLE_BG_WHITE = 1 << 21,
 } TEXT_BUFF_STYLE;
 
+#ifdef OPT_CHAFA
+typedef struct
+{
+    platform_chafa_Image img;
+    int x;
+    int y;
+} TextBuffImage;
+#endif
+
 /* FIXME: this is not a good approach, there are characters that can be larger in size than sizeof(wchar_t) like '/̶̢̧̠̩̠̠̪̜͚͙̏͗̏̇̑̈͛͘ͅ' (41 bytes).
  * To represent 1 terminal cell as 1 character this has to be some kind of StringView structure. */
 typedef struct
@@ -95,6 +108,12 @@ typedef struct
 
 #define K_NAME VecTextBuffCell
 #define K_TYPE TextBuffCell
+#define K_GEN_DECLS
+#include "klib/VecGen-inc.h"
+
+#define K_NAME VecTextBuffImage
+#define K_TYPE TextBuffImage
+#define K_GEN_DECLS
 #include "klib/VecGen-inc.h"
 
 typedef struct
@@ -116,6 +135,14 @@ typedef struct
 
     VecTextBuffCell vFront; /* what to show */
     VecTextBuffCell vBack; /* where to write */
+
+#ifdef OPT_CHAFA
+    /* NOTE: not using frame arena here because if SIGWINCH procs after clean() and before present()
+     * the image might be forceClean()'d and gone by the next iteration.
+     * A separate arena just for the image vector will be sufficient. */
+    k_Arena imgArena;
+    VecTextBuffImage vImages;
+#endif
 } TextBuff;
 
 /* direct write api (cpu heavy) */
@@ -154,7 +181,7 @@ ssize_t TextBuffStrings(TextBuff* s, int x, int y, TextBuffStyleSVPair* pStrings
 ssize_t TextBuffWideStrings(TextBuff* s, int x, int y, TextBuffStylePWCharPair* pStrings, ssize_t stringsSize, int maxSvLen);
 
 #ifdef OPT_CHAFA
-void image(int x, int y, const platform::chafa::Image& img);
-void forceClean(int x, int y, int width, int height); /* remove images */
+void TextBuffDrawImage(TextBuff* s, int x, int y, const platform_chafa_Image* pImg);
+void TextBuffForceClean(TextBuff* s, int x, int y, int width, int height); /* remove images */
 #endif
 /* */

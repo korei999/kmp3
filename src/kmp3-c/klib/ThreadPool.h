@@ -64,6 +64,7 @@ void k_ThreadPoolDestroy(k_ThreadPool* s);
 int k_ThreadPoolThreadId(void);
 void k_ThreadPoolWait(k_ThreadPool* s); /* Never use within tasks. Always prefer k_Futures. */
 k_Arena* k_ThreadPoolArena(k_ThreadPool* s); /* Get thread local arena. */
+k_Arena* k_ThreadPoolArenaUnsafe(k_ThreadPool* s); /* Get thread local arena without init check. */
 uint8_t** k_ThreadPoolBuffer(void); /* Get thread local payload buffer. */
 void k_ThreadPoolAdd(k_ThreadPool* s, k_ThreadPoolTaskPfn pfn, void* pArg, ssize_t argSize);
 void k_ThreadPoolAddFuture(k_ThreadPool* s, k_Future* pFut, k_ThreadPoolTaskPfn pfn, void* pArg, ssize_t argSize);

@@ -280,6 +280,13 @@ k_ThreadPoolArena(k_ThreadPool* s)
     return &stl_arena;
 }
 
+k_Arena*
+k_ThreadPoolArenaUnsafe(k_ThreadPool* s)
+{
+    (void)s;
+    return &stl_arena;
+}
+
 uint8_t**
 k_ThreadPoolBuffer(void)
 {

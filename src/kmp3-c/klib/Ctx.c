@@ -44,10 +44,8 @@ k_CtxAllocGlobal(k_LoggerInitOpts loggerOpts, k_ThreadPoolInitOpts threadPoolOpt
 k_Arena*
 k_CtxInitArenaForThisThread(ssize_t reserveSize)
 {
-    k_Arena* pArena = k_ThreadPoolArena(&k_g_pContext->threadPool);
+    k_Arena* pArena = k_ThreadPoolArenaUnsafe(&k_g_pContext->threadPool);
     k_ArenaInit(pArena, reserveSize, 0);
-    uint8_t** pp = k_ThreadPoolBuffer();
-    *pp = calloc(1, k_QueueMPMCSlotSize(&k_g_pContext->threadPool.qTasks));
     return pArena;
 }
 
@@ -55,9 +53,6 @@ void
 k_CtxDestroyArenaForThisThread(void)
 {
     k_ArenaDestroy(k_ThreadPoolArena(&k_g_pContext->threadPool));
-    uint8_t** pp = k_ThreadPoolBuffer();
-    free(*pp);
-    *pp = NULL;
 }
 
 void

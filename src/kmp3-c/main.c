@@ -11,6 +11,10 @@
 #include "Player.h"
 #include "frame.h"
 
+#ifdef OPT_CHAFA
+    #include "platform/chafa/chafa.h"
+#endif
+
 #include <locale.h>
 #include <unistd.h>
 
@@ -177,6 +181,30 @@ main_checkTermEnv(void)
     else if (k_StringViewEq(app_g_svTerm, K_SV("xterm-256color")))
         app_g_eTerm = app_TERM_XTERM_256COLOR;
     else app_g_eTerm = app_TERM_OTHER;
+
+#ifdef OPT_CHAFA
+    ChafaTermInfo* pTermInfo = NULL;
+    ChafaPixelMode pixelMode;
+    ChafaCanvasMode mode;
+
+    platform_chafa_detectTerminal(&pTermInfo, &mode, &pixelMode);
+
+    if (pixelMode != CHAFA_PIXEL_MODE_SYMBOLS)
+    {
+        app_g_bSixelOrKitty = true;
+    }
+    else
+    {
+        app_g_bChafaSymbols = true;
+    #ifndef OPT_CHAFA_SYMBOLS
+        app_g_bNoImage = true;
+    #endif
+    }
+
+    chafa_term_info_unref(pTermInfo);
+#else
+    app_g_bNoImage = true;
+#endif
 }
 
 static bool
@@ -318,6 +346,12 @@ main_startup(int argc, char** argv)
 
     if (player.vSongs.size > 0)
     {
+        if (!ffmpeg_DecoderInit(&app_g_decoder))
+        {
+            K_CTX_LOG_ERROR("failed to initialize the decoder");
+            goto done;
+        }
+
         FILE* pFile = freopen("/dev/tty", "r", stdin);
         if (!pFile)
         {
@@ -326,9 +360,10 @@ main_startup(int argc, char** argv)
             goto done;
         }
 
-        app_g_eMixer = app_MIXER_DUMMY;
         app_g_pMixer = app_allocMixer(&pArena->base);
+        K_CTX_LOG_INFO("selected mixer: {nts}", app_s_aMixerStrings[app_g_eMixer]);
         audio_IMixerStart(app_g_pMixer);
+        audio_IMixerSetVolume(app_g_pMixer, app_g_config.volume);
 
         app_g_vol_bRunning = true;
         frame_run();
@@ -342,6 +377,8 @@ main_startup(int argc, char** argv)
 
 done:
     PlayerDestroy(&player);
+    audio_IMixerDestroy(app_g_pMixer);
+    ffmpeg_DecoderDestroy(&app_g_decoder);
     return bReturnStatus;
 }
 
@@ -353,7 +390,7 @@ main(int argc, char** argv)
             .eFlags = K_LOGGER_FLAG_COLORS | K_LOGGER_FLAG_SOURCE,
             .ringBufferSize = K_SIZE_1K*4,
             .fd = STDERR_FILENO,
-            .eLogLevel = K_LOGGER_LEVEL_DEBUG,
+            .eLogLevel = app_g_config.loggerLevel,
         },
         (k_ThreadPoolInitOpts){
             .arenaReserve = defaults_CONFIG.arenaReserveVirtualSpace,
@@ -378,7 +415,13 @@ main(int argc, char** argv)
 #include "audio.c"
 #include "frame.c"
 #include "Window.c"
+#include "ffmpeg.c"
+#include "input.c"
 
 #ifdef OPT_PIPEWIRE
     #include "platform/pipewire/Mixer.c"
+#endif
+
+#ifdef OPT_CHAFA
+    #include "platform/chafa/chafa.c"
 #endif
