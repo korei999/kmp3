@@ -896,8 +896,8 @@ WindowTermSizeGet(void)
     }
 #endif
 
-    if (term.width <= 0) term.width = 0;
-    if (term.height <= 2) term.height = 0;
+    if (term.width <= 0) term.width = -1;
+    if (term.height <= 2) term.height = -1;
 
     /* If .ws_xpixel and .ws_ypixel are filled out, we can calculate
      * aspect information for the font used. Sixel-capable terminals
@@ -905,8 +905,8 @@ WindowTermSizeGet(void)
 
     if (term.pixWidth <= 0 || term.pixHeight <= 0)
     {
-        term.pixWidth = 0;
-        term.pixHeight = 0;
+        term.pixWidth = -1;
+        term.pixHeight = -1;
     }
 
     return term;

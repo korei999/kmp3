@@ -298,8 +298,6 @@ allocImage(IAllocator* pAlloc, IMAGE_LAYOUT eLayout, const ::Image img, int term
         fontRatio, true, false
     );
 
-    LogDebug("formatSize: {}\n", getFormatChannelNumber(img.eFormat));
-
     if (eLayout == IMAGE_LAYOUT::RAW)
     {
         auto* pGStr = getString(

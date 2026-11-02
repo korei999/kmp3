@@ -89,7 +89,7 @@ platform_chafa_getString(
     chafa_canvas_config_set_symbol_map(pConfig, pSymbolMap);
 
     if (cellWidth > 0 && cellHeight > 0)
-    {
+   {
         /* We know the pixel dimensions of each cell. Store it in the config. */
         chafa_canvas_config_set_cell_geometry(pConfig, cellWidth, cellHeight);
     }
@@ -164,7 +164,7 @@ platform_chafa_allocImage(k_IAllocator* pAlloc, platform_chafa_IMAGE_LAYOUT eLay
     if (termWidth > 0 && termHeight > 0 && termSize.pixWidth > 0 && termSize.pixHeight > 0)
     {
         cellWidth = termSize.pixWidth / termSize.width;
-        cellHeight = termSize.pixWidth / termSize.height;
+        cellHeight = termSize.pixHeight / termSize.height;
         fontRatio = (double)cellWidth / (double)cellHeight;
     }
 
@@ -176,7 +176,6 @@ platform_chafa_allocImage(k_IAllocator* pAlloc, platform_chafa_IMAGE_LAYOUT eLay
         &widthCells, &heightCells,
         fontRatio, true, false
     );
-
     if (eLayout == platform_chafa_IMAGE_LAYOUT_RAW)
     {
         GString* pGStr = platform_chafa_getString(
