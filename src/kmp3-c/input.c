@@ -113,6 +113,7 @@ input_BufferSeekFromInput(
     input_procSeekString(s->aBuff, K_ASIZE(s->aBuff));
 
     s->eCurrMode = input_READ_MODE_NONE;
+    input_BufferZeroOut(s);
 }
 
 static void
@@ -124,43 +125,52 @@ input_procSeekString(const wchar_t* pWBuff, ssize_t buffSize)
     bool bPercent = false;
     bool bColon = false;
 
-    VecChar vMinutes = {0};
-    VecChar vSeconds = {0};
+    VecChar vMinutes = {0}; VecCharInit(&vMinutes, &pArena->base, 32);
+    VecChar vSeconds = {0}; VecCharInit(&vSeconds, &pArena->base, 32);
 
-    for (ssize_t wBuffI = 0; wBuffI < buffSize; ++wBuffI)
+    for (ssize_t buffI = 0; buffI < buffSize; ++buffI)
     {
-        wchar_t wch = pWBuff[wBuffI];
+        const wchar_t wc = pWBuff[buffI];
 
-        if (wch == L'%')
+        if (wc == L'%')
         {
             bPercent = true;
         }
-        else if (wch == L':')
+        else if (wc == L':')
         {
             /* leave if there is one more colon or bPercent */
             if (bColon || bPercent) break;
             bColon = true;
         }
-        else if (iswdigit(wch))
+        else if (iswdigit(wc))
         {
-            VecChar* pVTarget = bColon ? &vSeconds : &vMinutes;
-            VecCharPushVal(pVTarget, &pArena->base, (char)(wch));  /* wdigits are equivalent to char */
+            VecChar* pTargetArray = bColon ? &vSeconds : &vMinutes;
+            VecCharPushVal(pTargetArray, &pArena->base, (char)wc);  /* wdigits are equivalent to char */
         }
     }
 
-    if (vMinutes.size == 0)
-        goto done;
+    if (vMinutes.size <= 0) goto done;
+
+    /* Null terminate. */
+    VecCharPushVal(&vSeconds, &pArena->base, '\0');
+    VecCharPushVal(&vMinutes, &pArena->base, '\0');
+
+    k_StringView svMinutes = {.pData = vMinutes.pData, vMinutes.size - 1};
+    k_StringView svSeconds = {.pData = vSeconds.pData, vSeconds.size - 1};
 
     if (bPercent)
     {
-        int64_t maxMS = audio_IMixerGetTotalMS(app_g_pMixer);
-        audio_IMixerSeekMS(app_g_pMixer, maxMS * (k_StringViewToDouble(K_NTS(vMinutes.pData)) / 100.0));
+        const int64_t maxMS = audio_IMixerGetTotalMS(app_g_pMixer);
+        double seekMS = k_StringViewToI64(svMinutes, 10);
+        seekMS = maxMS * (seekMS / 100.0);
+
+        audio_IMixerSeekMS(app_g_pMixer, seekMS);
     }
     else
     {
         ssize_t sec;
-        if (vSeconds.size == 0) sec = k_StringViewToI64(K_NTS(vMinutes.pData), 10);
-        else sec = atoll(vSeconds.pData) + k_StringViewToI64(K_NTS(vMinutes.pData), 10) * 60;
+        if (svSeconds.size <= 0) sec = k_StringViewToI64(svMinutes, 10);
+        else sec = k_StringViewToI64(svSeconds, 10) + k_StringViewToI64(svMinutes, 10)*60;
 
         audio_IMixerSeekMS(app_g_pMixer, sec * 1000);
     }

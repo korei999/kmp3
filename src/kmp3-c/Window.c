@@ -21,6 +21,7 @@ static void WindowSigwinchHandler(int);
 static void WindowResize(Window* s);
 static void WindowFixFirstIdx(Window* s);
 static void WindowProcInput(Window* s);
+static void WindowProcMouse(Window* s, WindowMouseInput in);
 
 static WindowInput WindowReadStdin(Window* s, const int timeoutMs);
 static input_READ_STATUS WindowReadWChar(Window* s);
@@ -236,7 +237,7 @@ WindowProcInput(Window* s)
     {
         WindowMouseInput mi = s->lastInput.mouse;
         mi.eKey = WINDOW_MOUSE_KEY_LEFT;
-        // WindowProcMouse(mi);
+        WindowProcMouse(s, mi);
     }
 
     switch (in.eType)
@@ -253,7 +254,7 @@ WindowProcInput(Window* s)
         break;
 
         case WINDOW_INPUT_TYPE_MOUSE:
-        // procMouse(in.mouse);
+        WindowProcMouse(s, in.mouse);
         break;
 
         case WINDOW_INPUT_TYPE_TIMEOUT:
@@ -261,6 +262,186 @@ WindowProcInput(Window* s)
     }
 
     s->lastInput = in;
+}
+
+static void
+WindowProcMouse(Window* s, WindowMouseInput in)
+{
+    if (in.eKey == WINDOW_MOUSE_KEY_RELEASE)
+    {
+        s->bPressed = false;
+        s->bHoldTimeSlider = false;
+        s->bHoldScrollBar = false;
+        return;
+    }
+
+    Player* pPl = app_g_pPlayer;
+    const int width = s->termSize.width;
+    const int height = s->termSize.height;
+
+    const int xOff = s->prevImgWidth + 2;
+    const int yOff = WindowCalcImageHeightSplit(s);
+
+    const int listOff = yOff + 1;
+    const int timeSliderOff = 10;
+    const int volumeOff = 6;
+
+#define HOLD_SCROLL_BAR()                                                                                              \
+    {                                                                                                                  \
+        s->bHoldScrollBar = true;                                                                                      \
+                                                                                                                       \
+        const float listSizeFactor = s->listHeight / (float)(pPl->vSearchIdxs.size - 0.9999f);                         \
+        const int barHeight = K_MAX(1, s->listHeight * listSizeFactor);                                                \
+                                                                                                                       \
+        const float sizeToListSize =                                                                                   \
+            (float)((pPl->vSearchIdxs.size) + listOff) / (s->listHeight - 0.9999f + barHeight);                        \
+        const int tar = round(((in.y - listOff)) * sizeToListSize);                                                    \
+        s->firstIdx = K_CLAMP(tar, 0, (pPl->vSearchIdxs.size - s->listHeight) + 1);                                    \
+    }
+
+#define HOLD_TIME_SLIDER()                                                                                             \
+    {                                                                                                                  \
+        s->bHoldTimeSlider = true;                                                                                     \
+                                                                                                                       \
+        double target = (double)(in.x - xOff - 2) / (double)(width - xOff - 4);                                        \
+        target = K_CLAMP(target, 0.0, (double)(width - xOff - 4));                                                     \
+        target *= audio_IMixerGetTotalMS(app_g_pMixer);                                                                \
+        audio_IMixerSeekMS(app_g_pMixer, target);                                                                      \
+    }
+
+    if (s->bHoldScrollBar)
+    {
+        HOLD_SCROLL_BAR();
+        return;
+    }
+
+    if (s->bHoldTimeSlider)
+    {
+        HOLD_TIME_SLIDER();
+        return;
+    }
+
+    /* click on time slider line */
+    if (in.y == timeSliderOff && in.x >= xOff)
+    {
+        if (in.eKey == WINDOW_MOUSE_KEY_LEFT || in.eKey == WINDOW_MOUSE_KEY_RIGHT)
+        {
+            /* click on indicator */
+            if (in.x >= xOff && in.x <= xOff + 2)
+            {
+                if (s->bPressed || s->bHoldTimeSlider) goto timeSliderClickDone;
+
+                app_togglePause();
+                goto timeSliderClickDone;
+            }
+
+            /* click on slider */
+            if (width - xOff - 4 > 0)
+            {
+                if (s->bPressed && !s->bHoldTimeSlider) return;
+
+                HOLD_TIME_SLIDER();
+            }
+            goto timeSliderClickDone;
+        }
+        else if (in.eKey == WINDOW_MOUSE_KEY_WHEEL_UP)
+        {
+            app_seekOff(10000);
+        }
+        else if (in.eKey == WINDOW_MOUSE_KEY_WHEEL_DOWN)
+        {
+            app_seekOff(-10000);
+        }
+
+timeSliderClickDone:
+        s->bPressed = true;
+        return;
+    }
+
+    /* scroll ontop of volume */
+    if (in.y == volumeOff && in.x >= xOff)
+    {
+        if (in.eKey == WINDOW_MOUSE_KEY_WHEEL_DOWN)
+        {
+            app_volumeDown(10);
+        }
+        else if (in.eKey == WINDOW_MOUSE_KEY_WHEEL_UP)
+        {
+            app_volumeUp(10);
+        }
+        else if (in.eKey == WINDOW_MOUSE_KEY_LEFT || in.eKey == WINDOW_MOUSE_KEY_RIGHT)
+        {
+            if (s->bPressed) return;
+
+            s->bPressed = true;
+            app_toggleMute();
+        }
+
+        return;
+    }
+
+    /* click on song list */
+    if (in.y < listOff ||
+        in.y >= height - 2 ||
+        in.y > K_MIN(s->listHeight + yOff, pPl->vSearchIdxs.size + yOff)
+    )
+    {
+        return;
+    }
+
+    int target = s->firstIdx + in.y - listOff;
+    target = K_CLAMP(
+        target,
+        s->firstIdx,
+        s->firstIdx + height - listOff - 3
+    );
+
+    if (in.eKey == WINDOW_MOUSE_KEY_LEFT || in.eKey == WINDOW_MOUSE_KEY_RIGHT)
+    {
+        /* click on list scrollbar */
+        if (in.x == s->termSize.width - 1)
+        {
+            HOLD_SCROLL_BAR();
+            return;
+        }
+        else
+        {
+            if (s->bPressed) return;
+            else s->bPressed = true;
+
+            const int64_t time = k_time_now();
+
+            {
+                PlayerFocus(app_g_pPlayer, target);
+
+                if (target == s->lastMouseSelection &&
+                    k_time_diff(time, s->lastMouseSelectionTime) < app_g_config.doubleClickDelay * K_TIME_MSEC
+                )
+                {
+                    PlayerSelectFocused(app_g_pPlayer);
+                }
+            }
+
+            s->lastMouseSelection = target;
+            s->lastMouseSelectionTime = time;
+        }
+    }
+    else if (in.eKey == WINDOW_MOUSE_KEY_WHEEL_UP)
+    {
+        s->firstIdx -= app_g_config.mouseScrollStep;
+        if (s->firstIdx < 0) s->firstIdx = 0;
+    }
+    else if (in.eKey == WINDOW_MOUSE_KEY_WHEEL_DOWN)
+    {
+        s->firstIdx = K_CLAMP(
+            s->firstIdx + app_g_config.mouseScrollStep,
+            0,
+            (pPl->vSearchIdxs.size - s->listHeight) + 1
+        );
+    }
+
+#undef HOLD_SCROLL_BAR
+#undef HOLD_TIME_SLIDER
 }
 
 static void
@@ -1027,23 +1208,17 @@ WindowProcEvents(Window* s)
     }
 }
 
+static input_READ_STATUS WindowReadWCharStub(void* pArg) { Window* s = pArg; return WindowReadWChar(s); }
+static void WindowDrawStub(void* pArg) { Window* s = pArg; WindowDraw(s); }
+
 void
 WindowSeekFromInput(Window* s)
 {
-}
-
-static input_READ_STATUS
-WindowReadWCharStub(void* pArg)
-{
-    Window* s = pArg;
-    return WindowReadWChar(s);
-}
-
-static void
-WindowDrawStub(void* pArg)
-{
-    Window* s = pArg;
-    WindowDraw(s);
+    input_BufferSeekFromInput(
+        &s->inputBuff,
+        WindowReadWCharStub, s,
+        WindowDrawStub, s
+    );
 }
 
 void
@@ -1052,14 +1227,15 @@ WindowSubStringSearch(Window* s)
     input_BufferSubStringSearch(
         &s->inputBuff,
         &s->firstIdx,
-        WindowReadWCharStub,
-        s,
-        WindowDrawStub,
-        s
+        WindowReadWCharStub, s,
+        WindowDrawStub, s
     );
 }
 
 void
 WindowWakeUp(Window* s)
 {
+    uint64_t t = 1;
+    int _ = write(s->aFdsWakeUp[1], &t, sizeof(t));
+    (void)_;
 }
