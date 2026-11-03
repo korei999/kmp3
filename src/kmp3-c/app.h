@@ -86,11 +86,14 @@ static inline void app_quitOnSongEnd(void) { app_g_pPlayer->bQuitOnSongEnd = !ap
 static inline void
 app_testMsg(void)
 {
+    static int ii = 0;
     int i = rand() % PLAYER_MSG_TYPE_ESIZE;;
+    k_String s = k_StringCreateSmallSv(K_SV("TEST MESSAGE"));
+    k_print_toBufferSv(k_StringData(&s) + k_StringSize(&s), K_ASIZE(s.priv.aBuff), K_SV(" {i}"), ii++);
     PlayerPushErrorMsg(app_g_pPlayer, &(PlayerMsg){
         .eType = i,
-        .time = 3000 * K_TIME_MSEC,
-        .sMsg = k_StringCreateSmallSv(K_SV("TEST MESSAGE")),
+        .time = (i*1000 + 1)*K_TIME_MSEC,
+        .sMsg = s,
     });
 }
 #endif

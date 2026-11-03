@@ -5,6 +5,10 @@
 #include "klib/Ctx.h"
 #include "klib/assert.h"
 
+#ifdef OPT_MPRIS
+    #include "platform/mpris/mpris.h"
+#endif
+
 #define PW(name) platform_pipewire_##name
 
 static uint32_t PW(formatByteSize)(enum spa_audio_format eFormat);
@@ -185,7 +189,9 @@ PW(MixerPause)(PW(Mixer)* s, bool bPause)
     K_CTX_LOG_INFO("bPaused: {b}", s->atom_bPaused.volNum);
     pw_thread_loop_unlock(s->pThrdLoop);
 
-    // mpris::playbackStatusChanged();
+#ifdef OPT_MPRIS
+    platform_mpris_playbackStatusChanged();
+#endif
 }
 
 static void

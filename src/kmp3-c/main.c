@@ -425,3 +425,7 @@ main(int argc, char** argv)
 #ifdef OPT_CHAFA
     #include "platform/chafa/chafa.c"
 #endif
+
+#ifdef OPT_MPRIS
+    #include "platform/mpris/mpris.c"
+#endif

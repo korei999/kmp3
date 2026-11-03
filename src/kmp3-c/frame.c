@@ -4,6 +4,10 @@
 
 #include "klib/Ctx.h"
 
+#ifdef OPT_MPRIS
+    #include "platform/mpris/mpris.h"
+#endif
+
 void
 frame_run(void)
 {
@@ -22,6 +26,14 @@ frame_run(void)
     app_g_pPlayer->focusedI = 0;
     PlayerSelectFocused(app_g_pPlayer);
 
+#ifdef OPT_MPRIS
+    platform_mpris_initLocks();
+    platform_mpris_init();
+
+    k_Thread thMPris = {0};
+    k_ThreadInit(&thMPris, platform_mpris_pollLoop, NULL);
+#endif
+
     do
     {
         K_ARENA_SCOPE_DELETERS(k_CtxArena())
@@ -34,6 +46,14 @@ frame_run(void)
         }
     }
     while (app_g_vol_bRunning);
+
+#ifdef OPT_MPRIS
+    app_g_vol_bRunning = false;
+    platform_mpris_wakeUp();
+    k_ThreadJoin(&thMPris);
+    platform_mpris_deinit();
+    platform_mpris_destroyLocks();
+#endif
 
     WindowDestroy(&win);
 }

@@ -93,7 +93,7 @@ typedef struct
     input_Buffer inputBuff;
 
     PlayerMsg currMsg;
-    k_time_Type currMsgTime;
+    k_time_Type errMsgTime;
 } Window;
 
 bool WindowInit(Window* s, k_Arena* pArena);

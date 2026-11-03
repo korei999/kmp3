@@ -31,8 +31,9 @@ fi
 
 MODE="release"
 
-PIPEWIRE=0
-CHAFA=0
+PIPEWIRE=1
+CHAFA=1
+MPRIS=1
 
 for arg in "$@"; do
     if [[ $arg == "gcc" ]]; then CC="gcc"
@@ -42,6 +43,7 @@ for arg in "$@"; do
     elif [[ $arg == "asan" ]]; then MODE="asan"
     elif [[ $arg == "pipewire" ]]; then PIPEWIRE=1
     elif [[ $arg == "chafa" ]]; then CHAFA=1
+    elif [[ $arg == "mpris" ]]; then MPRIS=1
     fi
 done
 
@@ -85,12 +87,34 @@ if [[ $PIPEWIRE == 1 ]]; then
     applyPkgConfigFlags PIPEWIRE libpipewire-0.3 1
 fi
 
-if [[ $CHAFA == 1 ]] && pkg-config --exists libswscale; then
-    applyPkgConfigFlags CHAFA chafa 0
-    applyPkgConfigFlags CHAFA libswscale 0
+if [[ $CHAFA == 1 ]]; then
+    if pkg-config --exists libswscale; then
+        applyPkgConfigFlags CHAFA chafa 0
+        applyPkgConfigFlags CHAFA libswscale 0
 
-    if pkg-config --atleast-version 1.14 chafa; then
+        if pkg-config --atleast-version 1.14 chafa; then
         OPTS+=" -DOPT_CHAFA_SYMBOLS"
+    fi
+    else
+        echo "libswscale is required to build with chafa"
+    fi
+else
+    echo "chafa not found"
+fi
+
+if [[ $MPRIS == 1 ]]; then
+    if pkg-config --exists libsystemd; then
+        applyPkgConfigFlags SYSTEMD libsystemd 0
+        echo "using libsystemd mpris provider"
+        OPTS+=" -DOPT_MPRIS"
+    elif pkg-config --exists libelogind; then
+        applyPkgConfigFlags ELOGIND libelogind 0
+        echo "using libelogind mpris provider"
+    elif pkg-config --exists basu; then
+        applyPkgConfigFlags BASU basu 0
+        echo "using basu mpris provider"
+    else
+        echo "no mpris provider found"
     fi
 fi
 

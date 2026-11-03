@@ -53,7 +53,7 @@ WindowDrawCoverImage(Window* s)
     Player* pPl = app_g_pPlayer;
 
     const k_time_Type time = K_MAX(s->lastResizeTime, s->time);
-    if (pPl->bSelectionChanged || (pPl->bRedrawImage && (k_time_diff(time, s->lastImageRedrawTime) >= K_TIME_MSEC * app_g_config.imageUpdateRateLimit))
+    if (pPl->bSelectionChanged || (pPl->bRedrawImage && (k_time_diff(time, s->lastImageRedrawTime) >= K_TIME_MSEC*app_g_config.imageUpdateRateLimit))
         /* Prevent to redraw too often if window is getting resized too aggressively. */
     )
     {
@@ -109,8 +109,8 @@ WindowAllocTimeString(Window* s, k_Arena* pArena)
     return k_StringCreateSv(&pArena->base, k_print_BuilderToSv(&pb));
 }
 
-K_ALWAYS_INLINE static
-TEXT_BUFF_STYLE WindowVolumeStringColorToStyle(const int x)
+K_ALWAYS_INLINE static TEXT_BUFF_STYLE
+WindowVolumeStringColorToStyle(const int x)
 {
 #define STYLE(style) TEXT_BUFF_STYLE_##style
         if (x <= 33) return STYLE(GREEN);
@@ -735,6 +735,55 @@ WindowDrawBottomLine(Window* s)
 static void
 WindowDrawErrorMsg(Window* s)
 {
+    Player* pPl = app_g_pPlayer;
+    int height = s->termSize.height;
+
+again:
+    if (k_StringSize(&s->currMsg.sMsg) <= 0 || s->currMsg.time == PLAYER_MSG_UNTIL_NEXT)
+    {
+        PlayerMsg newMsg = PlayerPopErrorMsg(pPl);
+        if (k_StringSize(&newMsg.sMsg) > 0)
+        {
+            s->errMsgTime = s->time;
+            s->currMsg = newMsg;
+            K_CTX_LOG_DEBUG("got msg: '{nts}' size: {sz}\n", k_StringData(&s->currMsg.sMsg), k_StringSize(&s->currMsg.sMsg));
+        }
+    }
+
+    if (s->inputBuff.eCurrMode == input_READ_MODE_NONE && k_StringSize(&s->currMsg.sMsg) > 0 && s->currMsg.time > 0)
+    {
+        if (k_time_diff(s->time, s->errMsgTime) >= s->currMsg.time)
+        {
+            K_CTX_LOG_DEBUG("killing: '{PS}'\n", &s->currMsg.sMsg);
+            k_StringDestroy(&s->currMsg.sMsg, &k_GpaInst()->base);
+            goto again;
+        }
+
+#define STYLE(name) TEXT_BUFF_STYLE_##name
+
+        TEXT_BUFF_STYLE eStyle;
+        switch (s->currMsg.eType)
+        {
+            case PLAYER_MSG_TYPE_NOTIFY:
+            eStyle = STYLE(CYAN) | STYLE(ITALIC) | STYLE(UNDERLINE);
+            break;
+
+            case PLAYER_MSG_TYPE_WARNING:
+            eStyle = STYLE(YELLOW) | STYLE(BOLD);
+            break;
+
+            case PLAYER_MSG_TYPE_ERROR:
+            eStyle = STYLE(RED) | STYLE(BOLD);
+            break;
+
+            default:
+            eStyle = STYLE(NORM);
+        }
+
+#undef STYLE
+
+        TextBuffString(&s->textBuff, 1, height - 1, eStyle, k_StringToSv(&s->currMsg.sMsg), 9999999);
+    }
 }
 
 static WindowInput

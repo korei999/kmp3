@@ -16,6 +16,8 @@ typedef enum
     PLAYER_REPEAT_METHOD_ESIZE,
 } PLAYER_REPEAT_METHOD;
 
+static const char* PLAYER_REPEAT_METHOD_STRINGS[] = {"None", "Track", "Playlist"};
+
 typedef enum
 {
     PLAYER_MSG_TYPE_NOTIFY,

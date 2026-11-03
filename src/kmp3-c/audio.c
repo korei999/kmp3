@@ -4,6 +4,10 @@
 
 #include "app.h"
 
+#ifdef OPT_MPRIS
+    #include "platform/mpris/mpris.h"
+#endif
+
 float audio_g_aDrainBuffer[audio_DRAIN_BUFFER_SIZE];
 
 static bool audio_IMixerStartDecoderThread(audio_IMixer* s);
@@ -292,7 +296,7 @@ audio_IMixerSetVolume(audio_IMixer* s, const int volume)
     s->volume = K_CLAMP(volume, 0, app_g_config.maxVolume);
     K_CTX_LOG_INFO("volume: {i}", s->volume);
 #ifdef OPT_MPRIS
-    mpris::volumeChanged();
+    platform_mpris_volumeChanged();
 #endif
 }
 

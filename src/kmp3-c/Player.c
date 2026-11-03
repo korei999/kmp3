@@ -4,6 +4,10 @@
 #include "klib/Ctx.h"
 #include "klib/assert.h"
 
+#ifdef OPT_MPRIS
+    #include "platform/mpris/mpris.h"
+#endif
+
 #include <math.h>
 #include <wctype.h>
 
@@ -377,7 +381,7 @@ PlayerCycleRepeatMethods(Player* s, bool bForward)
     s->eRepeatMethod = eRM;
 
 #ifdef OPT_MPRIS
-    mpris_loopStatusChanged();
+    platform_mpris_loopStatusChanged();
 #endif
 
     return eRM;
@@ -457,7 +461,7 @@ PlayerPushErrorMsg(Player* s, const PlayerMsg* pMsg)
     if (!k_QueueMPMCPush(&s->qMPMCErrorMessages, pMsg, sizeof(*pMsg)))
     {
         const k_StringView svMsg = k_StringToSv(&pMsg->sMsg);
-        K_CTX_LOG_ERROR("Message queue is empty. Skipped pushing this message: '{PSv}', time: {i64}", &svMsg);
+        K_CTX_LOG_ERROR("Message queue is empty. Not pushing this message: '{PSv}', time: {i64}", &svMsg);
         return;
     }
 
