@@ -58,6 +58,11 @@ for arg in "$@"; do
     elif [[ $arg == "no-user-keybinds" ]]; then USER_KEYBINDS=0
     elif [[ $arg == "sse4_2" ]]; then SSE4_2=1
     elif [[ $arg == "avx2" ]]; then AVX2=1
+    elif [[ $arg == "logs0" ]]; then LOGS=0
+    elif [[ $arg == "logs1" ]]; then LOGS=1
+    elif [[ $arg == "logs2" ]]; then LOGS=2
+    elif [[ $arg == "logs3" ]]; then LOGS=3
+    elif [[ $arg == "logs4" ]]; then LOGS=4
     fi
 done
 
@@ -99,6 +104,11 @@ if [[ $AVX2 == 1 ]]; then
     CFLAGS+=" -mavx2 -msse4.2"
     DEFS+=" -DOPT_AVX2 -DOPT_SSE4_2"
     echo "using avx2"
+fi
+
+if [[ $LOGS -ge 0 && $LOGS -le 4 ]]; then
+    DEFS+=" -DK_CTX_LOG_LEVEL=$LOGS"
+    echo "setting compile time log level to $LOGS"
 fi
 
 OPTS=""

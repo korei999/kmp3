@@ -83,7 +83,7 @@ audio_RingBufferPop(audio_RingBuffer* s, float* pFillBuff, ssize_t fillBuffSize)
 
     while (!s->bQuit && fillBuffSize > s->size)
     {
-        K_CTX_LOG_WARN("waiting for: {sz}, (size: {sz})", fillBuffSize, s->size);
+        K_CTX_LOG_DEBUG("waiting for: {sz}, (size: {sz})", fillBuffSize, s->size);
         k_CndVarWait(&s->cnd, &s->mtx);
     }
 
