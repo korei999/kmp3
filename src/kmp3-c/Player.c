@@ -180,7 +180,7 @@ failed:
 void
 PlayerDestroy(Player* s)
 {
-    if (!s->pAlloc) return;
+    if (!s || !s->pAlloc) return;
 
     k_StringDestroy(&s->info.sTitle, s->pAlloc);
     k_StringDestroy(&s->info.sAlbum, s->pAlloc);

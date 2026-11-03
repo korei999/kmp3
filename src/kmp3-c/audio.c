@@ -248,6 +248,8 @@ audio_IMixerStart(audio_IMixer* s)
 void
 audio_IMixerDestroy(audio_IMixer* s)
 {
+    if (!s) return;
+
     s->bRunning = false;
 
     k_MutexLock(&s->ring.mtx);

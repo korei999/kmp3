@@ -43,22 +43,30 @@ for arg in "$@"; do
     elif [[ $arg == "debug" ]]; then MODE="debug"
     elif [[ $arg == "asan" ]]; then MODE="asan"
     elif [[ $arg == "pipewire" ]]; then PIPEWIRE=1
+    elif [[ $arg == "no-pipewire" ]]; then PIPEWIRE=0
     elif [[ $arg == "chafa" ]]; then CHAFA=1
+    elif [[ $arg == "no-chafa" ]]; then CHAFA=0
     elif [[ $arg == "mpris" ]]; then MPRIS=1
+    elif [[ $arg == "no-mpris" ]]; then MPRIS=0
     elif [[ $arg == "no-user-keybinds" ]]; then USER_KEYBINDS=0
     fi
 done
 
+DBG_CFLAGS+=" -Wno-unused-but-set-variable"
+
 if [[ $MODE == "release" ]]; then
     CFLAGS+=" -O3"
     DEFS+=" -DNDEBUG"
+    echo "building release"
 elif [[ $MODE == "asan" ]]; then
-    CFLAGS+=" -g -O0 -fsanitize=address"
+    CFLAGS+=" -g -O0 -fsanitize=address $DBG_CFLAGS"
+    echo "building asan"
 else
-    CFLAGS+=" -g -O0 -Wno-unused-but-set-variable"
+    CFLAGS+=" -g -O0 $DBG_CFLAGS"
+    echo "building debug"
 fi
 
-if [ "$USER_KEYBINDS" == 1 ]; then
+if [[ $USER_KEYBINDS == 1 ]]; then
     DEFS+=" -DOPT_USER_KEYBINDS"
     echo "adding user keybinds"
 fi
@@ -76,28 +84,47 @@ OPTS=""
 
 applyPkgConfigFlags()
 {
-    if pkg-config --exists $2; then
-        OPTS+=" -DOPT_$1"
-        CFLAGS+=" $(pkg-config --cflags $2)"
-        LDFLAGS+=" $(pkg-config --libs $2)"
+    if pkg-config --exists $1; then
+        CFLAGS+=" $(pkg-config --cflags $1)"
+        LDFLAGS+=" $(pkg-config --libs $1)"
+        if [[ $# -ge 3 ]]; then
+            OPTS+=" -DOPT_$3"
+        fi
     else
-        if [[ $3 == 1 ]]; then
-            echo "library $2 has to be installed"
+        if [[ $2 == 1 ]]; then
+            echo "library $1 has to be installed"
             exit 1
         else
-            echo "library $2 not found, skipping..."
+            echo "library $1 not found, skipping..."
+        fi
+    fi
+}
+
+applyPkgConfigFlagsAndDontLink()
+{
+    if pkg-config --exists $1; then
+        CFLAGS+=" $(pkg-config --cflags $1)"
+        if [[ $# -ge 3 ]]; then
+            OPTS+=" -DOPT_$3"
+        fi
+    else
+        if [[ $2 == 1 ]]; then
+            echo "headers for library $1 have to be installed"
+            exit 1
+        else
+            echo "headers for library $1 not found, skipping..."
         fi
     fi
 }
 
 if [[ $PIPEWIRE == 1 ]]; then
-    applyPkgConfigFlags PIPEWIRE libpipewire-0.3 1
+    applyPkgConfigFlags libpipewire-0.3 1 PIPEWIRE
 fi
 
 if [[ $CHAFA == 1 ]]; then
     if pkg-config --exists libswscale; then
-        applyPkgConfigFlags CHAFA chafa 0
-        applyPkgConfigFlags CHAFA libswscale 0
+        applyPkgConfigFlags chafa 0 CHAFA
+        applyPkgConfigFlagsAndDontLink libswscale 0
 
         if pkg-config --atleast-version 1.14 chafa; then
         OPTS+=" -DOPT_CHAFA_SYMBOLS"
@@ -111,21 +138,23 @@ fi
 
 if [[ $MPRIS == 1 ]]; then
     if pkg-config --exists libsystemd; then
-        applyPkgConfigFlags SYSTEMD libsystemd 0
+        applyPkgConfigFlags libsystemd 0 SYSTEMD
         echo "using libsystemd mpris provider"
         OPTS+=" -DOPT_MPRIS"
     elif pkg-config --exists libelogind; then
-        applyPkgConfigFlags ELOGIND libelogind 0
+        applyPkgConfigFlags libelogind 0 ELOGIND
         echo "using libelogind mpris provider"
     elif pkg-config --exists basu; then
-        applyPkgConfigFlags BASU basu 0
+        applyPkgConfigFlags basu 0 BASU
         echo "using basu mpris provider"
     else
         echo "no mpris provider found"
     fi
 fi
 
-applyPkgConfigFlags FFMPEG libavformat libavcodec libavutil libswresample 1
+applyPkgConfigFlagsAndDontLink libavcodec 1
+applyPkgConfigFlagsAndDontLink libavutil 1
+applyPkgConfigFlagsAndDontLink libavutil 1
 
 COMMAND="$CC $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o $PROJECT_NAME"
 echo ${COMMAND}

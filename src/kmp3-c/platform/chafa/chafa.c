@@ -297,6 +297,4 @@ platform_chafa_detectTerminal(ChafaTermInfo** ppTermInfo, ChafaCanvasMode* pMode
 
     chafa_term_db_unref(pTermDb);
     g_strfreev(ppEnv);
-
-    K_CTX_LOG_DEBUG("pixelMode: {i}", (int)pixelMode);
 }

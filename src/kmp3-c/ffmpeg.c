@@ -306,7 +306,7 @@ ffmpeg_DecoderInit(ffmpeg_Decoder* s)
 void
 ffmpeg_DecoderDestroy(ffmpeg_Decoder* s)
 {
-    if (!s->pStream) return; /* WARN: covers 1 simple quit case. */
+    if (!s || !s->pStream) return; /* WARN: covers 1 simple quit case. */
 
     k_MutexLock(&s->mtx);
     ffmpeg_DecoderClose(s);
