@@ -297,6 +297,7 @@ audio_IMixerSetVolume(audio_IMixer* s, const int volume)
 {
     s->volume = K_CLAMP(volume, 0, app_g_config.maxVolume);
     K_CTX_LOG_INFO("volume: {i}", s->volume);
+
 #ifdef OPT_MPRIS
     platform_mpris_volumeChanged();
 #endif
@@ -363,7 +364,9 @@ audio_IMixerSeekMS(audio_IMixer* s, double ms)
         s->nTotalSamples = ffmpeg_DecoderGetTotalSamplesCount(&app_g_decoder);
     }
 
-    // mpris::seeked();
+#ifdef OPT_MPRIS
+    platform_mpris_seeked();
+#endif
 }
 
 void
