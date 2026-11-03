@@ -8,6 +8,10 @@
     #include "platform/pipewire/Mixer.h"
 #endif
 
+#ifdef OPT_ALSA
+    #include "platform/alsa/Mixer.h"
+#endif
+
 bool app_g_bForceLoggerColors;
 
 app_MIXER app_g_eMixer;
@@ -43,7 +47,11 @@ app_allocMixer(k_IAllocator* pAlloc)
 
         case app_MIXER_ALSA:
         {
-            K_ASSERT(false, "implement this");
+#ifdef OPT_ALSA
+            platform_alsa_Mixer* pAlsa = k_IAllocatorZalloc(pAlloc, sizeof(*pAlsa));
+            *pAlsa = platform_alsa_MixerCreate();
+            pMixer = &pAlsa->base;
+#endif
         }
         break;
 

@@ -31,6 +31,7 @@ fi
 
 MODE="release"
 
+ALSA=1
 PIPEWIRE=1
 CHAFA=1
 MPRIS=1
@@ -42,6 +43,8 @@ for arg in "$@"; do
     elif [[ $arg == "release" ]]; then MODE="release"
     elif [[ $arg == "debug" ]]; then MODE="debug"
     elif [[ $arg == "asan" ]]; then MODE="asan"
+    elif [[ $arg == "alsa" ]]; then ALSA=1
+    elif [[ $arg == "no-alsa" ]]; then ALSA=0
     elif [[ $arg == "pipewire" ]]; then PIPEWIRE=1
     elif [[ $arg == "no-pipewire" ]]; then PIPEWIRE=0
     elif [[ $arg == "chafa" ]]; then CHAFA=1
@@ -117,8 +120,23 @@ applyPkgConfigFlagsAndDontLink()
     fi
 }
 
+GOT_SOUND=0
+
+if [[ $ALSA == 1 ]]; then
+    applyPkgConfigFlags alsa 0 ALSA
+    GOT_SOUND=1
+    echo "using alsa"
+fi
+
 if [[ $PIPEWIRE == 1 ]]; then
-    applyPkgConfigFlags libpipewire-0.3 1 PIPEWIRE
+    applyPkgConfigFlags libpipewire-0.3 0 PIPEWIRE
+    GOT_SOUND=1
+    echo "using pipewire"
+fi
+
+if [[ $GOT_SOUND == 0 ]];then
+    echo "no sound library found"
+    exit 1
 fi
 
 if [[ $CHAFA == 1 ]]; then

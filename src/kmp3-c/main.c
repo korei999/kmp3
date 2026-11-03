@@ -429,3 +429,7 @@ main(int argc, char** argv)
 #ifdef OPT_MPRIS
     #include "platform/mpris/mpris.c"
 #endif
+
+#ifdef OPT_ALSA
+    #include "platform/alsa/Mixer.c"
+#endif
