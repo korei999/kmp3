@@ -2,17 +2,17 @@
 
 set -euo pipefail
 
+PROJECT_NAME="kmp3-c"
+PROJECT_VERSION="2.0"
+PROJECT_VERSION_MAJOR=2
+PROJECT_VERSION_MINOR=0
+
 CC="gcc"
 
 CFLAGS=" -std=c11"
 CFLAGS+=" -fno-strict-aliasing -fms-extensions"
 CFLAGS+=" -Wall -Wpedantic"
 LDFLAGS=" -lm"
-
-PROJECT_NAME="kmp3-c"
-PROJECT_VERSION="2.0"
-PROJECT_VERSION_MAJOR=2
-PROJECT_VERSION_MINOR=0
 
 DEFS=" -DPROJECT_COMMIT_HASH=\"$(git rev-parse --short HEAD)\""
 DEFS+=" -DPROJECT_NAME=\"${PROJECT_NAME}\""
@@ -34,6 +34,7 @@ MODE="release"
 PIPEWIRE=1
 CHAFA=1
 MPRIS=1
+USER_KEYBINDS=1
 
 for arg in "$@"; do
     if [[ $arg == "gcc" ]]; then CC="gcc"
@@ -44,6 +45,7 @@ for arg in "$@"; do
     elif [[ $arg == "pipewire" ]]; then PIPEWIRE=1
     elif [[ $arg == "chafa" ]]; then CHAFA=1
     elif [[ $arg == "mpris" ]]; then MPRIS=1
+    elif [[ $arg == "no-user-keybinds" ]]; then USER_KEYBINDS=0
     fi
 done
 
@@ -54,6 +56,11 @@ elif [[ $MODE == "asan" ]]; then
     CFLAGS+=" -g -O0 -fsanitize=address"
 else
     CFLAGS+=" -g -O0 -Wno-unused-but-set-variable"
+fi
+
+if [ "$USER_KEYBINDS" == 1 ]; then
+    DEFS+=" -DOPT_USER_KEYBINDS"
+    echo "adding user keybinds"
 fi
 
 if [[ $CC == "clang" ]]; then

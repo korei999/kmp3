@@ -746,7 +746,7 @@ again:
         {
             s->errMsgTime = s->time;
             s->currMsg = newMsg;
-            K_CTX_LOG_DEBUG("got msg: '{nts}' size: {sz}\n", k_StringData(&s->currMsg.sMsg), k_StringSize(&s->currMsg.sMsg));
+            K_CTX_LOG_DEBUG("got msg: '{nts}' size: {sz}", k_StringData(&s->currMsg.sMsg), k_StringSize(&s->currMsg.sMsg));
         }
     }
 
@@ -754,7 +754,7 @@ again:
     {
         if (k_time_diff(s->time, s->errMsgTime) >= s->currMsg.time)
         {
-            K_CTX_LOG_DEBUG("killing: '{PS}'\n", &s->currMsg.sMsg);
+            K_CTX_LOG_DEBUG("killing: '{PS}'", &s->currMsg.sMsg);
             k_StringDestroy(&s->currMsg.sMsg, &k_GpaInst()->base);
             goto again;
         }
