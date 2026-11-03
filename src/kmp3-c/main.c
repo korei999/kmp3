@@ -264,7 +264,7 @@ main_startup(int argc, char** argv)
         (k_CmdLineArg){
             .cShortName = 'l',
             .svLongName = K_SV("logs"),
-            .svDescription = K_SV("value: log level [-1, 0, 1, 2, 3] (none, errors, warnings, info, debug)"),
+            .svDescription = K_SV("value: log level [0, 1, 2, 3, 4] (none, errors, warnings, info, debug)"),
             .bNeedsValue = true,
             .pfnValueHandler = main_logsArg,
         },

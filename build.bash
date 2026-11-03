@@ -36,6 +36,10 @@ PIPEWIRE=1
 CHAFA=1
 MPRIS=1
 USER_KEYBINDS=1
+LOGS=4
+
+SSE4_2=0
+AVX2=0
 
 for arg in "$@"; do
     if [[ $arg == "gcc" ]]; then CC="gcc"
@@ -52,6 +56,8 @@ for arg in "$@"; do
     elif [[ $arg == "mpris" ]]; then MPRIS=1
     elif [[ $arg == "no-mpris" ]]; then MPRIS=0
     elif [[ $arg == "no-user-keybinds" ]]; then USER_KEYBINDS=0
+    elif [[ $arg == "sse4_2" ]]; then SSE4_2=1
+    elif [[ $arg == "avx2" ]]; then AVX2=1
     fi
 done
 
@@ -81,6 +87,18 @@ if [[ $CC == "clang" ]]; then
     fi
 
     CFLAGS+=" -Wno-microsoft-anon-tag"
+fi
+
+if [[ $SSE4_2 == 1 ]]; then
+    CFLAGS+=" -msse4.2"
+    DEFS+=" -DOPT_SSE4_2"
+    echo "using sse4.2"
+fi
+
+if [[ $AVX2 == 1 ]]; then
+    CFLAGS+=" -mavx2 -msse4.2"
+    DEFS+=" -DOPT_AVX2 -DOPT_SSE4_2"
+    echo "using avx2"
 fi
 
 OPTS=""
@@ -135,7 +153,7 @@ if [[ $PIPEWIRE == 1 ]]; then
 fi
 
 if [[ $GOT_SOUND == 0 ]];then
-    echo "no sound library found"
+    echo "we need at least one of these sound backends to build this program: pipewire (linux), alsa (linux), sndio (openbsd), coreaudio (mac)"
     exit 1
 fi
 

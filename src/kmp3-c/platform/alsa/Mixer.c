@@ -220,7 +220,7 @@ platform_alsa_MixerLoop(void* pArg)
                 if (!k_atomic_U8LoadRelaxed(&s->atom_bRunning))
                 {
                     k_MutexUnlock(&s->mtxLoop);
-                    goto GOTO_done;
+                    goto done;
                 }
             }
 
@@ -257,8 +257,7 @@ platform_alsa_MixerLoop(void* pArg)
         k_MutexUnlock(&s->mtxLoop);
     }
 
-GOTO_done:
-
+done:
     k_atomic_U8StoreRelaxed(&s->atom_bLoopDone, true);
     K_CTX_LOG_DEBUG("alsa loop done");
     k_CtxDestroyArenaForThisThread();
