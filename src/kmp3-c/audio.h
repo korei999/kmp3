@@ -45,12 +45,10 @@ struct audio_IMixer
     } vtable;
 
     audio_RingBuffer ring;
-    k_Thread thread;
 
     k_atomic_U8 atom_bPaused;
     k_atomic_U8 atom_bSongEnd;
     k_atomic_U8 atom_bDecodes;
-    k_atomic_U8 atom_bLoopDone;
 
     bool bMuted;
     bool bRunning;

@@ -123,7 +123,7 @@ audio_IMixerStartDecoderThread(audio_IMixer* s)
     if (!audio_RingBufferInit(&s->ring, audio_RING_BUFFER_SIZE))
         return false;
 
-    if (!k_ThreadInit(&s->thread, audio_refillRingBufferThreadTask, s))
+    if (!k_ThreadInit(&s->ring.thrd, audio_refillRingBufferThreadTask, s))
     {
         audio_RingBufferDestroy(&s->ring);
         return false;
@@ -158,8 +158,9 @@ audio_refillRingBufferThreadTask(void* pArg)
         audio_IMixerFillRingBuffer(s);
     }
 
+    k_atomic_U8StoreRelaxed(&s->ring.atom_bLoopDone, true);
+    K_CTX_LOG_DEBUG("refill loop done");
     k_CtxDestroyArenaForThisThread();
-    k_atomic_U8StoreRelease(&s->atom_bLoopDone, true);
     return (K_THREAD_RESULT){0};
 }
 
@@ -238,7 +239,6 @@ audio_IMixerStart(audio_IMixer* s)
 
     if (!audio_IMixerInit(s))
     {
-        // stop decoder thread
         return false;
     }
 
@@ -258,7 +258,7 @@ audio_IMixerDestroy(audio_IMixer* s)
         k_CndVarSignal(&s->ring.cnd);
     }
     k_MutexUnlock(&s->ring.mtx);
-
+    audio_RingBufferDestroy(&s->ring);
     audio_IMixerDeinit(s);
 }
 
