@@ -12,6 +12,10 @@
     #include "platform/alsa/Mixer.h"
 #endif
 
+#ifdef OPT_SNDIO
+    #include "platform/sndio/Mixer.h"
+#endif
+
 bool app_g_bForceLoggerColors;
 
 app_MIXER app_g_eMixer;
@@ -73,7 +77,11 @@ app_allocMixer(k_IAllocator* pAlloc)
 
         case app_MIXER_SNDIO:
         {
-            K_ASSERT(false, "implement this");
+#ifdef OPT_SNDIO
+            platform_sndio_Mixer* pSnd = k_IAllocatorZalloc(pAlloc, sizeof(*pSnd));
+            *pSnd = platform_sndio_MixerCreate();
+            pMixer = &pSnd->base;
+#endif
         }
         break;
     }

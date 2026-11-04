@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+# set -x
 
 PROJECT_NAME="kmp3-c"
 PROJECT_VERSION="2.0"
@@ -33,6 +34,7 @@ MODE="release"
 
 ALSA=1
 PIPEWIRE=1
+SNDIO=1
 CHAFA=1
 MPRIS=1
 USER_KEYBINDS=1
@@ -51,6 +53,8 @@ for arg in "$@"; do
     elif [[ $arg == "no-alsa" ]]; then ALSA=0
     elif [[ $arg == "pipewire" ]]; then PIPEWIRE=1
     elif [[ $arg == "no-pipewire" ]]; then PIPEWIRE=0
+    elif [[ $arg == "sndio" ]]; then SNDIO=1
+    elif [[ $arg == "no-sndio" ]]; then SNDIO=0
     elif [[ $arg == "chafa" ]]; then CHAFA=1
     elif [[ $arg == "no-chafa" ]]; then CHAFA=0
     elif [[ $arg == "mpris" ]]; then MPRIS=1
@@ -66,7 +70,7 @@ for arg in "$@"; do
     fi
 done
 
-DBG_CFLAGS+=" -Wno-unused-but-set-variable"
+DBG_CFLAGS+=" -Wno-unused-but-set-variable -Wno-unused-function"
 
 if [[ $MODE == "release" ]]; then
     CFLAGS+=" -O3"
@@ -121,12 +125,15 @@ applyPkgConfigFlags()
         if [[ $# -ge 3 ]]; then
             OPTS+=" -DOPT_$3"
         fi
+
+        return 0
     else
         if [[ $2 == 1 ]]; then
             echo "library $1 has to be installed"
             exit 1
         else
             echo "library $1 not found, skipping..."
+            return 1
         fi
     fi
 }
@@ -138,12 +145,15 @@ applyPkgConfigFlagsAndDontLink()
         if [[ $# -ge 3 ]]; then
             OPTS+=" -DOPT_$3"
         fi
+
+        return 0
     else
         if [[ $2 == 1 ]]; then
             echo "headers for library $1 have to be installed"
             exit 1
         else
             echo "headers for library $1 not found, skipping..."
+            return 1
         fi
     fi
 }
@@ -151,18 +161,27 @@ applyPkgConfigFlagsAndDontLink()
 GOT_SOUND=0
 
 if [[ $ALSA == 1 ]]; then
-    applyPkgConfigFlags alsa 0 ALSA
-    GOT_SOUND=1
-    echo "using alsa"
+    if applyPkgConfigFlags alsa 0 ALSA; then
+        GOT_SOUND=1
+        echo "adding alsa sound backend"
+    fi
 fi
 
 if [[ $PIPEWIRE == 1 ]]; then
-    applyPkgConfigFlags libpipewire-0.3 0 PIPEWIRE
-    GOT_SOUND=1
-    echo "using pipewire"
+    if applyPkgConfigFlags libpipewire-0.3 0 PIPEWIRE; then
+        GOT_SOUND=1
+        echo "adding pipewire sound backend"
+    fi
 fi
 
-if [[ $GOT_SOUND == 0 ]];then
+if [[ $SNDIO == 1 ]]; then
+    if applyPkgConfigFlags sndio 0 SNDIO; then
+        GOT_SOUND=1
+        echo "adding sndio sound backend"
+    fi
+fi
+
+if [[ $GOT_SOUND == 0 ]]; then
     echo "we need at least one of these sound backends to build this program: pipewire (linux), alsa (linux), sndio (openbsd), coreaudio (mac)"
     exit 1
 fi

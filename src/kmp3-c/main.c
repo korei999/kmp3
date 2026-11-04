@@ -430,6 +430,10 @@ main(int argc, char** argv)
     #include "platform/mpris/mpris.c"
 #endif
 
+#ifdef OPT_SNDIO
+    #include "platform/sndio/Mixer.c"
+#endif
+
 #ifdef OPT_ALSA
     #include "platform/alsa/Mixer.c"
 #endif
