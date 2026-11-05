@@ -367,6 +367,7 @@ ffmpeg_DecoderWriteToRing(
                 char aBuff[AV_ERROR_MAX_STRING_SIZE] = {0};
                 const int n = ffmpeg_av_strerror(err, aBuff, sizeof(aBuff));
                 K_CTX_LOG_DEBUG("swr_convert_frame(): {:{i}:nts}", n, aBuff);
+                (void)n;
                 goto loopDone;
             }
 

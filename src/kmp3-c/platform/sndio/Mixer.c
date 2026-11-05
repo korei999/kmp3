@@ -197,6 +197,7 @@ platform_sndio_MixerLoop(void* pArg)
 {
     platform_sndio_Mixer* s = pArg;
     int writeStatus = 0;
+    (void)writeStatus;
 
     /* sndio doesn't support float pcm. */
     int16_t* pRenderBuffer = calloc(1, K_ASIZE(audio_g_aDrainBuffer));

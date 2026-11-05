@@ -460,6 +460,7 @@ platform_alsa_errorHandler(const char* pFile, int line, const char* pFunc, int _
     va_start(args, pFmt);
     ssize_t n = vsnprintf(aBuff, sizeof(aBuff), pFmt, args);
     va_end(args);
+    (void)n;
 
     K_CTX_LOG_ERROR("({nts}, {i}, {nts}): {PSv}\n", pFile, line, pFunc, &(k_StringView){aBuff, n});
 }

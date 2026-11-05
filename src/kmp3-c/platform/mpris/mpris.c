@@ -669,6 +669,7 @@ platform_mpris_proc(void)
             eventfd_t d = 0;
             int r = eventfd_read(platform_mpris_s_fdWake, &d);
             K_CTX_LOG_DEBUG("eventfd_read({i}): {u64}", r, d);
+            (void)r;
         }
 
         k_MutexUnlock(&platform_mpris_g_mtx);

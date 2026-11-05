@@ -230,6 +230,7 @@ expectErrorLog(k_JsonParser* s, const int* pTokens, int nTokens, bool bNot)
 
         const k_StringView svPrinted = k_print_BuilderToSv(&b);
         K_CTX_LOG_ERROR("{PSv}", &svPrinted);
+        (void)svPrinted;
     }
 }
 

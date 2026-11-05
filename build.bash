@@ -92,7 +92,7 @@ fi
 if [[ $CC == "clang" ]]; then
     compilerVersion=$("$CC" --version | grep -oP '(?<=clang version )\d+' | head -1)
     if (( compilerVersion > 21 )); then
-        CFLAGS+=" -Wno-c2y-extensions"
+        CFLAGS+=" -fcolor-diagnostics -Wno-c2y-extensions"
     fi
 
     CFLAGS+=" -Wno-microsoft-anon-tag"

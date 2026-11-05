@@ -462,6 +462,7 @@ PlayerPushErrorMsg(Player* s, const PlayerMsg* pMsg)
     {
         const k_StringView svMsg = k_StringToSv(&pMsg->sMsg);
         K_CTX_LOG_ERROR("Message queue is empty. Not pushing this message: '{PSv}', time: {i64}", &svMsg);
+        (void)svMsg;
         return;
     }
 
