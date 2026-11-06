@@ -21,12 +21,17 @@ DEFS+=" -DPROJECT_VERSION=\"${PROJECT_VERSION}\""
 DEFS+=" -DPROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}"
 DEFS+=" -DPROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR}"
 
+if ! command -v pkg-config &>/dev/null; then
+    echo "pkg-config is required to build this program"
+    exit 1
+fi
+
 if command -v gcc &>/dev/null; then
     CC="gcc"
 elif command -v clang &>/dev/null; then
     CC="clang"
 else
-    echo "no C compiler found"
+    echo "no C compiler found (gcc/clang)"
     exit 1
 fi
 
@@ -38,7 +43,7 @@ SNDIO=1
 CHAFA=1
 MPRIS=1
 USER_KEYBINDS=1
-LOGS=4
+LOGS=0
 DEBUG_SYMBOLS=0
 
 SSE4_2=0
