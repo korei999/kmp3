@@ -39,6 +39,7 @@ CHAFA=1
 MPRIS=1
 USER_KEYBINDS=1
 LOGS=4
+DEBUG_SYMBOLS=0
 
 SSE4_2=0
 AVX2=0
@@ -61,7 +62,8 @@ for arg in "$@"; do
     elif [[ $arg == "no-mpris" ]]; then MPRIS=0
     elif [[ $arg == "no-user-keybinds" ]]; then USER_KEYBINDS=0
     elif [[ $arg == "sse4_2" ]]; then SSE4_2=1
-    elif [[ $arg == "avx2" ]]; then AVX2=1
+    elif [[ $arg == "avx2" ]]; then AVX2=1; SSE4_2=1
+    elif [[ $arg == "debug-symbols" ]]; then DEBUG_SYMBOLS=1
     elif [[ $arg == "logs0" ]]; then LOGS=0
     elif [[ $arg == "logs1" ]]; then LOGS=1
     elif [[ $arg == "logs2" ]]; then LOGS=2
@@ -76,6 +78,10 @@ if [[ $MODE == "release" ]]; then
     CFLAGS+=" -O3"
     DEFS+=" -DNDEBUG"
     echo "building release"
+    if [[ $DEBUG_SYMBOLS == 1 ]]; then
+        echo "using debug symbols in release build"
+        CFLAGS+=" -g"
+    fi
 elif [[ $MODE == "asan" ]]; then
     CFLAGS+=" -g -O0 -fsanitize=address $DBG_CFLAGS"
     echo "building asan"
@@ -105,8 +111,8 @@ if [[ $SSE4_2 == 1 ]]; then
 fi
 
 if [[ $AVX2 == 1 ]]; then
-    CFLAGS+=" -mavx2 -msse4.2"
-    DEFS+=" -DOPT_AVX2 -DOPT_SSE4_2"
+    CFLAGS+=" -mavx2"
+    DEFS+=" -DOPT_AVX2"
     echo "using avx2"
 fi
 

@@ -16,7 +16,7 @@ typedef enum
     app_MIXER_ESIZE
 } app_MIXER;
 
-static const char* app_s_aMixerStrings[] = {
+K_UNUSED static const char* app_s_aMixerStrings[] = {
     "DUMMY",
     "ALSA",
     "PIPEWIRE",
