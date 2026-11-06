@@ -62,7 +62,6 @@ typedef struct
     k_time_Type lastMessageTime;
     k_String sLastMessage;
     bool bSelectionChanged;
-    bool bRedrawImage; /* FIXME: belongs to Window? */
     bool bQuitOnSongEnd;
 } Player;
 

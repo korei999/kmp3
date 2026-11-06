@@ -89,6 +89,7 @@ typedef struct
     bool bPressed;
     bool bHoldTimeSlider;
     bool bHoldScrollBar;
+    bool bRedrawImage;
 
     input_Buffer inputBuff;
 

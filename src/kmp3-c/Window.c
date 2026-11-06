@@ -53,11 +53,11 @@ WindowDrawCoverImage(Window* s)
     Player* pPl = app_g_pPlayer;
 
     const k_time_Type time = K_MAX(s->lastResizeTime, s->time);
-    if (pPl->bSelectionChanged || (pPl->bRedrawImage && (k_time_diff(time, s->lastImageRedrawTime) >= K_TIME_MSEC*app_g_config.imageUpdateRateLimit))
+    if (pPl->bSelectionChanged || (s->bRedrawImage && (k_time_diff(time, s->lastImageRedrawTime) >= K_TIME_MSEC*app_g_config.imageUpdateRateLimit))
         /* Prevent to redraw too often if window is getting resized too aggressively. */
     )
     {
-        pPl->bRedrawImage = false;
+        s->bRedrawImage = false;
         pPl->bSelectionChanged = false;
 
         const int split = pPl->imgHeight;
@@ -176,8 +176,7 @@ WindowSigwinchHandler(int sig)
 static void
 WindowResize(Window* s)
 {
-    Player* pPl = app_g_pPlayer;
-    pPl->bRedrawImage = true;
+    s->bRedrawImage = true;
 
     s->termSize = WindowTermSizeGet();
     K_CTX_LOG_DEBUG("term: {PTermSize}", &s->termSize);

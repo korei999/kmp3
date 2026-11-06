@@ -79,7 +79,7 @@ static inline void app_seekFromInput(void) { WindowSeekFromInput(app_g_pWin); }
 static inline void app_subStringSearch(void) { WindowSubStringSearch(app_g_pWin); }
 static inline void app_increaseImageSize(long i) { PlayerSetImgSize(app_g_pPlayer, app_g_pPlayer->imgHeight + i); }
 static inline void app_restoreImageSize(void) { PlayerSetImgSize(app_g_pPlayer, app_g_config.imageHeight); }
-static inline void app_cleanRedraw(void) { app_g_pWin->bClear = true; app_g_pPlayer->bRedrawImage = true; }
+static inline void app_cleanRedraw(void) { app_g_pWin->bClear = app_g_pWin->bRedrawImage = true; }
 static inline void app_quitOnSongEnd(void) { app_g_pPlayer->bQuitOnSongEnd = !app_g_pPlayer->bQuitOnSongEnd; }
 
 #ifndef NDEBUG
