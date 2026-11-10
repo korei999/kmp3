@@ -228,9 +228,10 @@ if [[ $MPRIS == 1 ]]; then
     fi
 fi
 
+applyPkgConfigFlagsAndDontLink libavformat 1
 applyPkgConfigFlagsAndDontLink libavcodec 1
 applyPkgConfigFlagsAndDontLink libavutil 1
-applyPkgConfigFlagsAndDontLink libavutil 1
+applyPkgConfigFlagsAndDontLink libswresample 1
 
 COMMAND="$CC $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o $PROJECT_NAME"
 echo ${COMMAND}
