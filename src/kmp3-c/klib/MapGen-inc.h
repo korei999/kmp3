@@ -15,6 +15,10 @@
     #error "K_VALUE_T is not defined"
 #endif
 
+#ifndef K_SIZE_T
+    #define K_SIZE_T ssize_t
+#endif
+
 #ifndef K_FN_HASH
     #error "K_FN_HASH is not defined"
 #endif
@@ -55,29 +59,29 @@ typedef struct K_MAP_RESULT
 typedef struct K_NAME
 {
     K_BUCKET* pBuckets;
-    ssize_t size; /* N occupied buckets. */
-    ssize_t cap; /* Real array capacity. */
+    K_SIZE_T size; /* N occupied buckets. */
+    K_SIZE_T cap; /* Real array capacity. */
 } K_NAME;
 
-K_DECL_MOD bool K_METHOD(Init)(K_NAME* pSelf, k_IAllocator* pAlloc, ssize_t prealloc);
-K_DECL_MOD K_NAME K_METHOD(Create)(k_IAllocator* pAlloc, ssize_t prealloc);
+K_DECL_MOD bool K_METHOD(Init)(K_NAME* pSelf, k_IAllocator* pAlloc, K_SIZE_T prealloc);
+K_DECL_MOD K_NAME K_METHOD(Create)(k_IAllocator* pAlloc, K_SIZE_T prealloc);
 K_DECL_MOD void K_METHOD(Destroy)(K_NAME* pSelf, k_IAllocator* pAlloc);
 K_DECL_MOD K_MAP_RESULT K_METHOD(Insert)(K_NAME* pSelf, k_IAllocator* pAlloc, const K_KEY_T* pKey, const K_VALUE_T* pVal);
 K_DECL_MOD K_MAP_RESULT K_METHOD(TryInsert)(K_NAME* pSelf, k_IAllocator* pAlloc, const K_KEY_T* pKey, const K_VALUE_T* pVal);
 K_DECL_MOD K_MAP_RESULT K_METHOD(Remove)(K_NAME* pSelf, const K_KEY_T* pKey);
 K_DECL_MOD K_MAP_RESULT K_METHOD(Search)(K_NAME* pSelf, const K_KEY_T* pKey);
-K_DECL_MOD ssize_t K_METHOD(FirstI)(K_NAME* pSelf);
-K_DECL_MOD ssize_t K_METHOD(LastI)(K_NAME* pSelf);
-K_DECL_MOD ssize_t K_METHOD(NextI)(K_NAME* pSelf, ssize_t i);
-K_DECL_MOD ssize_t K_METHOD(BeginI)(K_NAME* pSelf);
-K_DECL_MOD ssize_t K_METHOD(EndI)(K_NAME* pSelf);
+K_DECL_MOD K_SIZE_T K_METHOD(FirstI)(K_NAME* pSelf);
+K_DECL_MOD K_SIZE_T K_METHOD(LastI)(K_NAME* pSelf);
+K_DECL_MOD K_SIZE_T K_METHOD(NextI)(K_NAME* pSelf, K_SIZE_T i);
+K_DECL_MOD K_SIZE_T K_METHOD(BeginI)(K_NAME* pSelf);
+K_DECL_MOD K_SIZE_T K_METHOD(EndI)(K_NAME* pSelf);
 
 K_DECL_MOD K_MAP_BUCKET_FLAG* K_METHOD(Flags)(K_NAME* pSelf);
 K_DECL_MOD float K_METHOD(LoadFactor)(K_NAME* pSelf);
-K_DECL_MOD bool K_METHOD(Rehash)(K_NAME* pSelf, k_IAllocator* pAlloc, ssize_t newCap);
-K_DECL_MOD ssize_t K_METHOD(InsertionI)(K_NAME* pSelf, const K_KEY_T* pKey, uint64_t hash);
+K_DECL_MOD bool K_METHOD(Rehash)(K_NAME* pSelf, k_IAllocator* pAlloc, K_SIZE_T newCap);
+K_DECL_MOD K_SIZE_T K_METHOD(InsertionI)(K_NAME* pSelf, const K_KEY_T* pKey, uint64_t hash);
 K_DECL_MOD K_MAP_RESULT K_METHOD(InsertHashed)(K_NAME* pSelf, k_IAllocator* pAlloc, const K_KEY_T* pKey, const K_VALUE_T* pVal, uint64_t hash);
-K_DECL_MOD void K_METHOD(RemoveI)(K_NAME* pSelf, ssize_t i);
+K_DECL_MOD void K_METHOD(RemoveI)(K_NAME* pSelf, K_SIZE_T i);
 K_DECL_MOD K_MAP_RESULT K_METHOD(SearchHashed)(K_NAME* pSelf, const K_KEY_T* pKey, uint64_t hash);
 
 #endif /* K_GEN_DECLS */
@@ -85,13 +89,13 @@ K_DECL_MOD K_MAP_RESULT K_METHOD(SearchHashed)(K_NAME* pSelf, const K_KEY_T* pKe
 #ifdef K_GEN_CODE
 
 K_DECL_MOD bool
-K_METHOD(Init)(K_NAME* pSelf, k_IAllocator* pAlloc, ssize_t prealloc)
+K_METHOD(Init)(K_NAME* pSelf, k_IAllocator* pAlloc, K_SIZE_T prealloc)
 {
     assert(prealloc > 0);
     assert(pAlloc != NULL);
     assert(pSelf != NULL);
 
-    const ssize_t cap = k_nextPowerofTwo64(K_MAX(prealloc, 8));
+    const K_SIZE_T cap = k_nextPowerofTwo64(K_MAX(prealloc, 8));
 
     pSelf->pBuckets = k_IAllocatorZalloc(pAlloc, (sizeof(K_BUCKET) + sizeof(K_MAP_BUCKET_FLAG))*cap);
     if K_UNLIKELY(!pSelf->pBuckets) return false;
@@ -102,7 +106,7 @@ K_METHOD(Init)(K_NAME* pSelf, k_IAllocator* pAlloc, ssize_t prealloc)
 }
 
 K_DECL_MOD K_NAME
-K_METHOD(Create)(k_IAllocator* pAlloc, ssize_t prealloc)
+K_METHOD(Create)(k_IAllocator* pAlloc, K_SIZE_T prealloc)
 {
     K_NAME ret = {0};
     K_METHOD(Init)(&ret, pAlloc, prealloc);
@@ -132,13 +136,13 @@ K_METHOD(LoadFactor)(K_NAME* pSelf)
 }
 
 K_DECL_MOD bool
-K_METHOD(Rehash)(K_NAME* pSelf, k_IAllocator* pAlloc, ssize_t newCap)
+K_METHOD(Rehash)(K_NAME* pSelf, k_IAllocator* pAlloc, K_SIZE_T newCap)
 {
     K_NAME mNew = K_METHOD(Create)(pAlloc, newCap);
     if K_UNLIKELY(!mNew.pBuckets) return false;
 
     K_MAP_BUCKET_FLAG* pEFlags = K_METHOD(Flags)(pSelf);
-    for (ssize_t i = 0; i < pSelf->cap; ++i)
+    for (K_SIZE_T i = 0; i < pSelf->cap; ++i)
     {
         if (pEFlags[i] == K_MAP_BUCKET_FLAG_OCCUPIED)
             K_METHOD(Insert)(&mNew, pAlloc, &pSelf->pBuckets[i].key, &pSelf->pBuckets[i].value);
@@ -149,10 +153,10 @@ K_METHOD(Rehash)(K_NAME* pSelf, k_IAllocator* pAlloc, ssize_t newCap)
     return true;
 }
 
-K_DECL_MOD ssize_t
+K_DECL_MOD K_SIZE_T
 K_METHOD(InsertionI)(K_NAME* pSelf, const K_KEY_T* pKey, uint64_t hash)
 {
-    ssize_t idx = (ssize_t)(hash & (uint64_t)(pSelf->cap - 1));
+    K_SIZE_T idx = (K_SIZE_T)(hash & (uint64_t)(pSelf->cap - 1));
     K_MAP_BUCKET_FLAG* pEFlags = K_METHOD(Flags)(pSelf);
 
     while (pEFlags[idx] == K_MAP_BUCKET_FLAG_OCCUPIED)
@@ -178,7 +182,7 @@ K_METHOD(InsertHashed)(K_NAME* pSelf, k_IAllocator* pAlloc, const K_KEY_T* pKey,
             return (K_MAP_RESULT){.eStatus = K_MAP_RESULT_STATUS_FAILED, .hash = hash};
     }
 
-    const ssize_t idx = K_METHOD(InsertionI)(pSelf, pKey, hash);
+    const K_SIZE_T idx = K_METHOD(InsertionI)(pSelf, pKey, hash);
     K_BUCKET* pBucket = &pSelf->pBuckets[idx];
     K_MAP_BUCKET_FLAG* pEFlag = K_METHOD(Flags)(pSelf) + idx;
 
@@ -210,7 +214,7 @@ K_METHOD(TryInsert)(K_NAME* pSelf, k_IAllocator* pAlloc, const K_KEY_T* pKey, co
 }
 
 K_DECL_MOD void
-K_METHOD(RemoveI)(K_NAME* pSelf, ssize_t i)
+K_METHOD(RemoveI)(K_NAME* pSelf, K_SIZE_T i)
 {
     assert(pSelf);
     assert(i >= 0 && i < pSelf->cap);
@@ -231,7 +235,7 @@ K_METHOD(Remove)(K_NAME* pSelf, const K_KEY_T* pKey)
     if (res.eStatus == K_MAP_RESULT_STATUS_NOT_FOUND)
         return res;
 
-    const ssize_t idx = res.pBucket - pSelf->pBuckets;
+    const K_SIZE_T idx = res.pBucket - pSelf->pBuckets;
     K_METHOD(RemoveI)(pSelf, idx);
     res.eStatus = K_MAP_RESULT_STATUS_REMOVED;
     return res;
@@ -244,7 +248,7 @@ K_METHOD(SearchHashed)(K_NAME* pSelf, const K_KEY_T* pKey, uint64_t hash)
 
     if (pSelf->size <= 0) return res;
 
-    ssize_t idx = (ssize_t)(hash & (uint64_t)(pSelf->cap - 1));
+    K_SIZE_T idx = (K_SIZE_T)(hash & (uint64_t)(pSelf->cap - 1));
     K_MAP_BUCKET_FLAG* pEFlags = K_METHOD(Flags)(pSelf);
 
     while (pEFlags[idx] != K_MAP_BUCKET_FLAG_NONE) /* deleted or occupied */
@@ -271,10 +275,10 @@ K_METHOD(Search)(K_NAME* pSelf, const K_KEY_T* pKey)
     return K_METHOD(SearchHashed)(pSelf, pKey, K_FN_HASH(pKey));
 }
 
-K_DECL_MOD ssize_t
+K_DECL_MOD K_SIZE_T
 K_METHOD(FirstI)(K_NAME* pSelf)
 {
-    ssize_t i = 0;
+    K_SIZE_T i = 0;
     K_MAP_BUCKET_FLAG* pEFlags = K_METHOD(Flags)(pSelf);
     while (i < pSelf->cap && pEFlags[i] != K_MAP_BUCKET_FLAG_OCCUPIED)
         ++i;
@@ -282,19 +286,19 @@ K_METHOD(FirstI)(K_NAME* pSelf)
     return i;
 }
 
-K_DECL_MOD ssize_t
+K_DECL_MOD K_SIZE_T
 K_METHOD(LastI)(K_NAME* pSelf)
 {
     K_MAP_BUCKET_FLAG* pEFlags = K_METHOD(Flags)(pSelf);
-    ssize_t i = pSelf->cap - 1;
+    K_SIZE_T i = pSelf->cap - 1;
     while (i >= 0 && pEFlags[i] != K_MAP_BUCKET_FLAG_OCCUPIED)
         --i;
 
     return i;
 }
 
-K_DECL_MOD ssize_t
-K_METHOD(NextI)(K_NAME* pSelf, ssize_t i)
+K_DECL_MOD K_SIZE_T
+K_METHOD(NextI)(K_NAME* pSelf, K_SIZE_T i)
 {
     K_MAP_BUCKET_FLAG* pEFlags = K_METHOD(Flags)(pSelf);
     do ++i;
@@ -303,13 +307,13 @@ K_METHOD(NextI)(K_NAME* pSelf, ssize_t i)
     return i;
 }
 
-K_DECL_MOD ssize_t
+K_DECL_MOD K_SIZE_T
 K_METHOD(BeginI)(K_NAME* pSelf)
 {
     return K_METHOD(FirstI)(pSelf);
 }
 
-K_DECL_MOD ssize_t
+K_DECL_MOD K_SIZE_T
 K_METHOD(EndI)(K_NAME* pSelf)
 {
     return pSelf->cap;
@@ -324,6 +328,7 @@ K_METHOD(EndI)(K_NAME* pSelf)
 #undef K_NAME
 #undef K_KEY_T
 #undef K_VALUE_T
+#undef K_SIZE_T
 #undef K_FN_HASH
 #undef K_FN_KEY_CMP
 #undef K_DECL_MOD

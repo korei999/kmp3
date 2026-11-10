@@ -84,7 +84,7 @@ if [[ $MODE == "release" ]]; then
     DEFS+=" -DNDEBUG"
     echo "building release"
     if [[ $DEBUG_SYMBOLS == 1 ]]; then
-        echo "using debug symbols in release build"
+        echo "compiling with debug symbols in release"
         CFLAGS+=" -g"
     fi
 elif [[ $MODE == "asan" ]]; then

@@ -26,19 +26,20 @@ struct audio_RingBuffer
     bool bQuit;
 };
 
-bool audio_RingBufferInit(audio_RingBuffer* s, ssize_t capacityPowOf2); /* capacityPowOf2 is rounded to next power of two */
+bool audio_RingBufferInit(audio_RingBuffer* s, ssize_t capacityPowOf2); /* Rounded to next power of two. */
 void audio_RingBufferDestroy(audio_RingBuffer* s);
 ssize_t audio_RingBufferPush(audio_RingBuffer* s, const float* pBuff, ssize_t buffSize); /* Returns size after push. */
 ssize_t audio_RingBufferPop(audio_RingBuffer* s, float* pFillBuff, ssize_t fillBuffSize);
 void audio_RingBufferClear(audio_RingBuffer* s);
 
+/* Base audio mixer class with mutex locked ring buffer running on a separate thread. */
 typedef struct audio_IMixer audio_IMixer;
 struct audio_IMixer
 {
     struct
     {
-        bool (*init)(audio_IMixer* s);
-        void (*deinit)(audio_IMixer* s);
+        bool (*init)(audio_IMixer* s); /* Called on IMixerStart(). */
+        void (*deinit)(audio_IMixer* s); /* Called on IMixerDestroy(). */
         bool (*play)(audio_IMixer* s, k_StringView svPath);
         void (*pause)(audio_IMixer* s, bool bPause);
         void (*changeSampleRate)(audio_IMixer* s, uint64_t sampleRate, bool bSave);
@@ -67,8 +68,8 @@ static inline bool audio_IMixerPlay(audio_IMixer* s, k_StringView svPath) { retu
 static inline void audio_IMixerPause(audio_IMixer* s, bool bPause) { s->vtable.pause(s, bPause); }
 static inline void audio_IMixerChangeSampleRate(audio_IMixer* s, uint64_t sampleRate, bool bSave) { s->vtable.changeSampleRate(s, sampleRate, bSave); }
 
-bool audio_IMixerStart(audio_IMixer* s); /* vtable.init(); */
-void audio_IMixerDestroy(audio_IMixer* s); /* vtable.deinit(). */
+bool audio_IMixerStart(audio_IMixer* s);
+void audio_IMixerDestroy(audio_IMixer* s);
 bool audio_IMixerIsMuted(const audio_IMixer* s);
 void audio_IMixerToggleMute(audio_IMixer* s);
 uint8_t audio_IMixerGetNChannels(const audio_IMixer* s);
@@ -99,20 +100,16 @@ struct audio_DummyMixer
 };
 
 static inline audio_DummyMixer audio_DummyMixerCreate(void);
-static inline bool audio_DummyMixerInit(audio_DummyMixer* s) { *s = audio_DummyMixerCreate(); return true; }
-static inline void audio_DummyMixerDeinit(audio_DummyMixer* s) { ; }
-static inline bool audio_DummyMixerPlay(audio_DummyMixer* s, k_StringView svPath) { (void)s, (void)svPath; return true; }
-static inline void audio_DummyMixerPause(audio_DummyMixer* s, bool bPause) { (void)s, (void)bPause; }
-static inline void audio_DummyMixerChangeSampleRate(audio_DummyMixer* s, uint64_t sampleRate, bool bSave) { (void)s, (void)sampleRate, (void)bSave; }
+static inline void audio_DummyMixerDoNothing(void) {}
 
 static inline audio_DummyMixer
 audio_DummyMixerCreate(void)
 {
     audio_DummyMixer s = {0};
-    s.vtable.init = (K_TYPEOF(s.base.vtable.init))audio_DummyMixerInit;
-    s.vtable.deinit = (K_TYPEOF(s.base.vtable.deinit))audio_DummyMixerDeinit;
-    s.vtable.play = (K_TYPEOF(s.base.vtable.play))audio_DummyMixerPlay;
-    s.vtable.pause = (K_TYPEOF(s.base.vtable.pause))audio_DummyMixerPause;
-    s.vtable.changeSampleRate = (K_TYPEOF(s.base.vtable.changeSampleRate))audio_DummyMixerChangeSampleRate;
+    s.vtable.init = (K_TYPEOF(s.base.vtable.init))audio_DummyMixerDoNothing;
+    s.vtable.deinit = (K_TYPEOF(s.base.vtable.deinit))audio_DummyMixerDoNothing;
+    s.vtable.play = (K_TYPEOF(s.base.vtable.play))audio_DummyMixerDoNothing;
+    s.vtable.pause = (K_TYPEOF(s.base.vtable.pause))audio_DummyMixerDoNothing;
+    s.vtable.changeSampleRate = (K_TYPEOF(s.base.vtable.changeSampleRate))audio_DummyMixerDoNothing;
     return s;
 }

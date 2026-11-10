@@ -166,7 +166,7 @@ void TextBuffClearKittyImages(TextBuff* s);
 void TextBuffSetTitle(TextBuff* s, const k_StringView svTitle);
 /* */
 
-/* main api (more efficient using damage tracking) */
+/* main api (more efficient, using damage tracking) */
 void TextBuffInit(TextBuff* s, k_Arena* pArena, ssize_t termWidth, ssize_t termHeight);
 void TextBuffDestroy(TextBuff* s);
 void TextBuffClean(TextBuff* s);
