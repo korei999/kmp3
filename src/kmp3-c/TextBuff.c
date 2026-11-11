@@ -62,7 +62,7 @@ static void TextBuffResetBuffers(TextBuff* s);
 static void TextBuffResizeBuffers(TextBuff* s, ssize_t width, ssize_t height);
 static void TextBuffShowImages(TextBuff* s);
 
-typedef ssize_t (*PfnDecodeStr)(const void* pStrBuff, ssize_t strSize, ssize_t off, int32_t* pCode);
+typedef ssize_t (*TextBuffPfnDecodeStr)(const void* pStrBuff, ssize_t strSize, ssize_t off, int32_t* pCode);
 
 static ssize_t TextBuffStringFinal(
     TextBuff* s,
@@ -71,7 +71,7 @@ static ssize_t TextBuffStringFinal(
     TEXT_BUFF_STYLE eStyle,
     const void* pStrBuff,
     ssize_t strSize, /* Typed size, not bytesize. */
-    PfnDecodeStr pfnDecodeStr,
+    TextBuffPfnDecodeStr pfnDecodeStr,
     int maxSvLen
 );
 ssize_t TextBuffAdvanceWString(const void* pStrBuff, ssize_t strSize, ssize_t off, int32_t* pCode);
@@ -85,7 +85,7 @@ TextBuffStringFinal(
     TEXT_BUFF_STYLE eStyle,
     const void* pStrBuff,
     ssize_t strSize, /* Typed size, not bytesize. */
-    PfnDecodeStr pfnDecodeStr,
+    TextBuffPfnDecodeStr pfnDecodeStr,
     int maxSvLen
 )
 {

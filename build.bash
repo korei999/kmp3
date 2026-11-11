@@ -8,7 +8,8 @@ PROJECT_VERSION="2.0"
 PROJECT_VERSION_MAJOR=2
 PROJECT_VERSION_MINOR=0
 
-CC="gcc"
+# Clang compiles unity builds faster.
+CC="clang"
 
 CFLAGS=" -std=c11"
 CFLAGS+=" -fno-strict-aliasing -fms-extensions"
@@ -26,10 +27,10 @@ if ! command -v pkg-config &>/dev/null; then
     exit 1
 fi
 
-if command -v gcc &>/dev/null; then
-    CC="gcc"
-elif command -v clang &>/dev/null; then
+if command -v clang &>/dev/null; then
     CC="clang"
+elif command -v gcc &>/dev/null; then
+    CC="gcc"
 else
     echo "no C compiler found (gcc/clang)"
     exit 1
@@ -233,6 +234,5 @@ applyPkgConfigFlagsAndDontLink libavcodec 1
 applyPkgConfigFlagsAndDontLink libavutil 1
 applyPkgConfigFlagsAndDontLink libswresample 1
 
-COMMAND="$CC $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o $PROJECT_NAME"
-echo ${COMMAND}
-exec $COMMAND
+set -x
+$CC $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o $PROJECT_NAME
