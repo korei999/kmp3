@@ -111,10 +111,12 @@ typedef struct
 #define K_GEN_DECLS
 #include "klib/VecGen-inc.h"
 
-#define K_NAME VecTextBuffImage
-#define K_TYPE TextBuffImage
-#define K_GEN_DECLS
-#include "klib/VecGen-inc.h"
+#ifdef OPT_CHAFA
+    #define K_NAME VecTextBuffImage
+    #define K_TYPE TextBuffImage
+    #define K_GEN_DECLS
+    #include "klib/VecGen-inc.h"
+#endif
 
 typedef struct
 {

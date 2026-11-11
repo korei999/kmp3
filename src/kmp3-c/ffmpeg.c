@@ -585,12 +585,8 @@ ffmpeg_DecoderClose(ffmpeg_Decoder* s)
     K_CTX_LOG_DEBUG("close()");
 }
 
-#ifdef OPT_CHAFA
-
 Image
 ffmpeg_DecoderGetCoverImage(ffmpeg_Decoder* s)
 {
     return s->coverImg;
 }
-
-#endif

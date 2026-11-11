@@ -41,15 +41,17 @@
 #define TEXT_BUFF_BG_CYAN "\x1b[46m"
 #define TEXT_BUFF_BG_WHITE "\x1b[47m"
 
-#define K_NAME VecTextBuffImage
-#define K_TYPE TextBuffImage
-#define K_GEN_CODE
-#include "klib/VecGen-inc.h"
-
 #define K_NAME VecTextBuffCell
 #define K_TYPE TextBuffCell
 #define K_GEN_CODE
 #include "klib/VecGen-inc.h"
+
+#ifdef OPT_CHAFA
+    #define K_NAME VecTextBuffImage
+    #define K_TYPE TextBuffImage
+    #define K_GEN_CODE
+    #include "klib/VecGen-inc.h"
+#endif
 
 static bool TextBuffCellEq(TextBuffCell* pLeft, TextBuffCell* pRight);
 
@@ -60,7 +62,10 @@ static void TextBuffClearBackBuffer(TextBuff* s);
 static void TextBuffPushDiff(TextBuff* s);
 static void TextBuffResetBuffers(TextBuff* s);
 static void TextBuffResizeBuffers(TextBuff* s, ssize_t width, ssize_t height);
+
+#ifdef OPT_CHAFA
 static void TextBuffShowImages(TextBuff* s);
+#endif
 
 typedef ssize_t (*TextBuffPfnDecodeStr)(const void* pStrBuff, ssize_t strSize, ssize_t off, int32_t* pCode);
 
@@ -664,6 +669,8 @@ TextBuffResizeBuffers(TextBuff* s, ssize_t width, ssize_t height)
     TextBuffResetBuffers(s);
 }
 
+#ifdef OPT_CHAFA
+
 static void
 TextBuffShowImages(TextBuff* s)
 {
@@ -696,3 +703,5 @@ TextBuffShowImages(TextBuff* s)
         k_ArenaResetDecommit(&s->imgArena);
     }
 }
+
+#endif /* #ifdef OPT_CHAFA */

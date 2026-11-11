@@ -60,7 +60,4 @@ K_NO_DISCARD int ffmpeg_DecoderGetChannelsCount(ffmpeg_Decoder* s);
 K_NO_DISCARD k_StringView ffmpeg_DecoderGetMetadata(ffmpeg_Decoder* s, const k_StringView svKey);
 K_NO_DISCARD FFMPEG_ERROR ffmpeg_DecoderOpen(ffmpeg_Decoder* s, k_StringView svPath);
 void ffmpeg_DecoderClose(ffmpeg_Decoder* s);
-
-#ifdef OPT_CHAFA
 K_NO_DISCARD Image ffmpeg_DecoderGetCoverImage(ffmpeg_Decoder* s);
-#endif
