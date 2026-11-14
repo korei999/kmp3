@@ -30,7 +30,7 @@ K_CMD_LINE_RESULT
 main_volumeArg(k_CmdLine* pCmdLine, k_CmdLineArg* pCmdArg, const k_StringView svValue)
 {
     const int volume = k_StringViewToInt(svValue, 10);
-    app_g_config.volume = K_CLAMP(volume, 0, 100);
+    app_g_config.volume = K_CLAMP(volume, 0, app_g_config.maxVolume);
     return K_CMD_LINE_RESULT_NEXT;
 }
 
@@ -124,6 +124,8 @@ main_mprisNameArg(k_CmdLine* pCmdLine, k_CmdLineArg* pCmdArg, const k_StringView
         k_CmdLineArgPrintDescription(pCmdArg, &pArena->base, stderr);
         return K_CMD_LINE_RESULT_FAIL;
     }
+
+    app_g_config.ntsMprisName = svValue.pData;
 
     return K_CMD_LINE_RESULT_NEXT;
 }

@@ -45,6 +45,7 @@ MPRIS=1
 USER_KEYBINDS=1
 LOGS=0
 DEBUG_SYMBOLS=0
+BEAR=0
 
 SSE4_2=0
 AVX2=0
@@ -76,6 +77,10 @@ for arg in "$@"; do
     elif [ "$arg" = "logs4" ]; then LOGS=4
     fi
 done
+
+if command -v bear > /dev/null 2>&1; then
+    BEAR=1
+fi
 
 DBG_CFLAGS=" -Wno-unused-but-set-variable -Wno-unused-function"
 
@@ -233,5 +238,10 @@ applyPkgConfigFlagsAndDontLink libavcodec 1
 applyPkgConfigFlagsAndDontLink libavutil 1
 applyPkgConfigFlagsAndDontLink libswresample 1
 
+set -- "$CC"
+if [ "$BEAR" -eq 1 ]; then
+    set -- bear -- "$@"
+fi
+
 set -x
-"$CC" $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o "$PROJECT_NAME"
+"$@" $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o "$PROJECT_NAME"

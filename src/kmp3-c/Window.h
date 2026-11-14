@@ -93,7 +93,7 @@ typedef struct
 
     input_Buffer inputBuff;
 
-    PlayerMsg currMsg;
+    PlayerMsg currMsg; /* Gpa. */
     k_time_Type errMsgTime;
 } Window;
 
