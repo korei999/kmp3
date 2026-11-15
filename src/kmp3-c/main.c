@@ -410,7 +410,25 @@ main(int argc, char** argv)
     k_CtxDestroyGlobal();
 }
 
-#include "klib/unityBuild-inc.h"
+#include "klib/Arena.c"
+#include "klib/assert.c"
+#include "klib/CmdLine.c"
+#include "klib/Ctx.c"
+#include "klib/file.c"
+#include "klib/IAllocator.c"
+// #include "klib/Json.c"
+#include "klib/Logger.c"
+#include "klib/print.c"
+// #include "klib/RingBuffer.c"
+#include "klib/RingMPSC.c"
+// #include "klib/RingSPSC.c"
+#include "klib/String.c"
+#include "klib/StringView.c"
+#include "klib/ThreadPool.c"
+#include "klib/time.c"
+#include "klib/ThirdParty/ryu/d2fixed.c"
+#include "klib/ThirdParty/ryu/d2s.c"
+
 #include "app.c"
 #include "Player.c"
 #include "TextBuff.c"
