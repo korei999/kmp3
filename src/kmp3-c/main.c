@@ -260,7 +260,7 @@ main_startup(int argc, char** argv)
         },
         (k_CmdLineArg){
             .svLongName = K_SV("coreaudio"),
-            .svDescription = K_SV("use pipewire audio backend"),
+            .svDescription = K_SV("use coreaudio audio backend"),
             .pfnHandler = main_coreaudioArg,
         },
         (k_CmdLineArg){
