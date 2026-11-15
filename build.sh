@@ -238,10 +238,16 @@ applyPkgConfigFlagsAndDontLink libavcodec 1
 applyPkgConfigFlagsAndDontLink libavutil 1
 applyPkgConfigFlagsAndDontLink libswresample 1
 
-set -- "$CC"
-if [ "$BEAR" -eq 1 ]; then
-    set -- bear -- "$@"
-fi
+compile()
+{
+    set -- "$CC"
+    if [ "$BEAR" -eq 1 ]; then
+        set -- bear -- "$@"
+    fi
 
-set -x
-"$@" $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o "$PROJECT_NAME"
+    set -x
+    "$@" $CFLAGS $OPTS $DEFS -I src/kmp3-c/klib/ThirdParty/ -I src/kmp3-c src/kmp3-c/main.c $LDFLAGS -o "$PROJECT_NAME"
+    set +x
+}
+
+compile
