@@ -17,7 +17,6 @@
 #else
     #include <systemd/sd-bus.h>
 #endif
-
 #define MPRIS_PROP(name, type, read) SD_BUS_PROPERTY(name, type, read, 0, SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE)
 
 #define MPRIS_WPROP(name, type, read, write)                                                                           \
@@ -813,3 +812,7 @@ platform_mpris_metadataChanged(void)
 
     k_MutexUnlock(&platform_mpris_g_mtx);
 }
+
+#undef MPRIS_PROP
+#undef MPRIS_WPROP
+#undef CK

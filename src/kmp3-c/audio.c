@@ -201,7 +201,7 @@ audio_IMixerPlayFinal(audio_IMixer* s, k_StringView svPath)
     bool bRet = true;
     FFMPEG_ERROR err;
 
-    if (k_atomic_U8LoadAcquire(&s->atom_bDecodes))
+    if (k_atomic_U8LoadRelaxed(&s->atom_bDecodes))
         ffmpeg_DecoderClose(&app_g_decoder);
 
     audio_RingBufferClear(&s->ring);
@@ -350,7 +350,7 @@ audio_IMixerSeekMS(audio_IMixer* s, double ms)
 {
     K_MUTEX_LOCK_SCOPE(&app_g_decoder.mtx)
     {
-        if (!k_atomic_U8LoadAcquire(&s->atom_bDecodes))
+        if (!k_atomic_U8LoadRelaxed(&s->atom_bDecodes))
             continue;
 
         const double totalMS = ffmpeg_DecoderGetTotalMS(&app_g_decoder);
