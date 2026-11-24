@@ -1,11 +1,10 @@
 #include "print.h"
 #include "String.h"
 
-#include "ThirdParty/ryu/ryu.h"
-
 #include <ctype.h>
-#include <math.h>
 #include <wchar.h>
+
+#include "ThirdParty/zmij/zmij.c"
 
 #define K_NAME MapSigToPfn
 #define K_KEY_T k_StringView
@@ -1002,20 +1001,20 @@ k_print_formatDouble(k_print_Context* pCtx, k_print_FmtArgs* pFmtArgs, const voi
     if (pFmtArgs->eFmtFlags & K_PRINT_FMT_FLAGS_ARG_IS_FMT)
         return k_print_eatFmtArg(pFmtArgs, (ssize_t)d);
 
-    char aBuff[128];
+    char aBuff[zmij_double_fixed_buffer_size];
     ssize_t off = 0;
-    ssize_t n = 0;
+    char* pEnd = NULL;
 
     if (pFmtArgs->eFmtFlags & K_PRINT_FMT_FLAGS_SHOW_SIGN && d >= 0)
         aBuff[off++] = '+';
 
-    if (pFmtArgs->maxFloatLen < 0) n = d2s_buffered_n(d, aBuff + off);
-    else n = d2fixed_buffered_n(d, pFmtArgs->maxFloatLen, aBuff + off);
+    if (pFmtArgs->maxFloatLen < 0) pEnd = zmij_detail_write(d, aBuff + off);
+    else pEnd = zmij_detail_write_fixed(d, aBuff + off, pFmtArgs->maxFloatLen);
 
     ssize_t nPushed = k_print_BuilderPushSvPaddedFmtArgs(
         pCtx->pBuilder,
         pFmtArgs,
-        (k_StringView){aBuff, off + n}
+        (k_StringView){aBuff, off + (pEnd - aBuff)}
     );
 
     if (nPushed > 0) return nPushed;

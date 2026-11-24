@@ -14,7 +14,3 @@
 #include "StringView.c"
 #include "ThreadPool.c"
 #include "time.c"
-
-/* -I ./ThirdParty */
-#include "ThirdParty/ryu/d2fixed.c"
-#include "ThirdParty/ryu/d2s.c"

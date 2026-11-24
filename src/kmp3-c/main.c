@@ -426,8 +426,6 @@ main(int argc, char** argv)
 #include "klib/StringView.c"
 #include "klib/ThreadPool.c"
 #include "klib/time.c"
-#include "klib/ThirdParty/ryu/d2fixed.c"
-#include "klib/ThirdParty/ryu/d2s.c"
 
 #include "app.c"
 #include "Player.c"
