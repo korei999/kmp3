@@ -410,23 +410,6 @@ main(int argc, char** argv)
     k_CtxDestroyGlobal();
 }
 
-#include "klib/Arena.c"
-#include "klib/assert.c"
-#include "klib/CmdLine.c"
-#include "klib/Ctx.c"
-#include "klib/file.c"
-#include "klib/IAllocator.c"
-// #include "klib/Json.c"
-#include "klib/Logger.c"
-#include "klib/print.c"
-// #include "klib/RingBuffer.c"
-#include "klib/RingMPSC.c"
-// #include "klib/RingSPSC.c"
-#include "klib/String.c"
-#include "klib/StringView.c"
-#include "klib/ThreadPool.c"
-#include "klib/time.c"
-
 #include "app.c"
 #include "Player.c"
 #include "TextBuff.c"
@@ -455,3 +438,20 @@ main(int argc, char** argv)
 #ifdef OPT_ALSA
     #include "platform/alsa/Mixer.c"
 #endif
+
+#include "klib/Arena.c"
+#include "klib/assert.c"
+#include "klib/CmdLine.c"
+#include "klib/Ctx.c"
+#include "klib/file.c"
+#include "klib/IAllocator.c"
+// #include "klib/Json.c"
+#include "klib/Logger.c"
+#include "klib/print.c"
+// #include "klib/RingBuffer.c"
+#include "klib/RingMPSC.c"
+// #include "klib/RingSPSC.c"
+#include "klib/String.c"
+#include "klib/StringView.c"
+#include "klib/ThreadPool.c"
+#include "klib/time.c"

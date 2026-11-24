@@ -17,23 +17,23 @@
 
 #endif
 
-static ssize_t s_pageSize;
+static ssize_t k_s_pageSize;
 
 ssize_t
 k_getPageSize(void)
 {
 #if defined __unix__
-    if (s_pageSize == 0) s_pageSize = getpagesize();
+    if (k_s_pageSize == 0) k_s_pageSize = getpagesize();
 #elif defined _WIN32
-    if (s_pageSize == 0)
+    if (k_s_pageSize == 0)
     {
         SYSTEM_INFO sysInfo;
         GetSystemInfo(&sysInfo);
-        s_pageSize = sysInfo.dwPageSize;
+        k_s_pageSize = sysInfo.dwPageSize;
     }
 #else
-    if (s_pageSize == 0) s_pageSize = K_SIZE_1K * 4;
+    if (k_s_pageSize == 0) k_s_pageSize = K_SIZE_1K * 4;
 #endif
 
-    return s_pageSize;
+    return k_s_pageSize;
 }

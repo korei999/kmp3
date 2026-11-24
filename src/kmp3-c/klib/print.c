@@ -22,7 +22,7 @@ struct k_print_Map
     MapSigToPfn mSigToPfn;
 };
 
-static k_print_Map* s_pGlobalPrinter = NULL;
+static k_print_Map* k_s_pGlobalPrinter = NULL;
 
 static ssize_t parseVaList(k_print_Context* pCtx, k_print_FmtArgs* pFmtArgs, va_list* pArgs);
 static ssize_t parseArg(k_print_Context* pCtx, k_print_FmtArgs* pFmtArgs, va_list* pArgs);
@@ -93,13 +93,13 @@ k_print_MapAlloc(k_IAllocator* pAlloc)
 void
 k_print_MapSetGlobal(k_print_Map* pPrinter)
 {
-    s_pGlobalPrinter = pPrinter;
+    k_s_pGlobalPrinter = pPrinter;
 }
 
 k_print_Map*
 k_print_MapInst(void)
 {
-    return s_pGlobalPrinter;
+    return k_s_pGlobalPrinter;
 }
 
 bool
