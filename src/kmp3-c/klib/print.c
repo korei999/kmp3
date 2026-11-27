@@ -4,7 +4,16 @@
 #include <ctype.h>
 #include <wchar.h>
 
+#ifdef __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 #include "ThirdParty/zmij/zmij.c"
+
+#ifdef __GNUC__
+    #pragma GCC diagnostic pop
+#endif
 
 #define K_NAME MapSigToPfn
 #define K_KEY_T k_StringView
