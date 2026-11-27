@@ -1,6 +1,7 @@
 #pragma once
 
 #include "klib/Arena.h"
+#include "klib/Span.h"
 
 #include "generated.h"
 
@@ -117,6 +118,17 @@ typedef struct
     #define K_GEN_DECLS
     #include "klib/VecGen-inc.h"
 #endif
+
+typedef struct
+{
+    union
+    {
+        k_Span2D;
+        k_Span2D base;
+    };
+
+    TextBuffCell* pData;
+} Span2DTextBuffCell;
 
 typedef struct
 {

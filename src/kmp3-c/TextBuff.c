@@ -56,8 +56,8 @@
 static bool TextBuffCellEq(TextBuffCell* pLeft, TextBuffCell* pRight);
 
 static ssize_t TextBuffStyleToBuffer(TextBuff* s, char* pFillBuff, ssize_t buffSize, TEXT_BUFF_STYLE eStyle);
-static k_Span2D TextBuffFrontBufferSpan(TextBuff* s);
-static k_Span2D TextBuffBackBufferSpan(TextBuff* s);
+static Span2DTextBuffCell TextBuffFrontBufferSpan(TextBuff* s);
+static Span2DTextBuffCell TextBuffBackBufferSpan(TextBuff* s);
 static void TextBuffClearBackBuffer(TextBuff* s);
 static void TextBuffPushDiff(TextBuff* s);
 static void TextBuffResetBuffers(TextBuff* s);
@@ -97,7 +97,7 @@ TextBuffStringFinal(
     if (x < 0 || x >= s->tWidth || y < 0 || y >= s->tHeight)
         return 0;
 
-    k_Span2D bb = TextBuffBackBufferSpan(s);
+    Span2DTextBuffCell bb = TextBuffBackBufferSpan(s);
 
     int max = 0;
     wchar_t wc = 0;
@@ -111,7 +111,7 @@ TextBuffStringFinal(
         if ((uint32_t)wc == 0x200d || (colWidth = wcwidth(wc)) <= 0 || x + colWidth > s->tWidth)
             continue;
 
-        TextBuffCell* pBBCell = k_Span2DGet(bb, x, y);
+        TextBuffCell* pBBCell = K_SPAN_2D_GET(bb.base, bb.pData, x, y);
         pBBCell->wc = wc;
         pBBCell->eStyle = eStyle;
 
@@ -120,9 +120,7 @@ TextBuffStringFinal(
             if (x + i >= bb.width || y >= bb.height)
                 return max;
 
-            TextBuffCell* pBack = k_Span2DGet(bb, x + i, y);
-            pBack->wc = -1;
-            pBack->eStyle = eStyle;
+            K_SPAN_2D_SET(bb.base, bb.pData, x + i, y, &(TextBuffCell){.wc = -1, .eStyle = eStyle});
         }
 
         x += colWidth;
@@ -464,15 +462,15 @@ TextBuffForceClean(TextBuff* s, int x, int y, int width, int height)
     width = K_MIN(width, s->tWidth);
     height = K_MIN(height, s->tHeight);
 
-    k_Span2D spFront = TextBuffFrontBufferSpan(s);
-    k_Span2D spBack = TextBuffBackBufferSpan(s);
+    Span2DTextBuffCell spFront = TextBuffFrontBufferSpan(s);
+    Span2DTextBuffCell spBack = TextBuffBackBufferSpan(s);
 
     for (ssize_t row = y; row < height; ++row)
     {
         for (ssize_t col = x; col < width; ++col)
         {
-            TextBuffCell* pFront = k_Span2DGet(spFront, col, row);
-            TextBuffCell* pBack = k_Span2DGet(spBack, col, row);
+            TextBuffCell* pFront = K_SPAN_2D_GET(spFront.base, spFront.pData, col, row);
+            TextBuffCell* pBack = K_SPAN_2D_GET(spBack.base, spBack.pData, col, row);
 
             /* trigger diff */
             pFront->wc = 666;
@@ -550,27 +548,25 @@ TextBuffStyleToBuffer(TextBuff* s, char* pFillBuff, ssize_t buffSize, TEXT_BUFF_
 #undef CODE
 }
 
-static k_Span2D
+static Span2DTextBuffCell
 TextBuffFrontBufferSpan(TextBuff* s)
 {
-    return (k_Span2D){
+    return (Span2DTextBuffCell){
         .pData = s->vFront.pData,
         .width = s->tWidth,
         .height = s->tHeight,
         .stride = s->tWidth,
-        .memberSize = sizeof(TextBuffCell),
     };
 }
 
-static k_Span2D
+static Span2DTextBuffCell
 TextBuffBackBufferSpan(TextBuff* s)
 {
-    return (k_Span2D){
+    return (Span2DTextBuffCell){
         .pData = s->vBack.pData,
         .width = s->tWidth,
         .height = s->tHeight,
         .stride = s->tWidth,
-        .memberSize = sizeof(TextBuffCell),
     };
 }
 
@@ -589,8 +585,8 @@ static void
 TextBuffPushDiff(TextBuff* s)
 {
     TEXT_BUFF_STYLE eLastStyle = TEXT_BUFF_STYLE_NORM;
-    const k_Span2D spFront = TextBuffFrontBufferSpan(s);
-    const k_Span2D spBack = TextBuffBackBufferSpan(s);
+    const Span2DTextBuffCell spFront = TextBuffFrontBufferSpan(s);
+    const Span2DTextBuffCell spBack = TextBuffBackBufferSpan(s);
 
     for (ssize_t rowI = 0; rowI < s->tHeight; ++rowI)
     {
@@ -599,8 +595,8 @@ TextBuffPushDiff(TextBuff* s)
 
         for (ssize_t colI = 0; colI < s->tWidth; ++colI)
         {
-            TextBuffCell* pFront = k_Span2DGet(spFront, colI, rowI);
-            TextBuffCell* pBack = k_Span2DGet(spBack, colI, rowI);
+            TextBuffCell* pFront = K_SPAN_2D_GET(spFront.base, spFront.pData, colI, rowI);
+            TextBuffCell* pBack = K_SPAN_2D_GET(spBack.base, spBack.pData, colI, rowI);
 
             if (pBack->wc != -1 && !TextBuffCellEq(pFront, pBack))
             {

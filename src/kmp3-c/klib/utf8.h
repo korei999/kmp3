@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "klib/common.h"
+#include "common.h"
 
 #define K_UTF_INVALID 0xFFFD
 
